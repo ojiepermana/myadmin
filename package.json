@@ -36,6 +36,7 @@
     "test:database-postgresql": "bun test packages/database-postgresql/test",
     "test:database-postgresql:integration": "bun test tests/integration/postgresql",
     "version": "bun run apps/cli/src/main.ts version",
+    "test:internal-sqlite": "bun test packages/kernel/test tests/integration/internal-sqlite",
     "ng": "ng"
   },
   "dependencies": {

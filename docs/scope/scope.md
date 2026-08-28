@@ -158,10 +158,11 @@ Diagnostik aman dan migrasi eksplisit. Done when: doctor melaporkan kesehatan ta
 Penyimpanan internal: pragma benar, migrasi bernomor ber checksum, skema sebelas tabel. Done when: dari file kosong ke skema penuh secara idempotent dan gagal jelas bila rusak.
 
 - [x] Design it (spec): [0008](../specs/0008-sqlite-core-migrations/index.md)
-- [ ] Build it: /develop sqlite-core-migrations
-  - [ ] Koneksi, pragma, transaksi, helper (AC-1, AC-6, AC-7)
-  - [ ] Runner migrasi ber checksum plus integrasi boot (AC-2, AC-3, AC-5)
-  - [ ] Migrasi 0001 sebelas tabel plus generator UUIDv7 dan integration test (AC-4, AC-8)
+- [x] Build it: /develop sqlite-core-migrations
+  - [x] Koneksi, pragma, transaksi, helper (AC-1, AC-6, AC-7)
+  - [x] Runner migrasi ber checksum plus integrasi boot (AC-2, AC-3, AC-5)
+  - [x] Migrasi 0001 sebelas tabel plus generator UUIDv7 dan integration test (AC-4, AC-8)
+  - code in `packages/internal-sqlite`, `packages/kernel/ids`, `apps/cli/src`, and `tests/integration/internal-sqlite/`
 - [ ] [Verify it](../specs/0008-sqlite-core-migrations/verify.md): /check verify sqlite-core-migrations
 - [ ] [Test it](../specs/0008-sqlite-core-migrations/test.md): /test sqlite-core-migrations
 

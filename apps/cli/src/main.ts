@@ -6,6 +6,7 @@ export interface CliFlags {
   host?: string;
   port?: number;
   dataDirectory?: string;
+  status?: boolean;
 }
 
 export class CliArgumentError extends Error {}
@@ -37,6 +38,9 @@ export function parseCliFlags(args: string[]): { command: string; flags: CliFlag
       case '--data-dir':
         flags.dataDirectory = next();
         break;
+      case '--status':
+        flags.status = true;
+        break;
       default:
         throw new CliArgumentError(`Unknown option: ${argument}`);
     }
@@ -54,8 +58,16 @@ export async function runCli(args: string[] = process.argv.slice(2)): Promise<vo
       case 'serve':
         await runServeCommand({ ...flags, presenter: consoleTerminalPresenter });
         return;
+      case 'migrate':
+        {
+          const { runMigrateCommand } = await import('./commands/migrate');
+          await runMigrateCommand({ ...flags, presenter: consoleTerminalPresenter });
+        }
+        return;
       case 'help':
-        console.log('Usage: myadmin <serve|version> [--host HOST] [--port PORT] [--data-dir PATH]');
+        console.log(
+          'Usage: myadmin <serve|migrate|version> [--host HOST] [--port PORT] [--data-dir PATH] [--status]',
+        );
         return;
       default:
         throw new CliArgumentError(`Unknown command: ${command}`);

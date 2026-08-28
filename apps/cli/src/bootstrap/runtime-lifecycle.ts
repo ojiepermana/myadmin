@@ -12,6 +12,7 @@ import {
   consoleTerminalPresenter,
   type TerminalPresenter,
 } from '../output/terminal-presenter';
+import type { Database } from 'bun:sqlite';
 
 export interface RuntimeOptions {
   host?: string;
@@ -98,12 +99,18 @@ async function stopServer(server: RunningServer, timeoutMs: number): Promise<voi
   }
 }
 
+async function closeInternalDatabase(database: Database): Promise<void> {
+  const { closeDatabase } = await import('@myadmin/internal-sqlite');
+  closeDatabase(database);
+}
+
 export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<RuntimeContext> {
   const env = options.env ?? process.env;
   const presenter = options.presenter ?? consoleTerminalPresenter;
   const hooks = options.hooks ?? {};
   const host = configuredHost(options.host, env);
   const port = configuredPort(options.port, env);
+  let internalDatabase: Database | undefined;
 
   let dataDirectory: string;
   try {
@@ -125,8 +132,25 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
   }
 
   try {
-    // Database migrations are intentionally deferred to spec 0008.
-    await (hooks.runMigrations ?? (async () => undefined))(paths);
+    await (
+      hooks.runMigrations ??
+      (async (databasePaths) => {
+        const { closeDatabase, openDatabase, runMigrations } =
+          await import('@myadmin/internal-sqlite');
+        const database = openDatabase(databasePaths.root);
+        try {
+          runMigrations(database);
+          internalDatabase = database;
+        } catch (error) {
+          try {
+            closeDatabase(database);
+          } catch {
+            // Preserve the migration failure as the actionable boot error.
+          }
+          throw error;
+        }
+      })
+    )(paths);
   } catch (error) {
     presentBootstrapFailure(presenter, 'migrations', error);
     throw new BootstrapError('migrations', 'Could not run migrations', error);
@@ -136,6 +160,14 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
   try {
     application = (hooks.composeApp ?? createServerApp)();
   } catch (error) {
+    if (internalDatabase) {
+      try {
+        await closeInternalDatabase(internalDatabase);
+      } catch {
+        // Preserve the compose failure as the actionable boot error.
+      }
+      internalDatabase = undefined;
+    }
     presentBootstrapFailure(presenter, 'compose', error);
     throw new BootstrapError('compose', 'Could not compose HTTP server', error);
   }
@@ -177,8 +209,19 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
       try {
         await stopServer(server, options.shutdownTimeoutMs ?? 5000);
       } finally {
-        await options.closeResources?.();
-        resolveStopped?.();
+        try {
+          if (internalDatabase) {
+            const database = internalDatabase;
+            internalDatabase = undefined;
+            await closeInternalDatabase(database);
+          }
+        } finally {
+          try {
+            await options.closeResources?.();
+          } finally {
+            resolveStopped?.();
+          }
+        }
       }
     };
     runtime.waitForShutdown = async () => {
@@ -189,6 +232,14 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
     };
     return runtime;
   } catch (error) {
+    if (internalDatabase) {
+      try {
+        await closeInternalDatabase(internalDatabase);
+      } catch {
+        // Preserve the compose or listen failure as the actionable boot error.
+      }
+      internalDatabase = undefined;
+    }
     presentBootstrapFailure(presenter, 'compose or listen', error);
     throw new BootstrapError('compose or listen', 'Could not start HTTP server', error);
   }
