@@ -1,0 +1,40 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Query history identifier.
+    schema:
+      type: string
+      minLength: 1
+delete:
+  operationId: deleteQueryHistoryEntry
+  tags: [query]
+  summary: Delete one owned query history entry
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  responses:
+    '204':
+      description: Query history entry deleted.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or origin validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The entry does not exist or is not owned by the user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

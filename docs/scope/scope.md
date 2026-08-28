@@ -515,10 +515,11 @@ Membatalkan eksekusi berjalan dan rencana eksekusi teks. Done when: query tidur 
 Riwayat otomatis dan query bernama, privat per user. Done when: pencarian riwayat, buka ulang berkonteks, dan isolasi antar user terbukti.
 
 - [x] Design it (spec): [0036](../specs/0036-query-history-saved-queries/index.md)
-- [ ] Build it: /develop query-history-saved-queries
-  - [ ] Endpoint history berfilter plus saved queries CRUD berkepemilikan (AC-1, AC-2, AC-4, AC-6)
-  - [ ] Halaman dua tab plus panel cepat editor plus simpan cepat (AC-5, AC-7)
+- [x] Build it: /develop query-history-saved-queries
+  - [x] Endpoint history berfilter plus saved queries CRUD berkepemilikan (AC-1, AC-2, AC-4, AC-6)
+  - [x] Halaman dua tab plus panel cepat editor plus simpan cepat (AC-5, AC-7)
   - [ ] E2e dan test otorisasi (AC-3, AC-8)
+  - code in `apps/server/src/query`, `packages/internal-sqlite`, `packages/sdk-angular/src`, `apps/web/src/app/features/query-history`, and `tests/integration/query-history/`
 - [ ] [Verify it](../specs/0036-query-history-saved-queries/verify.md): /check verify query-history-saved-queries
 - [ ] [Test it](../specs/0036-query-history-saved-queries/test.md): /test query-history-saved-queries
 

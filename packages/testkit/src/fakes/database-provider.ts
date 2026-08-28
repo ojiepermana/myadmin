@@ -71,8 +71,8 @@ export class FakeDatabaseProvider implements DatabaseProvider {
     serverInfo: async (handle: ConnectionHandle): Promise<ServerInfo> => {
       void handle;
       return {
-      engine: 'postgresql',
-      version: capabilityDescription.version,
+        engine: 'postgresql',
+        version: capabilityDescription.version,
       };
     },
     test: async (context: ConnectionContext): Promise<ConnectionTestResult> => {

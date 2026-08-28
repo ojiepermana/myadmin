@@ -613,6 +613,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/query/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's query history */
+        get: operations["listQueryHistory"];
+        put?: never;
+        post?: never;
+        /** Delete all query history owned by the current user */
+        delete: operations["deleteQueryHistory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/query/history/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Query history identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete one owned query history entry */
+        delete: operations["deleteQueryHistoryEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/query/metadata": {
         parameters: {
             query?: never;
@@ -628,6 +666,45 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/query/saved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's saved queries */
+        get: operations["listSavedQueries"];
+        put?: never;
+        /** Create an owned saved query */
+        post: operations["createSavedQuery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/query/saved/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Saved query identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an owned saved query */
+        delete: operations["deleteSavedQuery"];
+        options?: never;
+        head?: never;
+        /** Update an owned saved query */
+        patch: operations["updateSavedQuery"];
         trace?: never;
     };
     "/query/sessions/{id}/close": {
@@ -1414,6 +1491,12 @@ export interface components {
             type: "json";
             value: string;
         };
+        QueryConnectionSummary: {
+            /** @enum {string} */
+            engine: "postgresql" | "mysql";
+            id: string;
+            label: string;
+        };
         QueryError: {
             category: string;
             code: string;
@@ -1465,6 +1548,26 @@ export interface components {
             /** @enum {string} */
             engine: "postgresql" | "mysql";
             planText: string;
+        };
+        QueryHistoryItem: {
+            connection: components["schemas"]["QueryConnectionSummary"] | null;
+            connectionId: string | null;
+            database: string | null;
+            durationMs: number | null;
+            /** Format: date-time */
+            executedAt: string;
+            id: string;
+            rowCount: number | null;
+            schema: string | null;
+            sql: string;
+            status: string;
+        };
+        QueryHistoryPage: {
+            items: components["schemas"]["QueryHistoryItem"][];
+            page: number;
+            pageSize: number;
+            retentionLimit: number;
+            total: number;
         };
         QueryResult: {
             affectedRows?: number;
@@ -1525,6 +1628,39 @@ export interface components {
             sourceType: "artifact" | "upload";
             /** @constant */
             valid: true;
+        };
+        SavedQuery: {
+            connection: components["schemas"]["QueryConnectionSummary"] | null;
+            connectionId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            database: string | null;
+            id: string;
+            name: string;
+            sql: string;
+            tags: string[];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        SavedQueryInput: {
+            connectionId?: string | null;
+            database?: string | null;
+            name: string;
+            sql: string;
+            tags?: string[];
+        };
+        SavedQueryPage: {
+            items: components["schemas"]["SavedQuery"][];
+            page: number;
+            pageSize: number;
+            total: number;
+        };
+        SavedQueryPatch: {
+            connectionId?: string | null;
+            database?: string | null;
+            name?: string;
+            sql?: string;
+            tags?: string[];
         };
         SerializedDataRow: {
             [key: string]: components["schemas"]["QueryCell"];
@@ -3928,6 +4064,142 @@ export interface operations {
             };
         };
     };
+    listQueryHistory: {
+        parameters: {
+            query?: {
+                connectionId?: string;
+                from?: string;
+                /** @description One based page number. */
+                page?: components["parameters"]["page"];
+                /** @description Number of items per page. The maximum is 100. */
+                pageSize?: components["parameters"]["page-size"];
+                q?: string;
+                status?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The current user's newest history entries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryHistoryPage"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The history filters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    deleteQueryHistory: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Query history deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or origin validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    deleteQueryHistoryEntry: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path: {
+                /** @description Query history identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Query history entry deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or origin validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The entry does not exist or is not owned by the user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
     getQueryMetadata: {
         parameters: {
             query: {
@@ -3972,6 +4244,244 @@ export interface operations {
                 };
             };
             /** @description The metadata request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    listSavedQueries: {
+        parameters: {
+            query?: {
+                /** @description One based page number. */
+                page?: components["parameters"]["page"];
+                /** @description Number of items per page. The maximum is 100. */
+                pageSize?: components["parameters"]["page-size"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The current user's saved queries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedQueryPage"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Pagination is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    createSavedQuery: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedQueryInput"];
+            };
+        };
+        responses: {
+            /** @description Saved query created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedQuery"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or origin validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The selected connection is unavailable to the user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The name is already used by this user. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The saved query is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    deleteSavedQuery: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path: {
+                /** @description Saved query identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved query deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or origin validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The saved query does not exist or is not owned by the user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    updateSavedQuery: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path: {
+                /** @description Saved query identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedQueryPatch"];
+            };
+        };
+        responses: {
+            /** @description Saved query updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedQuery"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or origin validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The saved query or selected connection is unavailable to the user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The name is already used by this user. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The saved query patch is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;

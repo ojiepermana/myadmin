@@ -115,6 +115,7 @@ export interface SavedQuery {
   userId: EntityId;
   name: string;
   sqlText: string;
+  tags: string[];
   connectionId: EntityId | null;
   database: string | null;
   createdAt: Date;

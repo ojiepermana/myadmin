@@ -69,107 +69,181 @@
         />
       </label>
     </div>
+
+    @if (connectionMissing()) {
+      <div
+        class="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300"
+        role="alert"
+      >
+        This query was reopened without its original connection. Choose a connection before running
+        it.
+      </div>
+    }
   </header>
 
-  <div class="flex min-h-0 flex-1 flex-col">
-    <div
-      class="flex flex-wrap items-center gap-2 border-b border-border/70 bg-muted/15 px-5 py-2.5 sm:px-7"
-    >
-      <button
-        type="button"
-        class="query-action query-action-primary"
-        [disabled]="busy()"
-        (click)="execute('full')"
+  <div class="query-editor-body min-h-0 flex-1">
+    <div class="flex min-h-0 flex-col">
+      <div
+        class="flex flex-wrap items-center gap-2 border-b border-border/70 bg-muted/15 px-5 py-2.5 sm:px-7"
       >
-        Run all <kbd>⌘↵</kbd>
-      </button>
-      <button type="button" class="query-action" [disabled]="busy()" (click)="execute('selection')">
-        Run selection
-      </button>
-      <button
-        type="button"
-        class="query-action"
-        [disabled]="busy()"
-        (click)="execute('statementAtCursor')"
-      >
-        Run statement
-      </button>
-      <button
-        type="button"
-        class="query-action query-action-danger"
-        [disabled]="!canCancel()"
-        [attr.title]="
-          canCancel()
-            ? 'Cancel the active statement in this tab'
-            : 'Cancellation is unavailable for this execution or provider'
-        "
-        (click)="cancelExecution()"
-      >
-        Cancel query
-      </button>
-      <button
-        type="button"
-        class="query-action"
-        [disabled]="explainDisabled()"
-        [attr.title]="
-          canExplain()
-            ? 'Show the text execution plan for the statement at the cursor'
-            : 'EXPLAIN is unavailable until this provider is connected'
-        "
-        (click)="explain()"
-      >
-        {{ explainLoading() ? 'Explaining…' : 'Explain' }}
-      </button>
-      <button
-        type="button"
-        class="query-action query-action-danger"
-        [disabled]="disconnecting()"
-        (click)="openDisconnectDialog()"
-      >
-        Disconnect tab session
-      </button>
-      @if (execution()?.transactionActive) {
-        <span class="mx-1 h-5 w-px bg-border" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="query-action query-action-primary"
+          [disabled]="busy()"
+          (click)="execute('full')"
+        >
+          Run all <kbd>⌘↵</kbd>
+        </button>
         <button
           type="button"
           class="query-action"
           [disabled]="busy()"
-          (click)="transactionCommand('COMMIT')"
+          (click)="execute('selection')"
         >
-          Commit
+          Run selection
+        </button>
+        <button
+          type="button"
+          class="query-action"
+          [disabled]="busy()"
+          (click)="execute('statementAtCursor')"
+        >
+          Run statement
+        </button>
+        <button type="button" class="query-action" (click)="openSaveDialog()">Save query</button>
+        <button
+          type="button"
+          class="query-action query-action-danger"
+          [disabled]="!canCancel()"
+          [attr.title]="
+            canCancel()
+              ? 'Cancel the active statement in this tab'
+              : 'Cancellation is unavailable for this execution or provider'
+          "
+          (click)="cancelExecution()"
+        >
+          Cancel query
+        </button>
+        <button
+          type="button"
+          class="query-action"
+          [disabled]="explainDisabled()"
+          [attr.title]="
+            canExplain()
+              ? 'Show the text execution plan for the statement at the cursor'
+              : 'EXPLAIN is unavailable until this provider is connected'
+          "
+          (click)="explain()"
+        >
+          {{ explainLoading() ? 'Explaining…' : 'Explain' }}
         </button>
         <button
           type="button"
           class="query-action query-action-danger"
-          [disabled]="busy()"
-          (click)="transactionCommand('ROLLBACK')"
+          [disabled]="disconnecting()"
+          (click)="openDisconnectDialog()"
         >
-          Rollback
+          Disconnect tab session
         </button>
+        @if (execution()?.transactionActive) {
+          <span class="mx-1 h-5 w-px bg-border" aria-hidden="true"></span>
+          <button
+            type="button"
+            class="query-action"
+            [disabled]="busy()"
+            (click)="transactionCommand('COMMIT')"
+          >
+            Commit
+          </button>
+          <button
+            type="button"
+            class="query-action query-action-danger"
+            [disabled]="busy()"
+            (click)="transactionCommand('ROLLBACK')"
+          >
+            Rollback
+          </button>
+        }
+        <span class="ms-auto text-xs text-muted-foreground">{{
+          loadingMetadata() ? 'Loading metadata…' : 'Autocomplete loads on demand'
+        }}</span>
+      </div>
+
+      <div #editorHost class="query-editor-host min-h-[18rem] flex-1" aria-label="SQL editor"></div>
+
+      @if (message()) {
+        <div
+          class="border-t border-destructive/20 bg-destructive/10 px-5 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          {{ message() }}
+        </div>
       }
-      <span class="ms-auto text-xs text-muted-foreground">{{
-        loadingMetadata() ? 'Loading metadata…' : 'Autocomplete loads on demand'
-      }}</span>
+      @if (metadataMessage()) {
+        <div
+          class="border-t border-amber-500/20 bg-amber-500/10 px-5 py-2 text-xs text-amber-700 dark:text-amber-300"
+          role="status"
+        >
+          {{ metadataMessage() }}
+        </div>
+      }
     </div>
 
-    <div #editorHost class="query-editor-host min-h-[18rem] flex-1" aria-label="SQL editor"></div>
-
-    @if (message()) {
-      <div
-        class="border-t border-destructive/20 bg-destructive/10 px-5 py-3 text-sm text-destructive"
-        role="alert"
-      >
-        {{ message() }}
+    <aside
+      class="query-quick-panel border-s border-border/70 bg-card/40"
+      aria-label="Query library"
+    >
+      <div class="border-b border-border/70 px-4 py-3">
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Quick library</p>
+        <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Reopen recent work or a saved query in a new tab.
+        </p>
       </div>
-    }
-    @if (metadataMessage()) {
-      <div
-        class="border-t border-amber-500/20 bg-amber-500/10 px-5 py-2 text-xs text-amber-700 dark:text-amber-300"
-        role="status"
-      >
-        {{ metadataMessage() }}
-      </div>
-    }
+      @if (quickLoading()) {
+        <div class="space-y-2 p-4" role="status" aria-label="Loading query library">
+          <div class="h-10 animate-pulse rounded-md bg-muted"></div>
+          <div class="h-10 animate-pulse rounded-md bg-muted"></div>
+          <div class="h-10 animate-pulse rounded-md bg-muted"></div>
+        </div>
+      } @else {
+        <div class="space-y-5 p-4">
+          <section aria-labelledby="quick-history-title">
+            <h2 id="quick-history-title" class="quick-section-title">Recent history</h2>
+            @if (quickHistory().length === 0) {
+              <p class="mt-2 text-xs text-muted-foreground">Run a query to build history.</p>
+            } @else {
+              <div class="mt-2 space-y-1">
+                @for (entry of quickHistory(); track entry.id) {
+                  <button type="button" class="quick-link" (click)="openQuickHistory(entry)">
+                    <span class="quick-link-title">{{ entry.sql }}</span>
+                    <span class="quick-link-meta"
+                      >{{ entry.status }} · {{ entry.durationMs ?? 0 }} ms</span
+                    >
+                  </button>
+                }
+              </div>
+            }
+          </section>
+          <section aria-labelledby="quick-saved-title">
+            <h2 id="quick-saved-title" class="quick-section-title">Saved queries</h2>
+            @if (quickSaved().length === 0) {
+              <p class="mt-2 text-xs text-muted-foreground">Save a useful query from this tab.</p>
+            } @else {
+              <div class="mt-2 space-y-1">
+                @for (query of quickSaved(); track query.id) {
+                  <button type="button" class="quick-link" (click)="openQuickSaved(query)">
+                    <span class="quick-link-title">{{ query.name }}</span>
+                    <span class="quick-link-meta">{{
+                      query.tags.length ? query.tags.join(' · ') : 'No tags'
+                    }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </section>
+        </div>
+      }
+    </aside>
   </div>
 
   @if (execution() || explainLoading() || explainMessage() || explainResult()) {
@@ -313,3 +387,52 @@
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
+<Dialog [(open)]="saveOpen" [showCloseButton]="false" class="sm:max-w-lg">
+  <DialogHeader>
+    <DialogTitle>Save query</DialogTitle>
+    <DialogDescription>
+      Save this SQL to your private query library. The current connection context will be kept.
+    </DialogDescription>
+  </DialogHeader>
+  <DialogContent class="grid gap-4 py-2">
+    <label class="grid gap-2 text-sm font-medium">
+      Name
+      <input
+        class="h-10 rounded-md border border-input bg-background px-3 font-normal text-foreground"
+        [value]="savedName()"
+        (input)="savedName.set($any($event.target).value)"
+        placeholder="Daily orders"
+      />
+    </label>
+    <label class="grid gap-2 text-sm font-medium">
+      Tags <span class="font-normal text-muted-foreground">comma separated, optional</span>
+      <input
+        class="h-10 rounded-md border border-input bg-background px-3 font-normal text-foreground"
+        [value]="savedTags()"
+        (input)="savedTags.set($any($event.target).value)"
+        placeholder="reporting, daily"
+      />
+    </label>
+  </DialogContent>
+  <DialogFooter>
+    <button Button type="button" variant="outline" DialogClose>Cancel</button>
+    <button Button type="button" [disabled]="saving()" (click)="saveQuery()">
+      {{ saving() ? 'Saving…' : 'Save query' }}
+    </button>
+  </DialogFooter>
+</Dialog>
+
+<Dialog [(open)]="overwriteOpen" [showCloseButton]="false" class="sm:max-w-lg">
+  <DialogHeader>
+    <DialogTitle>Overwrite saved query?</DialogTitle>
+    <DialogDescription>
+      A saved query named “{{ savedName() }}” already exists. Replace its SQL, context, and tags?
+    </DialogDescription>
+  </DialogHeader>
+  <DialogFooter>
+    <button Button type="button" variant="outline" DialogClose>Keep existing</button>
+    <button Button type="button" [disabled]="saving()" (click)="overwriteQuery()">
+      {{ saving() ? 'Updating…' : 'Overwrite query' }}
+    </button>
+  </DialogFooter>
+</Dialog>

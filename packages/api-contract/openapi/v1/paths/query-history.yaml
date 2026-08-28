@@ -1,0 +1,77 @@
+get:
+  operationId: listQueryHistory
+  tags: [query]
+  summary: List the current user's query history
+  parameters:
+    - $ref: ../components/parameters/page.yaml
+    - $ref: ../components/parameters/page-size.yaml
+    - in: query
+      name: q
+      schema:
+        type: string
+        maxLength: 500
+    - in: query
+      name: connectionId
+      schema:
+        type: string
+    - in: query
+      name: status
+      schema:
+        type: string
+        maxLength: 64
+    - in: query
+      name: from
+      schema:
+        type: string
+        format: date-time
+    - in: query
+      name: to
+      schema:
+        type: string
+        format: date-time
+  responses:
+    '200':
+      description: The current user's newest history entries.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/QueryHistoryPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The history filters are invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+
+delete:
+  operationId: deleteQueryHistory
+  tags: [query]
+  summary: Delete all query history owned by the current user
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  responses:
+    '204':
+      description: Query history deleted.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or origin validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

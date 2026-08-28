@@ -74,8 +74,8 @@ describe('IT-0008-AC2, IT-0008-AC3, IT-0008-AC4, and IT-0008-AC8 migrations', ()
       .map((row) => row.name);
 
     expect(first.initialVersion).toBe(0);
-    expect(first.finalVersion).toBe(1);
-    expect(first.applied).toHaveLength(1);
+    expect(first.finalVersion).toBe(2);
+    expect(first.applied).toHaveLength(2);
     expect(first.applied[0]?.checksum).toMatch(/^[0-9a-f]{64}$/);
     expect(second.applied).toEqual([]);
     expect(tables).toEqual([
@@ -107,6 +107,12 @@ describe('IT-0008-AC2, IT-0008-AC3, IT-0008-AC4, and IT-0008-AC8 migrations', ()
       'idx_sessions_user_id',
     ]);
     expect(getMigrationStatus(database).pending).toEqual([]);
+    expect(
+      database
+        .query<{ name: string; dflt_value: string }, []>('PRAGMA table_info(saved_queries)')
+        .all()
+        .find((column) => column.name === 'tags'),
+    ).toMatchObject({ name: 'tags', dflt_value: "'[]'" });
   });
 
   test('rejects a changed applied migration without rewriting history', async () => {
@@ -123,7 +129,7 @@ describe('IT-0008-AC2, IT-0008-AC3, IT-0008-AC4, and IT-0008-AC8 migrations', ()
     expect(
       database.query<{ count: number }, []>('SELECT COUNT(*) AS count FROM migrations').get()
         ?.count,
-    ).toBe(1);
+    ).toBe(2);
   });
 
   test('rolls back a failed migration completely', async () => {
@@ -252,9 +258,9 @@ describe('IT-0008-AC2 CLI migration integration', () => {
     await runMigrateCommand({ dataDirectory: directory, presenter });
     await runMigrateCommand({ dataDirectory: directory, presenter, status: true });
 
-    expect(output[0]).toContain('Migration complete: none -> 0001');
+    expect(output[0]).toContain('Migration complete: none -> 0002');
     expect(output[0]).toContain('0001 initial');
-    expect(output[1]).toContain('Migration status: current version 0001');
+    expect(output[1]).toContain('Migration status: current version 0002');
     expect(output[1]).toContain('Pending migrations: none');
   });
 });

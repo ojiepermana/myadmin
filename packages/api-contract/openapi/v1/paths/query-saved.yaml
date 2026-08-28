@@ -1,0 +1,81 @@
+get:
+  operationId: listSavedQueries
+  tags: [query]
+  summary: List the current user's saved queries
+  parameters:
+    - $ref: ../components/parameters/page.yaml
+    - $ref: ../components/parameters/page-size.yaml
+  responses:
+    '200':
+      description: The current user's saved queries.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/SavedQueryPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Pagination is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+
+post:
+  operationId: createSavedQuery
+  tags: [query]
+  summary: Create an owned saved query
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/query.yaml#/SavedQueryInput
+  responses:
+    '201':
+      description: Saved query created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/SavedQuery
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or origin validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The selected connection is unavailable to the user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The name is already used by this user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The saved query is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

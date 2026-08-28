@@ -1,0 +1,477 @@
+<main
+  class="query-history-page mx-auto flex w-full max-w-[100rem] flex-col gap-8 px-5 py-8 sm:px-8 lg:gap-10 lg:py-10"
+  aria-labelledby="query-history-title"
+>
+  <header
+    class="flex flex-col gap-5 border-b border-border/70 pb-7 lg:flex-row lg:items-end lg:justify-between"
+  >
+    <div class="max-w-3xl space-y-3">
+      <div
+        class="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em]"
+      >
+        <Badge>Query library</Badge>
+        <span class="font-mono font-normal tracking-normal text-muted-foreground"
+          >/query-history</span
+        >
+      </div>
+      <h1
+        id="query-history-title"
+        class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
+      >
+        Find your next query faster.
+      </h1>
+      <p class="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+        Reopen recent work with its original database context, or keep a named query close for the
+        next run. This library belongs only to your account.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <Badge variant="secondary">{{ historyTotal() }} history entries</Badge>
+      <button Button type="button" (click)="openCreateSaved()">Save a query</button>
+    </div>
+  </header>
+
+  @if (notice()) {
+    <div
+      class="rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-primary"
+      role="status"
+    >
+      {{ notice() }}
+    </div>
+  }
+
+  <section
+    class="query-library-shell overflow-hidden rounded-xl border border-border bg-card/70 shadow-sm"
+  >
+    <div
+      class="flex flex-wrap items-center gap-2 border-b border-border/70 bg-muted/20 p-3"
+      role="tablist"
+      aria-label="Query library views"
+    >
+      <button
+        type="button"
+        role="tab"
+        class="library-tab"
+        [class.library-tab-active]="activeView() === 'history'"
+        [attr.aria-selected]="activeView() === 'history'"
+        (click)="switchView('history')"
+      >
+        History <span>{{ historyTotal() }}</span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="library-tab"
+        [class.library-tab-active]="activeView() === 'saved'"
+        [attr.aria-selected]="activeView() === 'saved'"
+        (click)="switchView('saved')"
+      >
+        Saved queries <span>{{ savedTotal() }}</span>
+      </button>
+    </div>
+
+    @if (activeView() === 'history') {
+      <div class="space-y-5 p-4 sm:p-6">
+        <div
+          class="grid gap-3 xl:grid-cols-[minmax(16rem,1.6fr)_10rem_13rem_10rem_10rem]"
+          aria-label="History filters"
+        >
+          <label
+            class="grid gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+          >
+            Search SQL
+            <input
+              class="h-10 rounded-md border border-input bg-background px-3 text-sm font-normal tracking-normal text-foreground"
+              [value]="search()"
+              (input)="onSearch($any($event.target).value)"
+              placeholder="Find a table, command, or phrase"
+              aria-label="Search SQL history"
+            />
+          </label>
+          <label
+            class="grid gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+          >
+            Status
+            <select
+              class="h-10 rounded-md border border-input bg-background px-2 text-sm font-normal tracking-normal text-foreground"
+              [value]="status()"
+              (change)="onStatus($any($event.target).value)"
+            >
+              <option value="">All statuses</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </label>
+          <label
+            class="grid gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+          >
+            Connection
+            <select
+              class="h-10 rounded-md border border-input bg-background px-2 text-sm font-normal tracking-normal text-foreground"
+              [value]="connectionFilter()"
+              (change)="onConnectionFilter($any($event.target).value)"
+            >
+              <option value="">All connections</option>
+              @for (connection of connections(); track connection.id) {
+                <option [value]="connection.id">{{ connection.label }}</option>
+              }
+            </select>
+          </label>
+          <label
+            class="grid gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+          >
+            From
+            <input
+              class="h-10 rounded-md border border-input bg-background px-2 text-sm font-normal tracking-normal text-foreground"
+              type="date"
+              [value]="fromDate()"
+              (change)="onDateChange('from', $any($event.target).value)"
+              aria-label="History from date"
+            />
+          </label>
+          <label
+            class="grid gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+          >
+            To
+            <input
+              class="h-10 rounded-md border border-input bg-background px-2 text-sm font-normal tracking-normal text-foreground"
+              type="date"
+              [value]="toDate()"
+              (change)="onDateChange('to', $any($event.target).value)"
+              aria-label="History to date"
+            />
+          </label>
+        </div>
+
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/15 bg-primary/[0.04] px-4 py-3 text-sm"
+        >
+          <p class="text-muted-foreground">
+            History keeps the SQL and execution summary, never result data. Your current retention
+            limit is <strong class="text-foreground">{{ retentionLimit() }}</strong> entries.
+          </p>
+          <button
+            Button
+            type="button"
+            variant="outline"
+            size="sm"
+            [disabled]="historyTotal() === 0"
+            (click)="requestClearHistory()"
+          >
+            Clear all history
+          </button>
+        </div>
+
+        @if (historyError()) {
+          <div
+            class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            role="alert"
+          >
+            <span>{{ historyError() }}</span>
+            <button Button type="button" variant="outline" size="sm" (click)="loadHistory()">
+              Try again
+            </button>
+          </div>
+        } @else if (historyLoading() && history().length === 0) {
+          <div class="space-y-3" role="status" aria-label="Loading query history">
+            @for (placeholder of [1, 2, 3]; track placeholder) {
+              <div class="h-28 animate-pulse rounded-lg bg-muted"></div>
+            }
+          </div>
+        } @else if (history().length === 0) {
+          <div
+            class="library-empty rounded-lg border border-dashed border-border px-6 py-14 text-center"
+          >
+            <p class="text-lg font-semibold">No matching history</p>
+            <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+              Run a query from the editor and it will appear here. Failed executions are kept too,
+              so your next debugging pass starts with context.
+            </p>
+          </div>
+        } @else {
+          <cdk-virtual-scroll-viewport
+            itemSize="156"
+            class="history-virtual-list"
+            aria-label="Query history results"
+          >
+            <article
+              *cdkVirtualFor="let entry of history(); trackBy: trackHistory"
+              class="history-row"
+              [attr.data-history-id]="entry.id"
+            >
+              <div class="min-w-0 flex-1 space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <Badge
+                    [variant]="
+                      entry.status === 'failed'
+                        ? 'destructive'
+                        : entry.status === 'completed'
+                          ? 'secondary'
+                          : 'outline'
+                    "
+                    >{{ statusLabel(entry.status) }}</Badge
+                  >
+                  <span class="text-xs text-muted-foreground">{{
+                    connectionLabel(entry.connection)
+                  }}</span>
+                  <span class="text-xs text-muted-foreground">{{
+                    entry.database || 'No database'
+                  }}</span>
+                  <time
+                    class="ms-auto text-xs text-muted-foreground"
+                    [attr.datetime]="entry.executedAt"
+                    >{{ entry.executedAt | date: 'MMM d, y · HH:mm' }}</time
+                  >
+                </div>
+                <code class="history-sql">{{ entry.sql }}</code>
+                <p class="text-xs text-muted-foreground">
+                  {{ entry.durationMs ?? 0 }} ms · {{ entry.rowCount ?? 0 }} rows{{
+                    entry.connection === null ? ' · choose a connection before running' : ''
+                  }}
+                </p>
+              </div>
+              <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <button Button type="button" size="sm" (click)="openHistory(entry)">
+                  Open in tab
+                </button>
+                <button
+                  Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  (click)="copySql(entry.sql)"
+                >
+                  Copy SQL
+                </button>
+                <button
+                  Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  (click)="deleteHistoryEntry(entry)"
+                >
+                  Delete
+                </button>
+              </div>
+            </article>
+          </cdk-virtual-scroll-viewport>
+          <div
+            class="flex items-center justify-between gap-3 border-t border-border/70 pt-4 text-xs text-muted-foreground"
+          >
+            <span>Page {{ historyPage() }} of {{ historyPages() }}</span>
+            <div class="flex gap-2">
+              <button
+                Button
+                type="button"
+                variant="outline"
+                size="sm"
+                [disabled]="historyPage() <= 1"
+                (click)="loadHistory(historyPage() - 1)"
+              >
+                Previous
+              </button>
+              <button
+                Button
+                type="button"
+                variant="outline"
+                size="sm"
+                [disabled]="historyPage() >= historyPages()"
+                (click)="loadHistory(historyPage() + 1)"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="space-y-5 p-4 sm:p-6">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-semibold tracking-tight">Saved queries</h2>
+            <p class="mt-1 text-sm text-muted-foreground">
+              Named SQL snippets with optional tags and database context.
+            </p>
+          </div>
+          <button Button type="button" (click)="openCreateSaved()">Create saved query</button>
+        </div>
+        @if (savedError()) {
+          <div
+            class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            role="alert"
+          >
+            <span>{{ savedError() }}</span>
+            <button Button type="button" variant="outline" size="sm" (click)="loadSaved()">
+              Try again
+            </button>
+          </div>
+        } @else if (savedLoading() && savedQueries().length === 0) {
+          <div class="space-y-3" role="status" aria-label="Loading saved queries">
+            @for (placeholder of [1, 2]; track placeholder) {
+              <div class="h-28 animate-pulse rounded-lg bg-muted"></div>
+            }
+          </div>
+        } @else if (savedQueries().length === 0) {
+          <div
+            class="library-empty rounded-lg border border-dashed border-border px-6 py-14 text-center"
+          >
+            <p class="text-lg font-semibold">Your query shelf is empty</p>
+            <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+              Save a query from the editor or create one here. Tags make the useful ones easy to
+              scan later.
+            </p>
+            <button Button type="button" class="mt-5" (click)="openCreateSaved()">
+              Create your first saved query
+            </button>
+          </div>
+        } @else {
+          <cdk-virtual-scroll-viewport
+            itemSize="156"
+            class="history-virtual-list"
+            aria-label="Saved queries"
+          >
+            <article
+              *cdkVirtualFor="let query of savedQueries(); trackBy: trackSaved"
+              class="history-row"
+              [attr.data-saved-id]="query.id"
+            >
+              <div class="min-w-0 flex-1 space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base font-semibold text-foreground">{{ query.name }}</h3>
+                  @for (tag of query.tags; track tag) {
+                    <span class="query-tag">#{{ tag }}</span>
+                  }
+                  <span class="ms-auto text-xs text-muted-foreground"
+                    >{{ connectionLabel(query.connection) }} ·
+                    {{ query.database || 'No database' }}</span
+                  >
+                </div>
+                <code class="history-sql">{{ query.sql }}</code>
+                <p class="text-xs text-muted-foreground">
+                  Updated {{ query.updatedAt | date: 'MMM d, y · HH:mm'
+                  }}{{ query.connection === null ? ' · context needs a connection' : '' }}
+                </p>
+              </div>
+              <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <button Button type="button" size="sm" (click)="openSaved(query)">
+                  Open in tab
+                </button>
+                <button
+                  Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  (click)="copySql(query.sql)"
+                >
+                  Copy SQL
+                </button>
+                <button
+                  Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  (click)="openEditSaved(query)"
+                >
+                  Edit
+                </button>
+                <button Button type="button" size="sm" variant="ghost" (click)="deleteSaved(query)">
+                  Delete
+                </button>
+              </div>
+            </article>
+          </cdk-virtual-scroll-viewport>
+          <div
+            class="flex items-center justify-between gap-3 border-t border-border/70 pt-4 text-xs text-muted-foreground"
+          >
+            <span>Page {{ savedPage() }} of {{ savedPages() }}</span>
+            <div class="flex gap-2">
+              <button
+                Button
+                type="button"
+                variant="outline"
+                size="sm"
+                [disabled]="savedPage() <= 1"
+                (click)="loadSaved(savedPage() - 1)"
+              >
+                Previous
+              </button>
+              <button
+                Button
+                type="button"
+                variant="outline"
+                size="sm"
+                [disabled]="savedPage() >= savedPages()"
+                (click)="loadSaved(savedPage() + 1)"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</main>
+
+<Dialog
+  [open]="savedOpen()"
+  (openChange)="savedOpen.set($event)"
+  [showCloseButton]="false"
+  class="sm:max-w-2xl"
+>
+  <DialogHeader>
+    <DialogTitle>{{ editingSaved() ? 'Edit saved query' : 'Save query' }}</DialogTitle>
+    <DialogDescription
+      >Keep the SQL private to your account. The connection context is optional and can be restored
+      when you open it again.</DialogDescription
+    >
+  </DialogHeader>
+  <DialogContent class="grid gap-5 py-2">
+    <label class="grid gap-2 text-sm font-medium"
+      >Name<input
+        class="h-10 rounded-md border border-input bg-background px-3 font-normal text-foreground"
+        [value]="savedName()"
+        (input)="savedName.set($any($event.target).value)"
+        placeholder="Recent orders"
+    /></label>
+    <label class="grid gap-2 text-sm font-medium"
+      >SQL<textarea
+        class="min-h-40 rounded-md border border-input bg-background px-3 py-2 font-mono text-sm font-normal text-foreground"
+        [value]="savedSql()"
+        (input)="savedSql.set($any($event.target).value)"
+        placeholder="SELECT …"
+      ></textarea>
+    </label>
+    <label class="grid gap-2 text-sm font-medium"
+      >Tags <span class="font-normal text-muted-foreground">comma separated</span
+      ><input
+        class="h-10 rounded-md border border-input bg-background px-3 font-normal text-foreground"
+        [value]="savedTags()"
+        (input)="savedTags.set($any($event.target).value)"
+        placeholder="reporting, daily"
+    /></label>
+  </DialogContent>
+  <DialogFooter>
+    <button Button type="button" variant="outline" DialogClose>Cancel</button>
+    <button Button type="button" [disabled]="savingSaved()" (click)="saveQuery()">
+      {{ savingSaved() ? 'Saving…' : editingSaved() ? 'Update query' : 'Save query' }}
+    </button>
+  </DialogFooter>
+</Dialog>
+
+<AlertDialog [(open)]="clearOpen">
+  <AlertDialogContent size="sm">
+    <AlertDialogHeader>
+      <AlertDialogTitle>Clear all query history?</AlertDialogTitle>
+      <AlertDialogDescription
+        >This removes {{ historyTotal() }} history entries from your account. Saved queries are not
+        affected.</AlertDialogDescription
+      >
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <button type="button" AlertDialogCancel>Keep history</button>
+      <button type="button" AlertDialogAction (click)="clearHistory()">Clear history</button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>

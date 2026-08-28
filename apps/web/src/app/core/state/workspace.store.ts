@@ -204,10 +204,20 @@ function persistableContext(context: Readonly<Record<string, unknown>>) {
     database?: string;
     schema?: string;
     draftSql?: string;
+    connectionMissing?: boolean;
+    savedQueryName?: string;
   } = {};
-  for (const key of ['route', 'connectionId', 'database', 'schema', 'draftSql'] as const) {
+  for (const key of [
+    'route',
+    'connectionId',
+    'database',
+    'schema',
+    'draftSql',
+    'connectionMissing',
+    'savedQueryName',
+  ] as const) {
     const value = context[key];
-    if (typeof value === 'string') result[key] = value;
+    if (typeof value === 'string' || typeof value === 'boolean') result[key] = value as never;
   }
   return result;
 }

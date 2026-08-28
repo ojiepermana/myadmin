@@ -38,10 +38,8 @@ if (configuredTargets.length === targets.length) {
 }
 
 if (configuredTargets.length !== targets.length) {
-  test.skip(
-    'MySQL integration is skipped until MYSQL_8_0_URL and MYSQL_LATEST_URL are configured',
-    () => undefined,
-  );
+  test.skip('MySQL integration is skipped until MYSQL_8_0_URL and MYSQL_LATEST_URL are configured', () =>
+    undefined);
 }
 
 function contextFromUrl(value: string, secretOverride?: string): ConnectionContext {

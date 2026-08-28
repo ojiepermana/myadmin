@@ -76,11 +76,13 @@ export interface QueryHistoryFilter {
 
 export interface QueryHistoryRepository {
   append(entry: QueryHistoryEntry): void;
+  findById(id: EntityId): QueryHistoryEntry | null;
   listByUser(
     userId: EntityId,
     filter?: QueryHistoryFilter,
     page?: PageRequest,
   ): Page<QueryHistoryEntry>;
+  delete(id: EntityId): void;
   deleteByUser(userId: EntityId): number;
   enforceRetention(userId: EntityId, max?: number): number;
 }
@@ -89,6 +91,7 @@ export interface SavedQueryRepository {
   create(query: SavedQuery): void;
   findById(id: EntityId): SavedQuery | null;
   listByUser(userId: EntityId): SavedQuery[];
+  listByUserPage(userId: EntityId, page?: PageRequest): Page<SavedQuery>;
   update(query: SavedQuery): void;
   delete(id: EntityId): void;
 }

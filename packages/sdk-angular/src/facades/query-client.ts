@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import type { components, operations, QueryExecutionPayload } from '@myadmin/api-contract';
-import { type Observable } from 'rxjs';
+import { map, type Observable } from 'rxjs';
 import {
   MYADMIN_REALTIME_CLIENT,
   type RealtimeClient,
@@ -19,6 +19,15 @@ export type QueryAutocompleteResponse =
   operations['getQueryMetadata']['responses'][200]['content']['application/json'];
 export type QuerySessionCloseResponse =
   operations['closeQuerySession']['responses'][200]['content']['application/json'];
+export type QueryHistoryItem = components['schemas']['QueryHistoryItem'];
+export type QueryHistoryPage =
+  operations['listQueryHistory']['responses'][200]['content']['application/json'];
+export type QueryHistoryQuery = NonNullable<operations['listQueryHistory']['parameters']['query']>;
+export type SavedQuery = components['schemas']['SavedQuery'];
+export type SavedQueryInput = components['schemas']['SavedQueryInput'];
+export type SavedQueryPatch = components['schemas']['SavedQueryPatch'];
+export type SavedQueryPage =
+  operations['listSavedQueries']['responses'][200]['content']['application/json'];
 
 function queryString(parameters: Record<string, string | undefined>): string {
   const search = new URLSearchParams();
@@ -102,6 +111,80 @@ export class QueryClient {
       ...(force ? { body: { force: true } } : {}),
       requiresSession: true,
     });
+  }
+
+  public listHistory(query: QueryHistoryQuery = {}): Observable<QueryHistoryPage> {
+    const search = queryString({
+      q: query.q,
+      connectionId: query.connectionId,
+      status: query.status,
+      from: query.from,
+      to: query.to,
+      page: query.page === undefined ? undefined : String(query.page),
+      pageSize: query.pageSize === undefined ? undefined : String(query.pageSize),
+    });
+    return this.transport.request<QueryHistoryPage>({
+      method: 'GET',
+      path: `/query/history${search ? `?${search}` : ''}`,
+      requiresSession: true,
+    });
+  }
+
+  public deleteHistory(id: string): Observable<void> {
+    return this.transport
+      .request<unknown>({
+        method: 'DELETE',
+        path: `/query/history/${encodeURIComponent(id)}`,
+        requiresSession: true,
+      })
+      .pipe(map(() => undefined));
+  }
+
+  public clearHistory(): Observable<void> {
+    return this.transport
+      .request<unknown>({
+        method: 'DELETE',
+        path: '/query/history',
+        requiresSession: true,
+      })
+      .pipe(map(() => undefined));
+  }
+
+  public listSaved(page = 1, pageSize = 20): Observable<SavedQueryPage> {
+    const search = queryString({ page: String(page), pageSize: String(pageSize) });
+    return this.transport.request<SavedQueryPage>({
+      method: 'GET',
+      path: `/query/saved?${search}`,
+      requiresSession: true,
+    });
+  }
+
+  public createSaved(request: SavedQueryInput): Observable<SavedQuery> {
+    return this.transport.request<SavedQuery>({
+      method: 'POST',
+      path: '/query/saved',
+      body: request,
+      requiresSession: true,
+    });
+  }
+
+  public updateSaved(id: string, request: SavedQueryPatch): Observable<SavedQuery> {
+    return this.transport.request<SavedQuery>({
+      method: 'PATCH',
+      path: `/query/saved/${encodeURIComponent(id)}`,
+      body: request,
+      requiresSession: true,
+    });
+  }
+
+  public deleteSaved(id: string): Observable<void> {
+    return this.transport
+      .request<unknown>({
+        method: 'DELETE',
+        path: `/query/saved/${encodeURIComponent(id)}`,
+        requiresSession: true,
+      })
+      .pipe(map(() => undefined));
   }
 
   /** Watches realtime updates while polling so a dropped WebSocket cannot strand a tab. */

@@ -308,3 +308,194 @@ QueryExplainResponse:
     durationMs:
       type: integer
       minimum: 0
+
+QueryConnectionSummary:
+  type: object
+  additionalProperties: false
+  required: [id, label, engine]
+  properties:
+    id:
+      type: string
+      minLength: 1
+    label:
+      type: string
+      minLength: 1
+    engine:
+      type: string
+      enum: [postgresql, mysql]
+
+QueryHistoryItem:
+  type: object
+  additionalProperties: false
+  required:
+    - id
+    - connectionId
+    - connection
+    - database
+    - schema
+    - sql
+    - status
+    - durationMs
+    - rowCount
+    - executedAt
+  properties:
+    id:
+      type: string
+      minLength: 1
+    connectionId:
+      type: [string, 'null']
+    connection:
+      oneOf:
+        - $ref: '#/QueryConnectionSummary'
+        - type: 'null'
+    database:
+      type: [string, 'null']
+    schema:
+      type: [string, 'null']
+    sql:
+      type: string
+      minLength: 1
+    status:
+      type: string
+      minLength: 1
+    durationMs:
+      type: [integer, 'null']
+      minimum: 0
+    rowCount:
+      type: [integer, 'null']
+      minimum: 0
+    executedAt:
+      type: string
+      format: date-time
+
+QueryHistoryPage:
+  type: object
+  additionalProperties: false
+  required: [items, total, page, pageSize, retentionLimit]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/QueryHistoryItem'
+    total:
+      type: integer
+      minimum: 0
+    page:
+      type: integer
+      minimum: 1
+    pageSize:
+      type: integer
+      minimum: 1
+    retentionLimit:
+      type: integer
+      minimum: 0
+
+SavedQueryInput:
+  type: object
+  additionalProperties: false
+  required: [name, sql]
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 256
+    sql:
+      type: string
+      minLength: 1
+    connectionId:
+      type: [string, 'null']
+    database:
+      type: [string, 'null']
+    tags:
+      type: array
+      maxItems: 20
+      items:
+        type: string
+        minLength: 1
+        maxLength: 64
+
+SavedQueryPatch:
+  type: object
+  additionalProperties: false
+  minProperties: 1
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 256
+    sql:
+      type: string
+      minLength: 1
+    connectionId:
+      type: [string, 'null']
+    database:
+      type: [string, 'null']
+    tags:
+      type: array
+      maxItems: 20
+      items:
+        type: string
+        minLength: 1
+        maxLength: 64
+
+SavedQuery:
+  type: object
+  additionalProperties: false
+  required:
+    - id
+    - name
+    - sql
+    - tags
+    - connectionId
+    - connection
+    - database
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      minLength: 1
+    name:
+      type: string
+      minLength: 1
+    sql:
+      type: string
+      minLength: 1
+    tags:
+      type: array
+      items:
+        type: string
+        minLength: 1
+    connectionId:
+      type: [string, 'null']
+    connection:
+      oneOf:
+        - $ref: '#/QueryConnectionSummary'
+        - type: 'null'
+    database:
+      type: [string, 'null']
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+SavedQueryPage:
+  type: object
+  additionalProperties: false
+  required: [items, total, page, pageSize]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/SavedQuery'
+    total:
+      type: integer
+      minimum: 0
+    page:
+      type: integer
+      minimum: 1
+    pageSize:
+      type: integer
+      minimum: 1

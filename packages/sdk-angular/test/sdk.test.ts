@@ -453,6 +453,92 @@ describe('MyAdmin Angular SDK', () => {
     await expect(users).resolves.toMatchObject({ page: 2, total: 10 });
   });
 
+  it('AC-0036 serializes history filters and exposes saved-query CRUD with CSRF', async () => {
+    const sdk = TestBed.inject(MyadminSdk);
+    const history = firstValueFrom(
+      sdk.query.listHistory({
+        q: 'orders',
+        connectionId: 'connection-1',
+        status: 'completed',
+        from: '2026-08-28T00:00:00.000Z',
+        to: '2026-08-28T23:59:59.999Z',
+        page: 2,
+        pageSize: 10,
+      }),
+    );
+    const historyRequest = http.expectOne(
+      '/api/v1/query/history?q=orders&connectionId=connection-1&status=completed&from=2026-08-28T00%3A00%3A00.000Z&to=2026-08-28T23%3A59%3A59.999Z&page=2&pageSize=10',
+    );
+    expect(historyRequest.request.method).toBe('GET');
+    historyRequest.flush({ items: [], total: 0, page: 2, pageSize: 10, retentionLimit: 1000 });
+    await expect(history).resolves.toMatchObject({ page: 2, retentionLimit: 1000 });
+
+    const deleteEntry = firstValueFrom(sdk.query.deleteHistory('history/1'));
+    const deleteEntryRequest = http.expectOne('/api/v1/query/history/history%2F1');
+    expect(deleteEntryRequest.request.method).toBe('DELETE');
+    expect(deleteEntryRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    deleteEntryRequest.flush(null, { status: 204, statusText: 'No Content' });
+    await expect(deleteEntry).resolves.toBeUndefined();
+
+    const clearHistory = firstValueFrom(sdk.query.clearHistory());
+    const clearHistoryRequest = http.expectOne('/api/v1/query/history');
+    expect(clearHistoryRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    clearHistoryRequest.flush(null, { status: 204, statusText: 'No Content' });
+    await expect(clearHistory).resolves.toBeUndefined();
+
+    const saved = firstValueFrom(sdk.query.listSaved(1, 5));
+    const savedRequest = http.expectOne('/api/v1/query/saved?page=1&pageSize=5');
+    savedRequest.flush({ items: [], total: 0, page: 1, pageSize: 5 });
+    await expect(saved).resolves.toMatchObject({ total: 0 });
+
+    const created = firstValueFrom(
+      sdk.query.createSaved({ name: 'Daily orders', sql: 'SELECT * FROM orders', tags: ['daily'] }),
+    );
+    const createRequest = http.expectOne('/api/v1/query/saved');
+    expect(createRequest.request.method).toBe('POST');
+    expect(createRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    expect(createRequest.request.body).toEqual({
+      name: 'Daily orders',
+      sql: 'SELECT * FROM orders',
+      tags: ['daily'],
+    });
+    createRequest.flush({
+      id: 'saved-1',
+      name: 'Daily orders',
+      sql: 'SELECT * FROM orders',
+      tags: ['daily'],
+      connectionId: null,
+      connection: null,
+      database: null,
+      createdAt: '2026-08-28T00:00:00.000Z',
+      updatedAt: '2026-08-28T00:00:00.000Z',
+    });
+    await expect(created).resolves.toMatchObject({ id: 'saved-1', tags: ['daily'] });
+
+    const updated = firstValueFrom(sdk.query.updateSaved('saved/1', { name: 'Daily orders v2' }));
+    const updateRequest = http.expectOne('/api/v1/query/saved/saved%2F1');
+    expect(updateRequest.request.method).toBe('PATCH');
+    expect(updateRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    updateRequest.flush({
+      id: 'saved/1',
+      name: 'Daily orders v2',
+      sql: 'SELECT * FROM orders',
+      tags: [],
+      connectionId: null,
+      connection: null,
+      database: null,
+      createdAt: '2026-08-28T00:00:00.000Z',
+      updatedAt: '2026-08-28T00:00:00.000Z',
+    });
+    await expect(updated).resolves.toMatchObject({ name: 'Daily orders v2' });
+
+    const deleteSaved = firstValueFrom(sdk.query.deleteSaved('saved/1'));
+    const deleteSavedRequest = http.expectOne('/api/v1/query/saved/saved%2F1');
+    expect(deleteSavedRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    deleteSavedRequest.flush(null, { status: 204, statusText: 'No Content' });
+    await expect(deleteSaved).resolves.toBeUndefined();
+  });
+
   it('AC-6 connects, sends subscriptions, dispatches typed events, and resubscribes after backoff', async () => {
     vi.useFakeTimers();
     FakeRealtimeSocket.instances.length = 0;

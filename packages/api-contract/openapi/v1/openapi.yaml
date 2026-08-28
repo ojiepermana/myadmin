@@ -115,6 +115,14 @@ paths:
     $ref: ./paths/security-principal.yaml
   /security/principals/{name}/reset-password:
     $ref: ./paths/security-principal-reset.yaml
+  /query/history:
+    $ref: ./paths/query-history.yaml
+  /query/history/{id}:
+    $ref: ./paths/query-history-by-id.yaml
+  /query/saved:
+    $ref: ./paths/query-saved.yaml
+  /query/saved/{id}:
+    $ref: ./paths/query-saved-by-id.yaml
 components:
   schemas:
     ApiError:
@@ -301,6 +309,20 @@ components:
       $ref: ./components/schemas/query.yaml#/QueryExplainResponse
     QuerySessionCloseRequest:
       $ref: ./components/schemas/query.yaml#/QuerySessionCloseRequest
+    QueryConnectionSummary:
+      $ref: ./components/schemas/query.yaml#/QueryConnectionSummary
+    QueryHistoryItem:
+      $ref: ./components/schemas/query.yaml#/QueryHistoryItem
+    QueryHistoryPage:
+      $ref: ./components/schemas/query.yaml#/QueryHistoryPage
+    SavedQueryInput:
+      $ref: ./components/schemas/query.yaml#/SavedQueryInput
+    SavedQueryPatch:
+      $ref: ./components/schemas/query.yaml#/SavedQueryPatch
+    SavedQuery:
+      $ref: ./components/schemas/query.yaml#/SavedQuery
+    SavedQueryPage:
+      $ref: ./components/schemas/query.yaml#/SavedQueryPage
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

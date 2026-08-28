@@ -49,12 +49,20 @@ class HistoryFake implements QueryHistoryRepository {
     this.entries.push(entry);
   }
 
+  findById(id: string): QueryHistoryEntry | null {
+    return this.entries.find((entry) => entry.id === id) ?? null;
+  }
+
   listByUser(): never {
     throw new Error('not used');
   }
 
   deleteByUser(): number {
     return 0;
+  }
+
+  delete(): void {
+    // This fake is only used to assert execution history writes.
   }
 
   enforceRetention(): number {

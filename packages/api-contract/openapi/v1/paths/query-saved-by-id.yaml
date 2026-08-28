@@ -1,0 +1,95 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Saved query identifier.
+    schema:
+      type: string
+      minLength: 1
+patch:
+  operationId: updateSavedQuery
+  tags: [query]
+  summary: Update an owned saved query
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/query.yaml#/SavedQueryPatch
+  responses:
+    '200':
+      description: Saved query updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/SavedQuery
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or origin validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The saved query or selected connection is unavailable to the user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The name is already used by this user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The saved query patch is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+
+delete:
+  operationId: deleteSavedQuery
+  tags: [query]
+  summary: Delete an owned saved query
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  responses:
+    '204':
+      description: Saved query deleted.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or origin validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The saved query does not exist or is not owned by the user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

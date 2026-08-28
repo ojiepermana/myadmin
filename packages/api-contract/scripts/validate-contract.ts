@@ -66,6 +66,10 @@ const initialPaths = {
   '/security/principals/form': 'paths/security-principal-form.yaml',
   '/security/principals/{name}': 'paths/security-principal.yaml',
   '/security/principals/{name}/reset-password': 'paths/security-principal-reset.yaml',
+  '/query/history': 'paths/query-history.yaml',
+  '/query/history/{id}': 'paths/query-history-by-id.yaml',
+  '/query/saved': 'paths/query-saved.yaml',
+  '/query/saved/{id}': 'paths/query-saved-by-id.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);
@@ -215,6 +219,13 @@ async function assertContractRules(): Promise<void> {
     'PrincipalChangeRequest',
     'PrincipalResetPasswordRequest',
     'PrincipalDropRequest',
+    'QueryConnectionSummary',
+    'QueryHistoryItem',
+    'QueryHistoryPage',
+    'SavedQueryInput',
+    'SavedQueryPatch',
+    'SavedQuery',
+    'SavedQueryPage',
   ]) {
     if (!(schemaName in schemas)) {
       throw new Error(`components.schemas.${schemaName} is missing`);

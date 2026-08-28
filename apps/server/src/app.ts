@@ -71,6 +71,7 @@ import { registerQueryRoutes } from './query/routes';
 import { registerObjectExplorerRoutes } from './object-explorer/routes';
 import { PrincipalSecurityService } from './security/security';
 import { registerSecurityRoutes } from './security/routes';
+import { QueryHistoryService } from './query/query-history';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -102,6 +103,7 @@ export interface ServerStartOptions {
   realtimeHub?: RealtimeHub;
   canSubscribeQuery?: (userId: string, executionId: string) => boolean;
   queryExecutionService?: QueryExecutionService;
+  queryHistoryService?: QueryHistoryService;
   observability?: ObservabilityOptions;
 }
 
@@ -134,6 +136,7 @@ export interface ServerAppOptions {
   realtimeHub?: RealtimeHub;
   canSubscribeQuery?: (userId: string, executionId: string) => boolean;
   queryExecutionService?: QueryExecutionService;
+  queryHistoryService?: QueryHistoryService;
   observability?: ObservabilityOptions;
 }
 
@@ -1366,6 +1369,17 @@ export function createServerApp(options: ServerAppOptions = {}) {
   }
 
   let queryExecutionService = options.queryExecutionService;
+  const queryHistoryService =
+    options.queryHistoryService ??
+    (runtimeStore
+      ? new QueryHistoryService({
+          historyRepository: runtimeStore.queryHistory,
+          savedQueryRepository: runtimeStore.savedQueries,
+          connectionRepository: runtimeStore.connections,
+          retentionLimit: () =>
+            runtimeStore.settingsService.getSetting('history.maxEntriesPerUser'),
+        })
+      : undefined);
   const realtimeHub =
     options.realtimeHub ??
     new RealtimeHub({
@@ -1502,6 +1516,7 @@ export function createServerApp(options: ServerAppOptions = {}) {
       authService,
       setupService,
       queryService: queryExecutionService,
+      historyService: queryHistoryService,
       secureCookies,
     });
   }
@@ -1580,6 +1595,12 @@ export function createApp(
     connectionManager,
     historyRepository: store.queryHistory,
   });
+  const queryHistoryService = new QueryHistoryService({
+    historyRepository: store.queryHistory,
+    savedQueryRepository: store.savedQueries,
+    connectionRepository: store.connections,
+    retentionLimit: () => store.settingsService.getSetting('history.maxEntriesPerUser'),
+  });
 
   let application: AnyElysia = installObservability(
     new Elysia(),
@@ -1632,6 +1653,7 @@ export function createApp(
     authService,
     setupService,
     queryService: queryExecutionService,
+    historyService: queryHistoryService,
     secureCookies: false,
   });
   application = registerObjectExplorerRoutes(application, '', {
@@ -1712,6 +1734,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       realtimeHub: options.realtimeHub,
       canSubscribeQuery: options.canSubscribeQuery,
       queryExecutionService: options.queryExecutionService,
+      queryHistoryService: options.queryHistoryService,
       observability: options.observability,
     });
     serverApp.listen({ hostname: options.host ?? host, port: options.port ?? port });

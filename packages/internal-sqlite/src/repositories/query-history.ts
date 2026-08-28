@@ -12,6 +12,7 @@ import {
   historyMaxFromSettings,
   pageOf,
   pageWindow,
+  prepare,
   toIso,
   validateRetentionLimit,
   type RepositoryOptions,
@@ -113,6 +114,14 @@ export class SqliteQueryHistoryRepository implements QueryHistoryRepository {
     this.enforceRetention(entry.userId);
   }
 
+  public findById(id: string): QueryHistoryEntry | null {
+    const row = prepare<QueryHistoryRow>(
+      this.database,
+      `SELECT ${QUERY_HISTORY_COLUMNS} FROM query_history WHERE id = ?`,
+    ).get(id);
+    return row ? mapQueryHistory(row) : null;
+  }
+
   public listByUser(
     userId: string,
     filter?: QueryHistoryFilter,
@@ -139,6 +148,10 @@ export class SqliteQueryHistoryRepository implements QueryHistoryRepository {
     return changes(
       this.database.prepare('DELETE FROM query_history WHERE user_id = ?').run(userId),
     );
+  }
+
+  public delete(id: string): void {
+    this.database.prepare('DELETE FROM query_history WHERE id = ?').run(id);
   }
 
   public enforceRetention(

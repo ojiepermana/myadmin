@@ -339,6 +339,11 @@ export class FakeQueryHistoryRepository implements QueryHistoryRepository {
     this.enforceRetention(entry.userId);
   }
 
+  public findById(id: string): QueryHistoryEntry | null {
+    const entry = this.entries.find((candidate) => candidate.id === id);
+    return entry ? copy(entry) : null;
+  }
+
   public listByUser(
     userId: string,
     filter?: QueryHistoryFilter,
@@ -369,6 +374,11 @@ export class FakeQueryHistoryRepository implements QueryHistoryRepository {
       if (this.entries[index]?.userId === userId) this.entries.splice(index, 1);
     }
     return before - this.entries.length;
+  }
+
+  public delete(id: string): void {
+    const index = this.entries.findIndex((entry) => entry.id === id);
+    if (index >= 0) this.entries.splice(index, 1);
   }
 
   public enforceRetention(userId: string, max?: number): number {
@@ -418,6 +428,10 @@ export class FakeSavedQueryRepository implements SavedQueryRepository {
       .filter((query) => query.userId === userId)
       .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id))
       .map(copy);
+  }
+
+  public listByUserPage(userId: string, page?: PageRequest): Page<SavedQuery> {
+    return pageOf(this.listByUser(userId), page);
   }
 
   public update(query: SavedQuery): void {

@@ -34,6 +34,8 @@ import {
   type QueryExecution,
   type QueryExecutionRequest,
   type QueryExplainResponse,
+  type QueryHistoryItem,
+  type SavedQuery,
 } from '@myadmin/sdk-angular';
 import {
   TabsComponent,
@@ -43,9 +45,19 @@ import {
 } from '@ojiepermana/angular/component/tabs';
 import { firstValueFrom } from 'rxjs';
 import { ConnectionStatusStore } from '../../core/connections/connection-status.store';
-import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { WorkspaceStore } from '../../core/state/workspace.store';
 import { ResultGrid } from '../../shared/database-components/result-grid';
+import { ButtonComponent } from '@ojiepermana/angular/component/button';
+import {
+  DialogCloseDirective,
+  DialogComponent,
+  DialogContentComponent,
+  DialogDescriptionComponent,
+  DialogFooterComponent,
+  DialogHeaderComponent,
+  DialogTitleComponent,
+} from '@ojiepermana/angular/component/dialog';
+import { QueryTabLauncher } from './query-tab-launcher.service';
 
 type MetadataKind = 'schemas' | 'objects' | 'columns';
 
@@ -65,6 +77,14 @@ type MetadataKind = 'schemas' | 'objects' | 'columns';
     AlertDialogFooterComponent,
     AlertDialogHeaderComponent,
     AlertDialogTitleComponent,
+    ButtonComponent,
+    DialogCloseDirective,
+    DialogComponent,
+    DialogContentComponent,
+    DialogDescriptionComponent,
+    DialogFooterComponent,
+    DialogHeaderComponent,
+    DialogTitleComponent,
   ],
   templateUrl: './query-editor.html',
   styleUrl: './query-editor.scss',
@@ -77,8 +97,8 @@ export class QueryEditor implements AfterViewInit {
   private readonly workspace = inject(WorkspaceStore);
   private readonly sdk = inject(MyadminSdk);
   private readonly connectionStatuses = inject(ConnectionStatusStore);
+  private readonly launcher = inject(QueryTabLauncher);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly errorPresenter = inject(ErrorPresenterService);
   private readonly language = new Compartment();
   private editor?: EditorView;
   private stopWatching?: () => void;
@@ -90,6 +110,7 @@ export class QueryEditor implements AfterViewInit {
   protected readonly database = signal(this.contextString('database'));
   protected readonly schema = signal(this.contextString('schema'));
   protected readonly sqlText = signal(this.contextString('draftSql') || 'SELECT 1;');
+  protected readonly connectionMissing = signal(this.contextBoolean('connectionMissing'));
   protected readonly execution = signal<QueryExecution | null>(null);
   protected readonly activeResultTab = signal('statement-0');
   protected readonly loadingConnections = signal(true);
@@ -137,6 +158,15 @@ export class QueryEditor implements AfterViewInit {
     }
     return execution.error?.position ?? null;
   });
+  protected readonly quickHistory = signal<QueryHistoryItem[]>([]);
+  protected readonly quickSaved = signal<SavedQuery[]>([]);
+  protected readonly quickLoading = signal(true);
+  protected readonly saveOpen = signal(false);
+  protected readonly overwriteOpen = signal(false);
+  protected readonly savedName = signal('');
+  protected readonly savedTags = signal('');
+  protected readonly overwriteTarget = signal<SavedQuery | null>(null);
+  protected readonly saving = signal(false);
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -144,6 +174,7 @@ export class QueryEditor implements AfterViewInit {
       this.editor?.destroy();
     });
     void this.loadConnections();
+    void this.loadQuickLibrary();
   }
 
   ngAfterViewInit(): void {
@@ -254,6 +285,7 @@ export class QueryEditor implements AfterViewInit {
     this.connectionId.set(id);
     this.explainResult.set(null);
     this.explainMessage.set(null);
+    this.connectionMissing.set(false);
     const connection = this.connections().find((item) => item.id === id);
     if (!this.database() && connection?.database) this.database.set(connection.database);
     this.persistContext();
@@ -268,6 +300,107 @@ export class QueryEditor implements AfterViewInit {
   protected onSchemaChange(value: string): void {
     this.schema.set(value);
     this.persistContext();
+  }
+
+  protected openQuickHistory(entry: QueryHistoryItem): void {
+    this.launcher.open({
+      sql: entry.sql,
+      connectionId: entry.connection === null ? null : entry.connectionId,
+      database: entry.database,
+      schema: entry.schema,
+      title: entry.connection
+        ? `History · ${entry.connection.label}`
+        : 'History · choose connection',
+      connectionMissing: entry.connection === null,
+    });
+  }
+
+  protected openQuickSaved(query: SavedQuery): void {
+    this.launcher.open({
+      sql: query.sql,
+      connectionId: query.connection === null ? null : query.connectionId,
+      database: query.database,
+      title: query.name,
+      savedQueryName: query.name,
+      connectionMissing: query.connection === null,
+    });
+  }
+
+  protected openSaveDialog(): void {
+    const currentTab = this.workspace.tabs().find((tab) => tab.id === this.tabId);
+    this.savedName.set(this.contextString('savedQueryName') || currentTab?.title || 'Saved query');
+    this.savedTags.set('');
+    this.saveOpen.set(true);
+  }
+
+  protected async saveQuery(): Promise<void> {
+    const name = this.savedName().trim();
+    const sql = this.editor?.state.doc.toString().trim() || this.sqlText().trim();
+    if (!name || !sql) {
+      this.message.set('A name and SQL are required before saving.');
+      return;
+    }
+    this.saving.set(true);
+    this.message.set(null);
+    try {
+      const created = await firstValueFrom(
+        this.sdk.query.createSaved({
+          name,
+          sql,
+          tags: this.tagValues(),
+          ...(this.connectionId() ? { connectionId: this.connectionId() } : {}),
+          ...(this.database().trim() ? { database: this.database().trim() } : {}),
+        }),
+      );
+      this.workspace.updateTabContext(this.tabId, { savedQueryName: created.name });
+      this.saveOpen.set(false);
+      this.notice(`Saved “${created.name}”.`);
+      await this.loadQuickLibrary();
+    } catch (error) {
+      if (this.errorCode(error) === 'SAVED_QUERY_NAME_CONFLICT') {
+        await this.loadQuickLibrary();
+        const existing = this.quickSaved().find((query) => query.name === name);
+        if (existing) {
+          this.overwriteTarget.set(existing);
+          this.saveOpen.set(false);
+          this.overwriteOpen.set(true);
+        } else {
+          this.message.set('A saved query already uses that name. Choose another name.');
+        }
+      } else {
+        this.message.set(error instanceof Error ? error.message : 'The query could not be saved.');
+      }
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  protected async overwriteQuery(): Promise<void> {
+    const target = this.overwriteTarget();
+    if (!target) return;
+    this.saving.set(true);
+    try {
+      const updated = await firstValueFrom(
+        this.sdk.query.updateSaved(target.id, {
+          name: this.savedName().trim(),
+          sql: this.editor?.state.doc.toString().trim() || this.sqlText().trim(),
+          tags: this.tagValues(),
+          ...(this.connectionId() ? { connectionId: this.connectionId() } : { connectionId: null }),
+          ...(this.database().trim() ? { database: this.database().trim() } : { database: null }),
+        }),
+      );
+      this.workspace.updateTabContext(this.tabId, { savedQueryName: updated.name });
+      this.overwriteOpen.set(false);
+      this.overwriteTarget.set(null);
+      this.notice(`Updated “${updated.name}”.`);
+      await this.loadQuickLibrary();
+    } catch (error) {
+      this.message.set(
+        error instanceof Error ? error.message : 'The saved query could not be updated.',
+      );
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   protected jumpToError(): void {
@@ -498,10 +631,49 @@ export class QueryEditor implements AfterViewInit {
     }
   }
 
+  private async loadQuickLibrary(): Promise<void> {
+    this.quickLoading.set(true);
+    try {
+      const [history, saved] = await Promise.all([
+        firstValueFrom(this.sdk.query.listHistory({ page: 1, pageSize: 5 })),
+        firstValueFrom(this.sdk.query.listSaved(1, 5)),
+      ]);
+      this.quickHistory.set(history.items);
+      this.quickSaved.set(saved.items);
+    } catch {
+      this.quickHistory.set([]);
+      this.quickSaved.set([]);
+    } finally {
+      this.quickLoading.set(false);
+    }
+  }
+
+  private tagValues(): string[] {
+    return this.savedTags()
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  private notice(text: string): void {
+    this.message.set(text);
+  }
+
+  private errorCode(error: unknown): string | undefined {
+    return typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code: unknown }).code)
+      : undefined;
+  }
+
   private contextString(key: string): string {
     const tab = this.workspace.tabs().find((item) => item.id === this.tabId);
     const value = tab?.context[key];
     return typeof value === 'string' ? value : '';
+  }
+
+  private contextBoolean(key: string): boolean {
+    const tab = this.workspace.tabs().find((item) => item.id === this.tabId);
+    return tab?.context[key] === true;
   }
 
   private persistContext(): void {

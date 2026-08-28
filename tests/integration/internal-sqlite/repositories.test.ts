@@ -158,6 +158,7 @@ function savedQuery(id = 'saved-1'): SavedQuery {
     userId: 'user-1',
     name: 'Recent orders',
     sqlText: 'SELECT * FROM orders',
+    tags: ['orders'],
     connectionId: 'connection-1',
     database: 'app',
     createdAt,

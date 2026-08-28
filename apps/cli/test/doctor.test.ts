@@ -167,7 +167,13 @@ describe('IT-0007-AC1 and IT-0007-AC2 doctor checks', () => {
       status: 'warning',
       message: 'Internal SQLite needs migration from version none.',
       action: 'Run myadmin migrate, then run myadmin doctor again.',
-      details: { currentVersion: 0, pending: [{ version: 1, name: 'initial' }] },
+      details: {
+        currentVersion: 0,
+        pending: [
+          { version: 1, name: 'initial' },
+          { version: 2, name: 'query-history-saved-tags' },
+        ],
+      },
     });
   });
 
@@ -281,9 +287,9 @@ describe('IT-0007-AC5 and IT-0007-AC6 migrate command', () => {
     await runMigrateCommand({ dataDirectory, env: {}, presenter });
     await runMigrateCommand({ dataDirectory, env: {}, presenter });
 
-    expect(messages[0]).toContain('Migration complete: none -> 0001');
+    expect(messages[0]).toContain('Migration complete: none -> 0002');
     expect(messages[0]).toContain('Applied migrations:');
-    expect(messages[1]).toContain('Migration complete: 0001 -> 0001');
+    expect(messages[1]).toContain('Migration complete: 0002 -> 0002');
     expect(messages[1]).toContain('Database is already up to date.');
   });
 
@@ -300,6 +306,7 @@ describe('IT-0007-AC5 and IT-0007-AC6 migrate command', () => {
 
     expect(messages[0]).toContain('Migration status: current version none');
     expect(messages[0]).toContain('0001 initial');
+    expect(messages[0]).toContain('0002 query-history-saved-tags');
     const database = openDatabase(dataDirectory);
     try {
       expect(
@@ -309,7 +316,7 @@ describe('IT-0007-AC5 and IT-0007-AC6 migrate command', () => {
           )
           .get(),
       ).toBeNull();
-      expect(getMigrationStatus(database).pending).toHaveLength(1);
+      expect(getMigrationStatus(database).pending).toHaveLength(2);
     } finally {
       closeDatabase(database);
     }

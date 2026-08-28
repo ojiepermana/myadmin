@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { Database } from 'bun:sqlite';
 import { withTransaction } from '../database/transaction';
 import { initialMigration } from './0001-initial';
+import { queryHistorySavedTagsMigration } from './0002-query-history-saved-tags';
 
 export interface SqliteMigration {
   version: number;
@@ -48,7 +49,10 @@ export class MigrationError extends Error {
   }
 }
 
-export const migrations: readonly SqliteMigration[] = [initialMigration];
+export const migrations: readonly SqliteMigration[] = [
+  initialMigration,
+  queryHistorySavedTagsMigration,
+];
 
 interface AppliedMigrationRow {
   version: number;

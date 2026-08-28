@@ -1,6 +1,6 @@
 import type { Database } from 'bun:sqlite';
-import type { SavedQuery, SavedQueryRepository } from '@myadmin/internal-domain';
-import { fromIso, prepare, toIso } from './shared';
+import type { Page, PageRequest, SavedQuery, SavedQueryRepository } from '@myadmin/internal-domain';
+import { fromIso, pageOf, pageWindow, prepare, toIso } from './shared';
 
 interface SavedQueryRow {
   id: string;
@@ -9,12 +9,13 @@ interface SavedQueryRow {
   sql_text: string;
   connection_id: string | null;
   database: string | null;
+  tags: string;
   created_at: string;
   updated_at: string;
 }
 
 const SAVED_QUERY_COLUMNS =
-  'id, user_id, name, sql_text, connection_id, "database" AS database, created_at, updated_at' as const;
+  'id, user_id, name, sql_text, connection_id, "database" AS database, tags, created_at, updated_at' as const;
 
 function mapSavedQuery(row: SavedQueryRow): SavedQuery {
   return {
@@ -22,11 +23,23 @@ function mapSavedQuery(row: SavedQueryRow): SavedQuery {
     userId: row.user_id,
     name: row.name,
     sqlText: row.sql_text,
+    tags: parseTags(row.tags),
     connectionId: row.connection_id,
     database: row.database,
     createdAt: fromIso(row.created_at),
     updatedAt: fromIso(row.updated_at),
   };
+}
+
+function parseTags(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) && parsed.every((tag) => typeof tag === 'string')
+      ? [...parsed]
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 export class SqliteSavedQueryRepository implements SavedQueryRepository {
@@ -36,8 +49,8 @@ export class SqliteSavedQueryRepository implements SavedQueryRepository {
     this.database
       .prepare(
         `INSERT INTO saved_queries
-         (id, user_id, name, sql_text, connection_id, "database", created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, user_id, name, sql_text, connection_id, "database", tags, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         query.id,
@@ -46,6 +59,7 @@ export class SqliteSavedQueryRepository implements SavedQueryRepository {
         query.sqlText,
         query.connectionId,
         query.database,
+        JSON.stringify(query.tags),
         toIso(query.createdAt),
         toIso(query.updatedAt),
       );
@@ -60,20 +74,29 @@ export class SqliteSavedQueryRepository implements SavedQueryRepository {
   }
 
   public listByUser(userId: string): SavedQuery[] {
-    return prepare<SavedQueryRow>(
+    return this.listByUserPage(userId).items;
+  }
+
+  public listByUserPage(userId: string, page?: PageRequest): Page<SavedQuery> {
+    const window = pageWindow(page);
+    const bindings = [userId];
+    return pageOf(
       this.database,
+      'SELECT COUNT(*) AS count FROM saved_queries WHERE user_id = ?',
+      bindings,
       `SELECT ${SAVED_QUERY_COLUMNS} FROM saved_queries
-       WHERE user_id = ? ORDER BY name ASC, id ASC`,
-    )
-      .all(userId)
-      .map(mapSavedQuery);
+       WHERE user_id = ? ORDER BY name ASC, id ASC LIMIT ? OFFSET ?`,
+      [...bindings],
+      window,
+      mapSavedQuery,
+    );
   }
 
   public update(query: SavedQuery): void {
     this.database
       .prepare(
         `UPDATE saved_queries
-         SET name = ?, sql_text = ?, connection_id = ?, "database" = ?, updated_at = ?
+         SET name = ?, sql_text = ?, connection_id = ?, "database" = ?, tags = ?, updated_at = ?
          WHERE id = ?`,
       )
       .run(
@@ -81,6 +104,7 @@ export class SqliteSavedQueryRepository implements SavedQueryRepository {
         query.sqlText,
         query.connectionId,
         query.database,
+        JSON.stringify(query.tags),
         toIso(query.updatedAt),
         query.id,
       );
