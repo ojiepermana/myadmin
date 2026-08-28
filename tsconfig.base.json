@@ -15,9 +15,8 @@
     "importHelpers": true,
     "resolveJsonModule": true,
     "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
-      "@myadmin/*": ["packages/*/src/index.ts"]
+      "@myadmin/*": ["./packages/*/src/index.ts"]
     }
   }
 }

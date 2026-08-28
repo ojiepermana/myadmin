@@ -7,7 +7,7 @@ import {
   type DatabaseProvider,
   type PingResult,
   type ServerInfo,
-} from '@myadmin/database-core';
+} from '../../../database-core/src';
 
 const validSecret = 'fake-provider-secret';
 

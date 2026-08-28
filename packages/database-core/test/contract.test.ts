@@ -6,7 +6,7 @@ import {
   DB_ERROR_CATEGORIES,
   ProviderRegistry,
 } from '../src';
-import { createFakeConnectionContext, FakeDatabaseProvider } from '@myadmin/testkit';
+import { createFakeConnectionContext, FakeDatabaseProvider } from '../../testkit/src';
 import { defineDatabaseProviderContractTests } from './contract-suite';
 
 describe('database-core contracts', () => {
