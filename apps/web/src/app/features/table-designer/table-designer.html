@@ -1,0 +1,235 @@
+<main class="table-designer-page">
+  <header class="designer-header">
+    <div>
+      <p class="eyebrow">Table designer</p>
+      <h1>{{ mode() === 'create' ? 'Create a table' : 'Design table' }}</h1>
+      <p class="subtitle">
+        Model columns with provider validation, then review the exact DDL before it runs.
+      </p>
+    </div>
+    <button type="button" class="button secondary" (click)="goBack()">Back to explorer</button>
+  </header>
+
+  @if (loading()) {
+    <section class="state-card" aria-live="polite">
+      Loading provider types and table metadata…
+    </section>
+  }
+  @if (error(); as message) {
+    <section class="state-card error" role="alert">{{ message }}</section>
+  }
+  @if (notice(); as message) {
+    <section class="state-card success" role="status">{{ message }}</section>
+  }
+
+  @if (!loading() && types()) {
+    <section class="context-card">
+      <div>
+        <span class="eyebrow">{{ types()!.engine }} {{ types()!.version }}</span
+        ><strong>{{ mode() === 'create' ? 'New table' : ref()?.name }}</strong>
+      </div>
+      <label
+        >Table name<input [value]="tableName()" (input)="setTableName($event)" autocomplete="off"
+      /></label>
+      <span class="context-path">{{ ref()?.schema || ref()?.database || 'database' }}</span>
+    </section>
+
+    <section class="workspace-grid">
+      <div class="editor-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Columns</p>
+            <h2>{{ columns().length }} fields</h2>
+          </div>
+          <button type="button" class="button secondary" (click)="addColumn()">Add column</button>
+        </div>
+        <div class="column-list">
+          @for (column of columns(); track $index; let index = $index) {
+            <article class="column-card">
+              <div class="column-card-header">
+                <span class="column-number">{{ index + 1 }}</span
+                ><input
+                  class="column-name"
+                  aria-label="Column name"
+                  placeholder="column_name"
+                  [value]="column.name"
+                  (input)="updateColumn(index, 'name', $event)"
+                /><button
+                  type="button"
+                  class="icon-button"
+                  aria-label="Remove column"
+                  (click)="removeColumn(index)"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="field-grid">
+                <label
+                  >Type<select
+                    [value]="column.dataType"
+                    (change)="updateColumn(index, 'dataType', $event)"
+                  >
+                    @for (type of types()!.types; track type.name) {
+                      <option [value]="type.name">{{ type.label }}</option>
+                    }
+                  </select></label
+                >
+                @if (typeParameters(column).includes('length')) {
+                  <label
+                    >Length<input
+                      type="number"
+                      min="1"
+                      [value]="column.length ?? ''"
+                      (input)="updateColumn(index, 'length', $event)"
+                  /></label>
+                }
+                @if (typeParameters(column).includes('precision')) {
+                  <label
+                    >Precision<input
+                      type="number"
+                      min="1"
+                      [value]="column.precision ?? ''"
+                      (input)="updateColumn(index, 'precision', $event)"
+                  /></label>
+                }
+                @if (typeParameters(column).includes('scale')) {
+                  <label
+                    >Scale<input
+                      type="number"
+                      min="0"
+                      [value]="column.scale ?? ''"
+                      (input)="updateColumn(index, 'scale', $event)"
+                  /></label>
+                }
+                <label class="wide"
+                  >Default expression<input
+                    placeholder="NULL or CURRENT_TIMESTAMP"
+                    [value]="column.default?.value ?? ''"
+                    (input)="updateDefault(index, $event)"
+                /></label>
+                <label class="wide"
+                  >Comment<input
+                    [value]="column.comment ?? ''"
+                    (input)="updateColumn(index, 'comment', $event)"
+                /></label>
+              </div>
+              <div class="toggle-row">
+                <label
+                  ><input
+                    type="checkbox"
+                    [checked]="column.nullable"
+                    (change)="updateColumn(index, 'nullable', $event)"
+                  />
+                  Nullable</label
+                >
+                <div class="capability-option">
+                  <label
+                    ><input
+                      type="checkbox"
+                      [checked]="column.identity"
+                      [disabled]="!types()!.capability.capabilities['identityColumns']"
+                      (change)="updateColumn(index, 'identity', $event)"
+                    />
+                    Identity / auto increment</label
+                  >
+                  @if (!types()!.capability.capabilities['identityColumns']) {
+                    <small class="capability-hint">{{
+                      types()!.capability.reasons?.['identityColumns']
+                    }}</small>
+                  }
+                </div>
+                <label
+                  ><input
+                    type="checkbox"
+                    [checked]="column.primaryKey"
+                    (change)="updateColumn(index, 'primaryKey', $event)"
+                  />
+                  Primary key</label
+                >
+              </div>
+              <label class="generated-field"
+                >Generated expression<input
+                  placeholder="price * quantity"
+                  [value]="column.generated?.expression ?? ''"
+                  [disabled]="!types()!.capability.capabilities['generatedColumns']"
+                  (input)="updateGenerated(index, $event)"
+              /></label>
+              @if (!types()!.capability.capabilities['generatedColumns']) {
+                <small class="capability-hint generated-hint">{{
+                  types()!.capability.reasons?.['generatedColumns']
+                }}</small>
+              }
+            </article>
+          }
+        </div>
+      </div>
+
+      <aside class="preview-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Review gate</p>
+            <h2>DDL preview</h2>
+          </div>
+          <button type="button" class="button" [disabled]="saving()" (click)="previewChanges()">
+            Preview SQL
+          </button>
+        </div>
+        @if (preview(); as result) {
+          @if (result.warnings.length) {
+            <div class="warning-box">
+              <strong>Review warnings</strong>
+              @for (warning of result.warnings; track warning) {
+                <p>{{ warning }}</p>
+              }
+            </div>
+          }
+          <div class="sql-list">
+            @for (statement of result.statements; track $index) {
+              <pre><code>{{ statement.sql }}</code></pre>
+            }
+          </div>
+          <button
+            type="button"
+            class="button apply"
+            [disabled]="saving() || result.statements.length === 0"
+            (click)="applyChanges()"
+          >
+            {{ saving() ? 'Applying…' : 'Apply reviewed changes' }}
+          </button>
+        } @else {
+          <div class="empty-preview">
+            <span>01</span>
+            <p>Preview the generated SQL to unlock apply.</p>
+            <small>The server compiles and validates the same statements that will run.</small>
+          </div>
+        }
+      </aside>
+    </section>
+  }
+</main>
+
+@if (confirm()) {
+  <div class="modal-backdrop">
+    <section class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <p class="eyebrow">Destructive change</p>
+      <h2 id="confirm-title">Drop column from {{ tableName() }}?</h2>
+      <p>
+        This change can remove existing data. Review the preview, then confirm that you want to drop
+        the listed column before applying.
+      </p>
+      <ul>
+        @for (statement of preview()?.statements ?? []; track $index) {
+          @for (column of statement.destructiveColumns ?? []; track column) {
+            <li>{{ column }} on {{ tableName() }}</li>
+          }
+        }
+      </ul>
+      <div class="modal-actions">
+        <button type="button" class="button secondary" (click)="cancelConfirmation()">Cancel</button
+        ><button type="button" class="button danger" (click)="applyChanges()">
+          Confirm destructive apply
+        </button>
+      </div>
+    </section>
+  </div>
+}

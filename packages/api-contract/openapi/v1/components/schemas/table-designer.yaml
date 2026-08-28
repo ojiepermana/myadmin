@@ -1,0 +1,266 @@
+TableType:
+  type: object
+  additionalProperties: false
+  required: [name, label, parameters]
+  properties:
+    name:
+      type: string
+    label:
+      type: string
+    parameters:
+      type: array
+      items:
+        type: string
+        enum: [length, precision, scale]
+
+TableDefault:
+  type: object
+  additionalProperties: false
+  required: [kind, value]
+  properties:
+    kind:
+      type: string
+      enum: [literal, expression]
+    value:
+      type: string
+
+TableGenerated:
+  type: object
+  additionalProperties: false
+  required: [expression]
+  properties:
+    expression:
+      type: string
+    stored:
+      type: boolean
+
+TableColumnInput:
+  type: object
+  additionalProperties: false
+  required: [name, dataType, nullable]
+  properties:
+    name:
+      type: string
+    dataType:
+      type: string
+    length:
+      type: integer
+      minimum: 1
+    precision:
+      type: integer
+      minimum: 1
+    scale:
+      type: integer
+      minimum: 0
+    nullable:
+      type: boolean
+    default:
+      $ref: '#/TableDefault'
+    identity:
+      type: boolean
+    generated:
+      $ref: '#/TableGenerated'
+    comment:
+      type: string
+    primaryKey:
+      type: boolean
+
+TableColumnPatch:
+  type: object
+  additionalProperties: false
+  properties:
+    dataType:
+      type: string
+    length:
+      type: [integer, 'null']
+      minimum: 1
+    precision:
+      type: [integer, 'null']
+      minimum: 1
+    scale:
+      type: [integer, 'null']
+      minimum: 0
+    nullable:
+      type: boolean
+    default:
+      anyOf:
+        - $ref: '#/TableDefault'
+        - type: 'null'
+    identity:
+      type: boolean
+    generated:
+      anyOf:
+        - $ref: '#/TableGenerated'
+        - type: 'null'
+    comment:
+      type: [string, 'null']
+    primaryKey:
+      type: boolean
+
+TableAlteration:
+  oneOf:
+    - type: object
+      additionalProperties: false
+      required: [kind, column]
+      properties:
+        kind:
+          const: add
+        column:
+          $ref: '#/TableColumnInput'
+    - type: object
+      additionalProperties: false
+      required: [kind, name]
+      properties:
+        kind:
+          const: drop
+        name:
+          type: string
+    - type: object
+      additionalProperties: false
+      required: [kind, name, newName]
+      properties:
+        kind:
+          const: rename
+        name:
+          type: string
+        newName:
+          type: string
+    - type: object
+      additionalProperties: false
+      required: [kind, name, changes]
+      properties:
+        kind:
+          const: modify
+        name:
+          type: string
+        changes:
+          $ref: '#/TableColumnPatch'
+
+TableChangeSet:
+  type: object
+  additionalProperties: false
+  required: [operation, ref]
+  properties:
+    operation:
+      type: string
+      enum: [create, alter]
+    ref:
+      $ref: './explorer.yaml#/ExplorerObjectRef'
+    columns:
+      type: array
+      items:
+        $ref: '#/TableColumnInput'
+    alterations:
+      type: array
+      items:
+        $ref: '#/TableAlteration'
+
+TableTypesRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+
+TableDdlRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, changeSet]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    changeSet:
+      $ref: '#/TableChangeSet'
+
+TableApplyRequest:
+  allOf:
+    - $ref: '#/TableDdlRequest'
+    - type: object
+      properties:
+        confirmDestructive:
+          type: boolean
+
+TableTypeCatalog:
+  type: object
+  additionalProperties: false
+  required: [engine, version, types, capability]
+  properties:
+    engine:
+      type: string
+      enum: [postgresql, mysql]
+    version:
+      type: string
+    types:
+      type: array
+      items:
+        $ref: '#/TableType'
+    capability:
+      $ref: './capability.yaml'
+
+TableDdlStatement:
+  type: object
+  additionalProperties: false
+  required: [sql]
+  properties:
+    sql:
+      type: string
+    warning:
+      type: string
+    destructiveColumns:
+      type: array
+      items:
+        type: string
+
+TableDdlPreview:
+  type: object
+  additionalProperties: false
+  required: [operation, statements, warnings, destructive]
+  properties:
+    operation:
+      type: string
+      enum: [create, alter]
+    statements:
+      type: array
+      items:
+        $ref: '#/TableDdlStatement'
+    warnings:
+      type: array
+      items:
+        type: string
+    destructive:
+      type: boolean
+
+TableDdlStatementResult:
+  type: object
+  additionalProperties: false
+  required: [index, sql, status]
+  properties:
+    index:
+      type: integer
+    sql:
+      type: string
+    status:
+      type: string
+      enum: [success, failed, skipped]
+    error:
+      type: string
+
+TableDdlApplyResult:
+  type: object
+  additionalProperties: false
+  required: [operation, transactional, committed, statements]
+  properties:
+    operation:
+      type: string
+      enum: [create, alter]
+    transactional:
+      type: boolean
+    committed:
+      type: boolean
+    statements:
+      type: array
+      items:
+        $ref: '#/TableDdlStatementResult'

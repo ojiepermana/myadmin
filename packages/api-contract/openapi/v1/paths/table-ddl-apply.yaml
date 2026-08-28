@@ -1,0 +1,47 @@
+post:
+  operationId: applyTableDdl
+  tags: [tables]
+  summary: Apply a server compiled table change set
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/table-designer.yaml#/TableApplyRequest
+  responses:
+    '200':
+      description: Per statement apply result.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/table-designer.yaml#/TableDdlApplyResult
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The request failed CSRF or ownership checks.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Destructive confirmation is required or the connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: A field in the change set is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: A provider statement failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

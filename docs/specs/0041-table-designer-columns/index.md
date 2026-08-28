@@ -1,7 +1,7 @@
 # 0041. Table designer: kolom dan properti
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-TBL-01: column editor dengan name, type, length/precision/scale, nullability,
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin merancang table dan mengubah kolom tanpa menghafal sintaks ALTER masing masing engine, dan melihat SQL yang akan dijalankan.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Change set dikompilasi provider dengan pratinjau wajib (dipilih)
 
 **Pros**:
+
 - SQL yang dijalankan selalu terlihat (kepercayaan dan pembelajaran); kompilasi per engine hidup di provider tempat semantiknya; change set bisa diuji snapshot.
 
 **Cons**:
+
 - Dua langkah (preview lalu apply); disengaja untuk operasi berdampak struktur.
 
 ### Option 2: Terapkan langsung per perubahan kecil
 
 **Pros**:
+
 - Terasa instan.
 
 **Cons**:
+
 - Banyak ALTER kecil beruntun lebih berisiko (lock berulang, penulisan ulang berkali kali di MySQL) dan tidak memberi kesempatan meninjau.
 
 ## Decision
@@ -63,20 +68,23 @@ Alat GUI database yang baik tidak menyembunyikan DDL; pratinjau wajib membuat pe
 **Data model sketch**: tidak ada tabel internal; bentuk `TableChangeSet { ref?, createDefinition? | alterations[] }` di kontrak.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /tables/ddl/preview | POST | connectionId, changeSet | statements[], warnings[] | pemilik, tersambung | 422 validasi |
-| /tables/ddl/apply | POST | connectionId, changeSet, confirmDestructive? | hasil per statement | pemilik | 409 confirm kurang, DbError berposisi statement |
+
+| Endpoint            | Method | Key inputs                                   | Key outputs              | Auth                | Key errors                                      |
+| ------------------- | ------ | -------------------------------------------- | ------------------------ | ------------------- | ----------------------------------------------- |
+| /tables/ddl/preview | POST   | connectionId, changeSet                      | statements[], warnings[] | pemilik, tersambung | 422 validasi                                    |
+| /tables/ddl/apply   | POST   | connectionId, changeSet, confirmDestructive? | hasil per statement      | pemilik             | 409 confirm kurang, DbError berposisi statement |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| daftar tipe | tipe engine plus parameter | modul tipe di provider (per versi) |
-| kolom kini | definisi | describeTable |
-| peringatan | konsekuensi per statement | aturan kompilasi provider |
-| gerbang fitur kolom | generated/identity/comment | capability koneksi |
+
+| Action              | Value produced / displayed | Source                             |
+| ------------------- | -------------------------- | ---------------------------------- |
+| daftar tipe         | tipe engine plus parameter | modul tipe di provider (per versi) |
+| kolom kini          | definisi                   | describeTable                      |
+| peringatan          | konsekuensi per statement  | aturan kompilasi provider          |
+| gerbang fitur kolom | generated/identity/comment | capability koneksi                 |
 
 **Key invariants**:
+
 - Apply hanya menjalankan statement hasil kompilasi server dari change set; klien tidak pernah mengirim DDL bebas lewat jalur ini.
 - Perubahan destructive dalam change set membutuhkan flag konfirmasi yang diverifikasi server.
 - Pratinjau dan apply memakai kompilasi yang sama (satu fungsi), sehingga yang tampil = yang dijalankan.
@@ -100,12 +108,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Perancangan table tanpa hafalan dialek, dengan transparansi penuh; kompilator change set menjadi fondasi spec 0042.
 
 **Negative / tradeoffs**:
+
 - Dua langkah preview apply menambah klik; harga transparansi.
 
 **Neutral**:
+
 - Properti table level engine (storage engine MySQL, tablespace) hanya dipaparkan read only di V1; pengubahannya V2 (batas scope matriks).
 
 ## Follow-up
@@ -115,9 +126,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-TBL-01, FR-SAFE-01, FR-SAFE-02; spec 0023, 0025, 0031, 0039 (pola konfirmasi), 0019.
 
 **Practices & standards**:
+
 - Pratinjau DDL sebelum eksekusi; change set sebagai data teruji snapshot; satu kompilator untuk preview dan apply.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

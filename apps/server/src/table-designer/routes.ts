@@ -1,0 +1,391 @@
+import type { AuthService, SessionValidation } from '@myadmin/auth';
+import type {
+  TableAlteration,
+  TableChangeSet,
+  TableColumnInput,
+  TableColumnPatch,
+  TableDefaultValue,
+  TableGeneratedValue,
+} from '@myadmin/database-core';
+import type { AnyElysia } from 'elysia';
+import type { ConnectionActor } from '../connections/connection-manager';
+import { tableDesignerErrorResponse, type TableDesignerService } from './table-designer';
+
+interface SetupService {
+  isInitialized(): boolean;
+}
+export interface TableDesignerRouteOptions {
+  readonly authService: AuthService;
+  readonly setupService: SetupService | undefined;
+  readonly service: TableDesignerService;
+  readonly secureCookies: boolean;
+}
+
+function response(value: unknown, status = 200): Response {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+function cookieValue(request: Request, name: string): string | undefined {
+  for (const cookie of request.headers.get('cookie')?.split(';') ?? []) {
+    const separator = cookie.indexOf('=');
+    if (separator >= 0 && cookie.slice(0, separator).trim() === name)
+      return cookie.slice(separator + 1).trim() || undefined;
+  }
+  return undefined;
+}
+
+function actorForRequest(
+  request: Request,
+  options: TableDesignerRouteOptions,
+): ConnectionActor | Response {
+  if (!options.setupService?.isInitialized())
+    return response(
+      {
+        code: 'SETUP_REQUIRED',
+        message: 'Create the initial administrator first.',
+        correlationId: crypto.randomUUID(),
+      },
+      409,
+    );
+  const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
+  if (!validation.authenticated) return sessionFailure(request, validation, options.secureCookies);
+  return validation.value.user;
+}
+
+function sessionFailure(
+  request: Request,
+  validation: Extract<SessionValidation, { authenticated: false }>,
+  secureCookies: boolean,
+): Response {
+  return new Response(
+    JSON.stringify({
+      code: validation.code,
+      message:
+        validation.code === 'SESSION_EXPIRED'
+          ? 'Your session has expired.'
+          : 'A valid session is required.',
+      correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
+    }),
+    {
+      status: 401,
+      headers: {
+        'content-type': 'application/json',
+        'set-cookie': `myadmin_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secureCookies ? '; Secure' : ''}`,
+      },
+    },
+  );
+}
+
+function sameOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin');
+  return (
+    (request.headers.get('sec-fetch-site') === null ||
+      request.headers.get('sec-fetch-site') === 'same-origin') &&
+    (origin === null || origin === new URL(request.url).origin)
+  );
+}
+
+function protectedMutation(
+  request: Request,
+  options: TableDesignerRouteOptions,
+): ConnectionActor | Response {
+  const actor = actorForRequest(request, options);
+  if (actor instanceof Response) return actor;
+  return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin(request)
+    ? actor
+    : response(
+        {
+          code: 'CSRF_INVALID',
+          message: 'The request could not be verified.',
+          correlationId: crypto.randomUUID(),
+        },
+        403,
+      );
+}
+
+async function body(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch {
+    return undefined;
+  }
+}
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function allowed(value: Record<string, unknown>, names: readonly string[]): boolean {
+  return Object.keys(value).every((key) => names.includes(key));
+}
+function string(value: unknown): value is string {
+  return typeof value === 'string';
+}
+function boolean(value: unknown): value is boolean {
+  return typeof value === 'boolean';
+}
+function integer(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value);
+}
+
+function parseDefault(value: unknown): TableDefaultValue | undefined | null {
+  if (value === undefined) return undefined;
+  if (
+    !record(value) ||
+    !allowed(value, ['kind', 'value']) ||
+    (value['kind'] !== 'literal' && value['kind'] !== 'expression') ||
+    !string(value['value'])
+  )
+    return null;
+  return { kind: value['kind'], value: value['value'] };
+}
+
+function parseGenerated(value: unknown): TableGeneratedValue | undefined | null {
+  if (value === undefined) return undefined;
+  if (
+    !record(value) ||
+    !allowed(value, ['expression', 'stored']) ||
+    !string(value['expression']) ||
+    (value['stored'] !== undefined && !boolean(value['stored']))
+  )
+    return null;
+  return {
+    expression: value['expression'],
+    ...(value['stored'] === undefined ? {} : { stored: value['stored'] }),
+  };
+}
+
+function parseColumn(value: unknown): TableColumnInput | null {
+  const names = [
+    'name',
+    'dataType',
+    'length',
+    'precision',
+    'scale',
+    'nullable',
+    'default',
+    'identity',
+    'generated',
+    'comment',
+    'primaryKey',
+  ] as const;
+  if (
+    !record(value) ||
+    !allowed(value, names) ||
+    !string(value['name']) ||
+    !string(value['dataType']) ||
+    !boolean(value['nullable'])
+  )
+    return null;
+  const defaultValue = parseDefault(value['default']);
+  const generated = parseGenerated(value['generated']);
+  if (defaultValue === null || generated === null) return null;
+  for (const name of ['length', 'precision', 'scale'] as const)
+    if (value[name] !== undefined && !integer(value[name])) return null;
+  for (const name of ['identity', 'primaryKey'] as const)
+    if (value[name] !== undefined && !boolean(value[name])) return null;
+  if (value['comment'] !== undefined && !string(value['comment'])) return null;
+  return {
+    name: value['name'],
+    dataType: value['dataType'],
+    nullable: value['nullable'],
+    ...(value['length'] === undefined ? {} : { length: value['length'] as number }),
+    ...(value['precision'] === undefined ? {} : { precision: value['precision'] as number }),
+    ...(value['scale'] === undefined ? {} : { scale: value['scale'] as number }),
+    ...(defaultValue === undefined ? {} : { default: defaultValue }),
+    ...(value['identity'] === undefined ? {} : { identity: value['identity'] as boolean }),
+    ...(generated === undefined ? {} : { generated }),
+    ...(value['comment'] === undefined ? {} : { comment: value['comment'] as string }),
+    ...(value['primaryKey'] === undefined ? {} : { primaryKey: value['primaryKey'] as boolean }),
+  };
+}
+
+function parseAlterations(value: unknown): readonly TableAlteration[] | null {
+  if (!Array.isArray(value)) return null;
+  const result: TableAlteration[] = [];
+  for (const item of value) {
+    if (!record(item) || !string(item['kind'])) return null;
+    if (item['kind'] === 'add') {
+      const parsed = parseColumn(item['column']);
+      if (!parsed) return null;
+      result.push({ kind: 'add', column: parsed });
+      continue;
+    }
+    if (item['kind'] === 'drop') {
+      if (!allowed(item, ['kind', 'name']) || !string(item['name'])) return null;
+      result.push({ kind: 'drop', name: item['name'] });
+      continue;
+    }
+    if (item['kind'] === 'rename') {
+      if (
+        !allowed(item, ['kind', 'name', 'newName']) ||
+        !string(item['name']) ||
+        !string(item['newName'])
+      )
+        return null;
+      result.push({ kind: 'rename', name: item['name'], newName: item['newName'] });
+      continue;
+    }
+    if (
+      item['kind'] !== 'modify' ||
+      !allowed(item, ['kind', 'name', 'changes']) ||
+      !string(item['name']) ||
+      !record(item['changes'])
+    )
+      return null;
+    const changes = item['changes'];
+    const changeNames = [
+      'dataType',
+      'length',
+      'precision',
+      'scale',
+      'nullable',
+      'default',
+      'identity',
+      'generated',
+      'comment',
+      'primaryKey',
+    ] as const;
+    if (!allowed(changes, changeNames)) return null;
+    const patch: Record<string, unknown> = {};
+    for (const name of ['dataType', 'comment'] as const)
+      if (changes[name] !== undefined && !string(changes[name])) return null;
+    for (const name of ['length', 'precision', 'scale'] as const)
+      if (changes[name] !== undefined && changes[name] !== null && !integer(changes[name]))
+        return null;
+    for (const name of ['nullable', 'identity', 'primaryKey'] as const)
+      if (changes[name] !== undefined && !boolean(changes[name])) return null;
+    const defaultValue = parseDefault(changes['default']);
+    const generated = parseGenerated(changes['generated']);
+    if (defaultValue === null || generated === null) return null;
+    if (changes['dataType'] !== undefined) patch['dataType'] = changes['dataType'];
+    if (changes['comment'] !== undefined) patch['comment'] = changes['comment'];
+    for (const name of ['length', 'precision', 'scale'] as const)
+      if (changes[name] !== undefined) patch[name] = changes[name] as number | null;
+    for (const name of ['nullable', 'identity', 'primaryKey'] as const)
+      if (changes[name] !== undefined) patch[name] = changes[name] as boolean;
+    if (defaultValue !== undefined) patch['default'] = defaultValue;
+    if (generated !== undefined) patch['generated'] = generated;
+    result.push({ kind: 'modify', name: item['name'], changes: patch as TableColumnPatch });
+  }
+  return result;
+}
+
+function parseChangeSet(value: unknown): TableChangeSet | null {
+  if (
+    !record(value) ||
+    !allowed(value, ['operation', 'ref', 'columns', 'alterations']) ||
+    (value['operation'] !== 'create' && value['operation'] !== 'alter') ||
+    !record(value['ref'])
+  )
+    return null;
+  const ref = value['ref'];
+  if (
+    !allowed(ref, ['database', 'schema', 'name', 'type']) ||
+    !string(ref['database']) ||
+    !string(ref['name']) ||
+    ref['type'] !== 'table' ||
+    (ref['schema'] !== undefined && ref['schema'] !== null && !string(ref['schema']))
+  )
+    return null;
+  const base = {
+    operation: value['operation'] as 'create' | 'alter',
+    ref: {
+      database: ref['database'],
+      schema: ref['schema'] === undefined ? null : ref['schema'],
+      name: ref['name'],
+      type: 'table' as const,
+    },
+  };
+  if (value['operation'] === 'create') {
+    if (!Array.isArray(value['columns'])) return null;
+    const columns = value['columns'].map(parseColumn);
+    if (columns.some((item): item is null => item === null)) return null;
+    return { ...base, columns: columns as TableColumnInput[] };
+  }
+  const alterations = parseAlterations(value['alterations']);
+  return alterations === null ? null : { ...base, alterations };
+}
+
+export function registerTableDesignerRoutes(
+  application: AnyElysia,
+  prefix: string,
+  options: TableDesignerRouteOptions,
+): AnyElysia {
+  const path = (suffix: string) => `${prefix}${suffix}`;
+  return application
+    .post(path('/tables/ddl/types'), async ({ request }) => {
+      const actor = actorForRequest(request, options);
+      if (actor instanceof Response) return actor;
+      const value = await body(request);
+      if (!record(value) || !allowed(value, ['connectionId']) || !string(value['connectionId']))
+        return response(
+          {
+            code: 'TABLE_VALIDATION_FAILED',
+            message: 'connectionId is required.',
+            correlationId: crypto.randomUUID(),
+          },
+          422,
+        );
+      try {
+        return response(await options.service.types(actor, value['connectionId']));
+      } catch (error) {
+        return tableDesignerErrorResponse(request, error);
+      }
+    })
+    .post(path('/tables/ddl/preview'), async ({ request }) => {
+      const actor = actorForRequest(request, options);
+      if (actor instanceof Response) return actor;
+      const value = await body(request);
+      const changeSet =
+        record(value) && string(value['connectionId']) ? parseChangeSet(value['changeSet']) : null;
+      if (!record(value) || !string(value['connectionId']) || !changeSet)
+        return response(
+          {
+            code: 'TABLE_VALIDATION_FAILED',
+            message: 'connectionId and a valid changeSet are required.',
+            correlationId: crypto.randomUUID(),
+          },
+          422,
+        );
+      try {
+        return response(await options.service.preview(actor, value['connectionId'], changeSet));
+      } catch (error) {
+        return tableDesignerErrorResponse(request, error);
+      }
+    })
+    .post(path('/tables/ddl/apply'), async ({ request }) => {
+      const actor = protectedMutation(request, options);
+      if (actor instanceof Response) return actor;
+      const value = await body(request);
+      const changeSet =
+        record(value) && string(value['connectionId']) ? parseChangeSet(value['changeSet']) : null;
+      if (
+        !record(value) ||
+        !string(value['connectionId']) ||
+        !changeSet ||
+        (value['confirmDestructive'] !== undefined && !boolean(value['confirmDestructive']))
+      )
+        return response(
+          {
+            code: 'TABLE_VALIDATION_FAILED',
+            message: 'connectionId and a valid changeSet are required.',
+            correlationId: crypto.randomUUID(),
+          },
+          422,
+        );
+      try {
+        return response(
+          await options.service.apply(
+            actor,
+            value['connectionId'],
+            changeSet,
+            value['confirmDestructive'] === true,
+          ),
+        );
+      } catch (error) {
+        return tableDesignerErrorResponse(request, error);
+      }
+    });
+}

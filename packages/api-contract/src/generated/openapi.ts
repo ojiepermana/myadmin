@@ -1193,6 +1193,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tables/ddl/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply a server compiled table change set */
+        post: operations["applyTableDdl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tables/ddl/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compile a table change set into provider DDL */
+        post: operations["previewTableDdl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tables/ddl/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** List provider table types and capabilities */
+        post: operations["getTableDesignerTypes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -2340,6 +2391,114 @@ export interface components {
         };
         SetupStatus: {
             initialized: boolean;
+        };
+        TableAlteration: {
+            column: components["schemas"]["TableColumnInput"];
+            /** @constant */
+            kind: "add";
+        } | {
+            /** @constant */
+            kind: "drop";
+            name: string;
+        } | {
+            /** @constant */
+            kind: "rename";
+            name: string;
+            newName: string;
+        } | {
+            changes: components["schemas"]["TableColumnPatch"];
+            /** @constant */
+            kind: "modify";
+            name: string;
+        };
+        TableApplyRequest: components["schemas"]["TableDdlRequest"] & {
+            confirmDestructive?: boolean;
+        };
+        TableChangeSet: {
+            alterations?: components["schemas"]["TableAlteration"][];
+            columns?: components["schemas"]["TableColumnInput"][];
+            /** @enum {string} */
+            operation: "create" | "alter";
+            ref: components["schemas"]["ExplorerObjectRef"];
+        };
+        TableColumnInput: {
+            comment?: string;
+            dataType: string;
+            default?: components["schemas"]["TableDefault"];
+            generated?: components["schemas"]["TableGenerated"];
+            identity?: boolean;
+            length?: number;
+            name: string;
+            nullable: boolean;
+            precision?: number;
+            primaryKey?: boolean;
+            scale?: number;
+        };
+        TableColumnPatch: {
+            comment?: string | null;
+            dataType?: string;
+            default?: components["schemas"]["TableDefault"] | null;
+            generated?: components["schemas"]["TableGenerated"] | null;
+            identity?: boolean;
+            length?: number | null;
+            nullable?: boolean;
+            precision?: number | null;
+            primaryKey?: boolean;
+            scale?: number | null;
+        };
+        TableDdlApplyResult: {
+            committed: boolean;
+            /** @enum {string} */
+            operation: "create" | "alter";
+            statements: components["schemas"]["TableDdlStatementResult"][];
+            transactional: boolean;
+        };
+        TableDdlPreview: {
+            destructive: boolean;
+            /** @enum {string} */
+            operation: "create" | "alter";
+            statements: components["schemas"]["TableDdlStatement"][];
+            warnings: string[];
+        };
+        TableDdlRequest: {
+            changeSet: components["schemas"]["TableChangeSet"];
+            connectionId: string;
+        };
+        TableDdlStatement: {
+            destructiveColumns?: string[];
+            sql: string;
+            warning?: string;
+        };
+        TableDdlStatementResult: {
+            error?: string;
+            index: number;
+            sql: string;
+            /** @enum {string} */
+            status: "success" | "failed" | "skipped";
+        };
+        TableDefault: {
+            /** @enum {string} */
+            kind: "literal" | "expression";
+            value: string;
+        };
+        TableGenerated: {
+            expression: string;
+            stored?: boolean;
+        };
+        TableType: {
+            label: string;
+            name: string;
+            parameters: ("length" | "precision" | "scale")[];
+        };
+        TableTypeCatalog: {
+            capability: components["schemas"]["capability"];
+            /** @enum {string} */
+            engine: "postgresql" | "mysql";
+            types: components["schemas"]["TableType"][];
+            version: string;
+        };
+        TableTypesRequest: {
+            connectionId: string;
         };
         UpdateUserRequest: {
             isActive?: boolean;
@@ -7407,6 +7566,195 @@ export interface operations {
             };
             /** @description Setup status could not be read. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    applyTableDdl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableApplyRequest"];
+            };
+        };
+        responses: {
+            /** @description Per statement apply result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableDdlApplyResult"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request failed CSRF or ownership checks. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Destructive confirmation is required or the connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description A field in the change set is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description A provider statement failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    previewTableDdl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableDdlRequest"];
+            };
+        };
+        responses: {
+            /** @description DDL preview and warnings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableDdlPreview"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection belongs to another user. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description A field in the change set is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getTableDesignerTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableTypesRequest"];
+            };
+        };
+        responses: {
+            /** @description Provider table type catalog. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableTypeCatalog"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection belongs to another user. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request body is invalid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

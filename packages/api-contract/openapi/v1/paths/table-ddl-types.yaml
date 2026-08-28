@@ -1,0 +1,41 @@
+post:
+  operationId: getTableDesignerTypes
+  tags: [tables]
+  summary: List provider table types and capabilities
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/table-designer.yaml#/TableTypesRequest
+  responses:
+    '200':
+      description: Provider table type catalog.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/table-designer.yaml#/TableTypeCatalog
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The connection belongs to another user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The request body is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

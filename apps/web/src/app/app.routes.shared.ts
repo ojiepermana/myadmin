@@ -134,20 +134,25 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
                                         import('./features/data-browser/data-browser').then(
                                           ({ DataBrowser }) => DataBrowser,
                                         )
-                                    : definition.id === 'query-history'
+                                    : definition.id === 'table-designer'
                                       ? () =>
-                                          import('./features/query-history/query-history').then(
-                                            ({ QueryHistory }) => QueryHistory,
+                                          import('./features/table-designer/table-designer').then(
+                                            ({ TableDesigner }) => TableDesigner,
                                           )
-                                      : definition.id === 'import-export'
+                                      : definition.id === 'query-history'
                                         ? () =>
-                                            import('./features/import-export/import-export').then(
-                                              ({ ImportExport }) => ImportExport,
+                                            import('./features/query-history/query-history').then(
+                                              ({ QueryHistory }) => QueryHistory,
                                             )
-                                        : () =>
-                                            import('./features/route-placeholder/route-placeholder').then(
-                                              ({ RoutePlaceholder }) => RoutePlaceholder,
-                                            ),
+                                        : definition.id === 'import-export'
+                                          ? () =>
+                                              import('./features/import-export/import-export').then(
+                                                ({ ImportExport }) => ImportExport,
+                                              )
+                                          : () =>
+                                              import('./features/route-placeholder/route-placeholder').then(
+                                                ({ RoutePlaceholder }) => RoutePlaceholder,
+                                              ),
   }));
 
   const devRoutes: Routes = includeDevDemo

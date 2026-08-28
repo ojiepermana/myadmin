@@ -38,6 +38,8 @@ export const AuditEvents = {
   },
   table: {
     created: required('table.created', 'table'),
+    altered: required('table.altered', 'table'),
+    column_dropped: required('table.column_dropped', 'table'),
     renamed: required('table.renamed', 'table'),
     truncated: required('table.truncated', 'table'),
     dropped: required('table.dropped', 'table'),

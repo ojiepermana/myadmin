@@ -577,8 +577,8 @@ Create dan alter kolom lewat change set dengan pratinjau DDL wajib. Done when: y
 
 - [x] Design it (spec): [0041](../specs/0041-table-designer-columns/index.md)
 - [ ] Build it: /develop table-designer-columns
-  - [ ] Modul tipe engine plus kompilator change set dengan test snapshot (AC-1, AC-2, AC-3, AC-5)
-  - [ ] Endpoint preview apply dengan semantik transaksi per engine plus audit (AC-4, AC-6)
+  - [x] Modul tipe engine plus kompilator change set dengan test snapshot (AC-1, AC-2, AC-3, AC-5)
+  - [x] Endpoint preview apply dengan semantik transaksi per engine plus audit (AC-4, AC-6)
   - [ ] UI editor kolom plus panel pratinjau plus invalidasi metadata plus e2e (AC-3, AC-7, AC-8)
 - [ ] [Verify it](../specs/0041-table-designer-columns/verify.md): /check verify table-designer-columns
 - [ ] [Test it](../specs/0041-table-designer-columns/test.md): /test table-designer-columns

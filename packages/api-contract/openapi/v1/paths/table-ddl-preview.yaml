@@ -1,0 +1,41 @@
+post:
+  operationId: previewTableDdl
+  tags: [tables]
+  summary: Compile a table change set into provider DDL
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/table-designer.yaml#/TableDdlRequest
+  responses:
+    '200':
+      description: DDL preview and warnings.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/table-designer.yaml#/TableDdlPreview
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The connection belongs to another user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: A field in the change set is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

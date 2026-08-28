@@ -1,0 +1,319 @@
+:host {
+  display: block;
+  min-height: 100%;
+}
+.table-designer-page {
+  padding: 2rem;
+  color: hsl(var(--foreground));
+}
+.designer-header,
+.section-heading,
+.context-card,
+.column-card-header,
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.designer-header {
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 1.5rem;
+}
+h1,
+h2,
+p {
+  margin: 0;
+}
+h1 {
+  margin-top: 0.35rem;
+  font-size: 1.8rem;
+  letter-spacing: -0.03em;
+}
+h2 {
+  font-size: 1.05rem;
+}
+.subtitle,
+.empty-preview small,
+.confirm-card p {
+  color: hsl(var(--muted-foreground));
+}
+.eyebrow {
+  color: hsl(var(--primary));
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.context-card {
+  margin-top: 1.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--card));
+  padding: 1rem 1.25rem;
+}
+.context-card strong {
+  display: block;
+  margin-top: 0.3rem;
+}
+.context-path {
+  color: hsl(var(--muted-foreground));
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(20rem, 0.8fr);
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  align-items: start;
+}
+.editor-panel,
+.preview-panel {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--card));
+  padding: 1.25rem;
+}
+.column-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+.column-card {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.6rem;
+  padding: 1rem;
+  background: hsl(var(--background));
+}
+.column-number {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
+  font:
+    700 0.75rem ui-monospace,
+    monospace;
+}
+.column-name {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font:
+    600 0.95rem ui-monospace,
+    monospace;
+  outline: none;
+}
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+}
+label {
+  display: grid;
+  gap: 0.35rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+input,
+select {
+  min-width: 0;
+  height: 2.25rem;
+  border: 1px solid hsl(var(--input));
+  border-radius: 0.35rem;
+  background: hsl(var(--background));
+  padding: 0 0.6rem;
+  color: hsl(var(--foreground));
+  font:
+    400 0.82rem ui-monospace,
+    monospace;
+}
+.wide,
+.generated-field {
+  grid-column: 1 / -1;
+}
+.toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.9rem;
+}
+.toggle-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.capability-option {
+  display: grid;
+  gap: 0.25rem;
+}
+.capability-hint {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.65rem;
+  font-weight: 400;
+}
+.generated-hint {
+  margin-top: -0.35rem;
+}
+.toggle-row input {
+  height: 1rem;
+  width: 1rem;
+}
+.button {
+  border: 0;
+  border-radius: 0.4rem;
+  background: hsl(var(--primary));
+  padding: 0.6rem 0.85rem;
+  color: hsl(var(--primary-foreground));
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.button.secondary {
+  border: 1px solid hsl(var(--border));
+  background: transparent;
+  color: hsl(var(--foreground));
+}
+.button.danger {
+  background: hsl(var(--destructive));
+}
+.button.apply {
+  width: 100%;
+  margin-top: 1rem;
+}
+.icon-button {
+  border: 0;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+.preview-panel {
+  position: sticky;
+  top: 1rem;
+}
+.warning-box,
+.state-card {
+  margin-top: 1rem;
+  border-radius: 0.5rem;
+  padding: 0.9rem;
+  font-size: 0.8rem;
+}
+.warning-box {
+  border: 1px solid hsl(38 92% 50% / 0.35);
+  background: hsl(38 92% 50% / 0.1);
+  color: hsl(38 70% 30%);
+}
+.warning-box p {
+  margin-top: 0.35rem;
+}
+.sql-list {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  max-height: 32rem;
+  overflow: auto;
+}
+pre {
+  margin: 0;
+  overflow: auto;
+  border-radius: 0.4rem;
+  background: hsl(222 25% 10%);
+  padding: 0.85rem;
+  color: hsl(150 70% 80%);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+.empty-preview {
+  display: grid;
+  gap: 0.7rem;
+  justify-items: start;
+  min-height: 12rem;
+  margin-top: 1rem;
+  padding: 1rem 0;
+}
+.empty-preview span {
+  color: hsl(var(--primary));
+  font:
+    700 2.5rem ui-monospace,
+    monospace;
+}
+.state-card {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+}
+.state-card.error {
+  border-color: hsl(var(--destructive) / 0.35);
+  color: hsl(var(--destructive));
+}
+.state-card.success {
+  border-color: hsl(142 70% 35% / 0.35);
+  color: hsl(142 70% 30%);
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.45);
+  padding: 1rem;
+}
+.confirm-card {
+  width: min(32rem, 100%);
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--background));
+  padding: 1.5rem;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.25);
+}
+.confirm-card h2 {
+  margin: 0.5rem 0;
+  font-size: 1.2rem;
+}
+.confirm-card ul {
+  margin: 1rem 0;
+  padding-left: 1.1rem;
+  color: hsl(var(--destructive));
+  font:
+    0.8rem ui-monospace,
+    monospace;
+}
+.modal-actions {
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+@media (max-width: 900px) {
+  .table-designer-page {
+    padding: 1rem;
+  }
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .preview-panel {
+    position: static;
+  }
+}
+@media (max-width: 560px) {
+  .designer-header,
+  .context-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+  .wide,
+  .generated-field {
+    grid-column: auto;
+  }
+}

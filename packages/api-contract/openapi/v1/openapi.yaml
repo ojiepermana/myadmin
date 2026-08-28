@@ -115,6 +115,12 @@ paths:
     $ref: ./paths/database-by-name.yaml
   /connections/{id}/databases/{db}/children:
     $ref: ./paths/explorer-database-children.yaml
+  /tables/ddl/types:
+    $ref: ./paths/table-ddl-types.yaml
+  /tables/ddl/preview:
+    $ref: ./paths/table-ddl-preview.yaml
+  /tables/ddl/apply:
+    $ref: ./paths/table-ddl-apply.yaml
   /connections/{id}/schemas/{schema}/objects:
     $ref: ./paths/explorer-schema-objects.yaml
   /connections/{id}/databases/{db}/schemas:
@@ -461,6 +467,36 @@ components:
       $ref: ./components/schemas/views.yaml#/ViewValidationResponse
     ViewDropPreviewRequest:
       $ref: ./components/schemas/views.yaml#/ViewDropPreviewRequest
+    TableType:
+      $ref: ./components/schemas/table-designer.yaml#/TableType
+    TableDefault:
+      $ref: ./components/schemas/table-designer.yaml#/TableDefault
+    TableGenerated:
+      $ref: ./components/schemas/table-designer.yaml#/TableGenerated
+    TableColumnInput:
+      $ref: ./components/schemas/table-designer.yaml#/TableColumnInput
+    TableColumnPatch:
+      $ref: ./components/schemas/table-designer.yaml#/TableColumnPatch
+    TableAlteration:
+      $ref: ./components/schemas/table-designer.yaml#/TableAlteration
+    TableChangeSet:
+      $ref: ./components/schemas/table-designer.yaml#/TableChangeSet
+    TableTypesRequest:
+      $ref: ./components/schemas/table-designer.yaml#/TableTypesRequest
+    TableDdlRequest:
+      $ref: ./components/schemas/table-designer.yaml#/TableDdlRequest
+    TableApplyRequest:
+      $ref: ./components/schemas/table-designer.yaml#/TableApplyRequest
+    TableTypeCatalog:
+      $ref: ./components/schemas/table-designer.yaml#/TableTypeCatalog
+    TableDdlStatement:
+      $ref: ./components/schemas/table-designer.yaml#/TableDdlStatement
+    TableDdlPreview:
+      $ref: ./components/schemas/table-designer.yaml#/TableDdlPreview
+    TableDdlStatementResult:
+      $ref: ./components/schemas/table-designer.yaml#/TableDdlStatementResult
+    TableDdlApplyResult:
+      $ref: ./components/schemas/table-designer.yaml#/TableDdlApplyResult
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

@@ -80,6 +80,8 @@ import { registerViewRoutes } from './view-management/routes';
 import { SchemaManagementService } from './schema-management/schema-management';
 import { registerSchemaManagementRoutes } from './schema-management/routes';
 import { registerExportRoutes } from './export/routes';
+import { TableDesignerService } from './table-designer/table-designer';
+import { registerTableDesignerRoutes } from './table-designer/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -115,6 +117,7 @@ export interface ServerStartOptions {
   queryHistoryService?: QueryHistoryService;
   databaseManagementService?: DatabaseManagementService;
   schemaManagementService?: SchemaManagementService;
+  tableDesignerService?: TableDesignerService;
   observability?: ObservabilityOptions;
 }
 
@@ -151,6 +154,7 @@ export interface ServerAppOptions {
   queryHistoryService?: QueryHistoryService;
   databaseManagementService?: DatabaseManagementService;
   schemaManagementService?: SchemaManagementService;
+  tableDesignerService?: TableDesignerService;
   observability?: ObservabilityOptions;
 }
 
@@ -1437,6 +1441,11 @@ export function createServerApp(options: ServerAppOptions = {}) {
     (runtimeStore && connectionManager
       ? new SchemaManagementService({ store: runtimeStore, connectionManager })
       : undefined);
+  const tableDesignerService =
+    options.tableDesignerService ??
+    (runtimeStore && connectionManager
+      ? new TableDesignerService({ store: runtimeStore, connectionManager })
+      : undefined);
 
   let application: AnyElysia = installObservability(
     new Elysia({
@@ -1584,6 +1593,14 @@ export function createServerApp(options: ServerAppOptions = {}) {
         secureCookies,
       });
     }
+    if (tableDesignerService) {
+      application = registerTableDesignerRoutes(application, '/api/v1', {
+        authService,
+        setupService,
+        service: tableDesignerService,
+        secureCookies,
+      });
+    }
   }
   if (queryExecutionService && authService) {
     application = registerQueryRoutes(application, '/api/v1', {
@@ -1696,6 +1713,10 @@ export function createApp(
     store,
     connectionManager,
   });
+  const tableDesignerService = new TableDesignerService({
+    store,
+    connectionManager,
+  });
 
   let application: AnyElysia = installObservability(
     new Elysia(),
@@ -1801,6 +1822,12 @@ export function createApp(
     authService,
     setupService,
     service: schemaManagementService,
+    secureCookies: false,
+  });
+  application = registerTableDesignerRoutes(application, '', {
+    authService,
+    setupService,
+    service: tableDesignerService,
     secureCookies: false,
   });
   const backupService =

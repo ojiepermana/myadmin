@@ -17,3 +17,4 @@ export * from './security';
 export * from './view';
 export * from './schema';
 export * from './import-export';
+export * from './table-designer';

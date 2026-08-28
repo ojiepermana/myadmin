@@ -16,6 +16,7 @@ export * from './contracts/query';
 export * from './contracts/schema';
 export * from './contracts/security';
 export * from './contracts/table';
+export * from './contracts/table-designer';
 export * from './contracts/view';
 export * from './errors';
 export * from './models';
