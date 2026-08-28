@@ -1,7 +1,7 @@
 # 0016. Initial setup end to end
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-AUTH-01: instance baru meminta pembuatan Admin pertama; tidak ada route yang 
 ## Requirements
 
 **User stories**:
+
 - Sebagai pemasang baru, saya ingin diarahkan membuat akun Admin pertama begitu membuka aplikasi.
 - Sebagai pemilik instance, saya ingin yakin tidak ada orang lain yang bisa mengklaim instance setelah saya.
 
@@ -39,17 +40,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Status inisialisasi dihitung dari tabel users (dipilih)
 
 **Pros**:
+
 - Satu sumber kebenaran; tidak ada flag terpisah yang bisa tidak sinkron dengan kenyataan.
 
 **Cons**:
+
 - Query kecil di tiap pemeriksaan; murah dan bisa di cache dalam memori dengan invalidasi saat setup sukses.
 
 ### Option 2: Flag `initialized` di tabel settings
 
 **Pros**:
+
 - Pembacaan paling murah.
 
 **Cons**:
+
 - Dua kebenaran (flag dan keberadaan admin) yang bisa bertentangan, misal restore sebagian; kelas bug yang tidak perlu.
 
 ## Decision
@@ -69,20 +74,23 @@ Alur ini dipilih sebagai tracer bullet pertama karena menyentuh setiap lapisan d
 **State transitions** (instance): uninitialized → initialized; satu arah, tidak ada jalur kembali lewat API.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /setup/status | GET | tidak ada | initialized | publik | tidak ada |
-| /setup/admin | POST | username, password | user (id, username, role) | publik, rate limited | 409 ALREADY_INITIALIZED, 422 VALIDATION_FAILED, 429 |
+
+| Endpoint      | Method | Key inputs         | Key outputs               | Auth                 | Key errors                                          |
+| ------------- | ------ | ------------------ | ------------------------- | -------------------- | --------------------------------------------------- |
+| /setup/status | GET    | tidak ada          | initialized               | publik               | tidak ada                                           |
+| /setup/admin  | POST   | username, password | user (id, username, role) | publik, rate limited | 409 ALREADY_INITIALIZED, 422 VALIDATION_FAILED, 429 |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| status | initialized | hitungan users role admin aktif (DB) |
-| create admin | password_hash | PasswordHasher (spec 0010) |
-| create admin | id, created_at | generator kernel (spec 0009) |
-| audit event | actor | user admin yang baru dibuat |
+
+| Action       | Value produced / displayed | Source                               |
+| ------------ | -------------------------- | ------------------------------------ |
+| status       | initialized                | hitungan users role admin aktif (DB) |
+| create admin | password_hash              | PasswordHasher (spec 0010)           |
+| create admin | id, created_at             | generator kernel (spec 0009)         |
+| audit event  | actor                      | user admin yang baru dibuat          |
 
 **Key invariants**:
+
 - Tepat satu jalur pembuatan admin pertama; setelah initialized, endpoint setup mati secara logika (bukan disembunyikan saja).
 - Password tidak pernah muncul di log, audit, atau response (redaction plus review).
 
@@ -105,12 +113,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Seluruh rantai kontrak sampai UI terbukti bekerja; pola fitur end to end (use case, controller, SDK, halaman, e2e) menjadi contoh untuk semua fitur berikutnya.
 
 **Negative / tradeoffs**:
+
 - Tanpa auto login setelah setup, pengguna mengetik password dua kali; dipilih supaya pembuatan sesi hanya punya satu jalur.
 
 **Neutral**:
+
 - Rate limiter sederhana dalam memori lahir di sini dan dipakai ulang oleh login (spec 0017).
 
 ## Follow-up
@@ -120,10 +131,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-AUTH-01, bagian 8.2; struktur.md modul initial-setup, packages/auth.
 - Spec 0003, 0005, 0009, 0010, 0015.
 
 **Practices & standards**:
+
 - Tracer bullet untuk memvalidasi arsitektur; jaminan keunikan di lapisan data, bukan UI; rate limit endpoint publik.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

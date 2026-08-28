@@ -1,7 +1,7 @@
 # 0048. Import
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-IEX-01: import SQL/CSV dengan validasi tipe, ukuran, dan target; progress, er
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin mengunggah dump SQL atau file CSV dan mengalirkannya ke database dengan progress, tanpa takut setengah jalan tanpa kabar.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Unggah dulu sebagai file, lalu job memproses (dipilih)
 
 **Pros**:
+
 - Unggahan dan eksekusi terpisah: koneksi browser boleh putus saat job jalan; validasi dan pratinjau dari file yang sama; konsisten pola spec 0047.
 
 **Cons**:
+
 - Disk temp dipakai dua kali lipat sesaat; pembersih menangani.
 
 ### Option 2: Stream unggahan langsung ke eksekusi
 
 **Pros**:
+
 - Tanpa file perantara.
 
 **Cons**:
+
 - Gagal jaringan browser membatalkan import setengah jalan; tanpa pratinjau; cancel dan retry lebih rapuh.
 
 ## Decision
@@ -63,22 +68,25 @@ Import adalah operasi tulis terbesar yang bisa dilakukan pengguna; pemisahan ung
 **Data model sketch**: tidak ada tabel internal; file temp per upload dengan metadata (nama asli, ukuran, tipe) di memori/manifest.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /import/upload | POST | multipart file | uploadId, meta | sesi | 413 melebihi batas, 422 tipe |
-| /import/preview | GET | uploadId, format, options | 20 baris pertama / statement pertama | pemilik upload | 404 |
-| /import/sql | POST | connectionId, database, uploadId, txMode | jobId | pemilik, tersambung | 422 |
-| /import/csv | POST | connectionId, ref, uploadId, options, truncateFirst?, confirmName? | jobId | pemilik | 409 confirm, 422 mapping |
+
+| Endpoint        | Method | Key inputs                                                         | Key outputs                          | Auth                | Key errors                   |
+| --------------- | ------ | ------------------------------------------------------------------ | ------------------------------------ | ------------------- | ---------------------------- |
+| /import/upload  | POST   | multipart file                                                     | uploadId, meta                       | sesi                | 413 melebihi batas, 422 tipe |
+| /import/preview | GET    | uploadId, format, options                                          | 20 baris pertama / statement pertama | pemilik upload      | 404                          |
+| /import/sql     | POST   | connectionId, database, uploadId, txMode                           | jobId                                | pemilik, tersambung | 422                          |
+| /import/csv     | POST   | connectionId, ref, uploadId, options, truncateFirst?, confirmName? | jobId                                | pemilik             | 409 confirm, 422 mapping     |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| batas unggah | byte | config `limits.uploadMaxBytes` |
-| saran pemetaan | pasangan kolom | header CSV plus describeTable target |
-| posisi error SQL | statement ke N, offset | pemecah dan `DbError.position` provider |
-| ringkasan | hitungan sukses/gagal | akumulasi executor job |
+
+| Action           | Value produced / displayed | Source                                  |
+| ---------------- | -------------------------- | --------------------------------------- |
+| batas unggah     | byte                       | config `limits.uploadMaxBytes`          |
+| saran pemetaan   | pasangan kolom             | header CSV plus describeTable target    |
+| posisi error SQL | statement ke N, offset     | pemecah dan `DbError.position` provider |
+| ringkasan        | hitungan sukses/gagal      | akumulasi executor job                  |
 
 **Key invariants**:
+
 - Tidak ada isi file yang dieksekusi sebelum job dimulai dengan target dan opsi terkonfirmasi.
 - Truncate sebelum import tidak pernah terjadi tanpa confirmName terverifikasi server.
 - Semua nilai CSV masuk lewat parameter bind; SQL import dieksekusi sebagai statement pengguna secara sadar (itulah fungsinya) pada credential koneksi itu.
@@ -103,12 +111,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Jalur masuk data lengkap dan aman; bersama export membentuk pasangan FR-IEX penuh.
 
 **Negative / tradeoffs**:
+
 - INSERT batch lebih lambat dari bulk load native; benar dan seragam dulu, cepat kemudian (V2).
 
 **Neutral**:
+
 - Import lintas engine (dump PostgreSQL ke MySQL) tidak didukung dan dinyatakan (migration lintas engine adalah Future).
 
 ## Follow-up
@@ -118,9 +129,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-IEX-01, FR-JOB-01, FR-SAFE-01; spec 0012, 0028, 0033 (pemecah), 0047.
 
 **Practices & standards**:
+
 - Validasi saat mengalir; berhenti pada error pertama dengan posisi; konfirmasi destructive terverifikasi server.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

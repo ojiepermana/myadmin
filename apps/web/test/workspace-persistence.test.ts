@@ -6,7 +6,7 @@ import { ToastService } from '@ojiepermana/angular/component/toast';
 import { MyadminSdk } from '@myadmin/sdk-angular';
 import { DEFAULT_WORKSPACE_STATE } from '@myadmin/workspace';
 import { of } from 'rxjs';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, jest } from 'bun:test';
 import { ErrorPresenterService } from '../src/app/core/errors/error-presenter.service';
 import { WorkspacePersistenceService } from '../src/app/core/state/workspace-persistence.service';
 import { WorkspaceStore } from '../src/app/core/state/workspace.store';
@@ -15,25 +15,25 @@ TestBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 
 describe('WorkspacePersistenceService', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    jest.useRealTimers();
     TestBed.resetTestingModule();
   });
 
   it('UT-0030-AC3 saves once after the last workspace change and flushes on unload', async () => {
-    const save = vi.fn(() => of(undefined));
+    const save = jest.fn(() => of(undefined));
     const sdk = {
       workspace: {
-        load: vi.fn(() => of({ state: DEFAULT_WORKSPACE_STATE, skippedTabs: 0 })),
+        load: jest.fn(() => of({ state: DEFAULT_WORKSPACE_STATE, skippedTabs: 0 })),
         save,
       },
     } as unknown as MyadminSdk;
-    const router = { url: '/workspace', navigateByUrl: vi.fn(() => Promise.resolve(true)) };
-    const errorPresenter = { presentUnknown: vi.fn() };
-    const toast = { info: vi.fn(), warning: vi.fn() };
+    const router = { url: '/workspace', navigateByUrl: jest.fn(() => Promise.resolve(true)) };
+    const errorPresenter = { presentUnknown: jest.fn() };
+    const toast = { info: jest.fn(), warning: jest.fn() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -57,15 +57,15 @@ describe('WorkspacePersistenceService', () => {
       context: { route: '/query-editor' },
     });
     TestBed.flushEffects();
-    vi.advanceTimersByTime(1_999);
+    jest.advanceTimersByTime(1_999);
     expect(save).not.toHaveBeenCalled();
 
     workspace.setSidebarWidth(28);
     TestBed.flushEffects();
-    vi.advanceTimersByTime(1_999);
+    jest.advanceTimersByTime(1_999);
     expect(save).not.toHaveBeenCalled();
 
-    vi.advanceTimersByTime(1);
+    jest.advanceTimersByTime(1);
     expect(save).toHaveBeenCalledTimes(1);
 
     workspace.setBottomHeight(32);

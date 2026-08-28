@@ -1,7 +1,7 @@
 # 0033. Query editor: tab dan eksekusi
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-QRY-01 sampai FR-QRY-03 dan FR-QRY-06 sebagian: tab dengan konteks dan draft 
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin beberapa tab query dengan konteks masing masing yang tidak saling tertukar.
 - Sebagai pengguna, saya ingin menjalankan bagian SQL yang saya blok saja, dan melihat error menunjuk posisinya.
 
@@ -39,17 +40,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Sesi provider khusus per tab (dipilih)
 
 **Pros**:
+
 - Perilaku transaksi, SET, temp table sesuai harapan pengguna alat database; cancel menarget sesi yang jelas.
 
 **Cons**:
+
 - Lebih banyak koneksi ke server target (satu per tab yang aktif mengeksekusi); ditahan idle timeout dan penutupan bersama tab.
 
 ### Option 2: Pool bersama per koneksi
 
 **Pros**:
+
 - Koneksi lebih sedikit.
 
 **Cons**:
+
 - Transaksi manual dan session state pecah antar statement; kelas kebingungan yang fatal untuk alat administrasi.
 
 ## Decision
@@ -69,21 +74,24 @@ Semantik sesi adalah keputusan paling berdampak di editor; per tab adalah satu s
 **State transitions** (execution): running → completed | failed | cancelled (cancel di spec 0035); per statement: pending → running → done | error | skipped.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /query/executions | POST | connectionId, database, schema?, sql, mode | executionId | pemilik, tersambung | 409 NOT_CONNECTED, 422 |
-| /query/executions/:id | GET | tidak ada | state, hasil per statement | pemilik | 404 |
+
+| Endpoint              | Method | Key inputs                                 | Key outputs                | Auth                | Key errors             |
+| --------------------- | ------ | ------------------------------------------ | -------------------------- | ------------------- | ---------------------- |
+| /query/executions     | POST   | connectionId, database, schema?, sql, mode | executionId                | pemilik, tersambung | 409 NOT_CONNECTED, 422 |
+| /query/executions/:id | GET    | tidak ada                                  | state, hasil per statement | pemilik             | 404                    |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| autocomplete | daftar object/kolom | cache metadata provider konteks tab |
-| posisi error | offset editor | `DbError.position` provider dipetakan ke offset statement dalam draft |
-| durasi | ms per statement | pengukuran server di provider |
-| batas baris | nilai | config `limits.resultMaxRows` |
-| history | SQL, status, durasi | eksekusi ini; ditulis use case query |
+
+| Action       | Value produced / displayed | Source                                                                |
+| ------------ | -------------------------- | --------------------------------------------------------------------- |
+| autocomplete | daftar object/kolom        | cache metadata provider konteks tab                                   |
+| posisi error | offset editor              | `DbError.position` provider dipetakan ke offset statement dalam draft |
+| durasi       | ms per statement           | pengukuran server di provider                                         |
+| batas baris  | nilai                      | config `limits.resultMaxRows`                                         |
+| history      | SQL, status, durasi        | eksekusi ini; ditulis use case query                                  |
 
 **Key invariants**:
+
 - Konteks eksekusi selalu eksplisit dari tab; tidak pernah "koneksi aktif global" diam diam (FR-EXP-04).
 - Semua SQL pengguna berjalan hanya pada sesi tab miliknya; tidak ada penggunaan sesi lintas user.
 - Hasil yang terpotong selalu ditandai; klien tidak pernah mengira data lengkap.
@@ -109,13 +117,16 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Fitur inti produk hidup; model eksekusi asinkron siap untuk cancel dan EXPLAIN tanpa perombakan.
 
 **Negative / tradeoffs**:
+
 - Sesi per tab menambah koneksi ke server target; idle timeout dan penutupan tab menahannya.
 - Pemecah statement adalah kode rawan; dibayar dengan test dialek yang luas.
 
 **Neutral**:
+
 - Draft SQL tab ikut workspace persistence (spec 0030).
 
 ## Follow-up
@@ -126,12 +137,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-QRY-01, 02, 03, 06, NFR-01; spec 0023, 0025, 0027, 0029.
 - Keputusan CodeMirror 6, sesi desain 2026-08-28.
 
 **Practices & standards**:
+
 - Sesi eksplisit per konteks kerja; eksekusi asinkron dengan id; serialisasi berlabel tipe untuk presisi.
 
 **Links** (terverifikasi web 2026-08-28):
+
 - Repo lang-sql pindah hosting (arsip GitHub): https://github.com/codemirror/lang-sql
 - Rumah baru pengembangan CodeMirror: https://code.haverbeke.berlin/codemirror/lang-sql

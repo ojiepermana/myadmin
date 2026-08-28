@@ -1359,9 +1359,17 @@ export function createServerApp(options: ServerAppOptions = {}) {
           idleTimeoutMinutes: options.config?.provider.idleTimeoutMinutes,
         })
       : undefined);
+  const auditRepository =
+    options.auditRepository ??
+    (options.database ? storeForDatabase(options.database).audit : undefined);
   const setupService =
     options.initialAdminService ??
-    (runtimeStore ? new InitialAdminService({ store: runtimeStore }) : undefined);
+    (runtimeStore
+      ? new InitialAdminService({
+          store: runtimeStore,
+          ...(auditRepository ? { auditWriter: new AuditWriter(auditRepository) } : {}),
+        })
+      : undefined);
   const setupRateLimiter = options.setupRateLimiter ?? createRateLimiter('setup');
   const loginRateLimiter = options.loginRateLimiter ?? createRateLimiter('login');
   const authService =
@@ -1377,9 +1385,6 @@ export function createServerApp(options: ServerAppOptions = {}) {
   const jobManager = options.jobManager ?? new JobManager();
   const ownsJobManager = options.jobManager === undefined;
   const settingsService = options.settingsService ?? runtimeStore?.settingsService;
-  const auditRepository =
-    options.auditRepository ??
-    (options.database ? storeForDatabase(options.database).audit : undefined);
   const userManagementService =
     options.userManagementService ??
     (options.database
@@ -1734,7 +1739,10 @@ export function createApp(
   const database = new Database(':memory:', { create: true, readwrite: true, strict: true });
   runMigrations(database);
   const store = storeForDatabase(database);
-  const setupService = new InitialAdminService({ store });
+  const setupService = new InitialAdminService({
+    store,
+    auditWriter: new AuditWriter(store.audit),
+  });
   const authService = new AuthService(store);
   const userManagementService = new UserManagementService({ store });
   const contractKey = new Uint8Array(32).fill(7);

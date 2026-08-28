@@ -29,6 +29,12 @@ loose permissions, a pending migration, a port already in use, or absent native
 backup clients. Do not paste logs containing connection details into a public
 issue. Redact hostnames, usernames, tokens, and database names first.
 
+For MySQL, `sslmode=disable` is supported as an explicit compatibility mode.
+Bun SQL may need public key retrieval for accounts using
+`caching_sha2_password`, so this mode should only be used on a trusted local
+network. Use `require`, `verify-ca`, or `verify-full` with the intended CA for
+remote connections. A TLS failure must not silently downgrade to this mode.
+
 Known V1 limits include no native MSI, PKG, DEB, or RPM installers, no
 automatic update service, and no scheduled backup. macOS and Windows release
 artifacts can be unsigned when project signing secrets are not configured.

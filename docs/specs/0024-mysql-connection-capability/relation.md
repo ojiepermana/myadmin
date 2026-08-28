@@ -11,19 +11,19 @@ Dokumen ini mencatat relasi yang memengaruhi urutan build, kontrak yang dikonsum
 
 ## Legenda relasi
 
-| Jenis | Makna |
-|---|---|
-| `requires` | Spec belum boleh dimulai sebelum dependency selesai. |
-| `references` | Spec memakai keputusan atau istilah dari spec lain, tetapi bukan gerbang build langsung. |
-| `enables` | Spec lain menjadikan spec ini dependency langsung. |
-| `coordinates` | Perubahan perlu diselaraskan tanpa mengubah urutan build. |
-| `deferred` | Kewajiban sengaja diteruskan ke spec yang lebih akhir. |
-| `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia. |
+| Jenis         | Makna                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| `requires`    | Spec belum boleh dimulai sebelum dependency selesai.                                     |
+| `references`  | Spec memakai keputusan atau istilah dari spec lain, tetapi bukan gerbang build langsung. |
+| `enables`     | Spec lain menjadikan spec ini dependency langsung.                                       |
+| `coordinates` | Perubahan perlu diselaraskan tanpa mengubah urutan build.                                |
+| `deferred`    | Kewajiban sengaja diteruskan ke spec yang lebih akhir.                                   |
+| `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia.                      |
 
 ## Prasyarat wajib
 
-| Jenis | Spec | Sumber |
-|---|---|---|
+| Jenis      | Spec                                                                                                    | Sumber                        |
+| ---------- | ------------------------------------------------------------------------------------------------------- | ----------------------------- |
 | `requires` | [0021. Kontrak database-core, capability model, dan registry](../0021-database-core-contracts/index.md) | Indeks build dan konteks spec |
 
 Tidak ada dependency kelompok tambahan dari indeks.
@@ -42,22 +42,34 @@ Baris di atas dipertahankan utuh. Bila bertentangan dengan tabel prasyarat wajib
 
 ## Output dan konsumen langsung
 
-| Jenis | Spec konsumen | Kontrak |
-|---|---|---|
-| `enables` | [0025. Provider MySQL: metadata dan introspeksi](../0025-mysql-metadata/index.md) | Spec ini harus selesai sebelum konsumen dimulai |
+| Jenis     | Spec konsumen                                                                        | Kontrak                                         |
+| --------- | ------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `enables` | [0025. Provider MySQL: metadata dan introspeksi](../0025-mysql-metadata/index.md)    | Spec ini harus selesai sebelum konsumen dimulai |
 | `enables` | [0026. Connection manager: CRUD dan vault](../0026-connection-manager-crud/index.md) | Spec ini harus selesai sebelum konsumen dimulai |
 
 ## Relasi nonblocking dan handoff
 
-| Jenis awal | Spec | Cara membaca relasi |
-|---|---|---|
+| Jenis awal   | Spec                                                                                                                    | Cara membaca relasi                                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `references` | [0022. Provider PostgreSQL: koneksi, TLS, capability, error mapping](../0022-postgresql-connection-capability/index.md) | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build. |
 
 ## Prasyarat environment atau manusia
 
-| Jenis | Kebutuhan | Bukti kesiapan |
-|---|---|---|
-| `environment` | Tidak ada prasyarat environment atau manusia yang dinyatakan eksplisit pada baris prasyarat. | Dicatat sebelum build atau verify dimulai. |
+| Jenis         | Kebutuhan                                                                                                                                                                                                                                                                                                    | Bukti kesiapan                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| `environment` | MySQL yang dipakai untuk proof integrasi harus menyediakan mode TLS yang sesuai dengan URL fixture. `sslmode=disable` tetap didukung oleh adapter, tetapi Bun SQL memerlukan `allowPublicKeyRetrieval` untuk akun yang memakai `caching_sha2_password`; mode ini tidak memberi jaminan kerahasiaan jaringan. | Dicatat sebelum build atau verify dimulai. |
+
+## Batasan Bun SQL pada `sslmode=disable`
+
+Adapter meneruskan `sslmode=disable` sebagai koneksi tanpa TLS dan mengaktifkan
+`allowPublicKeyRetrieval` agar autentikasi `caching_sha2_password` dapat berjalan
+di Bun SQL. Ini adalah jalur kompatibilitas lokal atau jaringan tepercaya, bukan
+rekomendasi deployment. Untuk koneksi yang melewati jaringan tidak tepercaya,
+gunakan `require`, `verify-ca`, atau `verify-full` dengan CA yang sesuai.
+
+Proof integrasi tidak boleh menyimpulkan bahwa `sslmode=disable` aman hanya
+karena koneksi berhasil. URL fixture wajib menyatakan mode yang diuji, dan
+kegagalan negosiasi TLS harus tetap keluar sebagai `tls_failed` tanpa downgrade.
 
 ## Boundary lintas spec
 

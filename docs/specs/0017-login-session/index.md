@@ -1,7 +1,7 @@
 # 0017. Login, logout, dan session
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-AUTH-02 sampai FR-AUTH-05 menuntut login yang tidak bocor informasi, sesi den
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin masuk dengan username dan password lalu tetap masuk sampai batas waktu yang wajar.
 - Sebagai pemilik instance, saya ingin sesi kadaluarsa dan logout benar benar menutup akses.
 
@@ -40,17 +41,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Sesi opaque server side dengan cookie HttpOnly (dipilih)
 
 **Pros**:
+
 - Pencabutan seketika (logout, deactivate) karena kebenaran di server; tidak ada token yang bisa dibaca skrip; cocok dengan tabel sessions yang sudah dikunci.
 
 **Cons**:
+
 - Satu query sesi per request (dimitigasi cache memori singkat).
 
 ### Option 2: JWT stateless
 
 **Pros**:
+
 - Tanpa lookup sesi per request.
 
 **Cons**:
+
 - Pencabutan butuh denylist (kembali stateful); klaim kadaluarsa hidup di klien; tidak memberi keuntungan untuk aplikasi satu server dengan SQLite lokal.
 
 ## Decision
@@ -70,21 +75,24 @@ Aplikasi ini satu proses dengan database lokal; kekuatan JWT (stateless lintas l
 **State transitions** (session): active → expired (idle/absolut) | revoked (logout, deactivate, change password); tidak ada jalur kembali.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /auth/login | POST | username, password | user | publik, rate limited | 401, 429 |
-| /auth/logout | POST | tidak ada | kosong | sessionCookie | 401 |
-| /auth/me | GET | tidak ada | user, role | sessionCookie | 401 |
+
+| Endpoint     | Method | Key inputs         | Key outputs | Auth                 | Key errors |
+| ------------ | ------ | ------------------ | ----------- | -------------------- | ---------- |
+| /auth/login  | POST   | username, password | user        | publik, rate limited | 401, 429   |
+| /auth/logout | POST   | tidak ada          | kosong      | sessionCookie        | 401        |
+| /auth/me     | GET    | tidak ada          | user, role  | sessionCookie        | 401        |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| login | token sesi | CSPRNG 32 byte, dikirim hanya sebagai cookie |
-| enforcement | idle dan absolute timeout | config `session.*` (spec 0012) |
-| me | user, role | baris users lewat sesi |
-| audit login gagal | kategori alasan | use case (kredensial salah, user nonaktif); tidak dikirim ke klien |
+
+| Action            | Value produced / displayed | Source                                                             |
+| ----------------- | -------------------------- | ------------------------------------------------------------------ |
+| login             | token sesi                 | CSPRNG 32 byte, dikirim hanya sebagai cookie                       |
+| enforcement       | idle dan absolute timeout  | config `session.*` (spec 0012)                                     |
+| me                | user, role                 | baris users lewat sesi                                             |
+| audit login gagal | kategori alasan            | use case (kredensial salah, user nonaktif); tidak dikirim ke klien |
 
 **Key invariants**:
+
 - Token sesi plaintext tidak pernah disimpan atau dicatat; hanya hash nya.
 - Semua endpoint non publik dan WS melewati middleware sesi yang sama; tidak ada jalur samping (bagian 8.2 butir 5).
 - Cookie dihapus di setiap jalur kegagalan sesi.
@@ -109,12 +117,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Fondasi authorization untuk semua fitur berikutnya; FR-AUTH-02 sampai 05 selesai dengan pencabutan yang nyata.
 
 **Negative / tradeoffs**:
+
 - Lookup sesi per request; dimitigasi cache memori 60 detik yang tetap menghormati pencabutan pada batas cache.
 
 **Neutral**:
+
 - Peran `Admin` vs `User` baru dipakai membatasi route di spec 0018 dan seterusnya.
 
 ## Follow-up
@@ -124,10 +135,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-AUTH-02 sampai FR-AUTH-05, bagian 8.2 butir 5; struktur.md packages/auth.
 - Spec 0008, 0010, 0012, 0016.
 
 **Practices & standards**:
+
 - Sesi opaque dengan hash token; pesan kegagalan autentikasi seragam; CSRF defense berlapis (SameSite, header custom, Origin).
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

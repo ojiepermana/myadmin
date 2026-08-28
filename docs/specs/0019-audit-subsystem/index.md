@@ -1,7 +1,7 @@
 # 0019. Subsistem audit append only
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-AUD-01 (P0): audit append only dan tersensor untuk login penting, perubahan c
 ## Requirements
 
 **User stories**:
+
 - Sebagai Admin, saya ingin jejak siapa melakukan apa terhadap apa, yang tidak bisa diubah dari aplikasi.
 - Sebagai developer fitur, saya ingin satu API audit yang benar secara default sehingga saya tidak bisa lupa menyensor atau salah urutan.
 
@@ -38,17 +39,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Penulisan sinkron dalam alur request (dipilih)
 
 **Pros**:
+
 - Menjamin urutan yang dituntut FR-AUD-01 tanpa mesin tambahan; SQLite lokal membuat biaya tulis kecil.
 
 **Cons**:
+
 - Menambah satu tulisan db pada latensi aksi mutatif; dapat diterima untuk volume alat admin.
 
 ### Option 2: Antrean audit asinkron dengan flush berkala
 
 **Pros**:
+
 - Latensi aksi lebih kecil.
 
 **Cons**:
+
 - Melanggar langsung syarat "success response tidak dikirim sebelum event tertulis"; risiko kehilangan event saat crash.
 
 ## Decision
@@ -67,21 +72,23 @@ Syarat pengurutan di FR-AUD-01 adalah inti akuntabilitas produk ini; hanya penul
 
 **API surface**: tidak ada endpoint (halaman dan API baca milik spec 0020); permukaan modul:
 
-~~~text
+```text
 AuditEvents.<domain>.<aksi>: definisi event (action, wajibAudit, targetType default)
 AuditWriter.record(event): Promise<void>
 withAudit(eventFactory, fn): Promise<T>
-~~~
+```
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| record | occurred_at | jam kernel |
-| record | correlation_id | AsyncLocalStorage request (spec 0013) |
-| record | actorUserId | sesi request; null untuk pra login |
-| record | targetRef | nama object dari aksi (misal `db1.public.orders`), bukan isi data |
+
+| Action | Value produced / displayed | Source                                                            |
+| ------ | -------------------------- | ----------------------------------------------------------------- |
+| record | occurred_at                | jam kernel                                                        |
+| record | correlation_id             | AsyncLocalStorage request (spec 0013)                             |
+| record | actorUserId                | sesi request; null untuk pra login                                |
+| record | targetRef                  | nama object dari aksi (misal `db1.public.orders`), bukan isi data |
 
 **Key invariants**:
+
 - Aksi wajib audit tidak pernah menghasilkan response sukses tanpa baris audit (AC-3).
 - Payload audit bebas secret dan bebas isi baris data (bagian 8.2 butir 8).
 - Action selalu berasal dari taksonomi (AC-1).
@@ -106,12 +113,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Semua fitur destructive berikutnya (drop, truncate, restore, revoke) tinggal membungkus aksinya dengan `withAudit`; jaminan FR-AUD-01 terpusat.
 
 **Negative / tradeoffs**:
+
 - Latensi kecil tambahan per aksi mutatif; audit yang tidak dipangkas akan menumbuhkan file db (dipantau doctor, dipangkas di V2).
 
 **Neutral**:
+
 - Halaman baca audit dan filternya sengaja dipisah ke spec 0020 supaya subsistem ini bisa selesai sebelum UI nya.
 
 ## Follow-up
@@ -121,10 +131,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-AUD-01, FR-SAFE-02, bagian 8.2 butir 6 dan 8; struktur.md packages/audit.
 - Spec 0009 (repo append only), 0011 (redaction), 0013 (correlation).
 
 **Practices & standards**:
+
 - Audit append only; write ahead acknowledgement (sukses hanya setelah jejak tertulis); taksonomi event tertutup.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

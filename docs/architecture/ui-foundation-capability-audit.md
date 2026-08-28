@@ -38,3 +38,14 @@ the optional `@angular/material` peer is not required for this slice.
 
 The application must not import `@angular/material`, PrimeNG, or Bootstrap. The optional Material peer may be added to
 the root manifest only if a future feature intentionally imports the foundation select, date picker, or calendar.
+
+## Angular bundle budget decision
+
+The production build on 2026-08-29 measured an initial bundle of 893.70 kB,
+with the largest component styles at 7.77 kB. The warning budgets are therefore
+900 kB for the initial bundle and 8 kB for any component style. The hard error
+budgets remain 1 MB and 8 kB, so a future build still fails when it crosses the
+existing production safety limits. This is a conscious warning threshold
+adjustment based on the current measured bundle, not a claim that bundle size
+optimization is complete. Revisit the thresholds when a feature adds a large
+initial dependency or when the initial bundle reaches 950 kB.

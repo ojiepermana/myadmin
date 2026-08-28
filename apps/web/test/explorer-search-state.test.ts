@@ -1,5 +1,5 @@
 import { Observable, of } from 'rxjs';
-import { afterEach, describe, expect, it, vi } from 'bun:test';
+import { afterEach, describe, expect, it, jest } from 'bun:test';
 import {
   ExplorerSearchController,
   type SearchPage,
@@ -8,11 +8,11 @@ import {
 
 describe('ExplorerSearchController', () => {
   afterEach(() => {
-    vi.useRealTimers();
+    jest.useRealTimers();
   });
 
   it('UT-0032-AC3 debounces input and appends paginated results', () => {
-    vi.useFakeTimers();
+    jest.useFakeTimers();
     const requests: SearchRequest[] = [];
     const controller = new ExplorerSearchController<{ name: string }>((request) => {
       requests.push(request);
@@ -23,9 +23,9 @@ describe('ExplorerSearchController', () => {
     });
 
     controller.setQuery('connection-1', 'ta');
-    vi.advanceTimersByTime(299);
+    jest.advanceTimersByTime(299);
     expect(requests).toHaveLength(0);
-    vi.advanceTimersByTime(1);
+    jest.advanceTimersByTime(1);
     expect(requests).toEqual([{ connectionId: 'connection-1', query: 'ta' }]);
     expect(controller.state.items).toEqual([{ name: 'first' }]);
 
@@ -39,7 +39,7 @@ describe('ExplorerSearchController', () => {
   });
 
   it('UT-0032-AC5 aborts a stale request when the query changes', () => {
-    vi.useFakeTimers();
+    jest.useFakeTimers();
     let aborted = 0;
     let emitOld: ((page: SearchPage<{ name: string }>) => void) | undefined;
     const controller = new ExplorerSearchController<{ name: string }>(
@@ -52,13 +52,13 @@ describe('ExplorerSearchController', () => {
         }),
     );
     controller.setQuery('connection-1', 'old');
-    vi.advanceTimersByTime(300);
+    jest.advanceTimersByTime(300);
     expect(controller.state.loading).toBe(true);
     controller.setQuery('connection-1', 'new');
     expect(aborted).toBe(1);
     emitOld?.({ items: [{ name: 'stale' }], cursor: null });
     expect(controller.state.items).toEqual([]);
-    vi.advanceTimersByTime(300);
+    jest.advanceTimersByTime(300);
     expect(controller.state.loading).toBe(true);
     controller.dispose();
   });

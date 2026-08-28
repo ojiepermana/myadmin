@@ -1,7 +1,7 @@
 # 0050. Restore
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-BKR-01: restore dengan progress, error, confirmation, dan audit; validation a
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin memulihkan database dari backup dengan kepastian file nya valid dan kesadaran penuh bahwa data kini akan tertimpa.
 
 **Acceptance criteria**:
@@ -36,17 +37,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Restore ke database baru sebagai jalur yang disarankan (dipilih)
 
 **Pros**:
+
 - Pemulihan tanpa menimpa data hidup; kegagalan restore tidak menghancurkan keadaan kini; pola paling aman untuk GUI.
 
 **Cons**:
+
 - Butuh ruang dua kali; pengguna memindahkan aplikasi ke database baru sendiri.
 
 ### Option 2: Restore menimpa di tempat sebagai default
 
 **Pros**:
+
 - Satu langkah.
 
 **Cons**:
+
 - Kegagalan setengah jalan meninggalkan campuran lama baru; sebagai default terlalu berbahaya. Tetap tersedia sebagai pilihan sadar dengan konfirmasi yang sama.
 
 ## Decision
@@ -62,20 +67,23 @@ Restore gagal setengah jalan adalah skenario terburuk pengguna produk ini; jalur
 **Data model sketch**: memakai artefak dan manifest spec 0049; tanpa tabel baru.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /restore/validate | POST | sumber (artifactId atau uploadId) | format, engine terdeteksi, ukuran | pemilik sumber | 422 format |
-| /restore | POST | connectionId, targetDatabase, createNew?, sumber, confirmName | jobId | pemilik, tersambung, capability | 409 confirm/engine mismatch, unsupported |
+
+| Endpoint          | Method | Key inputs                                                    | Key outputs                       | Auth                            | Key errors                               |
+| ----------------- | ------ | ------------------------------------------------------------- | --------------------------------- | ------------------------------- | ---------------------------------------- |
+| /restore/validate | POST   | sumber (artifactId atau uploadId)                             | format, engine terdeteksi, ukuran | pemilik sumber                  | 422 format                               |
+| /restore          | POST   | connectionId, targetDatabase, createNew?, sumber, confirmName | jobId                             | pemilik, tersambung, capability | 409 confirm/engine mismatch, unsupported |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| validasi | format dan engine dump | sniff header file (modul validasi) |
-| target baru | pembuatan database | DatabasePort.create (spec 0039) di awal job |
-| credential subprocess | env/file sementara | pola spec 0049 |
-| keadaan parsial | pernyataan di hasil job | status cancel/gagal executor |
+
+| Action                | Value produced / displayed | Source                                      |
+| --------------------- | -------------------------- | ------------------------------------------- |
+| validasi              | format dan engine dump     | sniff header file (modul validasi)          |
+| target baru           | pembuatan database         | DatabasePort.create (spec 0039) di awal job |
+| credential subprocess | env/file sementara         | pola spec 0049                              |
+| keadaan parsial       | pernyataan di hasil job    | status cancel/gagal executor                |
 
 **Key invariants**:
+
 - Tidak ada eksekusi restore tanpa validasi format lulus dan confirmName terverifikasi.
 - Audit started selalu tertulis sebelum subprocess mulai; completed/failed sebelum response akhir.
 - Password tidak pernah di argv; stderr tersensor.
@@ -99,12 +107,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Lingkaran backup restore tertutup dan teruji roundtrip; janji Definition of Done butir 7 untuk backup restore punya jalannya.
 
 **Negative / tradeoffs**:
+
 - Restore dump custom format pg_restore (bukan plain) ditunda: V1 mendukung dump plain yang dihasilkan spec 0049; format custom dicatat V2.
 
 **Neutral**:
+
 - Restore lintas versi mengikuti aturan kompatibilitas tool; peringatan versi tampil dari deteksi spec 0049.
 
 ## Follow-up
@@ -114,9 +125,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-BKR-01, FR-BKR-02, FR-SAFE-01, FR-SAFE-02; spec 0028, 0039, 0048 (upload), 0049.
 
 **Practices & standards**:
+
 - Restore ke lingkungan baru sebagai default aman; audit sebelum dan sesudah operasi tak terpulihkan; validasi artefak sebelum konfirmasi.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import type { components } from '@myadmin/api-contract';
 import { firstValueFrom, of, type Observable } from 'rxjs';
-import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, jest } from 'bun:test';
 import {
   MyadminSdk,
   MYADMIN_SDK_CONFIG,
@@ -539,7 +539,7 @@ describe('MyAdmin Angular SDK', () => {
   });
 
   it('AC-6 connects, sends subscriptions, dispatches typed events, and resubscribes after backoff', async () => {
-    vi.useFakeTimers();
+    jest.useFakeTimers();
     FakeRealtimeSocket.instances.length = 0;
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -573,25 +573,25 @@ describe('MyAdmin Angular SDK', () => {
     expect(payloads).toEqual([{ jobId: 'job-1', progress: 0.5 }]);
 
     first.fail();
-    vi.advanceTimersByTime(999);
+    jest.advanceTimersByTime(999);
     expect(FakeRealtimeSocket.instances).toHaveLength(1);
-    vi.advanceTimersByTime(1);
+    jest.advanceTimersByTime(1);
     const second = FakeRealtimeSocket.instances[1];
     if (!second) throw new Error('The first reconnect socket was not created');
     second.open();
     expect(second.sent).toEqual([JSON.stringify({ type: 'subscribe', channel: 'jobs.job-1' })]);
     second.fail();
     // A successful reconnect resets the backoff; the next failed attempt starts at 1 second.
-    vi.advanceTimersByTime(999);
+    jest.advanceTimersByTime(999);
     expect(FakeRealtimeSocket.instances).toHaveLength(2);
-    vi.advanceTimersByTime(1);
+    jest.advanceTimersByTime(1);
     expect(FakeRealtimeSocket.instances).toHaveLength(3);
     const third = FakeRealtimeSocket.instances[2];
     if (!third) throw new Error('The second reconnect socket was not created');
     third.fail();
-    vi.advanceTimersByTime(1_999);
+    jest.advanceTimersByTime(1_999);
     expect(FakeRealtimeSocket.instances).toHaveLength(3);
-    vi.advanceTimersByTime(1);
+    jest.advanceTimersByTime(1);
     expect(FakeRealtimeSocket.instances).toHaveLength(4);
     expect(states).toContain('connecting');
 
@@ -599,7 +599,7 @@ describe('MyAdmin Angular SDK', () => {
     sdk.realtime.disconnect();
     stateSubscription.unsubscribe();
     TestBed.resetTestingModule();
-    vi.useRealTimers();
+    jest.useRealTimers();
   });
 
   it('AC-6 connects and disconnects the realtime client with the auth facade', async () => {

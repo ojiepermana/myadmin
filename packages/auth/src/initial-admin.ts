@@ -23,6 +23,18 @@ export interface InitialAdminRepositories {
   readonly audit: AuditRepository;
 }
 
+export interface InitialAdminAuditWriter {
+  record(event: {
+    readonly action: 'auth.initial_admin.created';
+    readonly actorUserId: string;
+    readonly targetType: 'user';
+    readonly targetRef: string;
+    readonly connectionId: null;
+    readonly result: 'success';
+    readonly details: { readonly username: string };
+  }): void;
+}
+
 export interface InitialAdminStore {
   transaction<T>(operation: (repositories: InitialAdminRepositories) => T): T;
 }
@@ -51,6 +63,7 @@ export class InitialAdminError extends Error {
 
 export interface InitialAdminServiceOptions {
   readonly store: InitialAdminStore;
+  readonly auditWriter?: InitialAdminAuditWriter;
   readonly passwordHasher?: PasswordHasher;
   readonly now?: () => Date;
   readonly createId?: () => string;
@@ -102,6 +115,7 @@ function activeAdmin(users: UserRepository): User | null {
 /** Owns the one-way claim of an empty MyAdmin instance. */
 export class InitialAdminService {
   private readonly store: InitialAdminStore;
+  private readonly auditWriter: InitialAdminAuditWriter | undefined;
   private readonly passwordHasher: PasswordHasher;
   private readonly now: () => Date;
   private readonly createId: () => string;
@@ -109,6 +123,7 @@ export class InitialAdminService {
 
   public constructor(options: InitialAdminServiceOptions) {
     this.store = options.store;
+    this.auditWriter = options.auditWriter;
     this.passwordHasher = options.passwordHasher ?? new PasswordHasher();
     this.now = options.now ?? (() => new Date());
     this.createId = options.createId ?? createUuidV7;
@@ -166,18 +181,30 @@ export class InitialAdminService {
       }
 
       users.create(user);
-      audit.append({
-        id: this.createId(),
-        occurredAt: createdAt,
-        actorUserId: user.id,
-        action: 'auth.initial_admin.created',
-        targetType: 'user',
-        targetRef: user.id,
-        connectionId: null,
-        result: 'success',
-        correlationId: correlationId ?? null,
-        details: { username: user.username },
-      });
+      if (this.auditWriter) {
+        this.auditWriter.record({
+          action: 'auth.initial_admin.created',
+          actorUserId: user.id,
+          targetType: 'user',
+          targetRef: user.id,
+          connectionId: null,
+          result: 'success',
+          details: { username: user.username },
+        });
+      } else {
+        audit.append({
+          id: this.createId(),
+          occurredAt: createdAt,
+          actorUserId: user.id,
+          action: 'auth.initial_admin.created',
+          targetType: 'user',
+          targetRef: user.id,
+          connectionId: null,
+          result: 'success',
+          correlationId: correlationId ?? null,
+          details: { username: user.username },
+        });
+      }
       return user;
     });
 
