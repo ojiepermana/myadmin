@@ -6,7 +6,7 @@ import { ToastService } from '@ojiepermana/angular/component/toast';
 import { MyadminSdk } from '@myadmin/sdk-angular';
 import { DEFAULT_WORKSPACE_STATE } from '@myadmin/workspace';
 import { of } from 'rxjs';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test';
 import { ErrorPresenterService } from '../src/app/core/errors/error-presenter.service';
 import { WorkspacePersistenceService } from '../src/app/core/state/workspace-persistence.service';
 import { WorkspaceStore } from '../src/app/core/state/workspace.store';

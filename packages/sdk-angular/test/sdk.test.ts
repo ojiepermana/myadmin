@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import '@angular/compiler';
 import { HttpHeaders } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
@@ -6,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import type { components } from '@myadmin/api-contract';
 import { firstValueFrom, of, type Observable } from 'rxjs';
-import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'bun:test';
 import {
   MyadminSdk,
   MYADMIN_SDK_CONFIG,
@@ -574,18 +573,26 @@ describe('MyAdmin Angular SDK', () => {
     expect(payloads).toEqual([{ jobId: 'job-1', progress: 0.5 }]);
 
     first.fail();
-    await vi.advanceTimersByTimeAsync(999);
+    vi.advanceTimersByTime(999);
     expect(FakeRealtimeSocket.instances).toHaveLength(1);
-    await vi.advanceTimersByTimeAsync(1);
+    vi.advanceTimersByTime(1);
     const second = FakeRealtimeSocket.instances[1];
     if (!second) throw new Error('The first reconnect socket was not created');
     second.open();
     expect(second.sent).toEqual([JSON.stringify({ type: 'subscribe', channel: 'jobs.job-1' })]);
     second.fail();
-    await vi.advanceTimersByTimeAsync(1_999);
+    // A successful reconnect resets the backoff; the next failed attempt starts at 1 second.
+    vi.advanceTimersByTime(999);
     expect(FakeRealtimeSocket.instances).toHaveLength(2);
-    await vi.advanceTimersByTimeAsync(1);
+    vi.advanceTimersByTime(1);
     expect(FakeRealtimeSocket.instances).toHaveLength(3);
+    const third = FakeRealtimeSocket.instances[2];
+    if (!third) throw new Error('The second reconnect socket was not created');
+    third.fail();
+    vi.advanceTimersByTime(1_999);
+    expect(FakeRealtimeSocket.instances).toHaveLength(3);
+    vi.advanceTimersByTime(1);
+    expect(FakeRealtimeSocket.instances).toHaveLength(4);
     expect(states).toContain('connecting');
 
     unsubscribe();
@@ -648,7 +655,7 @@ describe('MyAdmin Angular SDK', () => {
       }),
     );
     const objectRequest = http.expectOne(
-      '/api/v1/connections/connection-1/schemas/public/objects?database=app&page=100&type=table',
+      '/api/v1/connections/connection-1/schemas/public/objects?page=100&database=app&type=table',
     );
     objectRequest.flush({ items: [], cursor: null });
     await expect(objects).resolves.toMatchObject({ items: [], cursor: null });
@@ -663,9 +670,8 @@ describe('MyAdmin Angular SDK', () => {
     );
     const describeRequest = http.expectOne(
       (request) =>
-        request.url === '/api/v1/connections/connection-1/objects/describe' &&
-        request.params.get('ref') ===
-          JSON.stringify({ database: 'app', schema: 'public', name: 'users', type: 'table' }),
+        request.urlWithParams ===
+        `/api/v1/connections/connection-1/objects/describe?ref=${encodeURIComponent(JSON.stringify({ database: 'app', schema: 'public', name: 'users', type: 'table' }))}`,
     );
     describeRequest.flush({
       ref: { database: 'app', schema: 'public', name: 'users', type: 'table' },

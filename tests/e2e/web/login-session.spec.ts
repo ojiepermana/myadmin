@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 test('E2E-0017-AC8 and VIS-0017-AC8 guard the workspace and clear expired client state', async ({
   page,

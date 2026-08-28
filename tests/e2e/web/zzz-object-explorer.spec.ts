@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC8, E2E-0032-AC3, E2E-0032-AC4, E2E-0032-AC5, and E2E-0032-AC6 render provider-driven lazy trees and paginated search results', async ({
   page,
@@ -226,7 +226,7 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC8, E2E-0032-AC3, E2E-
       ),
     });
   });
-  await page.route('**/api/v1/auth/me', async (route) => {
+  await page.route('**/api/v1/auth/me**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -243,13 +243,11 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC8, E2E-0032-AC3, E2E-
     });
   });
 
+  const login = await page.request.post('/api/v1/auth/login', {
+    data: { username: 'browser-admin', password: 'synthetic-browser-password' },
+  });
+  expect(login.ok()).toBeTruthy();
   await page.goto('/explorer');
-  if (/\/login/.test(page.url())) {
-    await page.getByLabel('Username').fill('browser-admin');
-    await page.getByLabel('Password').fill('synthetic-browser-password');
-    await page.getByLabel('Password').press('Enter');
-    await page.goto('/explorer');
-  }
   await expect(page.getByRole('heading', { name: 'Object explorer' })).toBeVisible();
 
   const postgres = page.getByRole('treeitem', { name: 'PostgreSQL fixture' });

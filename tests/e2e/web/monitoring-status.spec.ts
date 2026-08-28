@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 test('E2E-0051-AC1, E2E-0051-AC3, E2E-0051-AC4, E2E-0051-AC5, E2E-0051-AC6, and E2E-0051-AC7 render status cards without polling', async ({
   page,

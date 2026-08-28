@@ -15,7 +15,6 @@ const defaultTargets = [
   'package.json',
   'playwright.config.ts',
   'tsconfig*.json',
-  'vitest.workspace.ts',
 ];
 
 const command = check ? '--check' : '--write';

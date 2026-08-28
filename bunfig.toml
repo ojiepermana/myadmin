@@ -2,3 +2,6 @@ logLevel = "warn"
 
 [install]
 exact = true
+
+[test]
+preload = ["./scripts/test/bun-dom-preload.ts"]

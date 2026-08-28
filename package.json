@@ -36,7 +36,7 @@
     "format": "bun run scripts/quality/format.ts",
     "format:check": "bun run scripts/quality/format.ts --check",
     "typecheck": "bun run scripts/quality/typecheck.ts",
-    "test": "vitest run --config vitest.workspace.ts",
+    "test": "bun test --isolate --timeout=10000 --path-ignore-patterns='tests/e2e/**/*.spec.ts'",
     "test:e2e": "playwright test --config playwright.config.ts",
     "check:boundaries": "bun run scripts/verify/check-boundaries.ts",
     "check:manifests": "bun run scripts/verify/check-manifests.ts",
@@ -93,8 +93,7 @@
     "tailwindcss": "4.3.0",
     "typescript": "~6.0.2",
     "yaml": "2.9.0",
-    "typescript-eslint": "8.68.0",
-    "vitest": "4.1.11"
+    "typescript-eslint": "8.68.0"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx,html,scss,json,yaml,yml,md}": [

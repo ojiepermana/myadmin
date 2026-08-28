@@ -21,16 +21,15 @@ export class ErrorPresenterService {
   }
 
   presentUnknown(value: unknown): void {
-    if (isSdkError(value)) {
-      this.present(value);
-      return;
-    }
+    this.present(this.toSdkError(value));
+  }
 
-    this.present({
-      code: 'UI_RENDER_ERROR',
-      message: 'This feature could not be rendered.',
-      correlationId: this.createCorrelationId(),
-      status: 500,
+  presentToastUnknown(value: unknown): void {
+    const error = this.toSdkError(value);
+    this.toast.error({
+      title: error.message,
+      description: `Correlation ID: ${error.correlationId}`,
+      durationMs: null,
     });
   }
 
@@ -57,5 +56,16 @@ export class ErrorPresenterService {
   private createCorrelationId(): string {
     const crypto = this.document.defaultView?.crypto;
     return crypto?.randomUUID() ?? `ui-${Date.now().toString(36)}`;
+  }
+
+  private toSdkError(value: unknown): SdkError {
+    if (isSdkError(value)) return value;
+
+    return {
+      code: 'UI_RENDER_ERROR',
+      message: 'This feature could not be rendered.',
+      correlationId: this.createCorrelationId(),
+      status: 500,
+    };
   }
 }

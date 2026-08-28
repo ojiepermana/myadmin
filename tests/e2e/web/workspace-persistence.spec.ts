@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../fixtures';
 
 const credentials = {
   username: 'browser-admin',
@@ -10,7 +10,7 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel('Username').fill(credentials.username);
   await page.getByLabel('Password').fill(credentials.password);
   await page.getByLabel('Password').press('Enter');
-  await expect(page).toHaveURL(/\/(?:workspace|query-editor)$/);
+  await expect(page).toHaveURL(/\/(?:workspace|query-editor)(?:\?.*)?$/);
 }
 
 async function saveWorkspace(page: Page, state: unknown): Promise<void> {
@@ -64,9 +64,9 @@ test('E2E-0030-AC3 and E2E-0030-AC7 restore query context and panel state after 
   await signOut(page);
   await login(page);
 
-  await expect(page).toHaveURL(/\/query-editor$/);
+  await expect(page).toHaveURL(/\/query-editor(?:\?.*)?$/);
   await expect(page.getByRole('tab', { name: 'Query editor' })).toBeVisible();
-  await expect(page.getByText('Workspace state syncs to this account.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'SQL editor' })).toBeVisible();
   await expect(page.getByText('Activity panel', { exact: true })).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Toggle primary navigation' })).toHaveAttribute(
     'aria-expanded',

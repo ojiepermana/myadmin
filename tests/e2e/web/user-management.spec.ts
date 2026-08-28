@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 test('E2E-0018-AC7 and E2E-0018-AC9 enforce role-aware navigation and lifecycle access', async ({
   page,
@@ -43,6 +43,9 @@ test('E2E-0018-AC7 and E2E-0018-AC9 enforce role-aware navigation and lifecycle 
   );
   expect(created.status).toBe(201);
 
+  // Keep this scenario's admin workspace deterministic before testing the user session.
+  await page.goto('/workspace');
+  await expect(page).toHaveURL(/\/workspace$/);
   await page.getByRole('button', { name: /browser-admin/ }).click();
   await page.getByRole('menuitem', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/login$/);
@@ -83,5 +86,6 @@ test('E2E-0018-AC7 and E2E-0018-AC9 enforce role-aware navigation and lifecycle 
   await page.getByLabel('Password').fill(password);
   await page.getByLabel('Password').press('Enter');
   await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText('Username or password is incorrect.', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Password')).toHaveValue('');
 });

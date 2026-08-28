@@ -14,6 +14,7 @@ export interface BunSqlClient {
   <T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): SqlQuery<T>;
   connect(): Promise<BunSqlClient>;
   close(options?: { timeout?: number }): Promise<void>;
+  begin?<T>(operation: (transaction: BunSqlClient) => Promise<T>): Promise<T>;
   reserve?(): Promise<ReservedBunSqlClient>;
 }
 
@@ -32,5 +33,5 @@ export interface PostgresqlSqlOptions {
 export type BunSqlClientFactory = (options: PostgresqlSqlOptions) => BunSqlClient;
 
 export function createBunSqlClient(options: PostgresqlSqlOptions): BunSqlClient {
-  return new Bun.SQL(options);
+  return new Bun.SQL(options) as unknown as BunSqlClient;
 }

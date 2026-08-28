@@ -1,5 +1,5 @@
 import '@angular/compiler';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { App } from '../src/app/app';
 
 describe('web application', () => {

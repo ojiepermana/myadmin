@@ -25,11 +25,14 @@ export class AuthSessionStore {
     });
   }
 
-  setUser(user: CurrentUser): void {
+  async setUser(
+    user: CurrentUser,
+    options: { readonly navigateToRestoredRoute?: boolean } = {},
+  ): Promise<void> {
     const changedUser = this.user()?.id !== user.id;
     this.handlingExpiry = false;
     this.user.set(user);
-    if (changedUser) void this.workspacePersistence.restore(user.id);
+    if (changedUser) await this.workspacePersistence.restore(user.id, options);
     this.sdk.realtime.connect();
   }
 

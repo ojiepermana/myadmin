@@ -1,5 +1,5 @@
 import '@angular/compiler';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from 'bun:test';
 import { appendLatencyHistory } from '../src/app/core/connections/connection-status.store';
 
 describe('monitoring status client history', () => {

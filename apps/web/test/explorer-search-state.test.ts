@@ -1,5 +1,5 @@
 import { Observable, of } from 'rxjs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'bun:test';
 import {
   ExplorerSearchController,
   type SearchPage,

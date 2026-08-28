@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 test('web root renders the guarded application surface', async ({ page }) => {
   await page.goto('/');

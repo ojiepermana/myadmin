@@ -30,7 +30,7 @@ commit-msg hook memvalidasi format conventional commits; pesan tidak valid ditol
 
 ### AC-4
 
-konfigurasi Vitest di akar mencakup test pada `apps/*` dan `packages/*` secara langsung, tanpa package discovery atau manifest nested; minimal satu unit test contoh per aplikasi lulus.
+konfigurasi Bun test di akar mencakup test pada `apps/*` dan `packages/*` secara langsung, tanpa package discovery atau manifest nested; minimal satu unit test contoh per aplikasi lulus.
 
 ### AC-5
 
@@ -54,17 +54,17 @@ workflow CI `ci.yml` berjalan pada push dan pull request: install, lint, typeche
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `SMOKE-0002-AC1` | n/a |
-| [AC-2](#ac-2) | n/a | `IT-0002-AC2` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | n/a | `IT-0002-AC3` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `SMOKE-0002-AC4` | n/a |
-| [AC-5](#ac-5) | n/a | n/a | n/a | `E2E-0002-AC5` | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | `IT-0002-AC6` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `SMOKE-0002-AC7` | n/a |
-| [AC-8](#ac-8) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `MANUAL-0002-AC8` |
-| [AC-9](#ac-9) | n/a | `IT-0002-AC9` | n/a | n/a | n/a | n/a | n/a | `SMOKE-0002-AC9` | n/a |
+| AC            | Unit | Integration   | Contract | E2E            | Security | Performance | Visual | Smoke            | Manual atau external |
+| ------------- | ---- | ------------- | -------- | -------------- | -------- | ----------- | ------ | ---------------- | -------------------- |
+| [AC-1](#ac-1) | n/a  | n/a           | n/a      | n/a            | n/a      | n/a         | n/a    | `SMOKE-0002-AC1` | n/a                  |
+| [AC-2](#ac-2) | n/a  | `IT-0002-AC2` | n/a      | n/a            | n/a      | n/a         | n/a    | n/a              | n/a                  |
+| [AC-3](#ac-3) | n/a  | `IT-0002-AC3` | n/a      | n/a            | n/a      | n/a         | n/a    | n/a              | n/a                  |
+| [AC-4](#ac-4) | n/a  | n/a           | n/a      | n/a            | n/a      | n/a         | n/a    | `SMOKE-0002-AC4` | n/a                  |
+| [AC-5](#ac-5) | n/a  | n/a           | n/a      | `E2E-0002-AC5` | n/a      | n/a         | n/a    | n/a              | n/a                  |
+| [AC-6](#ac-6) | n/a  | `IT-0002-AC6` | n/a      | n/a            | n/a      | n/a         | n/a    | n/a              | n/a                  |
+| [AC-7](#ac-7) | n/a  | n/a           | n/a      | n/a            | n/a      | n/a         | n/a    | `SMOKE-0002-AC7` | n/a                  |
+| [AC-8](#ac-8) | n/a  | n/a           | n/a      | n/a            | n/a      | n/a         | n/a    | n/a              | `MANUAL-0002-AC8`    |
+| [AC-9](#ac-9) | n/a  | `IT-0002-AC9` | n/a      | n/a            | n/a      | n/a         | n/a    | `SMOKE-0002-AC9` | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
@@ -74,11 +74,11 @@ Tidak ada unit yang diwajibkan oleh acceptance criteria saat ini.
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `IT-0002-AC2` | [AC-2](#ac-2) | pre-commit hook menjalankan format dan lint hanya pada file yang berubah; commit dengan pelanggaran gagal. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
-| `IT-0002-AC3` | [AC-3](#ac-3) | commit-msg hook memvalidasi format conventional commits; pesan tidak valid ditolak. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `IT-0002-AC6` | [AC-6](#ac-6) | check-boundaries.ts menegakkan tabel dependency struktur.md bagian 5; menambah import terlarang (misal packages/database-core mengimpor database-postgresql)... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `IT-0002-AC2` | [AC-2](#ac-2) | pre-commit hook menjalankan format dan lint hanya pada file yang berubah; commit dengan pelanggaran gagal.                                                       | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
+| `IT-0002-AC3` | [AC-3](#ac-3) | commit-msg hook memvalidasi format conventional commits; pesan tidak valid ditolak.                                                                              | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
+| `IT-0002-AC6` | [AC-6](#ac-6) | check-boundaries.ts menegakkan tabel dependency struktur.md bagian 5; menambah import terlarang (misal packages/database-core mengimpor database-postgresql)...  | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 | `IT-0002-AC9` | [AC-9](#ac-9) | bun run check:manifests berjalan dari filesystem tanpa mengikuti symlink, mengecualikan hanya .git/, node_modules/, dist/, .angular/, serta coverage/, lalu g... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
 
 ## Test tambahan
@@ -89,8 +89,8 @@ Tidak ada contract yang diwajibkan oleh acceptance criteria saat ini.
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                         | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0002-AC5` | [AC-5](#ac-5) | Playwright terkonfigurasi dengan satu smoke e2e (buka halaman root web dev) yang lulus lokal. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 
 ### Security
@@ -107,17 +107,17 @@ Tidak ada visual dan accessibility yang diwajibkan oleh acceptance criteria saat
 
 ### Smoke dan operational acceptance
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `SMOKE-0002-AC1` | [AC-1](#ac-1) | bun run lint, bun run format:check, bun run typecheck, bun run test tersedia dari root dan lulus pada repo skeleton. | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
-| `SMOKE-0002-AC4` | [AC-4](#ac-4) | konfigurasi Vitest di akar mencakup test pada apps/ dan packages/ secara langsung, tanpa package discovery atau manifest nested; minimal satu unit test conto... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `SMOKE-0002-AC7` | [AC-7](#ac-7) | workflow CI ci.yml berjalan pada push dan pull request: install, lint, typecheck, boundary check, unit test. | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
-| `SMOKE-0002-AC9` | [AC-9](#ac-9) | bun run check:manifests berjalan dari filesystem tanpa mengikuti symlink, mengecualikan hanya .git/, node_modules/, dist/, .angular/, serta coverage/, lalu g... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
+| ID               | AC            | Fokus                                                                                                                                                              | Scenario terencana                                                                   | Expected result                                      |
+| ---------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `SMOKE-0002-AC1` | [AC-1](#ac-1) | bun run lint, bun run format:check, bun run typecheck, bun run test tersedia dari root dan lulus pada repo skeleton.                                               | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
+| `SMOKE-0002-AC4` | [AC-4](#ac-4) | konfigurasi Bun test di akar mencakup test pada apps/ dan packages/ secara langsung, tanpa package discovery atau manifest nested; minimal satu unit test conto... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| `SMOKE-0002-AC7` | [AC-7](#ac-7) | workflow CI ci.yml berjalan pada push dan pull request: install, lint, typecheck, boundary check, unit test.                                                       | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `SMOKE-0002-AC9` | [AC-9](#ac-9) | bun run check:manifests berjalan dari filesystem tanpa mengikuti symlink, mengecualikan hanya .git/, node_modules/, dist/, .angular/, serta coverage/, lalu g...   | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
 
 ### Manual atau external proof
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID                | AC            | Fokus                                                            | Scenario terencana                                                                               | Expected result                                      |
+| ----------------- | ------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `MANUAL-0002-AC8` | [AC-8](#ac-8) | dependabot.yml terpasang untuk ekosistem npm dan GitHub Actions. | Lakukan review manusia atau kumpulkan bukti eksternal yang tidak dapat digantikan test otomatis. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ## Critical test scenarios
@@ -133,12 +133,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

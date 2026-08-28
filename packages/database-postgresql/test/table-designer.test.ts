@@ -25,6 +25,17 @@ function createConnection(version = '16.4', failOn?: string) {
       if (failOn && sql.includes(failOn)) throw new Error('synthetic DDL failure');
       return (sql.includes('pg_class') ? [] : []) as T;
     },
+    withTransaction: async <T>(_handle: ConnectionHandle, operation: () => Promise<T>) => {
+      statements.push('BEGIN');
+      try {
+        const value = await operation();
+        statements.push('COMMIT');
+        return value;
+      } catch (error) {
+        statements.push('ROLLBACK');
+        throw error;
+      }
+    },
   };
 }
 

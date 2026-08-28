@@ -25,7 +25,10 @@ if (configuredTargets.length === targets.length) {
       test('cancels a running query through KILL QUERY', async () => {
         const handle = await provider.connection.open(context);
         try {
-          const query = provider.connection.execute(handle, 'SELECT SLEEP(60) AS delayed');
+          const query = provider.connection.execute(
+            handle,
+            'SELECT COUNT(*) AS result FROM information_schema.columns a CROSS JOIN information_schema.columns b CROSS JOIN information_schema.columns c',
+          );
           await Bun.sleep(100);
           await provider.query.cancel(handle);
           await expectCancelled(query);

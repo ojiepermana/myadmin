@@ -15,7 +15,7 @@ export const authGuard: CanActivateFn = async (_route, state) => {
 
   try {
     const currentUser = await firstValueFrom(sdk.auth.getCurrentUser());
-    authSession.setUser(currentUser);
+    await authSession.setUser(currentUser, { navigateToRestoredRoute: false });
     return true;
   } catch (error) {
     if (isSdkError(error) && error.status === 401) {
@@ -44,8 +44,8 @@ export const adminGuard: CanActivateFn = () => {
   if (currentUser) return currentUser.role === 'admin' ? true : router.parseUrl('/workspace');
 
   return firstValueFrom(sdk.auth.getCurrentUser())
-    .then((user) => {
-      authSession.setUser(user);
+    .then(async (user) => {
+      await authSession.setUser(user, { navigateToRestoredRoute: false });
       return user.role === 'admin' ? true : router.parseUrl('/workspace');
     })
     .catch((error: unknown) => {

@@ -85,7 +85,7 @@ Lint, format, test runner, hook Git, boundary check, penjaga satu manifest, dan 
 
 - [x] Design it (spec): [0002](../specs/0002-quality-tooling-ci/index.md)
 - [x] Build it: /develop quality-tooling-ci
-  - [x] ESLint, Prettier, husky, commitlint, vitest, playwright (AC-1 sampai AC-5)
+  - [x] ESLint, Prettier, husky, commitlint, Bun test, Playwright (AC-1 sampai AC-5)
   - [x] Boundary check dependency-cruiser dan penjaga satu manifest dari aturan struktur.md (AC-6, AC-9)
   - [x] Workflow ci.yml dan dependabot (AC-7, AC-8)
 - [ ] [Verify it](../specs/0002-quality-tooling-ci/verify.md): /check verify quality-tooling-ci

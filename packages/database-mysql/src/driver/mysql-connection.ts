@@ -97,6 +97,10 @@ export function buildMysqlSqlOptions(context: ConnectionContext): MysqlSqlOption
     username: descriptor.user,
     password: context.secret ?? '',
     tls: tlsOptions ?? mode,
+    // Bun requires an explicit opt-in for caching_sha2_password without TLS.
+    // The opt-in is only reachable when the caller explicitly selected the
+    // insecure `disable` mode; all TLS modes keep RSA retrieval disabled.
+    allowPublicKeyRetrieval: mode === 'disable',
     connectionTimeout: timeoutSeconds(descriptor.timeoutMs),
     max: 2,
     prepare: true,

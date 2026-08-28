@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 test('E2E-0020-AC1, E2E-0020-AC4, E2E-0020-AC5, and E2E-0020-AC7 review a real audited operation', async ({
   page,
@@ -27,9 +27,10 @@ test('E2E-0020-AC1, E2E-0020-AC4, E2E-0020-AC5, and E2E-0020-AC7 review a real a
 
   await page.getByLabel('Actions', { exact: true }).selectOption('auth.login_failed');
   await page.getByRole('button', { name: 'Apply' }).click();
-  await expect(page.getByRole('cell', { name: 'auth.login_failed', exact: true })).toBeVisible();
+  const failedLoginRow = page.getByRole('row').filter({ hasText: 'auth.login_failed' }).first();
+  await expect(failedLoginRow).toBeVisible();
 
-  await page.getByRole('button', { name: 'Show details for auth.login_failed' }).click();
+  await failedLoginRow.getByRole('button', { name: 'Show details for auth.login_failed' }).click();
   await expect(page.getByText('Safe event details')).toBeVisible();
   await expect(page.getByText('usernameAttempted')).toBeVisible();
 });

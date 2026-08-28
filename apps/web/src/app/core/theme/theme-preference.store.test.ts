@@ -1,7 +1,12 @@
+import '@angular/compiler';
 import { TestBed } from '@angular/core/testing';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { ThemeModeService } from '@ojiepermana/angular/theme/styles';
 import { provideMyadminTheme } from './myadmin-theme';
 import { THEME_PREFERENCE_STORAGE_KEY, ThemePreferenceStore } from './theme-preference.store';
+
+TestBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 
 describe('ThemePreferenceStore', () => {
   let mediaQuery: {
@@ -10,6 +15,7 @@ describe('ThemePreferenceStore', () => {
   };
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     mediaQuery = { matches: false, listeners: new Set() };
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
@@ -27,6 +33,7 @@ describe('ThemePreferenceStore', () => {
 
   afterEach(() => {
     localStorage.clear();
+    TestBed.resetTestingModule();
   });
 
   it('uses system by default and changes mode without a reload', () => {

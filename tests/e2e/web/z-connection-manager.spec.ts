@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 test('E2E-0026-AC5, E2E-0026-AC6, E2E-0026-AC7, and E2E-0026-AC10 create, test, edit, duplicate, group, and delete a connection', async ({
   page,

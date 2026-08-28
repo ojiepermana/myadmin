@@ -61,6 +61,7 @@ function categoryForSqlState(sqlState: string): DbErrorCategory | undefined {
   }
   if (sqlState === '42501') return 'permission_denied';
   if (sqlState === '42P04' || sqlState === '55006') return 'conflict';
+  if (sqlState === '2BP01') return 'constraint_violation';
   if (sqlState.startsWith('23')) return 'constraint_violation';
   if (sqlState === '42601') return 'syntax_error';
   if (sqlState === '57014') return 'cancelled';

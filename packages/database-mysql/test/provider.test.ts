@@ -159,6 +159,7 @@ describe('MySQL TLS and timeout options', () => {
     for (const mode of ['disable', 'require', 'verify-ca', 'verify-full'] as const) {
       const options = buildMysqlSqlOptions(context({ tls: { mode } }));
       expect(options.tls).toBe(mode);
+      expect(options.allowPublicKeyRetrieval).toBe(mode === 'disable');
     }
   });
 

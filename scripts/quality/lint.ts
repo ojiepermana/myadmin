@@ -1,15 +1,7 @@
 const files = process.argv.slice(2).filter((file) => /\.(?:[cm]?[jt]s|tsx)$/.test(file));
 const targets = files.length
   ? files
-  : [
-      'apps',
-      'packages',
-      'scripts',
-      'tooling',
-      'tests',
-      'playwright.config.ts',
-      'vitest.workspace.ts',
-    ];
+  : ['apps', 'packages', 'scripts', 'tooling', 'tests', 'playwright.config.ts'];
 
 const result = Bun.spawnSync({
   cmd: [

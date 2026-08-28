@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 test('E2E-0027-AC4 and E2E-0027-AC7 show server status and transient-password lifecycle controls', async ({
   page,

@@ -21,6 +21,7 @@ interface Session {
   readonly backendPid: number;
   readonly openedAt: Date;
   readonly activeQueries: Set<SqlQuery<unknown>>;
+  transactionClient?: BunSqlClient;
 }
 
 export interface PostgresqlConnectionHandle extends ConnectionHandle {
@@ -213,7 +214,7 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
 
   /** Executes a provider-owned query while tracking it for cancellation. */
   public async execute<T = unknown>(handle: ConnectionHandle, sql: string): Promise<T> {
-    return this.executeWithQuery(handle, () => this.session(handle).client<T>(staticQuery(sql)));
+    return this.executeWithQuery(handle, () => this.clientFor(handle)<T>(staticQuery(sql)));
   }
 
   /** Executes a tagged query with values kept outside the SQL text. */
@@ -229,7 +230,7 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
       });
     }
     return this.executeWithQuery(handle, () =>
-      this.session(handle).client<T>(parameterizedQuery(parts), ...values),
+      this.clientFor(handle)<T>(parameterizedQuery(parts), ...values),
     );
   }
 
@@ -237,6 +238,21 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
     handle: ConnectionHandle,
     operation: () => Promise<T>,
   ): Promise<T> {
+    const session = this.session(handle);
+    if (session.client.begin) {
+      return session.client.begin(async (transaction) => {
+        const previous = session.transactionClient;
+        session.transactionClient = transaction;
+        try {
+          return await operation();
+        } finally {
+          session.transactionClient = previous;
+        }
+      });
+    }
+
+    // Keep the seam usable by deterministic test doubles that only implement
+    // the query function; real Bun SQL clients always use begin() above.
     await this.execute(handle, 'BEGIN');
     try {
       const value = await operation();
@@ -266,6 +282,11 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
     } finally {
       session.activeQueries.delete(pending as SqlQuery<unknown>);
     }
+  }
+
+  private clientFor(handle: ConnectionHandle): BunSqlClient {
+    const session = this.session(handle);
+    return session.transactionClient ?? session.client;
   }
 
   /** Uses Bun's cancellation hook and always follows with pg_cancel_backend. */

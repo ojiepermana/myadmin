@@ -19,6 +19,7 @@ export class WorkspacePersistenceService {
   private readonly destroyRef = inject(DestroyRef);
   private readonly userId = signal<string | null>(null);
   private restoring = false;
+  private restorePromise: Promise<void> | null = null;
   private restoreGeneration = 0;
   private timer: number | undefined;
   private lastPersisted: string | null = null;
@@ -42,9 +43,28 @@ export class WorkspacePersistenceService {
     });
   }
 
-  async restore(userId: string): Promise<void> {
-    if (this.userId() === userId && !this.restoring) return;
+  async restore(
+    userId: string,
+    options: { readonly navigateToRestoredRoute?: boolean } = {},
+  ): Promise<void> {
+    if (this.userId() === userId) {
+      if (this.restorePromise) return this.restorePromise;
+      if (!this.restoring) return;
+    }
 
+    const promise = this.restoreUser(userId, options);
+    this.restorePromise = promise;
+    try {
+      await promise;
+    } finally {
+      if (this.restorePromise === promise) this.restorePromise = null;
+    }
+  }
+
+  private async restoreUser(
+    userId: string,
+    options: { readonly navigateToRestoredRoute?: boolean },
+  ): Promise<void> {
     const generation = ++this.restoreGeneration;
     this.cancelScheduledSave();
     this.restoring = true;
@@ -59,8 +79,17 @@ export class WorkspacePersistenceService {
       this.lastPersisted = serialize(this.workspace.persistenceSnapshot());
       this.showRestoreNotice(response.notice ?? restore.notice, response.skippedTabs);
 
-      const route = this.workspace.activeTab()?.context['route'];
-      if (typeof route === 'string' && route !== this.router.url) {
+      const activeTab = this.workspace.activeTab();
+      const route = activeTab
+        ? activeTab.type === 'query-editor'
+          ? `/query-editor?tab=${encodeURIComponent(activeTab.id)}`
+          : activeTab.context['route']
+        : undefined;
+      if (
+        options.navigateToRestoredRoute &&
+        typeof route === 'string' &&
+        route !== this.router.url
+      ) {
         await this.router.navigateByUrl(route);
       }
     } catch (error) {

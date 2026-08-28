@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 test('E2E-0016-AC2, E2E-0016-AC5, E2E-0016-AC8, and E2E-0016-AC9 complete first-admin setup', async ({
   page,

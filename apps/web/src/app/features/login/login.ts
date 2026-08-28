@@ -45,19 +45,20 @@ export class Login {
     required(path.username, { message: 'Username is required.' });
     required(path.password, { message: 'Password is required.' });
   });
-
   protected onSubmit(): void {
     void submit(this.loginForm, async () => {
       this.submitting.set(true);
       this.errorPresenter.dismiss();
       try {
         const response = await firstValueFrom(this.sdk.auth.login(this.model()));
-        this.authSession.setUser(response.user);
+        await this.authSession.setUser(response.user, { navigateToRestoredRoute: true });
         this.model.set({ username: '', password: '' });
-        await this.router.navigateByUrl('/workspace', { replaceUrl: true });
+        if (this.router.url.startsWith('/login')) {
+          await this.router.navigateByUrl('/workspace', { replaceUrl: true });
+        }
       } catch (error) {
         this.model.update((model) => ({ ...model, password: '' }));
-        this.errorPresenter.presentUnknown(error);
+        this.errorPresenter.presentToastUnknown(error);
       } finally {
         this.submitting.set(false);
       }

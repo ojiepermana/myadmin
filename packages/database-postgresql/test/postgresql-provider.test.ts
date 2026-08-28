@@ -99,6 +99,7 @@ describe('PostgreSQL error mapping', () => {
     ['42P04', 'conflict'],
     ['55006', 'conflict'],
     ['23505', 'constraint_violation'],
+    ['2BP01', 'constraint_violation'],
     ['42601', 'syntax_error'],
     ['57014', 'cancelled'],
   ] as const)('maps SQLSTATE %s to %s', (code, category) => {

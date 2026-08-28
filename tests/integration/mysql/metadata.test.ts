@@ -47,6 +47,7 @@ if (configuredTargets.length > 0) {
 
       beforeAll(async () => {
         const handle = await provider.connection.open(context);
+        await cleanupStaleFixtures(provider, handle);
         fixture = { handle, names };
         await createFixture(provider, handle, names);
       });
@@ -266,6 +267,7 @@ if (configuredTargets.length > 0) {
 }
 
 const SYSTEM_DATABASES = new Set(['sys', 'mysql', 'information_schema', 'performance_schema']);
+const METADATA_FIXTURE_PREFIX = 'myadmin_metadata_';
 
 function contextFromUrl(value: string): ConnectionContext {
   const url = new URL(value);
@@ -375,6 +377,63 @@ async function createFixture(
     handle,
     `CREATE TRIGGER ${quoteMysqlIdentifier(names.trigger)} AFTER INSERT ON ${table}
       FOR EACH ROW SET @myadmin_metadata_last_id = NEW.id`,
+  );
+}
+
+interface FixtureObjectRow {
+  readonly [key: string]: unknown;
+  readonly name?: unknown;
+  readonly type?: unknown;
+}
+
+async function cleanupStaleFixtures(
+  provider: MysqlProvider,
+  handle: ConnectionHandle,
+): Promise<void> {
+  const tables = await provider.connection.execute<FixtureObjectRow>(
+    handle,
+    `SELECT TABLE_NAME AS name, TABLE_TYPE AS type
+       FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = ?`,
+    ['fixture'],
+  );
+  const routines = await provider.connection.execute<FixtureObjectRow>(
+    handle,
+    `SELECT ROUTINE_NAME AS name, ROUTINE_TYPE AS type
+       FROM information_schema.ROUTINES
+      WHERE ROUTINE_SCHEMA = ?`,
+    ['fixture'],
+  );
+  const triggers = await provider.connection.execute<FixtureObjectRow>(
+    handle,
+    `SELECT TRIGGER_NAME AS name
+       FROM information_schema.TRIGGERS
+      WHERE TRIGGER_SCHEMA = ?`,
+    ['fixture'],
+  );
+  const isFixtureName = (value: unknown): value is string =>
+    typeof value === 'string' && value.startsWith(METADATA_FIXTURE_PREFIX);
+
+  for (const row of triggers) {
+    if (!isFixtureName(row.name)) continue;
+    await execute(provider, handle, `DROP TRIGGER IF EXISTS ${quoteMysqlIdentifier(row.name)}`);
+  }
+  for (const row of tables) {
+    if (!isFixtureName(row.name) || row.type !== 'VIEW') continue;
+    await execute(provider, handle, `DROP VIEW IF EXISTS ${quoteMysqlIdentifier(row.name)}`);
+  }
+  for (const row of routines) {
+    if (!isFixtureName(row.name) || (row.type !== 'FUNCTION' && row.type !== 'PROCEDURE')) {
+      continue;
+    }
+    await execute(provider, handle, `DROP ${row.type} IF EXISTS ${quoteMysqlIdentifier(row.name)}`);
+  }
+  await dropTables(
+    provider,
+    handle,
+    tables
+      .filter((row) => isFixtureName(row.name) && row.type === 'BASE TABLE')
+      .map((row) => row.name as string),
   );
 }
 

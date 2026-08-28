@@ -2,7 +2,7 @@ import { mkdir, symlink, unlink, writeFile } from 'node:fs/promises';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { findWebBoundaryViolations, runBoundaryCheck } from '../../scripts/verify/check-boundaries';
 import { checkManifests } from '../../scripts/verify/check-manifests';
 

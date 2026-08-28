@@ -1,5 +1,5 @@
 import type { QueryResult } from '@myadmin/sdk-angular';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import {
   cellPreview,
   cellText,

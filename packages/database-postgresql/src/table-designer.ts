@@ -501,38 +501,37 @@ export class PostgresqlTableDesigner implements TableDesignerPort {
     return this.withHandle(context, async (handle) => {
       const preview = await this.compile(handle, changeSet);
       const results: TableDdlStatementResult[] = [];
-      await this.query(handle, 'BEGIN');
-      for (const [index, statement] of preview.statements.entries()) {
-        try {
-          await this.query(handle, statement.sql);
-          results.push({ index, sql: statement.sql, status: 'success' });
-        } catch (error) {
-          await this.query(handle, 'ROLLBACK').catch(() => undefined);
-          const result = {
-            operation: changeSet.operation,
-            transactional: true,
-            committed: false,
-            statements: results.concat({
+      return this.connection.withTransaction(handle, async () => {
+        for (const [index, statement] of preview.statements.entries()) {
+          try {
+            await this.query(handle, statement.sql);
+            results.push({ index, sql: statement.sql, status: 'success' });
+          } catch (error) {
+            const result = {
+              operation: changeSet.operation,
+              transactional: true,
+              committed: false,
+              statements: results.concat({
+                index,
+                sql: statement.sql,
+                status: 'failed',
+                error: error instanceof Error ? error.message : 'Statement failed',
+              }),
+            } satisfies TableDdlApplyResult;
+            throw new TableApplyError(
               index,
-              sql: statement.sql,
-              status: 'failed',
-              error: error instanceof Error ? error.message : 'Statement failed',
-            }),
-          } satisfies TableDdlApplyResult;
-          throw new TableApplyError(
-            index,
-            result,
-            `PostgreSQL statement ${index + 1} failed and the transaction was rolled back.`,
-          );
+              result,
+              `PostgreSQL statement ${index + 1} failed and the transaction was rolled back.`,
+            );
+          }
         }
-      }
-      await this.query(handle, 'COMMIT');
-      return {
-        operation: changeSet.operation,
-        transactional: true,
-        committed: true,
-        statements: results,
-      };
+        return {
+          operation: changeSet.operation,
+          transactional: true,
+          committed: true,
+          statements: results,
+        };
+      });
     });
   }
 

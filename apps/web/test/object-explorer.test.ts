@@ -1,5 +1,5 @@
 import '@angular/compiler';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { explorerRequestPath, explorerSearchRequestPath } from '@myadmin/sdk-angular';
 import type { ConnectionStatus } from '@myadmin/sdk-angular';
 import {
