@@ -4,7 +4,7 @@ import { assertResponseMatchesContract, contractOperations, loadContract } from 
 const contractPath = new URL('../../dist/openapi-v1.yaml', import.meta.url).pathname;
 
 describe('query execution contract', () => {
-  test('covers accepted executions, typed cells, statement offsets, and error positions', async () => {
+  test('CT-0033-AC4, CT-0033-AC6, and CT-0033-AC8 cover execution envelopes and typed cells', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
     const acceptedOperation = operations.find((item) => item.operationId === 'startQueryExecution');
@@ -37,6 +37,11 @@ describe('query execution contract', () => {
             rows: [
               {
                 value: { type: 'number', value: '1' },
+                bigint: { type: 'number', value: '9007199254740993' },
+                nullable: { type: 'null', value: null },
+                empty: { type: 'string', value: '' },
+                instant: { type: 'date', value: '2026-08-28T00:00:00.000Z' },
+                binary: { type: 'bytes', value: 'AP8Q', encoding: 'base64' },
               },
             ],
             totalRows: 1,

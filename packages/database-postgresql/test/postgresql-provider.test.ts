@@ -126,6 +126,13 @@ describe('PostgreSQL error mapping', () => {
     expect(network.message).not.toContain('top-secret');
     expect(tls.category).toBe('tls_failed');
   });
+
+  test('maps Bun BoringSSL invalid CA failures as TLS errors', () => {
+    const error = mapPostgresqlError({ code: 'ERR_BORINGSSL', message: 'Invalid CA' });
+
+    expect(error.category).toBe('tls_failed');
+    expect(error.message).toBe('PostgreSQL TLS negotiation failed');
+  });
 });
 
 describe('PostgreSQL connection adapter', () => {

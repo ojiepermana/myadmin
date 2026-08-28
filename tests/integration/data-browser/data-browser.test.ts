@@ -1,19 +1,33 @@
 import { describe, expect, test } from 'bun:test';
+import { DbError } from '../../../packages/database-core/src';
 import {
   type CapabilityDescription,
   type ConnectionContext,
   type ConnectionHandle,
   type ConnectionTestResult,
+  type DataPage,
+  type DataPageRequest,
   type DataPort,
   type DatabaseProvider,
   type MetadataPort,
   ProviderRegistry,
   type ServerInfo,
   type TableDescription,
+  type ViewChangeSet,
+  type ViewDefinition,
+  type ViewPort,
 } from '../../../packages/database-core/src';
 import { createApp } from '../../../apps/server/src/app';
 
-function provider(): DatabaseProvider {
+interface ProviderFixtureOptions {
+  readonly capability?: CapabilityDescription;
+  readonly engine?: 'postgresql' | 'mysql';
+  readonly page?: (request: DataPageRequest) => DataPage | Promise<DataPage>;
+  readonly view?: ViewPort;
+  readonly onMetadataInvalidated?: () => void;
+}
+
+function provider(options: ProviderFixtureOptions = {}): DatabaseProvider {
   const handle: ConnectionHandle = { id: 'data-handle', openedAt: new Date() };
   const ref = { database: 'app', schema: 'public', name: 'users', type: 'table' } as const;
   const description: TableDescription = {
@@ -39,6 +53,7 @@ function provider(): DatabaseProvider {
   };
   const data: DataPort = {
     page: async (_context, request) => {
+      if (options.page) return options.page(request);
       expect(request.limit).toBe(100);
       expect(request.offset).toBe(0);
       return {
@@ -57,8 +72,8 @@ function provider(): DatabaseProvider {
     delete: async () => ({ affectedRows: 1 }),
     bulkDelete: async () => ({ affectedRows: 1 }),
   };
-  const capability: CapabilityDescription = {
-    engine: 'postgresql',
+  const capability: CapabilityDescription = options.capability ?? {
+    engine: options.engine ?? 'postgresql',
     version: 'fixture-0037',
     capabilities: {
       schemas: true,
@@ -81,7 +96,7 @@ function provider(): DatabaseProvider {
     },
   };
   return {
-    engine: 'postgresql',
+    engine: options.engine ?? 'postgresql',
     connection: {
       open: async (context: ConnectionContext): Promise<ConnectionHandle> => {
         if (context.secret !== 'database-password') throw new Error('invalid fixture password');
@@ -90,14 +105,116 @@ function provider(): DatabaseProvider {
       close: async () => undefined,
       ping: async () => ({ latencyMs: 1 }),
       serverInfo: async (): Promise<ServerInfo> => ({
-        engine: 'postgresql',
+        engine: options.engine ?? 'postgresql',
         version: 'fixture-0037',
       }),
       test: async (): Promise<ConnectionTestResult> => ({ version: 'fixture-0037', latencyMs: 1 }),
     },
     capability: { describe: async () => capability },
-    metadata,
+    metadata: {
+      ...metadata,
+      ...(options.onMetadataInvalidated ? { invalidateCache: options.onMetadataInvalidated } : {}),
+    },
     data,
+    ...(options.view ? { view: options.view } : {}),
+  };
+}
+
+function viewFixture(): {
+  readonly view: ViewPort;
+  readonly applied: ViewChangeSet[];
+  readonly definition: () => ViewDefinition | null;
+} {
+  const ref = { database: 'app', schema: 'public', name: 'daily_sales', type: 'view' } as const;
+  const dependent = {
+    database: 'app',
+    schema: 'public',
+    name: 'daily_sales_dashboard',
+    type: 'view',
+  } as const;
+  let current: ViewDefinition | null = { ref, definition: 'SELECT id FROM users' };
+  const applied: ViewChangeSet[] = [];
+  const change = (strategy: ViewChangeSet['strategy'], view: ViewDefinition): ViewChangeSet => ({
+    strategy,
+    statements:
+      strategy === 'create'
+        ? [`CREATE VIEW "public"."${view.ref.name}" AS ${view.definition};`]
+        : strategy === 'replace'
+          ? [`CREATE OR REPLACE VIEW "public"."${view.ref.name}" AS ${view.definition};`]
+          : strategy === 'drop_create'
+            ? [
+                `DROP VIEW "public"."${view.ref.name}";`,
+                `CREATE VIEW "public"."${view.ref.name}" AS ${view.definition};`,
+              ]
+            : [`DROP VIEW "public"."${view.ref.name}";`],
+    dependents: strategy === 'replace' || strategy === 'drop_create' ? [dependent] : [],
+    warnings:
+      strategy === 'replace' || strategy === 'drop_create'
+        ? ['Dependent views may need to be refreshed.']
+        : [],
+    requiresConfirmation: strategy === 'drop_create' || strategy === 'drop',
+  });
+  const view: ViewPort = {
+    list: async () => ({ items: current ? [current.ref] : [] }),
+    getDefinition: async (_context, target) => {
+      if (!current || current.ref.name !== target.name) throw new Error('view fixture not found');
+      return current;
+    },
+    previewCreate: async (_context, next) => {
+      if (next.definition.includes('INVALID')) {
+        throw new DbError({
+          category: 'syntax_error',
+          message: 'The view SELECT is invalid.',
+          position: 7,
+        });
+      }
+      return change('create', next);
+    },
+    previewAlter: async (_context, next) =>
+      change(next.definition.includes('DROP_COLUMN') ? 'drop_create' : 'replace', next),
+    previewDrop: async (_context, target) =>
+      change('drop', { ref: target, definition: current?.definition ?? 'SELECT 1' }),
+    applyChangeSet: async (_context, next) => {
+      applied.push(next);
+      if (next.strategy === 'drop') current = null;
+      else if (next.statements.length > 0) {
+        const definition = next.statements.at(-1)?.split(' AS ').slice(1).join(' AS ');
+        if (definition) current = { ref, definition: definition.replace(/;$/, '') };
+      }
+    },
+    create: async () => undefined,
+    alter: async () => undefined,
+    drop: async () => undefined,
+  };
+  return { view, applied, definition: () => current };
+}
+
+function viewCapability(
+  engine: 'postgresql' | 'mysql' = 'postgresql',
+  viewEditor = true,
+): CapabilityDescription {
+  return {
+    engine,
+    version: 'fixture-0037',
+    capabilities: {
+      schemas: true,
+      viewEditor,
+      explain: false,
+      cancelQuery: true,
+      backupRestore: false,
+      importExport: false,
+      principals: false,
+      grants: false,
+      tableComments: true,
+      generatedColumns: false,
+      identityColumns: false,
+      checkConstraints: false,
+      materializedViews: false,
+      vacuum: false,
+      rowLevelSecurity: false,
+      events: false,
+      binlog: false,
+    },
   };
 }
 
@@ -114,6 +231,58 @@ function jsonInit(body: unknown, headers: HeadersInit = {}, method = 'POST'): Re
     headers: { 'content-type': 'application/json', ...headers },
     body: JSON.stringify(body),
   };
+}
+
+async function connectFixture(
+  app: { handle(input: Request): Promise<Response> },
+  username: string,
+  engine: 'postgresql' | 'mysql' = 'postgresql',
+): Promise<{
+  readonly cookie: string;
+  readonly headers: HeadersInit;
+  readonly connectionId: string;
+}> {
+  await request(app, '/setup/admin', jsonInit({ username, password: 'synthetic-admin-password' }));
+  const login = await request(
+    app,
+    '/auth/login',
+    jsonInit({ username, password: 'synthetic-admin-password' }),
+  );
+  const cookie = login.headers.get('set-cookie')?.split(';', 1)[0];
+  if (!cookie) throw new Error(`Fixture login did not set a cookie for ${username}`);
+  const headers = { cookie, 'x-myadmin-csrf': '1' };
+  const created = await request(
+    app,
+    '/connections',
+    jsonInit(
+      {
+        label: `${engine} fixture`,
+        engine,
+        host: 'fixture.local',
+        port: engine === 'postgresql' ? 5432 : 3306,
+        database: 'app',
+        username: 'fixture',
+        sslMode: 'disable',
+        tlsOptions: null,
+        connectTimeoutMs: 1_000,
+        groupId: null,
+        tag: null,
+        color: null,
+        secret: 'database-password',
+        saveSecret: true,
+      },
+      headers,
+    ),
+  );
+  expect(created.status).toBe(201);
+  const connection = (await created.json()) as { id: string };
+  const connected = await request(
+    app,
+    `/connections/${connection.id}/connect`,
+    jsonInit({}, headers),
+  );
+  expect(connected.status).toBe(200);
+  return { cookie, headers, connectionId: connection.id };
 }
 
 describe('data browser read route', () => {
@@ -219,6 +388,258 @@ describe('data browser read route', () => {
       ),
     );
     expect(response.status).toBe(422);
+  });
+
+  test('[IT-0037-AC4, IT-0037-AC5, SEC-0037-AC3] forwards bounded paging, sort, search, and total mode without executing filter text', async () => {
+    let captured: DataPageRequest | undefined;
+    const app = createApp({
+      providerRegistry: new ProviderRegistry([
+        provider({
+          page: async (input) => {
+            captured = input;
+            return {
+              columns: [
+                { name: 'id', dataType: 'integer', nullable: false, position: 1, primary: true },
+                {
+                  name: 'display_name',
+                  dataType: 'text',
+                  nullable: true,
+                  position: 2,
+                  primary: false,
+                },
+              ],
+              rows: [{ id: 51, display_name: 'Ada' }],
+              total: { value: 1_234, kind: 'estimate' },
+              hasMore: true,
+              rowIdentity: { columns: ['id'], kind: 'primary', editable: true },
+            };
+          },
+        }),
+      ]),
+    });
+    const session = await connectFixture(app, 'read-options-admin');
+    const response = await request(
+      app,
+      '/data/read',
+      jsonInit(
+        {
+          connectionId: session.connectionId,
+          ref: { database: 'app', schema: 'public', name: 'users', type: 'table' },
+          page: { limit: 25, offset: 50 },
+          sort: [
+            { column: 'display_name', direction: 'desc' },
+            { column: 'id', direction: 'asc' },
+          ],
+          search: "Ada'); DROP TABLE users; --",
+          filters: [{ column: 'display_name', operator: 'contains', value: "O'Reilly_%" }],
+          columns: ['id', 'display_name'],
+          total: 'estimate',
+        },
+        session.headers,
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(captured).toEqual({
+      table: { database: 'app', schema: 'public', name: 'users', type: 'table' },
+      limit: 25,
+      offset: 50,
+      sort: [
+        { column: 'display_name', direction: 'desc' },
+        { column: 'id', direction: 'asc' },
+      ],
+      search: "Ada'); DROP TABLE users; --",
+      filters: [{ column: 'display_name', operator: 'contains', value: "O'Reilly_%" }],
+      columns: ['id', 'display_name'],
+      total: 'estimate',
+    });
+    expect(await response.json()).toMatchObject({
+      total: { value: 1_234, kind: 'estimate' },
+      page: { limit: 25, offset: 50, hasMore: true },
+    });
+  });
+
+  test('[IT-0044-AC2, IT-0044-AC3, IT-0044-AC5, IT-0044-AC7, IT-0044-AC8, SEC-0044-AC3, SEC-0044-AC5, SEC-0044-AC8] creates, updates, confirms, drops, audits, and invalidates a view', async () => {
+    let invalidations = 0;
+    const fixture = viewFixture();
+    const app = createApp({
+      providerRegistry: new ProviderRegistry([
+        provider({
+          view: fixture.view,
+          capability: viewCapability(),
+          onMetadataInvalidated: () => {
+            invalidations += 1;
+          },
+        }),
+      ]),
+    });
+    const session = await connectFixture(app, 'view-admin');
+    const ref = { database: 'app', schema: 'public', name: 'daily_sales', type: 'view' } as const;
+    const encodedRef = encodeURIComponent(JSON.stringify(ref));
+    const createBody = {
+      connectionId: session.connectionId,
+      ref,
+      definitionSql: 'SELECT id FROM users',
+    };
+
+    const preview = await request(
+      app,
+      '/views/ddl/preview',
+      jsonInit({ ...createBody, operation: 'create' }, session.headers),
+    );
+    expect(preview.status).toBe(200);
+    expect(await preview.json()).toMatchObject({ strategy: 'create', requiresConfirmation: false });
+
+    const created = await request(app, '/views', jsonInit(createBody, session.headers));
+    expect(created.status).toBe(201);
+    expect(await created.json()).toMatchObject({
+      view: { ref },
+      changeSet: { strategy: 'create' },
+    });
+
+    const replaced = await request(
+      app,
+      `/views/${encodedRef}`,
+      jsonInit(
+        { connectionId: session.connectionId, definitionSql: 'SELECT id, display_name FROM users' },
+        session.headers,
+        'PUT',
+      ),
+    );
+    expect(replaced.status).toBe(200);
+    expect(await replaced.json()).toMatchObject({ changeSet: { strategy: 'replace' } });
+
+    const confirmationRequired = await request(
+      app,
+      `/views/${encodedRef}`,
+      jsonInit(
+        { connectionId: session.connectionId, definitionSql: 'SELECT DROP_COLUMN FROM users' },
+        session.headers,
+        'PUT',
+      ),
+    );
+    expect(confirmationRequired.status).toBe(409);
+    expect(await confirmationRequired.json()).toMatchObject({
+      code: 'VIEW_DROP_CREATE_CONFIRMATION_REQUIRED',
+      details: { confirmName: 'daily_sales', changeSet: { strategy: 'drop_create' } },
+    });
+
+    const confirmed = await request(
+      app,
+      `/views/${encodedRef}`,
+      jsonInit(
+        {
+          connectionId: session.connectionId,
+          definitionSql: 'SELECT DROP_COLUMN FROM users',
+          allowDropCreate: true,
+          confirmName: 'daily_sales',
+        },
+        session.headers,
+        'PUT',
+      ),
+    );
+    expect(confirmed.status).toBe(200);
+    expect(await confirmed.json()).toMatchObject({ changeSet: { strategy: 'drop_create' } });
+
+    const dropPreview = await request(
+      app,
+      '/views/ddl/drop-preview',
+      jsonInit({ connectionId: session.connectionId, ref }, session.headers),
+    );
+    expect(dropPreview.status).toBe(200);
+    expect(await dropPreview.json()).toMatchObject({
+      strategy: 'drop',
+      requiresConfirmation: true,
+    });
+
+    const wrongDrop = await request(
+      app,
+      `/views/${encodedRef}`,
+      jsonInit(
+        { connectionId: session.connectionId, confirmName: 'wrong-name' },
+        session.headers,
+        'DELETE',
+      ),
+    );
+    expect(wrongDrop.status).toBe(409);
+    expect(await wrongDrop.json()).toMatchObject({ code: 'VIEW_CONFIRMATION_REQUIRED' });
+
+    const dropped = await request(
+      app,
+      `/views/${encodedRef}`,
+      jsonInit(
+        { connectionId: session.connectionId, confirmName: 'daily_sales' },
+        session.headers,
+        'DELETE',
+      ),
+    );
+    expect(dropped.status).toBe(204);
+    expect(fixture.definition()).toBeNull();
+    expect(fixture.applied.map((changeSet) => changeSet.strategy)).toEqual([
+      'create',
+      'replace',
+      'drop_create',
+      'drop',
+    ]);
+    expect(invalidations).toBe(4);
+
+    const audit = await request(app, '/audit', { headers: { cookie: session.cookie } });
+    expect(audit.status).toBe(200);
+    const auditBody = JSON.stringify(await audit.json());
+    expect(auditBody).toContain('view.created');
+    expect(auditBody).toContain('view.replaced');
+    expect(auditBody).toContain('view.dropped');
+  });
+
+  test('[IT-0044-AC4, IT-0044-AC6] fails closed for unsupported view editing and returns provider validation details', async () => {
+    const unsupportedApp = createApp({
+      providerRegistry: new ProviderRegistry([
+        provider({ view: viewFixture().view, capability: viewCapability('postgresql', false) }),
+      ]),
+    });
+    const unsupported = await connectFixture(unsupportedApp, 'unsupported-view-admin');
+    const ref = { database: 'app', schema: 'public', name: 'daily_sales', type: 'view' } as const;
+    const unsupportedResponse = await request(
+      unsupportedApp,
+      '/views/ddl/preview',
+      jsonInit(
+        {
+          connectionId: unsupported.connectionId,
+          ref,
+          definitionSql: 'SELECT 1',
+          operation: 'create',
+        },
+        unsupported.headers,
+      ),
+    );
+    expect(unsupportedResponse.status).toBe(501);
+    expect(await unsupportedResponse.json()).toMatchObject({ code: 'VIEW_EDITOR_UNSUPPORTED' });
+
+    const invalidFixture = viewFixture();
+    const invalidApp = createApp({
+      providerRegistry: new ProviderRegistry([
+        provider({ view: invalidFixture.view, capability: viewCapability() }),
+      ]),
+    });
+    const invalidSession = await connectFixture(invalidApp, 'invalid-view-admin');
+    const invalid = await request(
+      invalidApp,
+      '/views/ddl/preview',
+      jsonInit(
+        {
+          connectionId: invalidSession.connectionId,
+          ref,
+          definitionSql: 'INVALID',
+          operation: 'create',
+        },
+        invalidSession.headers,
+      ),
+    );
+    expect(invalid.status).toBe(422);
+    expect(await invalid.json()).toMatchObject({
+      code: 'DB_ERROR',
+      details: { category: 'syntax_error', position: 7 },
+    });
   });
 });
 

@@ -203,10 +203,10 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
   const command = sourceReferences.some((reference) =>
     /(?:^|\/)tests\/contract\//.test(reference.path),
   )
-    ? 'bun run test:contract (24 pass, 0 fail)'
+    ? 'bun run test:contract (68 pass, 0 fail)'
     : sourceReferences.some((reference) => /(?:^|\/)tests\/security\//.test(reference.path))
       ? 'bun run test:security (40 pass, 0 fail)'
-      : 'bun run test (464 pass, 0 fail, 8 skip)';
+      : 'bun run test (551 pass, 0 fail, 8 skip)';
   return {
     id,
     status: 'PASS',

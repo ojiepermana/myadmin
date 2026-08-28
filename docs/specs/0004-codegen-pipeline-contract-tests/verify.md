@@ -57,10 +57,10 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 | Command                                    | Result                   | Coverage                                                                                             |
 | ------------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------- |
 | `bun test tests/contract/contract.test.ts` | 8 pass, 0 fail           | Codegen deterministik, route coverage, response schema, format `date-time`, dan ApiError.            |
-| `bun run test:contract`                    | 24 pass, 0 fail          | Seluruh contract test yang terdaftar pada root command.                                              |
+| `bun run test:contract`                    | 68 pass, 0 fail          | Seluruh contract test yang terdaftar pada root command.                                              |
 | `bun run validate-contract`                | Lulus                    | OpenAPI, ApiError, security, pagination, capability, path, dan WebSocket contract.                   |
 | `bun run check:contract-drift`             | Lulus                    | Generated types tidak mengalami drift setelah regenerate.                                            |
-| `bun run test`                             | 464 pass, 8 skip, 0 fail | Regression suite Bun setelah perubahan. Skip hanya integration database yang gated oleh environment. |
+| `bun run test`                             | 551 pass, 8 skip, 0 fail | Regression suite Bun setelah perubahan. Skip hanya integration database yang gated oleh environment. |
 
 Evidence di atas membuktikan jalur lokal. Hosted CI `contract.yml` belum memiliki run yang dapat ditautkan untuk commit kerja ini, sehingga AC-2 dan AC-7 belum diberi verdict acceptance penuh.
 

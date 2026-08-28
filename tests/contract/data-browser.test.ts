@@ -3,6 +3,7 @@ import {
   assertResponseMatchesContract,
   contractOperations,
   loadContract,
+  responsePayload,
   type ContractOperation,
 } from './harness';
 
@@ -27,5 +28,69 @@ describe('data browser contract', () => {
       page: { limit: 100, offset: 0, hasMore: false },
       rowIdentity: { columns: ['id'], kind: 'primary', editable: true },
     });
+  });
+
+  test('[CT-0044-AC2, CT-0044-AC3] exposes view CRUD, preview, validation, and drop contract operations', async () => {
+    const document = await loadContract(contractPath);
+    const operations = contractOperations(document);
+    const list = operation(operations, 'listViews');
+    const create = operation(operations, 'createView');
+    const get = operation(operations, 'getView');
+    const preview = operation(operations, 'previewViewDdl');
+    const validate = operation(operations, 'validateViewDefinition');
+    const dropPreview = operation(operations, 'previewViewDrop');
+    const update = operation(operations, 'updateView');
+    const drop = operation(operations, 'deleteView');
+    expect(
+      [list, create, get, preview, validate, dropPreview, update, drop].map((item) => item.method),
+    ).toEqual(['get', 'post', 'get', 'post', 'post', 'post', 'put', 'delete']);
+
+    const ref = { database: 'app', schema: 'public', name: 'daily_sales', type: 'view' } as const;
+    const changeSet = {
+      strategy: 'replace',
+      statements: ['CREATE OR REPLACE VIEW "public"."daily_sales" AS SELECT 1;'],
+      dependents: [],
+      warnings: [],
+      requiresConfirmation: false,
+    };
+    const mutation = { view: { ref, definition: 'SELECT 1' }, changeSet };
+    assertResponseMatchesContract(document, list, 200, { items: [ref], cursor: null });
+    assertResponseMatchesContract(document, get, 200, { ref, definition: 'SELECT 1' });
+    assertResponseMatchesContract(document, preview, 200, changeSet);
+    assertResponseMatchesContract(document, create, 201, {
+      ...mutation,
+      changeSet: { ...changeSet, strategy: 'create' },
+    });
+    assertResponseMatchesContract(document, update, 200, mutation);
+    assertResponseMatchesContract(document, validate, 200, { valid: true });
+    assertResponseMatchesContract(document, dropPreview, 200, {
+      ...changeSet,
+      strategy: 'drop',
+      statements: ['DROP VIEW "public"."daily_sales";'],
+      requiresConfirmation: true,
+    });
+    assertResponseMatchesContract(document, drop, 204, undefined);
+  });
+
+  test('[CT-0044-AC4, CT-0044-AC6] keeps unsupported and provider validation errors contract-safe', async () => {
+    const document = await loadContract(contractPath);
+    const operations = contractOperations(document);
+    const preview = operation(operations, 'previewViewDdl');
+    const validate = operation(operations, 'validateViewDefinition');
+    const unsupported = {
+      code: 'VIEW_EDITOR_UNSUPPORTED',
+      message: 'View editing is unavailable for this provider.',
+      correlationId: 'corr-unsupported',
+      details: { category: 'unsupported' },
+    };
+    const invalid = {
+      code: 'DB_ERROR',
+      message: 'The view SELECT is invalid.',
+      correlationId: 'corr-invalid',
+      details: { category: 'syntax_error', position: 7 },
+    };
+    assertResponseMatchesContract(document, preview, 501, unsupported);
+    assertResponseMatchesContract(document, validate, 422, invalid);
+    expect(await responsePayload(new Response(null, { status: 204 }))).toBeUndefined();
   });
 });

@@ -27,8 +27,8 @@ function errorText(error: PostgresqlErrorLike): string {
 
 function isTlsFailure(error: PostgresqlErrorLike, text: string): boolean {
   return (
-    /^ERR_TLS|^TLS|^SSL/i.test(String(error.code ?? '')) ||
-    /\b(?:tls|ssl|certificate|cert verify|handshake)\b/i.test(text)
+    /^(?:ERR_TLS|ERR_BORINGSSL|TLS|SSL)/i.test(String(error.code ?? '')) ||
+    /\b(?:tls|ssl|certificate|cert verify|handshake|invalid ca|boringssl)\b/i.test(text)
   );
 }
 

@@ -30,6 +30,18 @@ describe('distribution release invariants', () => {
     expect(workflow).toContain('WINDOWS_SIGNING_CERTIFICATE_BASE64');
   });
 
+  test('IT-0055-AC2 and IT-0055-AC3 keep signing conditional and explain unsigned releases', async () => {
+    const workflow = await text('.github/workflows/release.yml');
+    expect(workflow).toContain(
+      "if: startsWith(matrix.target, 'macos-') && env.MACOS_CERTIFICATE != '' && env.MACOS_CERTIFICATE_PASSWORD != '' && env.MACOS_SIGNING_IDENTITY != ''",
+    );
+    expect(workflow).toContain(
+      "if: matrix.target == 'windows-x64' && env.WINDOWS_CERTIFICATE != '' && env.WINDOWS_CERTIFICATE_PASSWORD != ''",
+    );
+    expect(workflow).toContain('status=unsigned');
+    expect(workflow).toContain('release notes will include the platform warning');
+  });
+
   test('IT-0055-AC4 builds non root multi architecture runtime and tools images', async () => {
     const dockerfile = await text('distribution/docker/Dockerfile');
     const workflow = await text('.github/workflows/release.yml');
@@ -44,7 +56,19 @@ describe('distribution release invariants', () => {
     expect(workflow).toContain('target: tools');
   });
 
-  test('SEC-0055-AC5 keeps service templates restricted to local operation', async () => {
+  test('SEC-0055-AC4 keeps the Docker runtime non-root and data scoped', async () => {
+    const dockerfile = await text('distribution/docker/Dockerfile');
+    expect(dockerfile).toContain('USER 65532:65532');
+    expect(dockerfile).toContain('VOLUME ["/data"]');
+    expect(dockerfile).toContain('--data-dir", "/data"');
+    expect(dockerfile).toContain('FROM base AS runtime');
+    expect(dockerfile).toContain('FROM base AS tools');
+    expect(dockerfile.lastIndexOf('USER 65532:65532')).toBeGreaterThan(
+      dockerfile.lastIndexOf('USER root'),
+    );
+  });
+
+  test('IT-0055-AC5 and SEC-0055-AC5 keep service templates restricted to local operation', async () => {
     const systemd = await text('distribution/service/myadmin.service');
     const launchd = await text('distribution/service/com.myadmin.server.plist');
     const serviceDocs = await text('distribution/service/README.md');
@@ -59,7 +83,7 @@ describe('distribution release invariants', () => {
     expect(serviceDocs).toContain('launchctl bootstrap');
   });
 
-  test('SMOKE-0055-AC6 documents configuration, data, recovery, upgrades, and limits', async () => {
+  test('IT-0055-AC6 and SMOKE-0055-AC6 document configuration, data, recovery, upgrades, and limits', async () => {
     const operations = await Promise.all([
       text('docs/operations/configuration.md'),
       text('docs/operations/data-directory.md'),

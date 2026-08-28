@@ -109,7 +109,7 @@ function nextMessage(socket: WebSocket, timeoutMs = 1_000): Promise<Record<strin
 }
 
 describe('realtime WebSocket integration', () => {
-  test('subscribes to an owned job, streams ordered events, and closes on session revocation', async () => {
+  test('IT-0029-AC4 and IT-0029-AC7 stream ordered owned job events with redacted payloads', async () => {
     const value = await fixture();
     value.app.listen({ hostname: '127.0.0.1', port: 0 });
     if (!value.app.server?.port) throw new Error('The realtime test server did not start');
@@ -186,7 +186,7 @@ describe('realtime WebSocket integration', () => {
     }
   });
 
-  test('returns protocol and authorization errors without exposing resource existence', async () => {
+  test('IT-0029-AC2 returns protocol errors without exposing resource existence', async () => {
     const value = await fixture();
     value.app.listen({ hostname: '127.0.0.1', port: 0 });
     if (!value.app.server?.port) throw new Error('The realtime test server did not start');
@@ -209,5 +209,22 @@ describe('realtime WebSocket integration', () => {
     } finally {
       socket.close();
     }
+  });
+
+  test('IT-0029-AC1 rejects a WebSocket upgrade without a valid session', async () => {
+    const value = await fixture();
+    value.app.listen({ hostname: '127.0.0.1', port: 0 });
+    if (!value.app.server?.port) throw new Error('The realtime test server did not start');
+    const WebSocketWithHeaders = WebSocket as unknown as {
+      new (url: string, options?: Bun.WebSocketOptions): WebSocket;
+    };
+    const socket = new WebSocketWithHeaders(`ws://127.0.0.1:${value.app.server.port}/api/v1/ws`);
+    const outcome = await new Promise<'opened' | 'rejected'>((resolve) => {
+      socket.onopen = () => resolve('opened');
+      socket.onerror = () => resolve('rejected');
+      socket.onclose = () => resolve('rejected');
+    });
+    expect(outcome).toBe('rejected');
+    socket.close();
   });
 });
