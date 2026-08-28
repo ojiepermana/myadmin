@@ -131,6 +131,16 @@ paths:
     $ref: ./paths/query-saved-by-id.yaml
   /data/read:
     $ref: ./paths/data-read.yaml
+  /views:
+    $ref: ./paths/views.yaml
+  /views/ddl/preview:
+    $ref: ./paths/view-preview.yaml
+  /views/ddl/validate:
+    $ref: ./paths/view-validate.yaml
+  /views/ddl/drop-preview:
+    $ref: ./paths/view-drop-preview.yaml
+  /views/{ref}:
+    $ref: ./paths/view-by-ref.yaml
 components:
   schemas:
     ApiError:
@@ -357,6 +367,30 @@ components:
       $ref: ./components/schemas/data.yaml#/DataReadRequest
     DataReadResponse:
       $ref: ./components/schemas/data.yaml#/DataReadResponse
+    ViewRef:
+      $ref: ./components/schemas/views.yaml#/ViewRef
+    ViewDefinition:
+      $ref: ./components/schemas/views.yaml#/ViewDefinition
+    ViewChangeSet:
+      $ref: ./components/schemas/views.yaml#/ViewChangeSet
+    ViewMutationResponse:
+      $ref: ./components/schemas/views.yaml#/ViewMutationResponse
+    ViewPage:
+      $ref: ./components/schemas/views.yaml#/ViewPage
+    ViewCreateRequest:
+      $ref: ./components/schemas/views.yaml#/ViewCreateRequest
+    ViewUpdateRequest:
+      $ref: ./components/schemas/views.yaml#/ViewUpdateRequest
+    ViewDropRequest:
+      $ref: ./components/schemas/views.yaml#/ViewDropRequest
+    ViewPreviewRequest:
+      $ref: ./components/schemas/views.yaml#/ViewPreviewRequest
+    ViewValidationRequest:
+      $ref: ./components/schemas/views.yaml#/ViewValidationRequest
+    ViewValidationResponse:
+      $ref: ./components/schemas/views.yaml#/ViewValidationResponse
+    ViewDropPreviewRequest:
+      $ref: ./components/schemas/views.yaml#/ViewDropPreviewRequest
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

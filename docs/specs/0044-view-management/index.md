@@ -1,7 +1,7 @@
 # 0044. Manajemen view (CRUD GUI)
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ Keputusan sesi desain 2026-08-28 memilih CRUD GUI penuh untuk view di V1, melamp
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin membuat dan memperbarui view dari editor yang menampilkan definisinya, tanpa menghafal perbedaan sintaks engine.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Editor definisi berbasis SQL dengan pratinjau DDL (dipilih)
 
 **Pros**:
+
 - View adalah SQL; editor SQL dengan autocomplete adalah representasi jujurnya; pratinjau DDL konsisten dengan pola designer.
 
 **Cons**:
+
 - Bukan builder visual kolom; sesuai kesepakatan, builder visual bukan tuntutan keputusan.
 
 ### Option 2: Builder visual query untuk view
 
 **Pros**:
+
 - Ramah pemula.
 
 **Cons**:
+
 - Proyek besar tersendiri (query builder) yang tidak diminta; keputusan menyebut CRUD GUI, bukan visual builder.
 
 ## Decision
@@ -63,21 +68,29 @@ Keputusan view V1 dieksekusi dengan biaya paling proporsional: memakai kembali e
 **Data model sketch**: tidak ada tabel internal; operasi `ViewPort` (spec 0021).
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /views | POST | connectionId, ref (nama, schema/db), definitionSql | view | pemilik, tersambung, viewEditor | 409 nama, 422/DbError |
-| /views/:ref | PUT | definitionSql, allowDropCreate?, confirmName? | view, strategi yang dipakai | sama | 409 butuh drop create, DbError |
-| /views/:ref | DELETE | confirmName | kosong | sama | 409 confirm, DbError |
+
+| Endpoint                | Method | Key inputs                                         | Key outputs                 | Auth                            | Key errors                     |
+| ----------------------- | ------ | -------------------------------------------------- | --------------------------- | ------------------------------- | ------------------------------ |
+| /views                  | GET    | connectionId, database, schema?                    | paged view refs             | pemilik, tersambung, viewEditor | 409/422/501, DbError           |
+| /views                  | POST   | connectionId, ref (nama, schema/db), definitionSql | view                        | pemilik, tersambung, viewEditor | 409 nama, 422/DbError          |
+| /views/ddl/validate     | POST   | connectionId, definitionSql                        | valid                       | pemilik, tersambung, viewEditor | 422/501, DbError               |
+| /views/ddl/preview      | POST   | connectionId, ref, definitionSql, operation        | compiled change set         | pemilik, tersambung, viewEditor | 422/501, DbError               |
+| /views/ddl/drop-preview | POST   | connectionId, ref                                  | compiled drop change set    | pemilik, tersambung, viewEditor | 422/501, DbError               |
+| /views/:ref             | GET    | connectionId                                       | view, definition            | pemilik, tersambung, viewEditor | 404/422/501, DbError           |
+| /views/:ref             | PUT    | definitionSql, allowDropCreate?, confirmName?      | view, strategi yang dipakai | sama                            | 409 butuh drop create, DbError |
+| /views/:ref             | DELETE | confirmName                                        | kosong                      | sama                            | 409 confirm, DbError           |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| definisi kini | SQL | getViewDefinition provider |
-| strategi update | replace vs drop create | analisis provider (kompatibilitas kolom PostgreSQL) |
-| dampak drop | perujuk | metadata dependensi provider |
-| gerbang | viewEditor | capability koneksi |
+
+| Action          | Value produced / displayed | Source                                              |
+| --------------- | -------------------------- | --------------------------------------------------- |
+| definisi kini   | SQL                        | getViewDefinition provider                          |
+| strategi update | replace vs drop create     | analisis provider (kompatibilitas kolom PostgreSQL) |
+| dampak drop     | perujuk                    | metadata dependensi provider                        |
+| gerbang         | viewEditor                 | capability koneksi                                  |
 
 **Key invariants**:
+
 - Update tidak pernah memakai drop create tanpa persetujuan eksplisit (flag plus confirmName).
 - Pratinjau DDL = yang dijalankan (kompilasi tunggal, pola spec 0041).
 - Audit sebelum sukses untuk ketiga operasi.
@@ -101,12 +114,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Keputusan produk (view first class di V1) terpenuhi dengan pola yang sudah teruji; feature.md baris "CRUD views V1" kini punya implementasi yang didefinisikan.
 
 **Negative / tradeoffs**:
+
 - Strategi drop create PostgreSQL memindahkan risiko ke momen konfirmasi; dampak dependensi ditampilkan untuk itu.
 
 **Neutral**:
+
 - Materialized view tetap V2 dengan capability `materializedViews` false.
 
 ## Follow-up
@@ -116,9 +132,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - Keputusan view CRUD GUI penuh, sesi desain 2026-08-28; feature.md baris views; spec 0021 (ViewPort), 0023, 0025, 0031, 0033, 0041 (pola pratinjau).
 
 **Practices & standards**:
+
 - Pratinjau DDL; strategi perubahan per engine di adapter; gerbang capability di server.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

@@ -18,6 +18,7 @@ const tabContextSchema = Type.Object(
     draftSql: Type.Optional(Type.String({ maxLength: MAX_WORKSPACE_STATE_BYTES })),
     connectionMissing: Type.Optional(Type.Boolean()),
     savedQueryName: Type.Optional(Type.String({ maxLength: 256 })),
+    stale: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 );

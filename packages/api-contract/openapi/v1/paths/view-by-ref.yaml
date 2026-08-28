@@ -1,0 +1,105 @@
+parameters:
+  - name: ref
+    in: path
+    required: true
+    description: URL encoded JSON view reference.
+    schema: { type: string, minLength: 1 }
+get:
+  operationId: getView
+  tags: [views]
+  summary: Get a view definition
+  parameters:
+    - name: connectionId
+      in: query
+      required: true
+      schema: { type: string, minLength: 1 }
+  responses:
+    '200':
+      description: Current view definition.
+      content:
+        { application/json: { schema: { $ref: ../components/schemas/views.yaml#/ViewDefinition } } }
+    '401':
+      description: No valid session.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '404':
+      description: The view was not found.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '409':
+      description: The connection is not connected.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The view reference is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '501':
+      description: View editing is unsupported.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider operation failed.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+put:
+  operationId: updateView
+  tags: [views]
+  summary: Replace a view definition
+  requestBody:
+    required: true
+    content:
+      {
+        application/json: { schema: { $ref: ../components/schemas/views.yaml#/ViewUpdateRequest } },
+      }
+  responses:
+    '200':
+      description: View updated.
+      content:
+        {
+          application/json:
+            { schema: { $ref: ../components/schemas/views.yaml#/ViewMutationResponse } },
+        }
+    '401':
+      description: No valid session.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '403':
+      description: CSRF validation failed or database permission was denied.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '409':
+      description: Confirmation is required for drop and create.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The request or definition is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '501':
+      description: View editing is unsupported.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider operation failed.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+delete:
+  operationId: deleteView
+  tags: [views]
+  summary: Drop a view
+  requestBody:
+    required: true
+    content:
+      { application/json: { schema: { $ref: ../components/schemas/views.yaml#/ViewDropRequest } } }
+  responses:
+    '204': { description: View dropped. }
+    '401':
+      description: No valid session.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '403':
+      description: CSRF validation failed or database permission was denied.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '404':
+      description: The view was not found.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '409':
+      description: The confirmation name is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The request is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '501':
+      description: View editing is unsupported.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider operation failed.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }

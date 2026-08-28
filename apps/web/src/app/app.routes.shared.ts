@@ -28,6 +28,7 @@ export const V1_ROUTE_DEFINITIONS: readonly AppRouteDefinition[] = [
   { id: 'table-designer', path: 'table-designer', title: 'Table designer', type: 'table-designer' },
   { id: 'data-browser', path: 'data-browser', title: 'Data browser', type: 'data-browser' },
   { id: 'query-editor', path: 'query-editor', title: 'Query editor', type: 'query-editor' },
+  { id: 'view-editor', path: 'view-editor', title: 'View editor', type: 'view-editor' },
   { id: 'query-history', path: 'query-history', title: 'Query history', type: 'query-history' },
   { id: 'security', path: 'security', title: 'Security', type: 'security' },
   { id: 'import-export', path: 'import-export', title: 'Import and export', type: 'import-export' },
@@ -123,15 +124,20 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
                                     import('./features/query-history/query-history').then(
                                       ({ QueryHistory }) => QueryHistory,
                                     )
-                                : definition.id === 'data-browser'
+                                : definition.id === 'view-editor'
                                   ? () =>
-                                      import('./features/data-browser/data-browser').then(
-                                        ({ DataBrowser }) => DataBrowser,
+                                      import('./features/view-editor/view-editor').then(
+                                        ({ ViewEditor }) => ViewEditor,
                                       )
-                                  : () =>
-                                      import('./features/route-placeholder/route-placeholder').then(
-                                        ({ RoutePlaceholder }) => RoutePlaceholder,
-                                      ),
+                                  : definition.id === 'data-browser'
+                                    ? () =>
+                                        import('./features/data-browser/data-browser').then(
+                                          ({ DataBrowser }) => DataBrowser,
+                                        )
+                                    : () =>
+                                        import('./features/route-placeholder/route-placeholder').then(
+                                          ({ RoutePlaceholder }) => RoutePlaceholder,
+                                        ),
   }));
 
   const devRoutes: Routes = includeDevDemo

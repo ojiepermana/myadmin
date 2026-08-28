@@ -208,15 +208,28 @@ export class ObjectExplorer {
             queryParams: { connection: node.connectionId, ref: JSON.stringify(node.ref) },
           });
           break;
+        case 'create-view':
+          await this.router.navigate(['/view-editor'], {
+            queryParams: {
+              connection: node.connectionId,
+              database: node.database,
+              schema: node.schema,
+              mode: 'create',
+            },
+          });
+          break;
         case 'design-table':
           await this.router.navigate(['/table-designer'], {
             queryParams: { connection: node.connectionId, ref: JSON.stringify(node.ref) },
           });
           break;
         case 'open-definition':
-          await this.router.navigate(['/query-editor'], {
-            queryParams: { connection: node.connectionId, ref: JSON.stringify(node.ref) },
-          });
+          await this.router.navigate(
+            [node.ref?.type === 'view' ? '/view-editor' : '/query-editor'],
+            {
+              queryParams: { connection: node.connectionId, ref: JSON.stringify(node.ref) },
+            },
+          );
           break;
         case 'refresh':
           await this.refresh(node);

@@ -613,9 +613,10 @@ CRUD GUI penuh untuk view sesuai keputusan produk. Done when: create, ubah defin
 
 - [x] Design it (spec): [0044](../specs/0044-view-management/index.md)
 - [ ] Build it: /develop view-management
-  - [ ] ViewPort kedua provider dengan analisis strategi update (AC-3)
-  - [ ] Endpoint bergerbang viewEditor plus audit (AC-3, AC-4, AC-5)
+  - [x] ViewPort kedua provider dengan analisis strategi update (AC-3)
+  - [x] Endpoint bergerbang viewEditor plus audit (AC-3, AC-4, AC-5)
   - [ ] Halaman editor view dengan pratinjau DDL plus aksi explorer plus e2e (AC-1, AC-2, AC-6, AC-7, AC-8)
+    - code in `apps/web/src/app/features/view-editor`, `apps/server/src/view-management`, and both provider `view.ts` ports; live two-engine e2e remains unproven
 - [ ] [Verify it](../specs/0044-view-management/verify.md): /check verify view-management
 - [ ] [Test it](../specs/0044-view-management/test.md): /test view-management
 

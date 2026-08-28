@@ -16,7 +16,7 @@ import {
   type CreateUserInput,
   type UpdateUserRoleStatusInput,
 } from '@myadmin/auth';
-import { AuditAdminReader, isAuditAction } from '@myadmin/audit';
+import { AuditAdminReader, AuditWriter, isAuditAction } from '@myadmin/audit';
 import { CredentialVault, createKeyProvider } from '@myadmin/crypto';
 import { BackupService, RestoreService } from '@myadmin/backup';
 import { MysqlProvider } from '@myadmin/database-mysql';
@@ -75,6 +75,7 @@ import { QueryHistoryService } from './query/query-history';
 import { DatabaseManagementService } from './database-management/database-management';
 import { registerDatabaseManagementRoutes } from './database-management/routes';
 import { registerDataBrowserRoutes } from './data-browser/routes';
+import { registerViewRoutes } from './view-management/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -1538,6 +1539,13 @@ export function createServerApp(options: ServerAppOptions = {}) {
       connectionManager,
       secureCookies,
     });
+    application = registerViewRoutes(application, '/api/v1', {
+      ...(auditRepository ? { auditWriter: new AuditWriter(auditRepository) } : {}),
+      authService,
+      setupService,
+      connectionManager,
+      secureCookies,
+    });
   }
   if (queryExecutionService && authService) {
     application = registerQueryRoutes(application, '/api/v1', {
@@ -1707,6 +1715,13 @@ export function createApp(
     secureCookies: false,
   });
   application = registerDataBrowserRoutes(application, '', {
+    authService,
+    setupService,
+    connectionManager,
+    secureCookies: false,
+  });
+  application = registerViewRoutes(application, '', {
+    auditWriter: new AuditWriter(store.audit),
     authService,
     setupService,
     connectionManager,

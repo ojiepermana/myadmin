@@ -19,6 +19,7 @@ export type WorkspaceTabType =
   | 'table-designer'
   | 'data-browser'
   | 'query-editor'
+  | 'view-editor'
   | 'query-history'
   | 'security'
   | 'import-export'
@@ -98,6 +99,27 @@ export class WorkspaceStore {
       tabs: state.tabs.map((tab) =>
         tab.id === tabId ? { ...tab, context: { ...tab.context, ...patch } } : tab,
       ),
+    }));
+  }
+
+  markViewTabsStale(
+    ref: Readonly<{ database: string; schema?: string | null; name: string }>,
+  ): void {
+    const expected = JSON.stringify({ ...ref, schema: ref.schema ?? null, type: 'view' });
+    this.stateSignal.update((state) => ({
+      ...state,
+      tabs: state.tabs.map((tab) => {
+        if (tab.type !== 'data-browser' || tab.context['stale'] === true) return tab;
+        const route = tab.context['route'];
+        if (typeof route !== 'string') return tab;
+        try {
+          const encodedRef = new URL(route, 'http://myadmin.local').searchParams.get('ref');
+          if (!encodedRef || JSON.stringify(JSON.parse(encodedRef)) !== expected) return tab;
+          return { ...tab, context: { ...tab.context, stale: true } };
+        } catch {
+          return tab;
+        }
+      }),
     }));
   }
 
@@ -207,6 +229,7 @@ function persistableContext(context: Readonly<Record<string, unknown>>) {
     draftSql?: string;
     connectionMissing?: boolean;
     savedQueryName?: string;
+    stale?: boolean;
   } = {};
   for (const key of [
     'route',
@@ -220,6 +243,7 @@ function persistableContext(context: Readonly<Record<string, unknown>>) {
     const value = context[key];
     if (typeof value === 'string' || typeof value === 'boolean') result[key] = value as never;
   }
+  if (typeof context['stale'] === 'boolean') result.stale = context['stale'];
   return result;
 }
 

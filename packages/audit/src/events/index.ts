@@ -53,8 +53,8 @@ export const AuditEvents = {
   },
   view: {
     created: required('view.created', 'view'),
-    updated: required('view.updated', 'view'),
-    deleted: required('view.deleted', 'view'),
+    replaced: required('view.replaced', 'view'),
+    dropped: required('view.dropped', 'view'),
   },
   security: {
     principal_created: required('security.principal_created', 'principal'),

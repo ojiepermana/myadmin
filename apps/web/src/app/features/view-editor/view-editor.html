@@ -1,0 +1,193 @@
+<main class="view-editor-page flex h-full min-h-0 flex-col" aria-labelledby="view-editor-title">
+  <header class="flex flex-col gap-4 border-b border-border/70 bg-card/80 px-5 py-4 sm:px-7">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">View workspace</p>
+        <h1 id="view-editor-title" class="mt-1 text-2xl font-semibold tracking-tight">
+          {{ mode() === 'create' ? 'Create view' : mode() === 'drop' ? 'Drop view' : 'Edit view' }}
+        </h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+          Provider-generated DDL is shown before every change.
+        </p>
+      </div>
+      <span
+        class="rounded-full border border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground"
+        >{{ engine() }}</span
+      >
+    </div>
+    <div class="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_1fr]" aria-label="View context">
+      <label class="grid gap-1.5 text-xs font-medium text-muted-foreground"
+        >Connection
+        <select
+          class="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          [value]="connectionId()"
+          (change)="onConnectionChange($any($event.target).value)"
+        >
+          <option value="">Choose a connection</option>
+          @for (connection of connections(); track connection.id) {
+            <option [value]="connection.id">
+              {{ connection.label }} · {{ connection.engine }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="grid gap-1.5 text-xs font-medium text-muted-foreground"
+        >Database
+        <input
+          class="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          [value]="database()"
+          (input)="onDatabaseChange($any($event.target).value)"
+          placeholder="Database name"
+        />
+      </label>
+      <label class="grid gap-1.5 text-xs font-medium text-muted-foreground"
+        >Schema <span class="font-normal">optional for MySQL</span>
+        <input
+          class="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          [value]="schema() ?? ''"
+          (input)="onSchemaChange($any($event.target).value)"
+          placeholder="public"
+        />
+      </label>
+      <label class="grid gap-1.5 text-xs font-medium text-muted-foreground"
+        >View name
+        <input
+          class="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          [value]="name()"
+          (input)="onNameChange($any($event.target).value)"
+          placeholder="reporting_view"
+          [disabled]="mode() === 'drop'"
+        />
+      </label>
+    </div>
+  </header>
+
+  <div class="flex min-h-0 flex-1 flex-col">
+    <div
+      class="flex flex-wrap items-center gap-2 border-b border-border/70 bg-muted/15 px-5 py-2.5 sm:px-7"
+    >
+      <button
+        type="button"
+        class="view-action"
+        [disabled]="busy() || mode() === 'drop'"
+        (click)="validate()"
+      >
+        Validate
+      </button>
+      <button
+        type="button"
+        class="view-action"
+        [disabled]="busy() || mode() === 'drop'"
+        (click)="preview()"
+      >
+        Preview DDL
+      </button>
+      @if (mode() !== 'drop') {
+        <button
+          type="button"
+          class="view-action view-action-primary"
+          [disabled]="busy()"
+          (click)="save()"
+        >
+          {{ mode() === 'create' ? 'Create view' : 'Save changes' }}
+        </button>
+      }
+      @if (mode() !== 'create') {
+        <button
+          type="button"
+          class="view-action view-action-danger"
+          [disabled]="busy()"
+          (click)="drop()"
+        >
+          Drop view
+        </button>
+      }
+      @if (busy()) {
+        <span class="ms-2 text-xs text-muted-foreground" role="status">Working…</span>
+      }
+    </div>
+    <div
+      #editorHost
+      class="view-editor-host min-h-[18rem] flex-1"
+      aria-label="View SELECT definition"
+    ></div>
+    @if (message()) {
+      <div
+        class="border-t border-border px-5 py-3 text-sm"
+        [class.text-destructive]="errorPosition() !== null"
+        role="status"
+      >
+        {{ message() }}
+        @if (errorPosition() !== null) {
+          <button type="button" class="ms-2 underline" (click)="jumpToError()">
+            Jump to error
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (changeSet(); as changes) {
+    <section
+      class="border-t border-border bg-card/70 px-5 py-3 sm:px-7"
+      aria-labelledby="ddl-preview-title"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 id="ddl-preview-title" class="text-sm font-semibold">
+            DDL preview · {{ changes.strategy }}
+          </h2>
+          <p class="text-xs text-muted-foreground">{{ changes.statements.length }} statement(s)</p>
+        </div>
+      </div>
+      <pre
+        class="mt-2 max-h-48 overflow-auto rounded-md border border-border bg-muted/20 p-3 text-xs leading-5"
+        >{{ changes.statements.join('\n') }}</pre>
+      @if (changes.warnings.length) {
+        <div
+          class="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"
+        >
+          {{ changes.warnings.join(' ') }}
+        </div>
+      }
+      @if (changes.dependents.length) {
+        <p class="mt-2 text-xs text-destructive">
+          Dependents: {{ changes.dependents.map((item) => item.name).join(', ') }}
+        </p>
+      }
+    </section>
+  }
+
+  @if (confirmation()) {
+    <section
+      class="border-t border-destructive/30 bg-destructive/10 px-5 py-4 sm:px-7"
+      role="alertdialog"
+      aria-labelledby="view-confirm-title"
+    >
+      <h2 id="view-confirm-title" class="text-sm font-semibold text-destructive">
+        Confirm destructive change
+      </h2>
+      <p class="mt-1 text-sm text-destructive">
+        This provider requires
+        {{ changeSet()?.strategy === 'drop_create' ? 'drop and create' : 'dropping' }} the view.
+        Dependents may be invalidated. Type <strong>{{ name() }}</strong> to continue.
+      </p>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <input
+          class="h-9 rounded-md border border-destructive/40 bg-background px-2 text-sm"
+          [value]="confirmName()"
+          (input)="onConfirmNameChange($any($event.target).value)"
+          placeholder="Exact view name"
+          aria-label="Exact view name"
+        /><button
+          type="button"
+          class="view-action view-action-danger"
+          [disabled]="confirmName() !== name() || busy()"
+          (click)="mode() === 'drop' ? drop() : confirmUpdate()"
+        >
+          Confirm</button
+        ><button type="button" class="view-action" (click)="cancelConfirmation()">Cancel</button>
+      </div>
+    </section>
+  }
+</main>

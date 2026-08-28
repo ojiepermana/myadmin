@@ -1,0 +1,70 @@
+get:
+  operationId: listViews
+  tags: [views]
+  summary: List views for one database or schema
+  parameters:
+    - name: connectionId
+      in: query
+      required: true
+      schema: { type: string, minLength: 1 }
+    - name: database
+      in: query
+      required: true
+      schema: { type: string, minLength: 1 }
+    - name: schema
+      in: query
+      required: false
+      schema: { type: string, minLength: 1 }
+  responses:
+    '200':
+      description: View references.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/views.yaml#/ViewPage }
+    '401':
+      description: No valid session.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '409':
+      description: The connection is not connected.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The request is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '501':
+      description: View editing is unsupported.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider operation failed.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+post:
+  operationId: createView
+  tags: [views]
+  summary: Create a view
+  requestBody:
+    required: true
+    content:
+      application/json: { schema: { $ref: ../components/schemas/views.yaml#/ViewCreateRequest } }
+  responses:
+    '201':
+      description: View created.
+      content:
+        application/json:
+          { schema: { $ref: ../components/schemas/views.yaml#/ViewMutationResponse } }
+    '401':
+      description: No valid session.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '403':
+      description: CSRF validation failed or database permission was denied.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '409':
+      description: The connection or view state conflicts.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The request or definition is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '501':
+      description: View editing is unsupported.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider operation failed.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }

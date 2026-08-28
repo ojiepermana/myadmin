@@ -1,0 +1,37 @@
+post:
+  operationId: validateViewDefinition
+  tags: [views]
+  summary: Validate a view SELECT definition with the provider
+  requestBody:
+    required: true
+    content:
+      {
+        application/json:
+          { schema: { $ref: ../components/schemas/views.yaml#/ViewValidationRequest } },
+      }
+  responses:
+    '200':
+      description: Definition is valid.
+      content:
+        {
+          application/json:
+            { schema: { $ref: ../components/schemas/views.yaml#/ViewValidationResponse } },
+        }
+    '401':
+      description: No valid session.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '403':
+      description: Database permission was denied.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '409':
+      description: The connection is not connected.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The definition is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '501':
+      description: View editing or validation is unsupported.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider operation failed.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }

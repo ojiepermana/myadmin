@@ -290,10 +290,13 @@ export class AppShell {
     const definition = [DEV_ROUTE, ...V1_ROUTE_DEFINITIONS].find((item) => item.path === path);
     if (!definition) return;
     if (definition.type !== 'query-editor') {
+      const contextual = definition.type === 'view-editor' || definition.type === 'data-browser';
+      const tabId = contextual ? this.contextualTabId(parsed, definition.type) : definition.id;
+      const route = contextual ? `${parsed.pathname}${parsed.search}` : undefined;
       this.workspace.openTab(
         definition.type === 'data-browser'
           ? this.toDataBrowserTab(definition, parsed)
-          : this.toTab(definition),
+          : this.toTab(definition, tabId, route),
       );
       return;
     }
@@ -303,12 +306,12 @@ export class AppShell {
     if (!parsed.searchParams.get('tab')) void this.router.navigateByUrl(this.routeForTab(tab));
   }
 
-  private toTab(definition: AppRouteDefinition, id = definition.id): TabDescriptor {
+  private toTab(definition: AppRouteDefinition, id = definition.id, route?: string): TabDescriptor {
     return {
       id,
       type: definition.type,
       title: definition.title,
-      context: { route: `/${definition.path}` },
+      context: { route: route ?? `/${definition.path}` },
     };
   }
 
@@ -334,6 +337,14 @@ export class AppShell {
         ref,
       },
     };
+  }
+
+  private contextualTabId(url: URL, type: 'view-editor' | 'data-browser'): string {
+    const ref = url.searchParams.get('ref');
+    if (!ref) return type === 'view-editor' ? 'view-editor-create' : 'data-browser';
+    return `${type}-${url.searchParams.get('connection') ?? 'connection'}-${ref}`
+      .replace(/[^a-zA-Z0-9_-]/g, '-')
+      .slice(0, 120);
   }
 
   private newQueryTabId(): string {

@@ -1056,6 +1056,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List views for one database or schema */
+        get: operations["listViews"];
+        put?: never;
+        /** Create a view */
+        post: operations["createView"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/views/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description URL encoded JSON view reference. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        /** Get a view definition */
+        get: operations["getView"];
+        /** Replace a view definition */
+        put: operations["updateView"];
+        post?: never;
+        /** Drop a view */
+        delete: operations["deleteView"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/views/ddl/drop-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview provider compiled view drop DDL */
+        post: operations["previewViewDrop"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/views/ddl/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview provider compiled view DDL */
+        post: operations["previewViewDdl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/views/ddl/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate a view SELECT definition with the provider */
+        post: operations["validateViewDefinition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspace": {
         parameters: {
             query?: never;
@@ -1890,6 +1981,67 @@ export interface components {
             page: number;
             pageSize: number;
             total: number;
+        };
+        ViewChangeSet: {
+            dependents: components["schemas"]["ViewRef"][];
+            requiresConfirmation: boolean;
+            statements: string[];
+            /** @enum {string} */
+            strategy: "create" | "replace" | "drop_create" | "drop";
+            warnings: string[];
+        };
+        ViewCreateRequest: {
+            connectionId: string;
+            definitionSql: string;
+            ref: components["schemas"]["ViewRef"];
+        };
+        ViewDefinition: {
+            definition: string;
+            ref: components["schemas"]["ViewRef"];
+        };
+        ViewDropPreviewRequest: {
+            connectionId: string;
+            ref: components["schemas"]["ViewRef"];
+        };
+        ViewDropRequest: {
+            confirmName: string;
+            connectionId: string;
+        };
+        ViewMutationResponse: {
+            changeSet: components["schemas"]["ViewChangeSet"];
+            view: components["schemas"]["ViewDefinition"];
+        };
+        ViewPage: {
+            cursor: string | null;
+            items: components["schemas"]["ViewRef"][];
+        };
+        ViewPreviewRequest: {
+            connectionId: string;
+            definitionSql: string;
+            /** @enum {string} */
+            operation: "create" | "alter";
+            ref: components["schemas"]["ViewRef"];
+        };
+        ViewRef: {
+            database: string;
+            name: string;
+            schema: string | null;
+            /** @constant */
+            type: "view";
+        };
+        ViewUpdateRequest: {
+            allowDropCreate?: boolean;
+            confirmName?: string;
+            connectionId: string;
+            definitionSql: string;
+        };
+        ViewValidationRequest: {
+            connectionId: string;
+            definitionSql: string;
+        };
+        ViewValidationResponse: {
+            /** @constant */
+            valid: true;
         };
         WorkspacePanels: {
             bottomCollapsed?: boolean;
@@ -6306,6 +6458,626 @@ export interface operations {
             };
             /** @description Password could not be reset. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    listViews: {
+        parameters: {
+            query: {
+                connectionId: string;
+                database: string;
+                schema?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description View references. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewPage"];
+                };
+            };
+            /** @description No valid session. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description View editing is unsupported. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    createView: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description View created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewMutationResponse"];
+                };
+            };
+            /** @description No valid session. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF validation failed or database permission was denied. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection or view state conflicts. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request or definition is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description View editing is unsupported. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getView: {
+        parameters: {
+            query: {
+                connectionId: string;
+            };
+            header?: never;
+            path: {
+                /** @description URL encoded JSON view reference. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current view definition. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewDefinition"];
+                };
+            };
+            /** @description No valid session. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The view was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The view reference is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description View editing is unsupported. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    updateView: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description URL encoded JSON view reference. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description View updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewMutationResponse"];
+                };
+            };
+            /** @description No valid session. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF validation failed or database permission was denied. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Confirmation is required for drop and create. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request or definition is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description View editing is unsupported. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    deleteView: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description URL encoded JSON view reference. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewDropRequest"];
+            };
+        };
+        responses: {
+            /** @description View dropped. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF validation failed or database permission was denied. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The view was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The confirmation name is invalid. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description View editing is unsupported. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    previewViewDrop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewDropPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Provider compiled drop change set. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewChangeSet"];
+                };
+            };
+            /** @description No valid session. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description View editing is unsupported. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    previewViewDdl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Provider compiled change set. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewChangeSet"];
+                };
+            };
+            /** @description No valid session. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request or definition is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description View editing is unsupported. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    validateViewDefinition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewValidationRequest"];
+            };
+        };
+        responses: {
+            /** @description Definition is valid. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewValidationResponse"];
+                };
+            };
+            /** @description No valid session. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Database permission was denied. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The definition is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description View editing or validation is unsupported. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

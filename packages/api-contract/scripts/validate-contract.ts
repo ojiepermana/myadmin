@@ -74,6 +74,11 @@ const initialPaths = {
   '/query/saved': 'paths/query-saved.yaml',
   '/query/saved/{id}': 'paths/query-saved-by-id.yaml',
   '/data/read': 'paths/data-read.yaml',
+  '/views': 'paths/views.yaml',
+  '/views/ddl/preview': 'paths/view-preview.yaml',
+  '/views/ddl/validate': 'paths/view-validate.yaml',
+  '/views/ddl/drop-preview': 'paths/view-drop-preview.yaml',
+  '/views/{ref}': 'paths/view-by-ref.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);

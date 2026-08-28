@@ -43,6 +43,7 @@ export interface ExplorerAction {
     | 'browse-database'
     | 'drop-database'
     | 'browse-data'
+    | 'create-view'
     | 'design-table'
     | 'open-definition'
     | 'refresh';
@@ -51,7 +52,12 @@ export interface ExplorerAction {
   readonly reason?: string;
 }
 
-const DEFAULT_INSTALLED_FEATURES: readonly ExplorerFeatureId[] = ['connections', 'database'];
+const DEFAULT_INSTALLED_FEATURES: readonly ExplorerFeatureId[] = [
+  'connections',
+  'database',
+  'data-browser',
+  'view-editor',
+];
 
 function connected(status: ConnectionStatus | null): boolean {
   return status?.status === 'connected';
@@ -111,9 +117,28 @@ export class ExplorerActionRegistry {
     if (node.kind === 'object' && node.ref?.type === 'view') {
       const capability = status?.capability;
       const supported = capability?.capabilities['viewEditor'] === true;
+      if (this.installed.has('data-browser'))
+        add('browse-data', 'Browse data', 'data-browser', state);
       add(
         'open-definition',
         'Open definition',
+        'view-editor',
+        supported
+          ? state
+          : {
+              disabled: true,
+              reason:
+                capability?.reasons?.['viewEditor'] ??
+                'This provider does not support view editing.',
+            },
+      );
+    }
+    if (node.kind === 'object-group' && node.objectType === 'view') {
+      const capability = status?.capability;
+      const supported = capability?.capabilities['viewEditor'] === true;
+      add(
+        'create-view',
+        'Create view',
         'view-editor',
         supported
           ? state

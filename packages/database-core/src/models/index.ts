@@ -199,6 +199,17 @@ export interface DataPage {
   readonly hasMore: boolean;
 }
 
+export type ViewChangeStrategy = 'create' | 'replace' | 'drop_create' | 'drop';
+
+/** A provider compiled view operation. The statements are the exact SQL to apply. */
+export interface ViewChangeSet {
+  strategy: ViewChangeStrategy;
+  statements: string[];
+  dependents: ObjectRef[];
+  warnings: string[];
+  requiresConfirmation: boolean;
+}
+
 export type DataRow = Record<string, unknown>;
 
 /** A JSON safe cell that keeps values such as bigint and bytes lossless. */

@@ -1,0 +1,34 @@
+post:
+  operationId: previewViewDdl
+  tags: [views]
+  summary: Preview provider compiled view DDL
+  requestBody:
+    required: true
+    content:
+      {
+        application/json:
+          { schema: { $ref: ../components/schemas/views.yaml#/ViewPreviewRequest } },
+      }
+  responses:
+    '200':
+      description: Provider compiled change set.
+      content:
+        { application/json: { schema: { $ref: ../components/schemas/views.yaml#/ViewChangeSet } } }
+    '401':
+      description: No valid session.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '403':
+      description: CSRF validation failed.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '409':
+      description: The connection is not connected.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The request or definition is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '501':
+      description: View editing is unsupported.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider operation failed.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }

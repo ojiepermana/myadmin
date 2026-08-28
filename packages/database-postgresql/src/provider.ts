@@ -8,6 +8,7 @@ import { PostgresqlQueryAdapter } from './query-adapter';
 import { PostgresqlDatabasePort } from './database';
 import { PostgresqlSecurityAdapter } from './security';
 import { PostgresqlDataAdapter } from './data';
+import { PostgresqlViewPort } from './view';
 
 export class PostgresqlProvider implements DatabaseProvider {
   public readonly engine = 'postgresql' as const;
@@ -20,6 +21,7 @@ export class PostgresqlProvider implements DatabaseProvider {
   public readonly database: PostgresqlDatabasePort;
   public readonly security: PostgresqlSecurityAdapter;
   public readonly data: PostgresqlDataAdapter;
+  public readonly view: PostgresqlViewPort;
 
   public constructor(options: PostgresqlConnectionOptions & PostgresqlBackupToolPaths = {}) {
     this.connection = new PostgresqlConnectionAdapter(options);
@@ -27,6 +29,7 @@ export class PostgresqlProvider implements DatabaseProvider {
     this.database = new PostgresqlDatabasePort(this.connection);
     this.capability = new PostgresqlCapabilityAdapter(this.connection, this.backup);
     this.metadata = new PostgresqlMetadataAdapter(this.connection);
+    this.view = new PostgresqlViewPort(this.connection, this.metadata);
     this.monitoring = new PostgresqlMonitoringAdapter(this.connection, { now: options.now });
     this.query = new PostgresqlQueryAdapter(this.connection);
     this.security = new PostgresqlSecurityAdapter(this.connection);

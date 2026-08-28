@@ -1,0 +1,162 @@
+ViewRef:
+  type: object
+  additionalProperties: false
+  required: [database, schema, name, type]
+  properties:
+    database:
+      type: string
+      minLength: 1
+    schema:
+      type: [string, 'null']
+    name:
+      type: string
+      minLength: 1
+    type:
+      const: view
+
+ViewDefinition:
+  type: object
+  additionalProperties: false
+  required: [ref, definition]
+  properties:
+    ref:
+      $ref: '#/ViewRef'
+    definition:
+      type: string
+      minLength: 1
+
+ViewChangeSet:
+  type: object
+  additionalProperties: false
+  required: [strategy, statements, dependents, warnings, requiresConfirmation]
+  properties:
+    strategy:
+      type: string
+      enum: [create, replace, drop_create, drop]
+    statements:
+      type: array
+      items:
+        type: string
+        minLength: 1
+    dependents:
+      type: array
+      items:
+        $ref: '#/ViewRef'
+    warnings:
+      type: array
+      items:
+        type: string
+    requiresConfirmation:
+      type: boolean
+
+ViewMutationResponse:
+  type: object
+  additionalProperties: false
+  required: [view, changeSet]
+  properties:
+    view:
+      $ref: '#/ViewDefinition'
+    changeSet:
+      $ref: '#/ViewChangeSet'
+
+ViewPage:
+  type: object
+  additionalProperties: false
+  required: [items, cursor]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/ViewRef'
+    cursor:
+      type: [string, 'null']
+
+ViewCreateRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref, definitionSql]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/ViewRef'
+    definitionSql:
+      type: string
+      minLength: 1
+
+ViewUpdateRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, definitionSql]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    definitionSql:
+      type: string
+      minLength: 1
+    allowDropCreate:
+      type: boolean
+    confirmName:
+      type: string
+
+ViewDropRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, confirmName]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    confirmName:
+      type: string
+      minLength: 1
+
+ViewPreviewRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref, definitionSql, operation]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/ViewRef'
+    definitionSql:
+      type: string
+      minLength: 1
+    operation:
+      type: string
+      enum: [create, alter]
+
+ViewValidationRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, definitionSql]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    definitionSql:
+      type: string
+      minLength: 1
+
+ViewValidationResponse:
+  type: object
+  additionalProperties: false
+  required: [valid]
+  properties:
+    valid:
+      const: true
+
+ViewDropPreviewRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/ViewRef'
