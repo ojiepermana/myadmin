@@ -133,6 +133,10 @@ export class WorkspaceStore {
       panels: { ...state.panels, bottomCollapsed: !state.panels.bottomCollapsed },
     }));
   }
+
+  reset(): void {
+    this.state.set(INITIAL_STATE);
+  }
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

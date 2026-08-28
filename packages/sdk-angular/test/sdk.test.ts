@@ -166,5 +166,11 @@ describe('MyAdmin Angular SDK', () => {
     await expect(result).resolves.toEqual({
       user: { id: 'user-1', role: 'admin', username: 'admin' },
     });
+
+    const logout = firstValueFrom(TestBed.inject(MyadminSdk).auth.logout());
+    const logoutRequest = http.expectOne('/api/v1/auth/logout');
+    expect(logoutRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    logoutRequest.flush(null, { status: 204, statusText: 'No Content' });
+    await expect(logout).resolves.toBeUndefined();
   });
 });

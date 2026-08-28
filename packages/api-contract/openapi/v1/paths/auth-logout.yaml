@@ -3,6 +3,14 @@ post:
   tags:
     - auth
   summary: End the current application session
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+      description: Same-origin mutation marker required for cookie-authenticated requests.
   responses:
     '204':
       description: Session ended.
@@ -14,6 +22,12 @@ post:
             $ref: ../components/schemas/api-error.yaml
     '401':
       description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The CSRF or origin check failed.
       content:
         application/json:
           schema:

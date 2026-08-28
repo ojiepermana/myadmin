@@ -108,7 +108,7 @@ export class AuditWriter {
     this.redaction = options.redaction ?? redaction;
   }
 
-  public async record(event: AuditRecordInput): Promise<void> {
+  public record(event: AuditRecordInput): void {
     const definition = getAuditActionDefinition(event?.action);
     if (!definition) throw new InvalidAuditActionError(event?.action);
     if (!isAuditResult(event?.result)) {
@@ -137,10 +137,10 @@ export class AuditWriter {
     const safeDetails = boundUsernameAttempted(safeEvent.details);
     validateAuditDetails(safeDetails);
 
-    await (this.repository.append({
+    this.repository.append({
       ...safeEvent,
       details: safeDetails,
-    }) as void | PromiseLike<void>);
+    });
   }
 
   public query(filter?: AuditFilter, page?: PageRequest): Page<AuditEvent> {

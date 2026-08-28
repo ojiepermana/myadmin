@@ -93,7 +93,7 @@ describe('API contract', () => {
       'logout',
       await request('/auth/logout', {
         method: 'POST',
-        headers: { cookie: sessionCookieValue },
+        headers: { cookie: sessionCookieValue, 'X-Myadmin-Csrf': '1' },
       }),
     ]);
 

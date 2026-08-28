@@ -1,5 +1,6 @@
 import type { Routes } from '@angular/router';
 import type { WorkspaceTabType } from './core/state/workspace.store';
+import { authGuard } from './core/auth/auth.guard';
 import { setupGateGuard } from './core/setup/setup-gate.guard';
 
 export interface AppRouteDefinition {
@@ -18,7 +19,7 @@ export const DEV_ROUTE: AppRouteDefinition = {
 
 export const V1_ROUTE_DEFINITIONS: readonly AppRouteDefinition[] = [
   { id: 'initial-setup', path: 'initial-setup', title: 'Initial setup', type: 'setup' },
-  { id: 'auth', path: 'auth', title: 'Authentication', type: 'auth' },
+  { id: 'auth', path: 'login', title: 'Sign in', type: 'auth' },
   { id: 'connections', path: 'connections', title: 'Connections', type: 'connections' },
   { id: 'workspace', path: 'workspace', title: 'Workspace', type: 'workspace' },
   { id: 'explorer', path: 'explorer', title: 'Object explorer', type: 'explorer' },
@@ -52,11 +53,14 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
     path: definition.path,
     title: definition.title,
     data: definition,
-    canActivate: [setupGateGuard],
-    loadComponent: () =>
-      import('./features/route-placeholder/route-placeholder').then(
-        ({ RoutePlaceholder }) => RoutePlaceholder,
-      ),
+    canActivate: definition.id === 'auth' ? [setupGateGuard] : [setupGateGuard, authGuard],
+    loadComponent:
+      definition.id === 'auth'
+        ? () => import('./features/login/login').then(({ Login }) => Login)
+        : () =>
+            import('./features/route-placeholder/route-placeholder').then(
+              ({ RoutePlaceholder }) => RoutePlaceholder,
+            ),
   }));
 
   const devRoutes: Routes = includeDevDemo
@@ -77,6 +81,7 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
   return [
     setupRoute,
     { path: 'initial-setup', redirectTo: '/setup', pathMatch: 'full' },
+    { path: 'auth', redirectTo: '/login', pathMatch: 'full' },
     {
       path: '',
       pathMatch: 'full',

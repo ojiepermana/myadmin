@@ -271,7 +271,10 @@ export interface operations {
     logout: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Same-origin mutation marker required for cookie-authenticated requests. */
+                "X-Myadmin-Csrf": "1";
+            };
             path?: never;
             cookie?: never;
         };
@@ -286,6 +289,15 @@ export interface operations {
             };
             /** @description No valid session was provided. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The CSRF or origin check failed. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

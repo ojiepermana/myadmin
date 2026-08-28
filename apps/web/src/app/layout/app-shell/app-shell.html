@@ -93,9 +93,9 @@
       >
         <span
           class="flex size-6 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary"
-          >AL</span
+          >{{ authSession.currentUser()?.username?.slice(0, 2)?.toUpperCase() || 'MY' }}</span
         >
-        <span>Admin preview</span>
+        <span>{{ authSession.currentUser()?.username || 'Sign in' }}</span>
         <svg
           aria-hidden="true"
           class="size-4"
@@ -117,7 +117,9 @@
         [MenuTrigger]="accountMenu"
         align="end"
       >
-        <span class="text-xs font-semibold">AL</span>
+        <span class="text-xs font-semibold">{{
+          authSession.currentUser()?.username?.slice(0, 2)?.toUpperCase() || 'MY'
+        }}</span>
       </button>
     </div>
   </header>
@@ -512,7 +514,7 @@
 <ng-template MenuContent #accountMenu="MenuContent">
   <MenuSurface class="w-64">
     <MenuGroup>
-      <MenuLabel>Admin preview</MenuLabel>
+      <MenuLabel>{{ authSession.currentUser()?.username || 'Not signed in' }}</MenuLabel>
       <button MenuItem type="button" (click)="shortcutsOpen.set(true)">Keyboard shortcuts</button>
       <button MenuItem type="button" (click)="errorPresenter.presentUnknown(null)">
         Preview error boundary
@@ -520,7 +522,11 @@
     </MenuGroup>
     <MenuSeparator />
     <MenuGroup>
-      <button MenuItem type="button" [disabled]="true">Sign in arrives with the auth slice</button>
+      @if (authSession.currentUser()) {
+        <button MenuItem type="button" (click)="onLogout()">Sign out</button>
+      } @else {
+        <button MenuItem type="button" (click)="goToLogin()">Sign in</button>
+      }
     </MenuGroup>
   </MenuSurface>
 </ng-template>

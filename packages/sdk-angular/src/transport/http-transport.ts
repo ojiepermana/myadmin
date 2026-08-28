@@ -25,6 +25,10 @@ export class HttpTransport implements SdkTransport {
       joinUrl(this.config.baseUrl, request.path),
       {
         body: request.body,
+        headers:
+          request.method === 'GET' || !request.requiresSession
+            ? undefined
+            : { 'X-Myadmin-Csrf': '1' },
         observe: 'body',
         withCredentials: true,
       },

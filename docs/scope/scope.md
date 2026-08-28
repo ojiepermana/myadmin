@@ -276,12 +276,12 @@ Tracer bullet pertama: klaim instance lewat pembuatan Admin pertama. Done when: 
 Sesi opaque server side dengan cookie HttpOnly, expiry ganda, CSRF. Done when: sesi kadaluarsa dan logout benar menutup HTTP dan WS tanpa sisa di browser.
 
 - [x] Design it (spec): [0017](../specs/0017-login-session/index.md)
-- [ ] Build it: /develop login-session
-  - [ ] Use case session (create, validate idle absolut, revoke, purge) (AC-1, AC-4, AC-10)
-  - [ ] Endpoint login logout me plus rate limit dan pesan seragam plus CSRF (AC-2, AC-3, AC-6, AC-7)
-  - [ ] Middleware sesi HTTP dan WS plus halaman login plus audit plus e2e (AC-5, AC-8, AC-9)
-- [ ] [Verify it](../specs/0017-login-session/verify.md): /check verify login-session
-- [ ] [Test it](../specs/0017-login-session/test.md): /test login-session
+- [x] Build it: /develop login-session
+  - [x] Use case session (create, validate idle absolut, revoke, purge) (AC-1, AC-4, AC-10)
+  - [x] Endpoint login logout me plus rate limit dan pesan seragam plus CSRF (AC-2, AC-3, AC-6, AC-7)
+  - [x] Middleware sesi HTTP dan WS plus halaman login plus audit plus e2e (AC-5, AC-8, AC-9)
+- [x] [Verify it](../specs/0017-login-session/verify.md): /check verify login-session
+- [x] [Test it](../specs/0017-login-session/test.md): /test login-session
 
 ### 18. User management dan change password `in-progress`
 

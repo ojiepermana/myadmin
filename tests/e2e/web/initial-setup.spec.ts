@@ -20,8 +20,8 @@ test('E2E-0016-AC2, E2E-0016-AC5, E2E-0016-AC8, and E2E-0016-AC9 complete first-
   await page.locator('#setup-password').fill('synthetic-browser-password');
   await page.getByRole('button', { name: 'Create administrator' }).click();
 
-  await expect(page).toHaveURL(/\/auth$/);
-  await expect(page.getByRole('heading', { name: 'Authentication' })).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('heading', { name: 'Sign in to your workspace' })).toBeVisible();
 
   const secondAttempt = await request.post('/api/v1/setup/admin', {
     data: { username: 'second-admin', password: 'synthetic-second-password' },

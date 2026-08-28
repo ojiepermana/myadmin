@@ -13,6 +13,8 @@ export interface RateLimitResult {
 interface Bucket {
   count: number;
   resetAt: number;
+  blockedUntil: number;
+  blocks: number;
 }
 
 /** Small process-local limiter for public pre-authentication endpoints. */
@@ -40,15 +42,32 @@ export class InMemoryRateLimiter {
     const current = this.buckets.get(key);
     const bucket =
       !current || timestamp >= current.resetAt
-        ? { count: 0, resetAt: timestamp + this.windowMs }
+        ? {
+            count: 0,
+            resetAt: timestamp + this.windowMs,
+            blockedUntil: current?.blockedUntil ?? 0,
+            blocks: current?.blocks ?? 0,
+          }
         : current;
 
-    if (bucket.count >= this.limit) {
+    if (timestamp < bucket.blockedUntil) {
       this.buckets.set(key, bucket);
       return {
         allowed: false,
         remaining: 0,
-        retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - timestamp) / 1000)),
+        retryAfterSeconds: Math.max(1, Math.ceil((bucket.blockedUntil - timestamp) / 1000)),
+      };
+    }
+
+    if (bucket.count >= this.limit) {
+      bucket.blocks += 1;
+      bucket.blockedUntil =
+        timestamp + Math.min(this.windowMs * 2 ** (bucket.blocks - 1), 15 * 60_000);
+      this.buckets.set(key, bucket);
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterSeconds: Math.max(1, Math.ceil((bucket.blockedUntil - timestamp) / 1000)),
       };
     }
 
@@ -59,5 +78,9 @@ export class InMemoryRateLimiter {
       remaining: this.limit - bucket.count,
       retryAfterSeconds: 0,
     };
+  }
+
+  public reset(key: string): void {
+    this.buckets.delete(key);
   }
 }

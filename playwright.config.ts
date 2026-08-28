@@ -12,6 +12,7 @@ process.env['MYADMIN_E2E_DATA_DIR_CREATED'] = configuredDataDirectory ? '0' : '1
 export default defineConfig({
   testDir: './tests/e2e/web',
   fullyParallel: false,
+  workers: 1,
   reporter: 'list',
   globalTeardown: './tests/e2e/global-teardown.ts',
   use: {
