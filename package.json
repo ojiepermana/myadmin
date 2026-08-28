@@ -31,6 +31,8 @@
     "check:manifests": "bun run scripts/verify/check-manifests.ts",
     "validate-contract": "bun run scripts/validate-contract.ts",
     "test:database-core": "bun test packages/database-core/test",
+    "test:database-mysql": "bun test packages/database-mysql/test",
+    "test:database-mysql:integration": "bun test tests/integration/mysql",
     "version": "bun run apps/cli/src/main.ts version",
     "ng": "ng"
   },

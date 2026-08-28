@@ -306,10 +306,10 @@ Introspeksi pg_catalog lazy dan paginated. Done when: describeTable cukup untuk 
 ### 24. MySQL koneksi dan capability `in-progress`
 Cermin feature 22 untuk MySQL dengan KILL QUERY. Done when: suite kontrak lulus di dua versi MySQL nyata.
 - [x] Design it (spec): [0024](../specs/0024-mysql-connection-capability/index.md)
-- [ ] Build it: /develop mysql-connection-capability
-  - [ ] Driver adaptor plus connection_id plus lingkungan test (AC-1, AC-7)
-  - [ ] TLS lengkap plus mapper kode error plus capability dengan reasons (AC-2, AC-4, AC-5)
-  - [ ] test() dan cancel KILL QUERY plus boundary (AC-3, AC-6, AC-8)
+- [x] Build it: /develop mysql-connection-capability
+  - [x] Driver adaptor plus connection_id plus lingkungan test (AC-1, AC-7)
+  - [x] TLS lengkap plus mapper kode error plus capability dengan reasons (AC-2, AC-4, AC-5)
+  - [x] test() dan cancel KILL QUERY plus boundary (AC-3, AC-6, AC-8)
 - [ ] [Verify it](../specs/0024-mysql-connection-capability/verify.md): /check verify mysql-connection-capability
 - [ ] [Test it](../specs/0024-mysql-connection-capability/test.md): /test mysql-connection-capability
 
