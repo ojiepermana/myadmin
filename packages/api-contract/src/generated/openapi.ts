@@ -334,6 +334,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's persisted workspace */
+        get: operations["getWorkspace"];
+        /** Save the current user's workspace */
+        put: operations["saveWorkspace"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -539,6 +557,40 @@ export interface components {
             page: number;
             pageSize: number;
             total: number;
+        };
+        WorkspacePanels: {
+            bottomCollapsed?: boolean;
+            bottomHeight: number;
+            sidebarCollapsed: boolean;
+            sidebarWidth: number;
+        };
+        /** @description Versioned, non-sensitive descriptors for a user's workspace. */
+        WorkspaceState: {
+            activeConnectionId?: string;
+            activeTabId: string;
+            panels: components["schemas"]["WorkspacePanels"];
+            tabs: components["schemas"]["WorkspaceTab"][];
+            /**
+             * @description Version of the persisted workspace document.
+             * @example 1
+             * @enum {integer}
+             */
+            version: 1;
+        };
+        WorkspaceTab: {
+            context: components["schemas"]["WorkspaceTabContext"];
+            id: string;
+            title: string;
+            type: string;
+        };
+        WorkspaceTabContext: {
+            /** @description Explicit connection reference. It is never inferred during restore. */
+            connectionId?: string;
+            database?: string;
+            /** @description Optional SQL draft for this tab. Query results and live editor state are not persisted. */
+            draftSql?: string;
+            route?: string;
+            schema?: string;
         };
     };
     responses: never;
@@ -1746,6 +1798,127 @@ export interface operations {
                 };
             };
             /** @description Password could not be reset. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getWorkspace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Persisted workspace state, or the default state when none exists. */
+            200: {
+                headers: {
+                    /** @description Safe notice explaining why a saved document was treated as empty. */
+                    "X-Myadmin-Workspace-Notice"?: "unknown-version" | "invalid-state" | "too-large";
+                    /** @description Number of tabs removed because their connection is unavailable to the user. */
+                    "X-Myadmin-Workspace-Skipped-Tabs"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceState"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Initial setup is required before reading workspace state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Workspace state could not be loaded. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    saveWorkspace: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Same-origin mutation marker required for cookie-authenticated requests. */
+                "X-Myadmin-Csrf": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkspaceState"];
+            };
+        };
+        responses: {
+            /** @description Workspace state saved. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The CSRF or origin check failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Initial setup is required before saving workspace state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Workspace state is invalid or larger than 256 KB. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Workspace state could not be saved. */
             500: {
                 headers: {
                     [name: string]: unknown;

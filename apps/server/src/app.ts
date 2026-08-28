@@ -41,6 +41,12 @@ import {
 } from '../../../apps/cli/src/runtime/embedded-assets';
 import { prepareDataDirectory } from '../../../apps/cli/src/runtime/data-directory';
 import { serveStaticAsset } from '../../../apps/cli/src/static-web/serve-assets';
+import {
+  WorkspaceService,
+  WorkspaceValidationError,
+  type WorkspacePersistenceStore,
+} from './workspace';
+import { MAX_WORKSPACE_STATE_BYTES } from '@myadmin/workspace';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -60,6 +66,7 @@ export interface ServerStartOptions {
   jobManager?: JobManager;
   auditRepository?: AuditAdminRepository;
   websocketCheckIntervalMs?: number;
+  workspaceService?: WorkspaceService;
   observability?: ObservabilityOptions;
 }
 
@@ -80,6 +87,7 @@ export interface ServerAppOptions {
   jobManager?: JobManager;
   auditRepository?: AuditAdminRepository;
   websocketCheckIntervalMs?: number;
+  workspaceService?: WorkspaceService;
   observability?: ObservabilityOptions;
 }
 
@@ -105,6 +113,10 @@ function authServiceForStore(
     idleTimeoutMinutes: config?.session.idleTimeoutMinutes,
     absoluteTimeoutHours: config?.session.absoluteTimeoutHours,
   });
+}
+
+function workspaceServiceForStore(store: WorkspacePersistenceStore): WorkspaceService {
+  return new WorkspaceService(store);
 }
 
 export const host = defaultHost;
@@ -510,6 +522,49 @@ function parseAuditQuery(request: Request): {
   };
 }
 
+function workspaceErrorResponse(request: Request, error: unknown): Response {
+  if (error instanceof WorkspaceValidationError) {
+    return apiError(request, 422, error.code, error.message);
+  }
+  return apiError(request, 500, 'WORKSPACE_FAILED', 'Workspace state could not be saved.');
+}
+
+async function readWorkspaceBody(request: Request): Promise<unknown> {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength !== null && Number(contentLength) > MAX_WORKSPACE_STATE_BYTES) {
+    throw new WorkspaceValidationError(
+      'WORKSPACE_STATE_TOO_LARGE',
+      'Workspace state must be 256 KB or smaller.',
+    );
+  }
+
+  const body = await request.text();
+  if (new TextEncoder().encode(body).byteLength > MAX_WORKSPACE_STATE_BYTES) {
+    throw new WorkspaceValidationError(
+      'WORKSPACE_STATE_TOO_LARGE',
+      'Workspace state must be 256 KB or smaller.',
+    );
+  }
+
+  try {
+    return JSON.parse(body) as unknown;
+  } catch {
+    throw new WorkspaceValidationError('WORKSPACE_STATE_INVALID', 'Workspace state is invalid.');
+  }
+}
+
+function workspaceHeaders(result: {
+  readonly skippedTabs: number;
+  readonly notice?: string;
+}): HeadersInit {
+  return {
+    ...(result.skippedTabs > 0
+      ? { 'x-myadmin-workspace-skipped-tabs': String(result.skippedTabs) }
+      : {}),
+    ...(result.notice === undefined ? {} : { 'x-myadmin-workspace-notice': result.notice }),
+  };
+}
+
 function registerAuditRoutes(
   application: AnyElysia,
   prefix: string,
@@ -551,6 +606,63 @@ function registerAuditRoutes(
           });
         }
         return apiError(request, 500, 'AUDIT_QUERY_FAILED', 'Audit data could not be loaded.');
+      }
+    });
+}
+
+function registerWorkspaceRoutes(
+  application: AnyElysia,
+  prefix: string,
+  setupService: InitialAdminService | undefined,
+  authService: AuthService | undefined,
+  secureCookies: boolean,
+  workspaceService: WorkspaceService | undefined,
+): AnyElysia {
+  const path = (suffix: string) => `${prefix}${suffix}`;
+
+  return application
+    .get(path('/workspace'), ({ request }) => {
+      if (!authService) {
+        return apiError(request, 500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
+      }
+      if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+
+      const validation = authService.validateSession(sessionToken(request));
+      if (!validation.authenticated) {
+        return sessionFailureResponse(request, validation, secureCookies);
+      }
+      if (!workspaceService) {
+        return apiError(request, 500, 'WORKSPACE_UNAVAILABLE', 'Workspace is unavailable.');
+      }
+
+      try {
+        const result = workspaceService.get(validation.value.user.id);
+        return jsonResponse(result.state, 200, workspaceHeaders(result));
+      } catch {
+        return apiError(request, 500, 'WORKSPACE_FAILED', 'Workspace state could not be loaded.');
+      }
+    })
+    .put(path('/workspace'), async ({ request }) => {
+      if (!authService) {
+        return apiError(request, 500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
+      }
+      if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+
+      const validation = authService.validateSession(sessionToken(request));
+      if (!validation.authenticated) {
+        return sessionFailureResponse(request, validation, secureCookies);
+      }
+      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      if (!workspaceService) {
+        return apiError(request, 500, 'WORKSPACE_UNAVAILABLE', 'Workspace is unavailable.');
+      }
+
+      try {
+        const body = await readWorkspaceBody(request);
+        workspaceService.save(validation.value.user.id, body);
+        return new Response(null, { status: 204 });
+      } catch (error) {
+        return workspaceErrorResponse(request, error);
       }
     });
 }
@@ -1124,6 +1236,9 @@ export function createServerApp(options: ServerAppOptions = {}) {
     (options.database
       ? new UserManagementService({ store: storeForDatabase(options.database) })
       : undefined);
+  const workspaceService =
+    options.workspaceService ??
+    (options.database ? workspaceServiceForStore(storeForDatabase(options.database)) : undefined);
   const secureCookies = options.config?.security.secureCookies ?? false;
   const websocketCheckIntervalMs = options.websocketCheckIntervalMs ?? 60_000;
   if (
@@ -1178,6 +1293,14 @@ export function createServerApp(options: ServerAppOptions = {}) {
     authService,
     userManagementService,
     secureCookies,
+  );
+  application = registerWorkspaceRoutes(
+    application,
+    '/api/v1',
+    setupService,
+    authService,
+    secureCookies,
+    workspaceService,
   );
   if (authService) {
     application = registerWebSocketRoute(
@@ -1239,6 +1362,14 @@ export function createApp(
     userManagementService,
     false,
   );
+  application = registerWorkspaceRoutes(
+    application,
+    '',
+    setupService,
+    authService,
+    false,
+    workspaceServiceForStore(store),
+  );
   return registerJobsRoutes(
     application,
     '',
@@ -1277,6 +1408,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       jobManager: options.jobManager,
       auditRepository: options.auditRepository,
       websocketCheckIntervalMs: options.websocketCheckIntervalMs,
+      workspaceService: options.workspaceService,
       observability: options.observability,
     });
     serverApp.listen({ hostname: options.host ?? host, port: options.port ?? port });

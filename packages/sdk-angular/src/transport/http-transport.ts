@@ -1,6 +1,6 @@
 import { HttpClient, provideHttpClient } from '@angular/common/http';
 import { inject, type EnvironmentProviders, type Provider } from '@angular/core';
-import { catchError, throwError, type Observable } from 'rxjs';
+import { catchError, map, throwError, type Observable } from 'rxjs';
 import { mapHttpError } from '../errors/sdk-error';
 import { SessionExpiredEvents } from '../events/session-expired';
 import { MYADMIN_SDK_CONFIG, type ResolvedMyadminSdkConfig } from '../providers/config';
@@ -9,6 +9,7 @@ import {
   MYADMIN_SDK_TRANSPORT_CAPABILITY,
   type SdkTransport,
   type SdkTransportRequest,
+  type SdkTransportResponse,
 } from './transport';
 
 function joinUrl(baseUrl: string, path: string): string {
@@ -34,6 +35,22 @@ export class HttpTransport implements SdkTransport {
       },
     );
   }
+
+  public requestWithResponse<TResponse>(
+    request: SdkTransportRequest,
+  ): Observable<SdkTransportResponse<TResponse>> {
+    return this.http
+      .request<TResponse>(request.method, joinUrl(this.config.baseUrl, request.path), {
+        body: request.body,
+        headers:
+          request.method === 'GET' || !request.requiresSession
+            ? undefined
+            : { 'X-Myadmin-Csrf': '1' },
+        observe: 'response',
+        withCredentials: true,
+      })
+      .pipe(map((response) => ({ body: response.body as TResponse, headers: response.headers })));
+  }
 }
 
 /** Applies the SDK error and session policy to every transport capability. */
@@ -43,7 +60,24 @@ export class SdkTransportAdapter implements SdkTransport {
   private readonly sessionExpiredEvents = inject(SessionExpiredEvents);
 
   public request<TResponse>(request: SdkTransportRequest): Observable<TResponse> {
-    return (this.capability ?? this.fallback).request<TResponse>(request).pipe(
+    return this.adapt((this.capability ?? this.fallback).request<TResponse>(request), request);
+  }
+
+  public requestWithResponse<TResponse>(
+    request: SdkTransportRequest,
+  ): Observable<SdkTransportResponse<TResponse>> {
+    const transport = this.capability ?? this.fallback;
+    const response =
+      transport.requestWithResponse?.<TResponse>(request) ??
+      transport.request<TResponse>(request).pipe(map((body) => ({ body, headers: new Headers() })));
+    return this.adapt(response, request);
+  }
+
+  private adapt<TResponse>(
+    response: Observable<TResponse>,
+    request: SdkTransportRequest,
+  ): Observable<TResponse> {
+    return response.pipe(
       catchError((error: unknown) => {
         const sdkError = mapHttpError(error);
         if (sdkError.status === 401 && request.requiresSession) {

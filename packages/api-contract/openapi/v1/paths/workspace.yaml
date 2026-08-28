@@ -1,0 +1,96 @@
+get:
+  operationId: getWorkspace
+  tags:
+    - workspace
+  summary: Get the current user's persisted workspace
+  responses:
+    '200':
+      description: Persisted workspace state, or the default state when none exists.
+      headers:
+        X-Myadmin-Workspace-Skipped-Tabs:
+          schema:
+            type: integer
+            minimum: 1
+          description: Number of tabs removed because their connection is unavailable to the user.
+        X-Myadmin-Workspace-Notice:
+          schema:
+            type: string
+            enum:
+              - unknown-version
+              - invalid-state
+              - too-large
+          description: Safe notice explaining why a saved document was treated as empty.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/workspace.yaml#/WorkspaceState
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required before reading workspace state.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Workspace state could not be loaded.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+put:
+  operationId: saveWorkspace
+  tags:
+    - workspace
+  summary: Save the current user's workspace
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+      description: Same-origin mutation marker required for cookie-authenticated requests.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/workspace.yaml#/WorkspaceState
+  responses:
+    '204':
+      description: Workspace state saved.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The CSRF or origin check failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required before saving workspace state.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Workspace state is invalid or larger than 256 KB.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Workspace state could not be saved.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

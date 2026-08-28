@@ -10,8 +10,20 @@ export interface SdkTransportRequest<TBody = unknown> {
   readonly requiresSession?: boolean;
 }
 
+export interface SdkResponseHeaders {
+  get(name: string): string | null;
+}
+
+export interface SdkTransportResponse<TResponse> {
+  readonly body: TResponse;
+  readonly headers: SdkResponseHeaders;
+}
+
 export interface SdkTransport {
   request<TResponse>(request: SdkTransportRequest): Observable<TResponse>;
+  requestWithResponse?<TResponse>(
+    request: SdkTransportRequest,
+  ): Observable<SdkTransportResponse<TResponse>>;
 }
 
 /** Optional request capability supplied by an Angular SDK integration. */

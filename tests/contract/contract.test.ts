@@ -54,7 +54,7 @@ describe('API contract', () => {
     ).toThrow(/Missing contract operations: POST \/shadow-route/);
   });
 
-  test('CT-0004-AC4 validates the six initial response shapes with AJV', async () => {
+  test('CT-0004-AC4 and CT-0030-AC1/CT-0030-AC2 validate response shapes with AJV', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
     const app = createApp();
@@ -88,6 +88,34 @@ describe('API contract', () => {
     responses.push([
       'getCurrentUser',
       await request('/auth/me', { headers: { cookie: sessionCookieValue } }),
+    ]);
+    responses.push([
+      'getWorkspace',
+      await request('/workspace', { headers: { cookie: sessionCookieValue } }),
+    ]);
+    responses.push([
+      'saveWorkspace',
+      await request('/workspace', {
+        method: 'PUT',
+        headers: {
+          cookie: sessionCookieValue,
+          'content-type': 'application/json',
+          'X-Myadmin-Csrf': '1',
+        },
+        body: JSON.stringify({
+          version: 1,
+          tabs: [
+            {
+              id: 'workspace',
+              type: 'workspace',
+              title: 'Workspace',
+              context: { route: '/workspace' },
+            },
+          ],
+          activeTabId: 'workspace',
+          panels: { sidebarWidth: 22, bottomHeight: 22, sidebarCollapsed: false },
+        }),
+      }),
     ]);
     responses.push([
       'logout',

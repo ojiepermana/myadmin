@@ -32,6 +32,7 @@ const initialPaths = {
   '/users': 'paths/users.yaml',
   '/users/{id}': 'paths/user.yaml',
   '/users/{id}/reset-password': 'paths/user-reset-password.yaml',
+  '/workspace': 'paths/workspace.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import '@angular/compiler';
+import { HttpHeaders } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
@@ -27,6 +28,7 @@ import type {
   RealtimeUnsubscribe,
   SdkTransport,
   SdkTransportRequest,
+  WorkspaceState,
 } from '../src';
 
 const apiError = {
@@ -200,6 +202,48 @@ describe('MyAdmin Angular SDK', () => {
       cancellable: true,
     });
     await expect(cancellation).resolves.toMatchObject({ id: 'job-1', state: 'cancelling' });
+  });
+
+  it('CT-0030-AC1 loads workspace response metadata and saves with CSRF', async () => {
+    const sdk = TestBed.inject(MyadminSdk);
+    const state: WorkspaceState = {
+      version: 1,
+      tabs: [
+        {
+          id: 'workspace',
+          type: 'workspace',
+          title: 'Workspace',
+          context: { route: '/workspace' },
+        },
+      ],
+      activeTabId: 'workspace',
+      panels: { sidebarWidth: 22, bottomHeight: 22, sidebarCollapsed: false },
+    };
+
+    const loaded = firstValueFrom(sdk.workspace.load());
+    const getRequest = http.expectOne('/api/v1/workspace');
+    expect(getRequest.request.method).toBe('GET');
+    expect(getRequest.request.withCredentials).toBe(true);
+    getRequest.flush(state, {
+      headers: new HttpHeaders({
+        'X-Myadmin-Workspace-Skipped-Tabs': '2',
+        'X-Myadmin-Workspace-Notice': 'unknown-version',
+      }),
+    });
+    await expect(loaded).resolves.toEqual({
+      state,
+      skippedTabs: 2,
+      notice: 'unknown-version',
+    });
+
+    const saved = firstValueFrom(sdk.workspace.save(state));
+    const putRequest = http.expectOne('/api/v1/workspace');
+    expect(putRequest.request.method).toBe('PUT');
+    expect(putRequest.request.withCredentials).toBe(true);
+    expect(putRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    expect(putRequest.request.body).toEqual(state);
+    putRequest.flush(null, { status: 204, statusText: 'No Content' });
+    await expect(saved).resolves.toBeUndefined();
   });
 
   it('AC-7 exposes only the transport independent realtime contract seam', () => {

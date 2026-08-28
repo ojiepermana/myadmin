@@ -60,6 +60,7 @@ import { AppContextMenuDirective } from '../../core/context-menu/context-menu.di
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { FeatureErrorBoundaryComponent } from '../../core/errors/feature-error-boundary';
 import { WorkspaceStore, type TabDescriptor } from '../../core/state/workspace.store';
+import { WorkspacePersistenceService } from '../../core/state/workspace-persistence.service';
 import { AuthSessionStore } from '../../core/auth/auth-session.store';
 import { DEV_ROUTE, V1_ROUTE_DEFINITIONS, type AppRouteDefinition } from '../../app.routes.shared';
 import { MyadminSdk } from '@myadmin/sdk-angular';
@@ -114,6 +115,7 @@ export class AppShell {
   protected readonly errorPresenter = inject(ErrorPresenterService);
   protected readonly workspace = inject(WorkspaceStore);
   protected readonly authSession = inject(AuthSessionStore);
+  private readonly workspacePersistence = inject(WorkspacePersistenceService);
   private readonly sdk = inject(MyadminSdk);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
@@ -216,7 +218,9 @@ export class AppShell {
   }
 
   protected onLogout(): void {
-    void firstValueFrom(this.sdk.auth.logout())
+    void this.workspacePersistence
+      .flush()
+      .then(() => firstValueFrom(this.sdk.auth.logout()))
       .then(() => {
         this.authSession.clear();
         return this.router.navigateByUrl('/login', { replaceUrl: true });

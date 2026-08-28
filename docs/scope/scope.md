@@ -436,10 +436,10 @@ Kanal multiplexed berotorisasi plus klien SDK dengan reconnect. Done when: progr
 Tab, panel, dan konteks bertahan lintas login. Done when: susunan pulih setelah login dan referensi mati dibuang dengan pemberitahuan.
 
 - [x] Design it (spec): [0030](../specs/0030-workspace-persistence/index.md)
-- [ ] Build it: /develop workspace-persistence
-  - [ ] Kontrak dan endpoint workspace dengan schema berversi dan batas ukuran (AC-1, AC-2, AC-6)
-  - [ ] Sinkronisasi store klien: debounce, flush, restore tersanitasi (AC-3, AC-4, AC-5)
-  - [ ] E2e restore dua skenario (AC-7)
+- [x] Build it: /develop workspace-persistence
+  - [x] Kontrak dan endpoint workspace dengan schema berversi dan batas ukuran (AC-1, AC-2, AC-6)
+  - [x] Sinkronisasi store klien: debounce, flush, restore tersanitasi (AC-3, AC-4, AC-5)
+  - [x] E2e restore dua skenario (AC-7)
 - [ ] [Verify it](../specs/0030-workspace-persistence/verify.md): /check verify workspace-persistence
 - [ ] [Test it](../specs/0030-workspace-persistence/test.md): /test workspace-persistence
 

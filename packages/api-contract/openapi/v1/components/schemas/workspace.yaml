@@ -1,0 +1,97 @@
+WorkspaceState:
+  type: object
+  additionalProperties: false
+  required:
+    - version
+    - tabs
+    - activeTabId
+    - panels
+  properties:
+    version:
+      type: integer
+      enum: [1]
+      description: Version of the persisted workspace document.
+      example: 1
+    tabs:
+      type: array
+      maxItems: 100
+      items:
+        $ref: '#/WorkspaceTab'
+    activeTabId:
+      type: string
+      maxLength: 128
+    panels:
+      $ref: '#/WorkspacePanels'
+    activeConnectionId:
+      type: string
+      minLength: 1
+      maxLength: 128
+  description: Versioned, non-sensitive descriptors for a user's workspace.
+
+WorkspaceTab:
+  type: object
+  additionalProperties: false
+  required:
+    - id
+    - type
+    - title
+    - context
+  properties:
+    id:
+      type: string
+      minLength: 1
+      maxLength: 128
+    type:
+      type: string
+      minLength: 1
+      maxLength: 64
+    title:
+      type: string
+      minLength: 1
+      maxLength: 256
+    context:
+      $ref: '#/WorkspaceTabContext'
+
+WorkspaceTabContext:
+  type: object
+  additionalProperties: false
+  properties:
+    route:
+      type: string
+      maxLength: 512
+    connectionId:
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: Explicit connection reference. It is never inferred during restore.
+    database:
+      type: string
+      maxLength: 256
+    schema:
+      type: string
+      maxLength: 256
+    draftSql:
+      type: string
+      maxLength: 262144
+      description: Optional SQL draft for this tab. Query results and live editor state are not persisted.
+
+WorkspacePanels:
+  type: object
+  additionalProperties: false
+  required:
+    - sidebarWidth
+    - bottomHeight
+    - sidebarCollapsed
+  properties:
+    sidebarWidth:
+      type: number
+      minimum: 16
+      maximum: 32
+    bottomHeight:
+      type: number
+      minimum: 12
+      maximum: 48
+    sidebarCollapsed:
+      type: boolean
+    bottomCollapsed:
+      type: boolean

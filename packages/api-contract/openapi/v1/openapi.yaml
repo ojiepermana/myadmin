@@ -47,6 +47,8 @@ paths:
     $ref: ./paths/user.yaml
   /users/{id}/reset-password:
     $ref: ./paths/user-reset-password.yaml
+  /workspace:
+    $ref: ./paths/workspace.yaml
 components:
   schemas:
     ApiError:
@@ -103,6 +105,14 @@ components:
       $ref: ./components/schemas/user.yaml#/ResetPasswordRequest
     ManagedUserResponse:
       $ref: ./components/schemas/user.yaml#/ManagedUserResponse
+    WorkspaceState:
+      $ref: ./components/schemas/workspace.yaml#/WorkspaceState
+    WorkspaceTab:
+      $ref: ./components/schemas/workspace.yaml#/WorkspaceTab
+    WorkspaceTabContext:
+      $ref: ./components/schemas/workspace.yaml#/WorkspaceTabContext
+    WorkspacePanels:
+      $ref: ./components/schemas/workspace.yaml#/WorkspacePanels
     Health:
       $ref: ./components/schemas/health.yaml
   parameters:
