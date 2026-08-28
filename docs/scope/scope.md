@@ -70,10 +70,10 @@ Status in-progress berarti desainnya selesai (spec ada); pindah ke done saat Bui
 ### 01. Fondasi repo satu manifest dan modul source `in-progress`
 Kerangka repo: tepat satu `package.json` di akar, tiga aplikasi, modul source internal, alias TypeScript, dan dev scripts. Done when: install, typecheck, build web, health server, CLI version, serta pemeriksaan satu manifest bekerja dari checkout bersih.
 - [x] Design it (spec): [0001](../specs/0001-root-manifest-source-modules/index.md)
-- [ ] Build it: /develop root-manifest-source-modules
-  - [ ] Manifest akar tunggal, tsconfig, dan seluruh skeleton modul source tanpa manifest nested (AC-1, AC-2, AC-7, AC-8)
-  - [ ] Tiga aplikasi hidup: web Angular, server Elysia /health, CLI version (AC-3, AC-4, AC-5)
-  - [ ] Dev scripts, resolusi source dari konfigurasi akar, dan dokumentasi mulai cepat (AC-6, AC-9)
+- [x] Build it: /develop root-manifest-source-modules
+  - [x] Manifest akar tunggal, tsconfig, dan seluruh skeleton modul source tanpa manifest nested (AC-1, AC-2, AC-7, AC-8)
+  - [x] Tiga aplikasi hidup: web Angular, server Elysia /health, CLI version (AC-3, AC-4, AC-5)
+  - [x] Dev scripts, resolusi source dari konfigurasi akar, dan dokumentasi mulai cepat (AC-6, AC-9)
 - [ ] [Verify it](../specs/0001-root-manifest-source-modules/verify.md): /check verify root-manifest-source-modules
 - [ ] [Test it](../specs/0001-root-manifest-source-modules/test.md): /test root-manifest-source-modules
 
