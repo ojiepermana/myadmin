@@ -5,70 +5,72 @@
 
 ## At a glance
 
-| # | Feature | Fase | Status |
-|---|---|---|---|
-| 01 | Fondasi repo satu manifest dan modul source | A | in-progress |
-| 02 | Quality tooling dan CI | A | in-progress |
-| 03 | Struktur kontrak OpenAPI v1 | A | in-progress |
-| 04 | Pipeline codegen dan contract test | A | in-progress |
-| 05 | SDK Angular core | A | in-progress |
-| 06 | CLI runtime dan data directory | A | in-progress |
-| 07 | Perintah doctor dan migrate | A | in-progress |
-| 08 | SQLite core dan migration runner | A | in-progress |
-| 09 | Internal repositories | A | in-progress |
-| 10 | Key provider dan password hashing | A | in-progress |
-| 11 | Credential vault dan redaction | A | in-progress |
-| 12 | Package config | A | in-progress |
-| 13 | Package observability | A | in-progress |
-| 14 | UI foundation dan theme | A | in-progress |
-| 15 | App shell dan navigation | A | in-progress |
-| 16 | Initial setup end to end | B | in-progress |
-| 17 | Login, logout, dan session | B | in-progress |
-| 18 | User management dan change password | B | in-progress |
-| 19 | Subsistem audit append only | B | in-progress |
-| 20 | Halaman audit Admin | B | in-progress |
-| 21 | Kontrak database-core dan capability | C | in-progress |
-| 22 | PostgreSQL koneksi dan capability | C | in-progress |
-| 23 | PostgreSQL metadata | C | in-progress |
-| 24 | MySQL koneksi dan capability | C | in-progress |
-| 25 | MySQL metadata | C | in-progress |
-| 26 | Connection manager CRUD dan vault | C | in-progress |
-| 27 | Connection lifecycle dan status | C | in-progress |
-| 28 | Jobs infrastructure | C | in-progress |
-| 29 | Realtime WebSocket | C | in-progress |
-| 30 | Workspace persistence | C | in-progress |
-| 31 | Object explorer | D | in-progress |
-| 32 | Object search | D | in-progress |
-| 33 | Query editor tab dan eksekusi | D | in-progress |
-| 34 | Result grid dan export result | D | in-progress |
-| 35 | Query cancel dan EXPLAIN | D | in-progress |
-| 36 | Query history dan saved queries | D | in-progress |
-| 37 | Data browser jalur baca | D | in-progress |
-| 38 | Data browser jalur tulis | D | in-progress |
-| 39 | Manajemen database | D | in-progress |
-| 40 | Manajemen schema | D | in-progress |
-| 41 | Table designer kolom | D | in-progress |
-| 42 | Table designer index dan constraint | D | in-progress |
-| 43 | Operasi destructive table | D | in-progress |
-| 44 | Manajemen view | D | in-progress |
-| 45 | Security database principal | D | in-progress |
-| 46 | Security database privilege | D | in-progress |
-| 47 | Export | E | in-progress |
-| 48 | Import | E | in-progress |
-| 49 | Backup | E | in-progress |
-| 50 | Restore | E | in-progress |
-| 51 | Monitoring status dasar | E | in-progress |
-| 52 | Settings dan preferences | E | in-progress |
-| 53 | Hardening keamanan lintas fitur | F | in-progress |
-| 54 | Packaging binary dan smoke test | F | in-progress |
-| 55 | Distribusi dan release | F | in-progress |
+| #   | Feature                                     | Fase | Status      |
+| --- | ------------------------------------------- | ---- | ----------- |
+| 01  | Fondasi repo satu manifest dan modul source | A    | in-progress |
+| 02  | Quality tooling dan CI                      | A    | in-progress |
+| 03  | Struktur kontrak OpenAPI v1                 | A    | in-progress |
+| 04  | Pipeline codegen dan contract test          | A    | in-progress |
+| 05  | SDK Angular core                            | A    | in-progress |
+| 06  | CLI runtime dan data directory              | A    | in-progress |
+| 07  | Perintah doctor dan migrate                 | A    | in-progress |
+| 08  | SQLite core dan migration runner            | A    | in-progress |
+| 09  | Internal repositories                       | A    | in-progress |
+| 10  | Key provider dan password hashing           | A    | in-progress |
+| 11  | Credential vault dan redaction              | A    | in-progress |
+| 12  | Package config                              | A    | in-progress |
+| 13  | Package observability                       | A    | in-progress |
+| 14  | UI foundation dan theme                     | A    | in-progress |
+| 15  | App shell dan navigation                    | A    | in-progress |
+| 16  | Initial setup end to end                    | B    | in-progress |
+| 17  | Login, logout, dan session                  | B    | in-progress |
+| 18  | User management dan change password         | B    | in-progress |
+| 19  | Subsistem audit append only                 | B    | in-progress |
+| 20  | Halaman audit Admin                         | B    | in-progress |
+| 21  | Kontrak database-core dan capability        | C    | in-progress |
+| 22  | PostgreSQL koneksi dan capability           | C    | in-progress |
+| 23  | PostgreSQL metadata                         | C    | in-progress |
+| 24  | MySQL koneksi dan capability                | C    | in-progress |
+| 25  | MySQL metadata                              | C    | in-progress |
+| 26  | Connection manager CRUD dan vault           | C    | in-progress |
+| 27  | Connection lifecycle dan status             | C    | in-progress |
+| 28  | Jobs infrastructure                         | C    | in-progress |
+| 29  | Realtime WebSocket                          | C    | in-progress |
+| 30  | Workspace persistence                       | C    | in-progress |
+| 31  | Object explorer                             | D    | in-progress |
+| 32  | Object search                               | D    | in-progress |
+| 33  | Query editor tab dan eksekusi               | D    | in-progress |
+| 34  | Result grid dan export result               | D    | in-progress |
+| 35  | Query cancel dan EXPLAIN                    | D    | in-progress |
+| 36  | Query history dan saved queries             | D    | in-progress |
+| 37  | Data browser jalur baca                     | D    | in-progress |
+| 38  | Data browser jalur tulis                    | D    | in-progress |
+| 39  | Manajemen database                          | D    | in-progress |
+| 40  | Manajemen schema                            | D    | in-progress |
+| 41  | Table designer kolom                        | D    | in-progress |
+| 42  | Table designer index dan constraint         | D    | in-progress |
+| 43  | Operasi destructive table                   | D    | in-progress |
+| 44  | Manajemen view                              | D    | in-progress |
+| 45  | Security database principal                 | D    | in-progress |
+| 46  | Security database privilege                 | D    | in-progress |
+| 47  | Export                                      | E    | in-progress |
+| 48  | Import                                      | E    | in-progress |
+| 49  | Backup                                      | E    | in-progress |
+| 50  | Restore                                     | E    | in-progress |
+| 51  | Monitoring status dasar                     | E    | in-progress |
+| 52  | Settings dan preferences                    | E    | in-progress |
+| 53  | Hardening keamanan lintas fitur             | F    | in-progress |
+| 54  | Packaging binary dan smoke test             | F    | in-progress |
+| 55  | Distribusi dan release                      | F    | in-progress |
 
 Status in-progress berarti desainnya selesai (spec ada); pindah ke done saat Build, Verify, dan Test tercentang.
 
 ## Fase A. Fondasi
 
 ### 01. Fondasi repo satu manifest dan modul source `in-progress`
+
 Kerangka repo: tepat satu `package.json` di akar, tiga aplikasi, modul source internal, alias TypeScript, dan dev scripts. Done when: install, typecheck, build web, health server, CLI version, serta pemeriksaan satu manifest bekerja dari checkout bersih.
+
 - [x] Design it (spec): [0001](../specs/0001-root-manifest-source-modules/index.md)
 - [x] Build it: /develop root-manifest-source-modules
   - [x] Manifest akar tunggal, tsconfig, dan seluruh skeleton modul source tanpa manifest nested (AC-1, AC-2, AC-7, AC-8)
@@ -78,7 +80,9 @@ Kerangka repo: tepat satu `package.json` di akar, tiga aplikasi, modul source in
 - [ ] [Test it](../specs/0001-root-manifest-source-modules/test.md): /test root-manifest-source-modules
 
 ### 02. Quality tooling dan CI `in-progress`
+
 Lint, format, test runner, hook Git, boundary check, penjaga satu manifest, dan CI. Done when: pelanggaran format, commit, boundary, dan manifest gagal otomatis di lokal serta CI.
+
 - [x] Design it (spec): [0002](../specs/0002-quality-tooling-ci/index.md)
 - [x] Build it: /develop quality-tooling-ci
   - [x] ESLint, Prettier, husky, commitlint, vitest, playwright (AC-1 sampai AC-5)
@@ -88,7 +92,9 @@ Lint, format, test runner, hook Git, boundary check, penjaga satu manifest, dan 
 - [ ] [Test it](../specs/0002-quality-tooling-ci/test.md): /test quality-tooling-ci
 
 ### 03. Struktur kontrak OpenAPI v1 `in-progress`
+
 Sumber kebenaran API: kontrak multi file, error model, security scheme, event WS. Done when: kontrak valid terbundel dengan enam path awal dan lint nya jalan di CI.
+
 - [x] Design it (spec): [0003](../specs/0003-openapi-contract-structure/index.md)
 - [x] Build it: /develop openapi-contract-structure
   - [x] Kerangka kontrak, ApiError, pagination, Capability, security scheme (AC-3 sampai AC-6)
@@ -98,7 +104,9 @@ Sumber kebenaran API: kontrak multi file, error model, security scheme, event WS
 - [ ] [Test it](../specs/0003-openapi-contract-structure/test.md): /test openapi-contract-structure
 
 ### 04. Pipeline codegen dan contract test `in-progress`
+
 Tipe dari kontrak, drift check, harness kesesuaian server. Done when: drift kontrak dan endpoint bayangan menggagalkan CI.
+
 - [x] Design it (spec): [0004](../specs/0004-codegen-pipeline-contract-tests/index.md)
 - [x] Build it: /develop codegen-pipeline-contract-tests
   - [x] Generasi tipe deterministik dan pemeriksaan drift (AC-1, AC-2, AC-6)
@@ -109,7 +117,9 @@ Tipe dari kontrak, drift check, harness kesesuaian server. Done when: drift kont
 - [ ] [Test it](../specs/0004-codegen-pipeline-contract-tests/test.md): /test codegen-pipeline-contract-tests
 
 ### 05. SDK Angular core `in-progress`
+
 Satu satunya jalur network Angular: transport, provider, SdkError. Done when: fitur web bisa memanggil API bertipe tanpa HttpClient telanjang dan boundary menegakkannya.
+
 - [x] Design it (spec): [0005](../specs/0005-sdk-angular-core/index.md)
 - [ ] Build it: /develop sdk-angular-core
   - [ ] Transport adapter, provider config, pemetaan SdkError (AC-2, AC-3, AC-5)
@@ -119,7 +129,9 @@ Satu satunya jalur network Angular: transport, provider, SdkError. Done when: fi
 - [ ] [Test it](../specs/0005-sdk-angular-core/test.md): /test sdk-angular-core
 
 ### 06. CLI runtime dan data directory `in-progress`
+
 Siklus hidup proses binary: serve, data directory, sinyal, SPA fallback. Done when: serve jalan dengan default aman, override bekerja, dan shutdown rapi.
+
 - [x] Design it (spec): [0006](../specs/0006-cli-runtime-data-directory/index.md)
 - [x] Build it: /develop cli-runtime-data-directory
   - [x] Resolusi data directory per platform plus subfolder (AC-2, AC-3)
@@ -130,7 +142,9 @@ Siklus hidup proses binary: serve, data directory, sinyal, SPA fallback. Done wh
 - [ ] [Test it](../specs/0006-cli-runtime-data-directory/test.md): /test cli-runtime-data-directory
 
 ### 07. Perintah doctor dan migrate `in-progress`
+
 Diagnostik aman dan migrasi eksplisit. Done when: doctor melaporkan kesehatan tanpa secret dengan exit code benar dan migrate idempotent.
+
 - [x] Design it (spec): [0007](../specs/0007-doctor-migrate-commands/index.md)
 - [ ] Build it: /develop doctor-migrate-commands
   - [ ] Registry DoctorCheck plus pemeriksaan dasar (AC-1, AC-2, AC-4)
@@ -140,7 +154,9 @@ Diagnostik aman dan migrasi eksplisit. Done when: doctor melaporkan kesehatan ta
 - [ ] [Test it](../specs/0007-doctor-migrate-commands/test.md): /test doctor-migrate-commands
 
 ### 08. SQLite core dan migration runner `in-progress`
+
 Penyimpanan internal: pragma benar, migrasi bernomor ber checksum, skema sebelas tabel. Done when: dari file kosong ke skema penuh secara idempotent dan gagal jelas bila rusak.
+
 - [x] Design it (spec): [0008](../specs/0008-sqlite-core-migrations/index.md)
 - [ ] Build it: /develop sqlite-core-migrations
   - [ ] Koneksi, pragma, transaksi, helper (AC-1, AC-6, AC-7)
@@ -150,7 +166,9 @@ Penyimpanan internal: pragma benar, migrasi bernomor ber checksum, skema sebelas
 - [ ] [Test it](../specs/0008-sqlite-core-migrations/test.md): /test sqlite-core-migrations
 
 ### 09. Internal repositories `in-progress`
+
 Port dan repository untuk semua tabel internal plus unit of work dan fake. Done when: round trip semua repository terbukti tanpa server eksternal.
+
 - [x] Design it (spec): [0009](../specs/0009-internal-repositories/index.md)
 - [ ] Build it: /develop internal-repositories
   - [ ] Entity, port, dan tipe EncryptedCredential di internal-domain (AC-1, AC-2)
@@ -160,7 +178,9 @@ Port dan repository untuk semua tabel internal plus unit of work dan fake. Done 
 - [ ] [Test it](../specs/0009-internal-repositories/test.md): /test internal-repositories
 
 ### 10. Key provider dan password hashing `in-progress`
+
 ADR keamanan: keyfile plus override env, argon2id. Done when: first run menghasilkan keyfile 0600, override bekerja, hash dan verify teruji.
+
 - [x] Design it (spec): [0010](../specs/0010-key-provider-password-hashing/index.md)
 - [ ] Build it: /develop key-provider-password-hashing
   - [ ] Key provider (first run atomik, permission check, keyId, override) (AC-1 sampai AC-4)
@@ -170,7 +190,9 @@ ADR keamanan: keyfile plus override env, argon2id. Done when: first run menghasi
 - [ ] [Test it](../specs/0010-key-provider-password-hashing/test.md): /test key-provider-password-hashing
 
 ### 11. Credential vault dan redaction `in-progress`
+
 AES-256-GCM dengan AAD plus modul sensor tiga lapis. Done when: file db terbukti bebas plaintext dan tiga saluran keluaran tersensor.
+
 - [x] Design it (spec): [0011](../specs/0011-credential-vault-redaction/index.md)
 - [ ] Build it: /develop credential-vault-redaction
   - [ ] Vault encrypt decrypt dengan AAD, key_id check, API use (AC-1 sampai AC-4)
@@ -180,7 +202,9 @@ AES-256-GCM dengan AAD plus modul sensor tiga lapis. Done when: file db terbukti
 - [ ] [Test it](../specs/0011-credential-vault-redaction/test.md): /test credential-vault-redaction
 
 ### 12. Package config `in-progress`
+
 Loader konfigurasi tunggal tervalidasi. Done when: prioritas flag env file default bekerja dan config tak valid menggagalkan boot dengan pesan per kunci.
+
 - [x] Design it (spec): [0012](../specs/0012-config-package/index.md)
 - [ ] Build it: /develop config-package
   - [ ] Schema TypeBox, default, flag sensitif (AC-1)
@@ -190,7 +214,9 @@ Loader konfigurasi tunggal tervalidasi. Done when: prioritas flag env file defau
 - [ ] [Test it](../specs/0012-config-package/test.md): /test config-package
 
 ### 13. Package observability `in-progress`
+
 Log JSON terstruktur, correlation ID, error handler tunggal. Done when: setiap error klien membawa correlation yang bisa ditemukan di log dan log tersensor.
+
 - [x] Design it (spec): [0013](../specs/0013-observability-package/index.md)
 - [ ] Build it: /develop observability-package
   - [ ] Logger JSON plus file rotasi plus larangan console (AC-1, AC-7)
@@ -200,7 +226,9 @@ Log JSON terstruktur, correlation ID, error handler tunggal. Done when: setiap e
 - [ ] [Test it](../specs/0013-observability-package/test.md): /test observability-package
 
 ### 14. UI foundation dan theme `in-progress`
+
 @ojiepermana/angular sebagai fondasi tunggal plus theme Myadmin. Done when: light dark system bekerja hidup, preferensi bertahan, dan design system kedua terlarang oleh lint.
+
 - [x] Design it (spec): [0014](../specs/0014-ui-foundation-theme/index.md)
 - [x] Build it: /develop ui-foundation-theme
   - [x] Instalasi paket (verifikasi npm) plus konfigurasi theme dan store preferensi (AC-1 sampai AC-4)
@@ -211,7 +239,9 @@ Log JSON terstruktur, correlation ID, error handler tunggal. Done when: setiap e
 - [ ] [Test it](../specs/0014-ui-foundation-theme/test.md): /test ui-foundation-theme
 
 ### 15. App shell dan navigation `in-progress`
+
 Shell aplikasi: top bar, sidebar, tab host, panel, status bar, context menu, error presenter, routing lazy. Done when: kerangka bisa dinavigasi penuh keyboard dan tab berbentuk data.
+
 - [x] Design it (spec): [0015](../specs/0015-app-shell-navigation/index.md)
 - [ ] Build it: /develop app-shell-navigation
   - [ ] Komponen layout plus panel resizable (AC-1, AC-2)
@@ -223,7 +253,9 @@ Shell aplikasi: top bar, sidebar, tab host, panel, status bar, context menu, err
 ## Fase B. Auth dan audit
 
 ### 16. Initial setup end to end `in-progress`
+
 Tracer bullet pertama: klaim instance lewat pembuatan Admin pertama. Done when: instance kosong memaksa setup, race menghasilkan tepat satu admin, dan setup kedua ditolak.
+
 - [x] Design it (spec): [0016](../specs/0016-initial-setup-flow/index.md)
 - [ ] Build it: /develop initial-setup-flow
   - [ ] Use case initial admin transaksional plus audit plus rate limit (AC-3, AC-4, AC-6, AC-7)
@@ -233,7 +265,9 @@ Tracer bullet pertama: klaim instance lewat pembuatan Admin pertama. Done when: 
 - [ ] [Test it](../specs/0016-initial-setup-flow/test.md): /test initial-setup-flow
 
 ### 17. Login, logout, dan session `in-progress`
+
 Sesi opaque server side dengan cookie HttpOnly, expiry ganda, CSRF. Done when: sesi kadaluarsa dan logout benar menutup HTTP dan WS tanpa sisa di browser.
+
 - [x] Design it (spec): [0017](../specs/0017-login-session/index.md)
 - [ ] Build it: /develop login-session
   - [ ] Use case session (create, validate idle absolut, revoke, purge) (AC-1, AC-4, AC-10)
@@ -243,7 +277,9 @@ Sesi opaque server side dengan cookie HttpOnly, expiry ganda, CSRF. Done when: s
 - [ ] [Test it](../specs/0017-login-session/test.md): /test login-session
 
 ### 18. User management dan change password `in-progress`
+
 Ganti password sendiri plus kelola user oleh Admin dengan invariant Admin terakhir. Done when: dua peran ditegakkan dua lapis dan deactivate memutus sesi seketika.
+
 - [x] Design it (spec): [0018](../specs/0018-user-management-change-password/index.md)
 - [ ] Build it: /develop user-management-change-password
   - [ ] Use case change password, create user, role status, reset password (AC-1, AC-3 sampai AC-6)
@@ -253,7 +289,9 @@ Ganti password sendiri plus kelola user oleh Admin dengan invariant Admin terakh
 - [ ] [Test it](../specs/0018-user-management-change-password/test.md): /test user-management-change-password
 
 ### 19. Subsistem audit append only `in-progress`
+
 Taksonomi event, writer tersensor, sukses menunggu audit. Done when: aksi wajib audit tidak pernah sukses tanpa baris audit dan payload selalu tersensor.
+
 - [x] Design it (spec): [0019](../specs/0019-audit-subsystem/index.md)
 - [ ] Build it: /develop audit-subsystem
   - [ ] Taksonomi tertutup plus writer dengan redaction dan correlation (AC-1, AC-2, AC-4, AC-5)
@@ -263,7 +301,9 @@ Taksonomi event, writer tersensor, sukses menunggu audit. Done when: aksi wajib 
 - [ ] [Test it](../specs/0019-audit-subsystem/test.md): /test audit-subsystem
 
 ### 20. Halaman audit Admin `in-progress`
+
 Jalur baca audit dengan filter dan pagination. Done when: Admin bisa menelusuri kejadian dan role user ditolak.
+
 - [x] Design it (spec): [0020](../specs/0020-audit-admin-page/index.md)
 - [ ] Build it: /develop audit-admin-page
   - [ ] Query berfilter berindeks plus endpoint admin plus daftar action (AC-1 sampai AC-4, AC-6)
@@ -274,7 +314,9 @@ Jalur baca audit dengan filter dan pagination. Done when: Admin bisa menelusuri 
 ## Fase C. Provider dan koneksi
 
 ### 21. Kontrak database-core dan capability `in-progress`
+
 Port kecil per domain, capability model, registry, error ternormalisasi, context tak serializable. Done when: suite kontrak generik lulus atas provider fake referensi.
+
 - [x] Design it (spec): [0021](../specs/0021-database-core-contracts/index.md)
 - [x] Build it: /develop database-core-contracts
   - [x] Model umum, DbError berkategori, seluruh port termasuk ViewPort (AC-1, AC-6, AC-7, AC-8)
@@ -284,7 +326,9 @@ Port kecil per domain, capability model, registry, error ternormalisasi, context
 - [ ] [Test it](../specs/0021-database-core-contracts/test.md): /test database-core-contracts
 
 ### 22. PostgreSQL koneksi dan capability `in-progress`
+
 Bun.sql, TLS tegas, capability, mapping SQLSTATE, infrastruktur cancel. Done when: suite kontrak lulus di dua versi PostgreSQL nyata dan TLS gagal tertutup.
+
 - [x] Design it (spec): [0022](../specs/0022-postgresql-connection-capability/index.md)
 - [x] Build it: /develop postgresql-connection-capability
   - [x] Driver adaptor, registry sesi, timeout, lingkungan test dua versi (AC-1, AC-3, AC-8)
@@ -294,17 +338,21 @@ Bun.sql, TLS tegas, capability, mapping SQLSTATE, infrastruktur cancel. Done whe
 - [ ] [Test it](../specs/0022-postgresql-connection-capability/test.md): /test postgresql-connection-capability
 
 ### 23. PostgreSQL metadata `in-progress`
+
 Introspeksi pg_catalog lazy dan paginated. Done when: describeTable cukup untuk designer dan 2000 table tetap responsif.
+
 - [x] Design it (spec): [0023](../specs/0023-postgresql-metadata/index.md)
 - [ ] Build it: /develop postgresql-metadata
-  - [ ] Quoting terpusat plus daftar database schema object paginated (AC-1, AC-2, AC-6)
+  - [x] Quoting terpusat plus daftar database schema object paginated (AC-1, AC-2, AC-6)
   - [ ] describeTable lengkap, definisi view, routine (AC-3, AC-4)
   - [ ] Pencarian object plus ukuran malas plus test performa (AC-5, AC-7, AC-8)
 - [ ] [Verify it](../specs/0023-postgresql-metadata/verify.md): /check verify postgresql-metadata
 - [ ] [Test it](../specs/0023-postgresql-metadata/test.md): /test postgresql-metadata
 
 ### 24. MySQL koneksi dan capability `in-progress`
+
 Cermin feature 22 untuk MySQL dengan KILL QUERY. Done when: suite kontrak lulus di dua versi MySQL nyata.
+
 - [x] Design it (spec): [0024](../specs/0024-mysql-connection-capability/index.md)
 - [x] Build it: /develop mysql-connection-capability
   - [x] Driver adaptor plus connection_id plus lingkungan test (AC-1, AC-7)
@@ -314,7 +362,9 @@ Cermin feature 22 untuk MySQL dengan KILL QUERY. Done when: suite kontrak lulus 
 - [ ] [Test it](../specs/0024-mysql-connection-capability/test.md): /test mysql-connection-capability
 
 ### 25. MySQL metadata `in-progress`
+
 Introspeksi information_schema dengan hierarki datar. Done when: bentuk hasil identik lintas provider dibuktikan test bentuk.
+
 - [x] Design it (spec): [0025](../specs/0025-mysql-metadata/index.md)
 - [ ] Build it: /develop mysql-metadata
   - [ ] Quoting backtick plus daftar database dan object termasuk trigger (AC-1, AC-2, AC-6)
@@ -324,7 +374,9 @@ Introspeksi information_schema dengan hierarki datar. Done when: bentuk hasil id
 - [ ] [Test it](../specs/0025-mysql-metadata/test.md): /test mysql-metadata
 
 ### 26. Connection manager CRUD dan vault `in-progress`
+
 Kelola koneksi tersimpan dengan credential terenkripsi dan batas Admin yang jelas. Done when: alur buat, test, ubah, duplikasi, hapus bekerja dua engine tanpa satu pun secret bocor.
+
 - [x] Design it (spec): [0026](../specs/0026-connection-manager-crud/index.md)
 - [ ] Build it: /develop connection-manager-crud
   - [ ] Use case CRUD koneksi plus vault plus policies otorisasi plus audit (AC-1, AC-2, AC-4 sampai AC-9)
@@ -334,7 +386,9 @@ Kelola koneksi tersimpan dengan credential terenkripsi dan batas Admin yang jela
 - [ ] [Test it](../specs/0026-connection-manager-crud/test.md): /test connection-manager-crud
 
 ### 27. Connection lifecycle dan status `in-progress`
+
 Connect eksplisit, registry sesi aktif, status jujur di sidebar dan status bar. Done when: status yang tampil selalu sama dengan kenyataan server dan reconnect memulihkan error.
+
 - [x] Design it (spec): [0027](../specs/0027-connection-lifecycle-status/index.md)
 - [ ] Build it: /develop connection-lifecycle-status
   - [ ] Registry sesi aktif plus transisi plus idle timeout plus pembersihan (AC-2, AC-5, AC-6, AC-9)
@@ -344,7 +398,9 @@ Connect eksplisit, registry sesi aktif, status jujur di sidebar dan status bar. 
 - [ ] [Test it](../specs/0027-connection-lifecycle-status/test.md): /test connection-lifecycle-status
 
 ### 28. Jobs infrastructure `in-progress`
+
 Mesin pekerjaan panjang dalam proses: progress, cancel kooperatif, kepemilikan. Done when: job berjalan berbatas konkurensi, bisa dibatalkan, dan tidak pernah merobohkan proses.
+
 - [x] Design it (spec): [0028](../specs/0028-jobs-infrastructure/index.md)
 - [ ] Build it: /develop jobs-infrastructure
   - [ ] Model job, state machine, JobManager dengan antrean dan pembersihan (AC-1, AC-2, AC-6)
@@ -354,7 +410,9 @@ Mesin pekerjaan panjang dalam proses: progress, cancel kooperatif, kepemilikan. 
 - [ ] [Test it](../specs/0028-jobs-infrastructure/test.md): /test jobs-infrastructure
 
 ### 29. Realtime WebSocket `in-progress`
+
 Kanal multiplexed berotorisasi plus klien SDK dengan reconnect. Done when: progress job dan status koneksi mengalir push dan pulih otomatis setelah putus.
+
 - [x] Design it (spec): [0029](../specs/0029-realtime-websocket/index.md)
 - [ ] Build it: /develop realtime-websocket
   - [ ] Transport WS server: upgrade bersesi, protokol, otorisasi channel, heartbeat, batas (AC-1, AC-2, AC-3, AC-5)
@@ -364,7 +422,9 @@ Kanal multiplexed berotorisasi plus klien SDK dengan reconnect. Done when: progr
 - [ ] [Test it](../specs/0029-realtime-websocket/test.md): /test realtime-websocket
 
 ### 30. Workspace persistence `in-progress`
+
 Tab, panel, dan konteks bertahan lintas login. Done when: susunan pulih setelah login dan referensi mati dibuang dengan pemberitahuan.
+
 - [x] Design it (spec): [0030](../specs/0030-workspace-persistence/index.md)
 - [ ] Build it: /develop workspace-persistence
   - [ ] Kontrak dan endpoint workspace dengan schema berversi dan batas ukuran (AC-1, AC-2, AC-6)
@@ -376,7 +436,9 @@ Tab, panel, dan konteks bertahan lintas login. Done when: susunan pulih setelah 
 ## Fase D. Fitur database inti
 
 ### 31. Object explorer `in-progress`
+
 Pohon lazy data driven dengan context menu bergerbang capability. Done when: telusur dua engine bekerja tanpa satu pun cabang nama engine di UI.
+
 - [x] Design it (spec): [0031](../specs/0031-object-explorer/index.md)
 - [ ] Build it: /develop object-explorer
   - [ ] Endpoint metadata generik plus pemeriksaan koneksi (AC-1)
@@ -386,7 +448,9 @@ Pohon lazy data driven dengan context menu bergerbang capability. Done when: tel
 - [ ] [Test it](../specs/0031-object-explorer/test.md): /test object-explorer
 
 ### 32. Object search `in-progress`
+
 Pencarian nama object server side dari panel explorer. Done when: pencarian pada 2000 table cepat dan hasil bisa dilompati ke node.
+
 - [x] Design it (spec): [0032](../specs/0032-object-search/index.md)
 - [ ] Build it: /develop object-search
   - [ ] Endpoint search paginated (AC-1, AC-2)
@@ -396,7 +460,9 @@ Pencarian nama object server side dari panel explorer. Done when: pencarian pada
 - [ ] [Test it](../specs/0032-object-search/test.md): /test object-search
 
 ### 33. Query editor tab dan eksekusi `in-progress`
+
 Inti produk: tab CodeMirror berkonteks, sesi per tab, eksekusi asinkron, autocomplete, history. Done when: multi statement, transaksi lintas eksekusi, dan posisi error bekerja di dua engine.
+
 - [x] Design it (spec): [0033](../specs/0033-query-editor-execution/index.md)
 - [ ] Build it: /develop query-editor-execution
   - [ ] Kontrak eksekusi plus bentuk sel berlabel tipe plus pemecah statement per engine (AC-4, AC-6, AC-8)
@@ -407,7 +473,9 @@ Inti produk: tab CodeMirror berkonteks, sesi per tab, eksekusi asinkron, autocom
 - [ ] [Test it](../specs/0033-query-editor-execution/test.md): /test query-editor-execution
 
 ### 34. Result grid dan export result `in-progress`
+
 ResultGrid bertipe aman dengan multiple result set dan export klien. Done when: NULL, JSON, dan presisi tampil benar dan 5000 baris mulus.
+
 - [x] Design it (spec): [0034](../specs/0034-result-grid-export/index.md)
 - [ ] Build it: /develop result-grid-export
   - [ ] ResultGrid virtualized dengan render sel bertipe dan viewer JSON (AC-1, AC-3, AC-7)
@@ -417,7 +485,9 @@ ResultGrid bertipe aman dengan multiple result set dan export klien. Done when: 
 - [ ] [Test it](../specs/0034-result-grid-export/test.md): /test result-grid-export
 
 ### 35. Query cancel dan EXPLAIN `in-progress`
+
 Membatalkan eksekusi berjalan dan rencana eksekusi teks. Done when: query tidur dibatalkan cepat dengan sesi tetap hidup dan explain bergerbang capability.
+
 - [x] Design it (spec): [0035](../specs/0035-query-cancel-explain/index.md)
 - [ ] Build it: /develop query-cancel-explain
   - [ ] Cancel di use case query dengan konfirmasi provider dan idempotensi (AC-1, AC-2, AC-4)
@@ -427,7 +497,9 @@ Membatalkan eksekusi berjalan dan rencana eksekusi teks. Done when: query tidur 
 - [ ] [Test it](../specs/0035-query-cancel-explain/test.md): /test query-cancel-explain
 
 ### 36. Query history dan saved queries `in-progress`
+
 Riwayat otomatis dan query bernama, privat per user. Done when: pencarian riwayat, buka ulang berkonteks, dan isolasi antar user terbukti.
+
 - [x] Design it (spec): [0036](../specs/0036-query-history-saved-queries/index.md)
 - [ ] Build it: /develop query-history-saved-queries
   - [ ] Endpoint history berfilter plus saved queries CRUD berkepemilikan (AC-1, AC-2, AC-4, AC-6)
@@ -437,7 +509,9 @@ Riwayat otomatis dan query bernama, privat per user. Done when: pencarian riwaya
 - [ ] [Test it](../specs/0036-query-history-saved-queries/test.md): /test query-history-saved-queries
 
 ### 37. Data browser jalur baca `in-progress`
+
 Browse table berhalaman dengan filter terstruktur aman. Done when: table sejuta baris dibuka ringan dan injeksi lewat filter mustahil.
+
 - [x] Design it (spec): [0037](../specs/0037-data-browser-read/index.md)
 - [ ] Build it: /develop data-browser-read
   - [ ] Kontrak read plus penerjemah filter sort pagination di kedua provider (AC-1 sampai AC-5)
@@ -447,7 +521,9 @@ Browse table berhalaman dengan filter terstruktur aman. Done when: table sejuta 
 - [ ] [Test it](../specs/0037-data-browser-read/test.md): /test data-browser-read
 
 ### 38. Data browser jalur tulis `in-progress`
+
 Insert, edit, delete berbasis identitas baris aman. Done when: konflik terdeteksi lewat affected count dan table tanpa PK read only dengan penjelasan.
+
 - [x] Design it (spec): [0038](../specs/0038-data-browser-write/index.md)
 - [ ] Build it: /develop data-browser-write
   - [ ] Penentuan rowIdentity plus mutasi berparameter dengan semantik affected dan transaksi (AC-1, AC-2, AC-3, AC-6, AC-8)
@@ -457,7 +533,9 @@ Insert, edit, delete berbasis identitas baris aman. Done when: konflik terdeteks
 - [ ] [Test it](../specs/0038-data-browser-write/test.md): /test data-browser-write
 
 ### 39. Manajemen database `in-progress`
+
 Properti, create data driven per engine, drop ketik nama. Done when: pola konfirmasi destructive baku lahir dan teruji dua engine.
+
 - [x] Design it (spec): [0039](../specs/0039-database-management/index.md)
 - [ ] Build it: /develop database-management
   - [ ] DatabasePort create drop properties di kedua provider (AC-1, AC-2, AC-3)
@@ -467,7 +545,9 @@ Properti, create data driven per engine, drop ketik nama. Done when: pola konfir
 - [ ] [Test it](../specs/0039-database-management/test.md): /test database-management
 
 ### 40. Manajemen schema `in-progress`
+
 Schema PostgreSQL bergerbang capability, absen total di MySQL. Done when: gerbang terbukti dua arah dan drop hanya schema kosong.
+
 - [x] Design it (spec): [0040](../specs/0040-schema-management/index.md)
 - [ ] Build it: /develop schema-management
   - [ ] SchemaPort PostgreSQL create rename drop restrict (AC-1)
@@ -477,7 +557,9 @@ Schema PostgreSQL bergerbang capability, absen total di MySQL. Done when: gerban
 - [ ] [Test it](../specs/0040-schema-management/test.md): /test schema-management
 
 ### 41. Table designer kolom `in-progress`
+
 Create dan alter kolom lewat change set dengan pratinjau DDL wajib. Done when: yang tampil di pratinjau persis yang dijalankan dan validasi per field bekerja.
+
 - [x] Design it (spec): [0041](../specs/0041-table-designer-columns/index.md)
 - [ ] Build it: /develop table-designer-columns
   - [ ] Modul tipe engine plus kompilator change set dengan test snapshot (AC-1, AC-2, AC-3, AC-5)
@@ -487,7 +569,9 @@ Create dan alter kolom lewat change set dengan pratinjau DDL wajib. Done when: y
 - [ ] [Test it](../specs/0041-table-designer-columns/test.md): /test table-designer-columns
 
 ### 42. Table designer index dan constraint `in-progress`
+
 PK, FK, unique, check, index komposit di mesin change set yang sama. Done when: FK dengan aturan ON dan composite unique bekerja dua engine lewat pratinjau.
+
 - [x] Design it (spec): [0042](../specs/0042-table-designer-indexes-constraints/index.md)
 - [ ] Build it: /develop table-designer-indexes-constraints
   - [ ] Perluasan change set dan kompilator plus snapshot (AC-2 sampai AC-5)
@@ -497,7 +581,9 @@ PK, FK, unique, check, index komposit di mesin change set yang sama. Done when: 
 - [ ] [Test it](../specs/0042-table-designer-indexes-constraints/test.md): /test table-designer-indexes-constraints
 
 ### 43. Operasi destructive table `in-progress`
+
 Rename, truncate, drop dengan dialog berinformasi dampak. Done when: ketiganya berkonfirmasi ketik nama terverifikasi server dan teraudit.
+
 - [x] Design it (spec): [0043](../specs/0043-table-destructive-operations/index.md)
 - [ ] Build it: /develop table-destructive-operations
   - [ ] Operasi provider plus query dampak dependensi (AC-1, AC-2, AC-3)
@@ -507,7 +593,9 @@ Rename, truncate, drop dengan dialog berinformasi dampak. Done when: ketiganya b
 - [ ] [Test it](../specs/0043-table-destructive-operations/test.md): /test table-destructive-operations
 
 ### 44. Manajemen view `in-progress`
+
 CRUD GUI penuh untuk view sesuai keputusan produk. Done when: create, ubah definisi (termasuk jalur drop create PostgreSQL berkonfirmasi), dan drop bekerja dua engine.
+
 - [x] Design it (spec): [0044](../specs/0044-view-management/index.md)
 - [ ] Build it: /develop view-management
   - [ ] ViewPort kedua provider dengan analisis strategi update (AC-3)
@@ -517,7 +605,9 @@ CRUD GUI penuh untuk view sesuai keputusan produk. Done when: create, ubah defin
 - [ ] [Test it](../specs/0044-view-management/test.md): /test view-management
 
 ### 45. Security database principal `in-progress`
+
 Kelola role dan account database target lewat form dinamis. Done when: create, edit, reset password, drop bekerja dua engine tanpa satu pun rahasia di response.
+
 - [x] Design it (spec): [0045](../specs/0045-database-security-principals/index.md)
 - [ ] Build it: /develop database-security-principals
   - [ ] SecurityPort principal di kedua provider plus deklarasi form (AC-1, AC-2, AC-3)
@@ -527,7 +617,9 @@ Kelola role dan account database target lewat form dinamis. Done when: create, e
 - [ ] [Test it](../specs/0045-database-security-principals/test.md): /test database-security-principals
 
 ### 46. Security database privilege `in-progress`
+
 Grant dan revoke level database dan table lewat matriks berpratinjau. Done when: efek grant terbukti nyata di server target dan revoke selalu berkonfirmasi.
+
 - [x] Design it (spec): [0046](../specs/0046-database-security-privileges/index.md)
 - [ ] Build it: /develop database-security-privileges
   - [ ] Introspeksi grant efektif plus katalog privilege plus kompilator di kedua provider (AC-1, AC-2)
@@ -539,7 +631,9 @@ Grant dan revoke level database dan table lewat matriks berpratinjau. Done when:
 ## Fase E. Operasi data
 
 ### 47. Export `in-progress`
+
 Export SQL CSV JSON streaming sebagai job dengan unduhan terautentikasi. Done when: sejuta baris terekspor dengan memori datar dan cancel membersihkan.
+
 - [x] Design it (spec): [0047](../specs/0047-export-jobs/index.md)
 - [ ] Build it: /develop export-jobs
   - [ ] Penulis format streaming plus pembaca cursor dan quoting per engine (AC-1, AC-2, AC-3)
@@ -549,7 +643,9 @@ Export SQL CSV JSON streaming sebagai job dengan unduhan terautentikasi. Done wh
 - [ ] [Test it](../specs/0047-export-jobs/test.md): /test export-jobs
 
 ### 48. Import `in-progress`
+
 Import SQL dan CSV sebagai job dengan unggah streaming dan pemetaan kolom. Done when: roundtrip export import utuh dan kegagalan menunjuk posisi persis.
+
 - [x] Design it (spec): [0048](../specs/0048-import-jobs/index.md)
 - [ ] Build it: /develop import-jobs
   - [ ] Unggah streaming berbatas plus pratinjau server (AC-1, AC-7)
@@ -559,7 +655,9 @@ Import SQL dan CSV sebagai job dengan unggah streaming dan pemetaan kolom. Done 
 - [ ] [Test it](../specs/0048-import-jobs/test.md): /test import-jobs
 
 ### 49. Backup `in-progress`
+
 Logical backup lewat native tool dengan deteksi jujur. Done when: backup valid dihasilkan dua engine dan tanpa tool fitur menyatakan diri tidak tersedia.
+
 - [x] Design it (spec): [0049](../specs/0049-backup/index.md)
 - [ ] Build it: /develop backup
   - [ ] Deteksi tool plus doctor check plus capability (AC-1, AC-7)
@@ -569,7 +667,9 @@ Logical backup lewat native tool dengan deteksi jujur. Done when: backup valid d
 - [ ] [Test it](../specs/0049-backup/test.md): /test backup
 
 ### 50. Restore `in-progress`
+
 Pemulihan dari artefak dengan konfirmasi paling ketat. Done when: roundtrip backup restore identik dan dump engine salah ditolak sebelum kerusakan.
+
 - [x] Design it (spec): [0050](../specs/0050-restore/index.md)
 - [ ] Build it: /develop restore
   - [ ] Validasi artefak (format, engine) plus endpoint validate (AC-1)
@@ -579,7 +679,9 @@ Pemulihan dari artefak dengan konfirmasi paling ketat. Done when: roundtrip back
 - [ ] [Test it](../specs/0050-restore/test.md): /test restore
 
 ### 51. Monitoring status dasar `in-progress`
+
 Kartu kesehatan per koneksi, event driven, batas V1 dinyatakan. Done when: kartu reaktif terhadap push tanpa polling dan bebas data sensitif.
+
 - [x] Design it (spec): [0051](../specs/0051-monitoring-status/index.md)
 - [ ] Build it: /develop monitoring-status
   - [ ] MonitoringPort statusInfo ringan plus endpoint (AC-2)
@@ -589,7 +691,9 @@ Kartu kesehatan per koneksi, event driven, batas V1 dinyatakan. Done when: kartu
 - [ ] [Test it](../specs/0051-monitoring-status/test.md): /test monitoring-status
 
 ### 52. Settings dan preferences `in-progress`
+
 Registry key tertutup: preferensi per user dan pengaturan aplikasi Admin. Done when: theme mengikuti akun lintas perangkat dan perubahan settings efektif tanpa restart.
+
 - [x] Design it (spec): [0052](../specs/0052-settings-preferences/index.md)
 - [ ] Build it: /develop settings-preferences
   - [ ] Registry key plus SettingsService bercache (AC-1, AC-3, AC-6)
@@ -601,7 +705,9 @@ Registry key tertutup: preferensi per user dan pengaturan aplikasi Admin. Done w
 ## Fase F. Penutup
 
 ### 53. Hardening keamanan lintas fitur `in-progress`
+
 Standar redaction, header keamanan, matriks otorisasi, gerbang security.yml. Done when: seluruh suite keamanan hijau dan menjadi prasyarat rilis.
+
 - [x] Design it (spec): [0053](../specs/0053-security-hardening/index.md)
 - [ ] Build it: /develop security-hardening
   - [ ] Sweep redaction plus test suntik per saluran plus pemindai fixture (AC-1, AC-2)
@@ -611,7 +717,9 @@ Standar redaction, header keamanan, matriks otorisasi, gerbang security.yml. Don
 - [ ] [Test it](../specs/0053-security-hardening/test.md): /test security-hardening
 
 ### 54. Packaging binary dan smoke test `in-progress`
+
 Dari kode ke lima binary terverifikasi. Done when: artefak per target lahir dari release.yml dengan checksum dan smoke test lulus di runner tersedia.
+
 - [x] Design it (spec): [0054](../specs/0054-binary-packaging-smoke/index.md)
 - [ ] Build it: /develop binary-packaging-smoke
   - [ ] Build web plus embed manifest aset plus penyajian release (AC-1)
@@ -621,7 +729,9 @@ Dari kode ke lima binary terverifikasi. Done when: artefak per target lahir dari
 - [ ] [Test it](../specs/0054-binary-packaging-smoke/test.md): /test binary-packaging-smoke
 
 ### 55. Distribusi dan release `in-progress`
+
 Signing bergerbang sertifikat, Docker multi arch, service file, dokumentasi operator. Done when: pemasangan dari artefak nyata mengikuti dokumen sendiri berhasil di platform tersedia.
+
 - [x] Design it (spec): [0055](../specs/0055-distribution-release/index.md)
 - [ ] Build it: /develop distribution-release
   - [ ] GitHub Releases plus changelog plus langkah signing bergerbang (AC-1, AC-2, AC-3)

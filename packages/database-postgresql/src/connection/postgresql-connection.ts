@@ -122,6 +122,10 @@ function staticQuery(sql: string): TemplateStringsArray {
   return Object.assign([sql], { raw: [sql] }) as unknown as TemplateStringsArray;
 }
 
+function parameterizedQuery(parts: readonly string[]): TemplateStringsArray {
+  return Object.assign([...parts], { raw: [...parts] }) as unknown as TemplateStringsArray;
+}
+
 export class PostgresqlConnectionAdapter implements ConnectionPort {
   private readonly sessions = new Map<string, Session>();
   private readonly sqlFactory: BunSqlClientFactory;
@@ -209,8 +213,32 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
 
   /** Executes a provider-owned query while tracking it for cancellation. */
   public async execute<T = unknown>(handle: ConnectionHandle, sql: string): Promise<T> {
+    return this.executeWithQuery(handle, () => this.session(handle).client<T>(staticQuery(sql)));
+  }
+
+  /** Executes a tagged query with values kept outside the SQL text. */
+  public async executeParameterized<T = unknown>(
+    handle: ConnectionHandle,
+    parts: readonly string[],
+    values: readonly unknown[],
+  ): Promise<T> {
+    if (parts.length !== values.length + 1) {
+      throw new DbError({
+        category: 'internal',
+        message: 'PostgreSQL parameterized query has mismatched parts and values',
+      });
+    }
+    return this.executeWithQuery(handle, () =>
+      this.session(handle).client<T>(parameterizedQuery(parts), ...values),
+    );
+  }
+
+  private async executeWithQuery<T>(
+    handle: ConnectionHandle,
+    createQuery: () => SqlQuery<T>,
+  ): Promise<T> {
     const session = this.session(handle);
-    const pending = session.client<T>(staticQuery(sql));
+    const pending = createQuery();
     session.activeQueries.add(pending as SqlQuery<unknown>);
     try {
       return await pending;

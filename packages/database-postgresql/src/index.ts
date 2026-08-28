@@ -5,4 +5,5 @@ export * from './capabilities';
 export * from './connection';
 export * from './driver';
 export * from './mappers';
+export * from './metadata';
 export * from './provider';

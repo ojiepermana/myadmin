@@ -84,6 +84,7 @@ export interface SchemaDefinition {
   name: string;
   database: string;
   owner?: string;
+  isSystem?: boolean;
 }
 
 export interface TableDefinition {

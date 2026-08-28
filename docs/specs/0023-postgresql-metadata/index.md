@@ -1,7 +1,7 @@
 # 0023. Provider PostgreSQL: metadata dan introspeksi
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-EXP-01 sampai FR-EXP-03 menuntut lazy loading (buka server tidak menarik selu
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin menelusuri isi server besar tanpa menunggu seluruh katalog dimuat.
 - Sebagai fitur lain, saya ingin metadata berbentuk seragam untuk membangun UI dan autocomplete.
 
@@ -38,17 +39,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Query pg_catalog langsung (dipilih)
 
 **Pros**:
+
 - Lengkap dan cepat (identity, generated, komentar, ukuran tersedia); satu sumber untuk semua kebutuhan describe.
 
 **Cons**:
+
 - SQL katalog lebih rumit dan spesifik versi; ditanggung tabel query per versi di package ini, tempat yang memang ditakdirkan untuk itu.
 
 ### Option 2: information_schema saja
 
 **Pros**:
+
 - Portabel antar engine.
 
 **Cons**:
+
 - Tidak memuat semua yang dibutuhkan (komentar, ukuran, metode index); portabilitas tidak bernilai karena tiap provider memang punya implementasinya sendiri.
 
 ## Decision
@@ -68,14 +73,16 @@ Metadata adalah fondasi separuh fitur V1; kelengkapan describeTable menentukan a
 **API surface**: port metadata (spec 0021); endpoint HTTP nya didefinisikan bersama fitur pemakai (spec 0031, 0032).
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| listDatabases | ukuran | `pg_database_size` lewat panggilan malas |
-| describeTable | identity/generated | pg_attribute dan pg_attrdef sesuai versi |
-| describeTable | perkiraan baris | `reltuples` (perkiraan, dilabeli sebagai perkiraan) |
-| search | hasil | query katalog parameterized dengan ILIKE |
+
+| Action        | Value produced / displayed | Source                                              |
+| ------------- | -------------------------- | --------------------------------------------------- |
+| listDatabases | ukuran                     | `pg_database_size` lewat panggilan malas            |
+| describeTable | identity/generated         | pg_attribute dan pg_attrdef sesuai versi            |
+| describeTable | perkiraan baris            | `reltuples` (perkiraan, dilabeli sebagai perkiraan) |
+| search        | hasil                      | query katalog parameterized dengan ILIKE            |
 
 **Key invariants**:
+
 - Tidak ada operasi metadata yang tanpa batas halaman; tidak ada panggilan "ambil semua" lintas tipe.
 - Semua identifier lewat quoting tunggal; semua nilai lewat parameter (AC-6).
 - Bentuk keluaran identik lintas provider (kontrak spec 0021).
@@ -100,12 +107,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Explorer, autocomplete, data browser, dan designer memiliki satu sumber metadata yang lengkap dan berpagination.
 
 **Negative / tradeoffs**:
+
 - Tabel query per versi menambah perawatan saat versi PostgreSQL baru; terlokalisasi dan tertutup test versi.
 
 **Neutral**:
+
 - Cache 30 detik berarti autocomplete bisa tertinggal sesaat dari DDL terbaru; tombol refresh explorer menjadi jalan keluarnya.
 
 ## Follow-up
@@ -115,9 +125,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-EXP-01 sampai FR-EXP-03, FR-PROV-05, NFR-01; spec 0021, 0022.
 
 **Practices & standards**:
+
 - Introspeksi lewat katalog native; pagination sebagai kontrak; quoting terpusat.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.
