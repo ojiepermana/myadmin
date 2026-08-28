@@ -1,7 +1,7 @@
 # 0046. Security database target: privilege (grant dan revoke)
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-SEC-03: basic GRANT/REVOKE dengan UI yang membatasi pilihan pada capability d
 ## Requirements
 
 **User stories**:
+
 - Sebagai DBA, saya ingin memberi user akses baca tulis ke database atau table tertentu dan mencabutnya lagi, tanpa menghafal sintaks GRANT tiap engine.
 
 **Acceptance criteria**:
@@ -36,17 +37,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Change set matriks dengan pratinjau (dipilih)
 
 **Pros**:
+
 - Konsisten dengan pola designer dan principal; beberapa perubahan sekaligus ditinjau utuh; revoke tersaring jelas untuk konfirmasi.
 
 **Cons**:
+
 - Matriks butuh introspeksi grant yang akurat; itulah bagian tersulit dan diberi test nyata.
 
 ### Option 2: Aksi grant/revoke satuan langsung
 
 **Pros**:
+
 - Sederhana per aksi.
 
 **Cons**:
+
 - Pengaturan akses nyata hampir selalu beberapa privilege sekaligus; satu satu melelahkan dan memperbanyak audit noise.
 
 ## Decision
@@ -62,22 +67,25 @@ Grant adalah fitur yang kesalahannya berdampak keamanan langsung pada database o
 **Data model sketch**: tidak ada tabel internal; model `GrantEntry { principal, scope, privilege, grantable }` dan `GrantChangeSet` di kontrak.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /security/principals/:name/grants | GET | connectionId | daftar GrantEntry | pemilik, tersambung, grants | unsupported |
-| /security/privileges/catalog | GET | connectionId | privilege per level | sama | |
-| /security/grants/preview | POST | changeSet | statements[] | sama | 422 |
-| /security/grants/apply | POST | changeSet, confirmRevoke? | hasil per statement | sama | 409 confirm, permission_denied |
+
+| Endpoint                          | Method | Key inputs                | Key outputs         | Auth                        | Key errors                     |
+| --------------------------------- | ------ | ------------------------- | ------------------- | --------------------------- | ------------------------------ |
+| /security/principals/:name/grants | GET    | connectionId              | daftar GrantEntry   | pemilik, tersambung, grants | unsupported                    |
+| /security/privileges/catalog      | GET    | connectionId              | privilege per level | sama                        |                                |
+| /security/grants/preview          | POST   | changeSet                 | statements[]        | sama                        | 422                            |
+| /security/grants/apply            | POST   | changeSet, confirmRevoke? | hasil per statement | sama                        | 409 confirm, permission_denied |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| grant efektif | daftar | introspeksi provider |
-| katalog privilege | daftar per level | modul provider `security/` |
-| statement | GRANT/REVOKE | kompilator provider (quoting principal dan object) |
-| konfirmasi revoke | ringkasan pencabutan | change set tersaring jenis revoke |
+
+| Action            | Value produced / displayed | Source                                             |
+| ----------------- | -------------------------- | -------------------------------------------------- |
+| grant efektif     | daftar                     | introspeksi provider                               |
+| katalog privilege | daftar per level           | modul provider `security/`                         |
+| statement         | GRANT/REVOKE               | kompilator provider (quoting principal dan object) |
+| konfirmasi revoke | ringkasan pencabutan       | change set tersaring jenis revoke                  |
 
 **Key invariants**:
+
 - UI hanya menawarkan privilege dari katalog provider; server memvalidasi ulang terhadap katalog (pertahanan ganda).
 - Revoke tidak pernah diterapkan tanpa flag konfirmasi terverifikasi.
 - Matriks selalu dirender dari grant efektif hasil introspeksi segar, bukan state klien lama.
@@ -101,12 +109,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - FR-SEC-03 selesai pada batas yang terdefinisi tegas; pengaturan akses harian tidak butuh SQL manual.
 
 **Negative / tradeoffs**:
+
 - Introspeksi grant akurat itu kerja keras per engine; dibayar test efek nyata.
 
 **Neutral**:
+
 - WITH GRANT OPTION, column privileges, default privileges: V2, tercatat.
 
 ## Follow-up
@@ -116,9 +127,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-SEC-03, FR-SAFE-01, FR-SAFE-02, bagian 2 (revoke destructive); keputusan level database dan table, sesi desain 2026-08-28; spec 0045.
 
 **Practices & standards**:
+
 - Keadaan akses dari introspeksi, bukan asumsi; pratinjau perubahan keamanan; pertahanan ganda katalog.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

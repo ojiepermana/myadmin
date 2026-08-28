@@ -1,0 +1,40 @@
+post:
+  operationId: applySecurityGrants
+  tags: [security]
+  summary: Apply a privilege change set
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/security.yaml#/GrantRequest }
+  responses:
+    '200':
+      description: Per statement apply results.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/security.yaml#/GrantApplyResult }
+    '401':
+      {
+        description: Authentication required,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: CSRF or provider permission failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '409':
+      {
+        description: Revoke confirmation or connection conflict,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '422':
+      {
+        description: Validation failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '501':
+      {
+        description: Grant capability is unavailable,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

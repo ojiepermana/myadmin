@@ -830,6 +830,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/security/grants/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply a privilege change set */
+        post: operations["applySecurityGrants"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/security/grants/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview privilege grant and revoke statements */
+        post: operations["previewSecurityGrants"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/security/principals": {
         parameters: {
             query?: never;
@@ -866,6 +900,23 @@ export interface paths {
         patch: operations["updateSecurityPrincipal"];
         trace?: never;
     };
+    "/security/principals/{name}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List effective grants for a database principal */
+        get: operations["listSecurityPrincipalGrants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/security/principals/{name}/reset-password": {
         parameters: {
             query?: never;
@@ -892,6 +943,23 @@ export interface paths {
         };
         /** Describe the provider principal form */
         get: operations["describeSecurityPrincipalForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/security/privileges/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List provider declared privileges */
+        get: operations["getSecurityPrivilegeCatalog"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1573,6 +1641,72 @@ export interface components {
             items: components["schemas"]["ExplorerObjectRef"][];
             total?: number;
         };
+        GrantApplyResult: {
+            statements: components["schemas"]["GrantApplyStatement"][];
+        };
+        GrantApplyStatement: {
+            /** @enum {string} */
+            action: "grant" | "revoke";
+            error?: {
+                code: string;
+                message: string;
+            };
+            principal: string;
+            privilege: string;
+            ref: components["schemas"]["GrantObjectRef"];
+            scope: components["schemas"]["GrantScope"];
+            statement: string;
+            /** @enum {string} */
+            status: "applied" | "failed";
+        };
+        GrantChange: {
+            /** @enum {string} */
+            action: "grant" | "revoke";
+            principal: string;
+            privilege: string;
+            ref: components["schemas"]["GrantObjectRef"];
+            scope: components["schemas"]["GrantScope"];
+        };
+        GrantChangeSet: {
+            changes: components["schemas"]["GrantChange"][];
+            confirmRevoke?: boolean;
+        };
+        GrantEntry: {
+            grantable: boolean;
+            principal: string;
+            privilege: string;
+            ref: components["schemas"]["GrantObjectRef"];
+            scope: components["schemas"]["GrantScope"];
+        };
+        GrantObjectRef: {
+            database: string;
+            name: string;
+            schema?: string | null;
+            /** @enum {string} */
+            type: "database" | "table";
+        };
+        GrantPage: {
+            items: components["schemas"]["GrantEntry"][];
+            total: number;
+        };
+        GrantPreview: {
+            statements: components["schemas"]["GrantStatement"][];
+        };
+        GrantRequest: {
+            changeSet: components["schemas"]["GrantChangeSet"];
+            connectionId: string;
+        };
+        /** @enum {string} */
+        GrantScope: "database" | "table";
+        GrantStatement: {
+            /** @enum {string} */
+            action: "grant" | "revoke";
+            principal: string;
+            privilege: string;
+            ref: components["schemas"]["GrantObjectRef"];
+            scope: components["schemas"]["GrantScope"];
+            statement: string;
+        };
         health: {
             /** @enum {string} */
             status: "ok" | "degraded";
@@ -1698,6 +1832,19 @@ export interface components {
         };
         PrincipalResetPasswordRequest: {
             newPassword: string;
+        };
+        PrivilegeCatalog: {
+            /** @enum {string} */
+            engine: "postgresql" | "mysql";
+            levels: components["schemas"]["PrivilegeCatalogLevel"][];
+        };
+        PrivilegeCatalogLevel: {
+            privileges: components["schemas"]["PrivilegeDefinition"][];
+            scope: components["schemas"]["GrantScope"];
+        };
+        PrivilegeDefinition: {
+            label: string;
+            name: string;
         };
         QueryAutocompleteItem: {
             detail?: string;
@@ -5357,6 +5504,144 @@ export interface operations {
             };
         };
     };
+    applySecurityGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantRequest"];
+            };
+        };
+        responses: {
+            /** @description Per statement apply results. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantApplyResult"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Revoke confirmation or connection conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Grant capability is unavailable */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    previewSecurityGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantRequest"];
+            };
+        };
+        responses: {
+            /** @description Provider compiled statements. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantPreview"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection is not connected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Grant capability is unavailable */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
     listSecurityPrincipals: {
         parameters: {
             query: {
@@ -5622,6 +5907,75 @@ export interface operations {
             };
         };
     };
+    listSecurityPrincipalGrants: {
+        parameters: {
+            query: {
+                connectionId: string;
+            };
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Effective database and table grants. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantPage"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection ownership or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection is not connected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Grant capability is unavailable */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
     resetSecurityPrincipalPassword: {
         parameters: {
             query: {
@@ -5732,6 +6086,64 @@ export interface operations {
                 };
             };
             /** @description Principal capability is unavailable */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getSecurityPrivilegeCatalog: {
+        parameters: {
+            query: {
+                connectionId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider declared database and table privileges. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivilegeCatalog"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection ownership or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection is not connected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Grant capability is unavailable */
             501: {
                 headers: {
                     [name: string]: unknown;

@@ -94,4 +94,123 @@ describe('PostgreSQL principal security adapter', () => {
       ),
     ).toBe(true);
   });
+
+  test('UT-0046-AC2 exposes the provider catalog and compiles quoted changes', async () => {
+    const statements: string[] = [];
+    const client = ((input: string | TemplateStringsArray, ...values: unknown[]) => {
+      const sql =
+        typeof input === 'string'
+          ? input
+          : input.raw.reduce((text, part, index) => text + part + (values[index] ?? ''), '');
+      statements.push(sql);
+      return resolved(sql.includes('pg_backend_pid') ? [{ backend_pid: 1 }] : []);
+    }) as BunSqlClient;
+    client.connect = async () => client;
+    client.close = async () => undefined;
+    const adapter = new PostgresqlSecurityAdapter(
+      new PostgresqlConnectionAdapter({ sqlFactory: () => client }),
+    );
+    const catalog = await adapter.privilegeCatalog(context());
+    expect(
+      catalog.levels
+        .find((level) => level.scope === 'database')
+        ?.privileges.map((item) => item.name),
+    ).toEqual(['CONNECT', 'CREATE', 'TEMP']);
+    const preview = await adapter.preview(context(), [
+      {
+        action: 'grant',
+        principal: 'role"name',
+        scope: 'table',
+        ref: { database: 'app', schema: 'public', name: 'orders"today', type: 'table' },
+        privilege: 'SELECT',
+      },
+    ]);
+    expect(preview.statements[0]?.statement).toBe(
+      'GRANT SELECT ON TABLE "public"."orders""today" TO "role""name"',
+    );
+  });
+
+  test('IT-0046-AC1 maps database and table ACL rows to grant entries', async () => {
+    const client = ((input: string | TemplateStringsArray, ...values: unknown[]) => {
+      const sql =
+        typeof input === 'string'
+          ? input
+          : input.raw.reduce((text, part, index) => text + part + (values[index] ?? ''), '');
+      if (sql.includes('pg_backend_pid')) return resolved([{ backend_pid: 1 }]);
+      if (sql.includes('aclexplode'))
+        return resolved([
+          {
+            scope: 'database',
+            database_name: 'app',
+            schema_name: null,
+            object_name: 'app',
+            privilege: 'CONNECT',
+            grantable: true,
+          },
+          {
+            scope: 'table',
+            database_name: 'app',
+            schema_name: 'public',
+            object_name: 'orders',
+            privilege: 'SELECT',
+            grantable: false,
+          },
+        ]);
+      return resolved([]);
+    }) as BunSqlClient;
+    client.connect = async () => client;
+    client.close = async () => undefined;
+    const adapter = new PostgresqlSecurityAdapter(
+      new PostgresqlConnectionAdapter({ sqlFactory: () => client }),
+    );
+    await expect(adapter.grants(context(), 'analyst')).resolves.toEqual([
+      {
+        principal: 'analyst',
+        scope: 'database',
+        ref: { database: 'app', name: 'app', type: 'database' },
+        privilege: 'CONNECT',
+        grantable: true,
+      },
+      {
+        principal: 'analyst',
+        scope: 'table',
+        ref: { database: 'app', schema: 'public', name: 'orders', type: 'table' },
+        privilege: 'SELECT',
+        grantable: false,
+      },
+    ]);
+  });
+
+  test('IT-0046-AC4 applies PostgreSQL changes in one transaction', async () => {
+    const statements: string[] = [];
+    const client = ((input: string | TemplateStringsArray, ...values: unknown[]) => {
+      const sql =
+        typeof input === 'string'
+          ? input
+          : input.raw.reduce((text, part, index) => text + part + (values[index] ?? ''), '');
+      statements.push(sql);
+      return resolved(sql.includes('pg_backend_pid') ? [{ backend_pid: 1 }] : []);
+    }) as BunSqlClient;
+    client.connect = async () => client;
+    client.close = async () => undefined;
+    const adapter = new PostgresqlSecurityAdapter(
+      new PostgresqlConnectionAdapter({ sqlFactory: () => client }),
+    );
+    const result = await adapter.apply(context(), [
+      {
+        action: 'grant',
+        principal: 'analyst',
+        scope: 'database',
+        ref: { database: 'app', name: 'app', type: 'database' },
+        privilege: 'CONNECT',
+      },
+    ]);
+    expect(result.statements[0]?.status).toBe('applied');
+    expect(statements).toEqual([
+      'SELECT pg_backend_pid() AS backend_pid',
+      'BEGIN',
+      'GRANT CONNECT ON DATABASE "app" TO "analyst"',
+      'COMMIT',
+    ]);
+  });
 });

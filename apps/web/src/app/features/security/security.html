@@ -135,6 +135,166 @@
             }
           </section>
         }
+        @if (selectedConnection(); as connection) {
+          @if (grantCapabilityEnabled(connection)) {
+            <section
+              class="rounded-xl border border-border bg-card p-5 sm:p-7"
+              aria-labelledby="grant-editor-title"
+            >
+              <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                    Provider privilege catalog
+                  </p>
+                  <h2 id="grant-editor-title" class="mt-2 text-2xl font-semibold">Grant matrix</h2>
+                  <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+                    Choices come from {{ engineLabel(connection) }}. MyAdmin never offers grant
+                    option, column privileges, or unsupported object types.
+                  </p>
+                </div>
+                <Badge variant="secondary">{{ grantChanges().length }} pending changes</Badge>
+              </div>
+              <div class="mt-6 grid gap-5 md:grid-cols-2">
+                <label class="grid gap-2 text-sm font-medium"
+                  >Principal<select
+                    class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    [value]="grantPrincipal()"
+                    (change)="setGrantPrincipal($any($event.target).value)"
+                  >
+                    @for (principal of principals(); track principal.name) {
+                      <option [value]="principal.name">{{ principal.name }}</option>
+                    }
+                  </select></label
+                ><label class="grid gap-2 text-sm font-medium"
+                  >Scope<select
+                    class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    [value]="grantScope()"
+                    (change)="setGrantScope($any($event.target).value)"
+                  >
+                    <option value="database">Database</option>
+                    <option value="table">Table</option>
+                  </select></label
+                ><label class="grid gap-2 text-sm font-medium"
+                  >Database<select
+                    class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    [value]="grantDatabase()"
+                    (change)="setGrantDatabase($any($event.target).value)"
+                  >
+                    <option value="">Choose a database</option>
+                    @for (database of databases(); track database.name) {
+                      <option [value]="database.name">{{ database.name }}</option>
+                    }
+                  </select></label
+                >
+                @if (grantScope() === 'table') {
+                  <label class="grid gap-2 text-sm font-medium"
+                    >Find table<input
+                      class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                      [value]="grantSearch()"
+                      (input)="setGrantSearch($any($event.target).value)"
+                      placeholder="Type at least 2 characters"
+                  /></label>
+                  <div class="md:col-span-2">
+                    @if (tableResults().length > 0) {
+                      <div class="flex flex-wrap gap-2" aria-label="Table search results">
+                        @for (
+                          result of tableResults();
+                          track result.database + result.schema + result.name
+                        ) {
+                          <button
+                            Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            (click)="selectGrantTable(result)"
+                          >
+                            {{ result.schema ? result.schema + '.' : '' }}{{ result.name }}
+                          </button>
+                        }
+                      </div>
+                    }
+                    @if (grantTable()) {
+                      <p class="mt-2 text-sm text-muted-foreground">
+                        Selected table: {{ grantObjectLabel() }}
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+              @if (grantPrincipal() && grantObjectLabel()) {
+                <fieldset class="mt-6 rounded-lg border border-border p-4">
+                  <legend class="px-2 text-sm font-semibold">Privileges</legend>
+                  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    @for (privilege of availablePrivileges(); track privilege.name) {
+                      <label
+                        class="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          [checked]="isSelectedPrivilege(privilege.name)"
+                          (change)="togglePrivilege(privilege.name, $any($event.target).checked)"
+                        /><span>{{ privilege.label }}</span>
+                      </label>
+                    }
+                  </div>
+                </fieldset>
+              }
+              @if (grantChanges().length > 0) {
+                <div class="mt-6 rounded-lg border border-border bg-muted/20 p-4">
+                  <h3 class="font-semibold">Change set</h3>
+                  <ul class="mt-3 space-y-2 text-sm">
+                    @for (change of grantChanges(); track change.action + change.privilege) {
+                      <li>
+                        <span class="font-medium">{{
+                          change.action === 'grant' ? 'Grant' : 'Revoke'
+                        }}</span>
+                        {{ change.privilege }} on {{ change.scope }} {{ grantObjectLabel() }} for
+                        {{ change.principal }}
+                      </li>
+                    }
+                  </ul>
+                  <label class="mt-4 flex items-start gap-3 text-sm">
+                    <input
+                      type="checkbox"
+                      [checked]="grantConfirmRevoke()"
+                      (change)="setGrantConfirmRevoke($any($event.target).checked)"
+                    /><span>
+                      I confirm every listed revoke for {{ grantPrincipal() }} on {{ grantScope() }}
+                      {{ grantObjectLabel() }}.
+                    </span>
+                  </label>
+                  <div class="mt-4 flex flex-wrap gap-3">
+                    <button
+                      Button
+                      type="button"
+                      variant="outline"
+                      [disabled]="busy()"
+                      (click)="previewGrants()"
+                    >
+                      Preview statements
+                    </button>
+                    <button
+                      Button
+                      type="button"
+                      [disabled]="
+                        busy() || !grantPreview() || (hasPendingRevoke() && !grantConfirmRevoke())
+                      "
+                      (click)="applyGrants()"
+                    >
+                      Apply changes
+                    </button>
+                  </div>
+                  @if (grantPreview(); as preview) {
+                    <pre
+                      class="mt-4 overflow-x-auto rounded-md bg-background p-3 text-xs"
+                      aria-label="Privilege statement preview"
+                      >{{ preview.statements | json }}</pre>
+                  }
+                </div>
+              }
+            </section>
+          }
+        }
         @if (editorOpen() && form(); as formDescription) {
           <section
             class="rounded-xl border border-border bg-card p-5 sm:p-7"

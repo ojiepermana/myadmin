@@ -639,9 +639,10 @@ Grant dan revoke level database dan table lewat matriks berpratinjau. Done when:
 
 - [x] Design it (spec): [0046](../specs/0046-database-security-privileges/index.md)
 - [ ] Build it: /develop database-security-privileges
-  - [ ] Introspeksi grant efektif plus katalog privilege plus kompilator di kedua provider (AC-1, AC-2)
-  - [ ] Endpoint preview apply dengan konfirmasi revoke plus audit plus gerbang (AC-3 sampai AC-6)
+  - [x] Introspeksi grant efektif plus katalog privilege plus kompilator di kedua provider (AC-1, AC-2)
+  - [x] Endpoint preview apply dengan konfirmasi revoke plus audit plus gerbang (AC-3 sampai AC-6)
   - [ ] UI matriks privilege plus e2e efek nyata (AC-3, AC-7)
+  - code in `packages/database-core/src/models/index.ts`, `packages/database-core/src/contracts/security.ts`, `packages/database-postgresql/src/security/`, `packages/database-mysql/src/security/`, `apps/server/src/security/`, `packages/api-contract/openapi/v1/`, `packages/sdk-angular/src/facades/security-client.ts`, and `apps/web/src/app/features/security/`
 - [ ] [Verify it](../specs/0046-database-security-privileges/verify.md): /check verify database-security-privileges
 - [ ] [Test it](../specs/0046-database-security-privileges/test.md): /test database-security-privileges
 

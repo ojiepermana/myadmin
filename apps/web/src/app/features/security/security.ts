@@ -1,12 +1,19 @@
+import { JsonPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
   ConnectionsClient,
+  ExplorerClient,
   SecurityClient,
   type Connection,
   type ConnectionStatus,
   type DatabasePrincipal,
   type PrincipalAttribute,
   type PrincipalForm,
+  type ExplorerDatabase,
+  type ExplorerSearchResult,
+  type SecurityGrant,
+  type SecurityGrantPreview,
+  type SecurityPrivilegeCatalog,
 } from '@myadmin/sdk-angular';
 import { BadgeComponent } from '@ojiepermana/angular/component/badge';
 import { ButtonComponent } from '@ojiepermana/angular/component/button';
@@ -26,6 +33,7 @@ type FieldValue = string | number | boolean | null;
 @Component({
   selector: 'app-security',
   imports: [
+    JsonPipe,
     BadgeComponent,
     ButtonComponent,
     CardComponent,
@@ -39,6 +47,7 @@ type FieldValue = string | number | boolean | null;
 })
 export class Security {
   private readonly connectionsClient = inject(ConnectionsClient);
+  private readonly explorerClient = inject(ExplorerClient);
   protected readonly client = inject(SecurityClient);
   protected readonly statuses = inject(ConnectionStatusStore);
   protected readonly connections = signal<Connection[]>([]);
@@ -63,6 +72,57 @@ export class Security {
       ? this.principals().filter((item) => item.name.toLowerCase().includes(query))
       : this.principals();
   });
+  protected readonly catalog = signal<SecurityPrivilegeCatalog | null>(null);
+  protected readonly grants = signal<SecurityGrant[]>([]);
+  protected readonly databases = signal<ExplorerDatabase[]>([]);
+  protected readonly tableResults = signal<ExplorerSearchResult[]>([]);
+  protected readonly grantPrincipal = signal('');
+  protected readonly grantScope = signal<'database' | 'table'>('database');
+  protected readonly grantDatabase = signal('');
+  protected readonly grantSchema = signal<string | null>(null);
+  protected readonly grantTable = signal('');
+  protected readonly grantPrivileges = signal<string[]>([]);
+  protected readonly grantSearch = signal('');
+  protected readonly grantPreview = signal<SecurityGrantPreview | null>(null);
+  protected readonly grantConfirmRevoke = signal(false);
+  protected readonly grantChanges = computed(() => {
+    const principal = this.grantPrincipal();
+    const database = this.grantDatabase();
+    const scope = this.grantScope();
+    const name = scope === 'database' ? database : this.grantTable();
+    if (!principal || !database || !name || (scope === 'table' && this.grantSchema() === undefined))
+      return [];
+    const ref = {
+      database,
+      ...(scope === 'table' ? { schema: this.grantSchema() } : {}),
+      name,
+      type: scope,
+    } as const;
+    const current = this.grants().filter(
+      (grant) =>
+        grant.principal === principal &&
+        grant.scope === scope &&
+        grant.ref.database === ref.database &&
+        (grant.ref.schema ?? null) === (ref.schema ?? null) &&
+        grant.ref.name === ref.name,
+    );
+    const currentNames = new Set(current.map((grant) => grant.privilege));
+    const selected = new Set(this.grantPrivileges());
+    const changes: Array<{
+      action: 'grant' | 'revoke';
+      principal: string;
+      scope: 'database' | 'table';
+      ref: typeof ref;
+      privilege: string;
+    }> = [];
+    for (const privilege of this.availablePrivileges()) {
+      if (selected.has(privilege.name) && !currentNames.has(privilege.name))
+        changes.push({ action: 'grant', principal, scope, ref, privilege: privilege.name });
+      if (!selected.has(privilege.name) && currentNames.has(privilege.name))
+        changes.push({ action: 'revoke', principal, scope, ref, privilege: privilege.name });
+    }
+    return changes;
+  });
 
   constructor() {
     void this.loadConnections();
@@ -84,6 +144,27 @@ export class Security {
       ? (this.statusFor(connection)?.capability?.reasons?.['principals'] ??
           'This connection does not expose principal management.')
       : 'Select a connection to begin.';
+  }
+  protected grantCapabilityEnabled(connection: Connection | null): boolean {
+    return connection
+      ? this.statusFor(connection)?.capability?.capabilities?.['grants'] === true
+      : false;
+  }
+  protected availablePrivileges(): SecurityPrivilegeCatalog['levels'][number]['privileges'] {
+    return (
+      this.catalog()?.levels.find((level) => level.scope === this.grantScope())?.privileges ?? []
+    );
+  }
+  protected isSelectedPrivilege(name: string): boolean {
+    return this.grantPrivileges().includes(name);
+  }
+  protected grantObjectLabel(): string {
+    return this.grantScope() === 'database'
+      ? this.grantDatabase()
+      : `${this.grantSchema() ?? ''}.${this.grantTable()}`;
+  }
+  protected hasPendingRevoke(): boolean {
+    return this.grantChanges().some((change) => change.action === 'revoke');
   }
   protected attribute(principal: DatabasePrincipal, key: string): FieldValue | undefined {
     return principal.attributes.find((item) => item.key === key)?.value;
@@ -115,6 +196,45 @@ export class Security {
   protected setConfirmName(value: string): void {
     this.confirmName.set(value);
   }
+  protected setGrantPrincipal(value: string): void {
+    this.grantPrincipal.set(value);
+    this.grantPreview.set(null);
+    void this.loadGrants(value);
+  }
+  protected setGrantScope(value: 'database' | 'table'): void {
+    this.grantScope.set(value);
+    this.grantPrivileges.set([]);
+    this.grantTable.set('');
+    this.grantSchema.set(value === 'table' ? null : null);
+    this.tableResults.set([]);
+    this.grantPreview.set(null);
+  }
+  protected setGrantDatabase(value: string): void {
+    this.grantDatabase.set(value);
+    this.grantPreview.set(null);
+  }
+  protected setGrantSearch(value: string): void {
+    this.grantSearch.set(value);
+    const connection = this.selectedConnection();
+    if (connection && this.grantScope() === 'table' && value.trim().length >= 2)
+      void this.searchTables(connection.id, value.trim());
+  }
+  protected selectGrantTable(result: ExplorerSearchResult): void {
+    this.grantDatabase.set(result.database);
+    this.grantSchema.set(result.schema ?? null);
+    this.grantTable.set(result.name);
+    this.grantSearch.set(result.name);
+    this.grantPreview.set(null);
+  }
+  protected togglePrivilege(name: string, checked: boolean): void {
+    this.grantPrivileges.update((current) =>
+      checked ? [...new Set([...current, name])] : current.filter((item) => item !== name),
+    );
+    this.grantPreview.set(null);
+  }
+  protected setGrantConfirmRevoke(value: boolean): void {
+    this.grantConfirmRevoke.set(value);
+  }
 
   protected async selectConnection(connection: Connection): Promise<void> {
     this.selectedConnection.set(connection);
@@ -123,6 +243,63 @@ export class Security {
     this.message.set(null);
     if (!this.capabilityEnabled(connection)) return;
     await this.loadSecurity(connection);
+  }
+
+  protected async previewGrants(): Promise<void> {
+    const connection = this.selectedConnection();
+    const changes = this.grantChanges();
+    if (!connection || !this.grantCapabilityEnabled(connection) || changes.length === 0) return;
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      this.grantPreview.set(
+        await firstValueFrom(
+          this.client.previewGrants({
+            connectionId: connection.id,
+            changeSet: { changes },
+          }),
+        ),
+      );
+    } catch (reason) {
+      this.error.set(this.messageFor(reason, 'The privilege change could not be previewed.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+  protected async applyGrants(): Promise<void> {
+    const connection = this.selectedConnection();
+    const changes = this.grantChanges();
+    if (
+      !connection ||
+      !this.grantCapabilityEnabled(connection) ||
+      changes.length === 0 ||
+      !this.grantPreview()
+    )
+      return;
+    if (this.hasPendingRevoke() && !this.grantConfirmRevoke()) return;
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      const result = await firstValueFrom(
+        this.client.applyGrants({
+          connectionId: connection.id,
+          changeSet: { changes, confirmRevoke: this.grantConfirmRevoke() },
+        }),
+      );
+      const failed = result.statements.filter((statement) => statement.status === 'failed');
+      this.message.set(
+        failed.length === 0
+          ? `${result.statements.length} privilege change(s) applied.`
+          : `${result.statements.length - failed.length} applied, ${failed.length} failed.`,
+      );
+      await this.loadGrants(this.grantPrincipal());
+      this.grantPreview.set(null);
+      this.grantConfirmRevoke.set(false);
+    } catch (reason) {
+      this.error.set(this.messageFor(reason, 'The privilege changes could not be applied.'));
+    } finally {
+      this.busy.set(false);
+    }
   }
   protected openCreate(): void {
     const form = this.form();
@@ -264,18 +441,50 @@ export class Security {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const [page, form] = await Promise.all([
+      const [page, form, catalog, databases] = await Promise.all([
         firstValueFrom(this.client.list(connection.id, { pageSize: 100 })),
         firstValueFrom(this.client.form(connection.id)),
+        firstValueFrom(this.client.privilegeCatalog(connection.id)),
+        firstValueFrom(this.explorerClient.listDatabases(connection.id, { pageSize: 200 })),
       ]);
       this.principals.set(page.items ?? []);
       this.form.set(form);
+      this.catalog.set(catalog);
+      this.databases.set(databases.items ?? []);
+      const principal = this.grantPrincipal() || page.items?.[0]?.name || '';
+      this.grantPrincipal.set(principal);
+      if (principal) await this.loadGrants(principal);
     } catch (reason) {
       this.principals.set([]);
       this.form.set(null);
       this.error.set(this.messageFor(reason, 'Principal data could not be loaded.'));
     } finally {
       this.loading.set(false);
+    }
+  }
+  private async loadGrants(principal: string): Promise<void> {
+    const connection = this.selectedConnection();
+    if (!connection || !principal || !this.grantCapabilityEnabled(connection)) return;
+    try {
+      const page = await firstValueFrom(this.client.grants(principal, connection.id));
+      this.grants.set(page.items ?? []);
+    } catch (reason) {
+      this.grants.set([]);
+      this.error.set(this.messageFor(reason, 'Privilege data could not be loaded.'));
+    }
+  }
+  private async searchTables(connectionId: string, query: string): Promise<void> {
+    try {
+      const page = await firstValueFrom(
+        this.explorerClient.searchObjects(connectionId, query, {
+          types: ['table'],
+          database: this.grantDatabase() || undefined,
+        }),
+      );
+      this.tableResults.set(page.items ?? []);
+    } catch (reason) {
+      this.tableResults.set([]);
+      this.error.set(this.messageFor(reason, 'Table search could not be completed.'));
     }
   }
   private messageFor(reason: unknown, fallback: string): string {

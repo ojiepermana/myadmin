@@ -1,5 +1,15 @@
 import type { ProviderContext } from './metadata';
-import type { Grant, Page, PageRequest, Principal, PrincipalAttribute } from '../models';
+import type {
+  GrantApplyResult,
+  GrantChange,
+  GrantEntry,
+  GrantPreview,
+  Page,
+  PageRequest,
+  Principal,
+  PrincipalAttribute,
+  PrivilegeCatalog,
+} from '../models';
 
 export type PrincipalFormFieldType = 'text' | 'password' | 'boolean' | 'number' | 'datetime';
 
@@ -37,7 +47,8 @@ export interface SecurityPort {
   alterPrincipal(context: ProviderContext, request: PrincipalMutation): Promise<void>;
   dropPrincipal(context: ProviderContext, name: string): Promise<void>;
   resetCredential(context: ProviderContext, request: PrincipalMutation): Promise<void>;
-  grants(context: ProviderContext, page?: PageRequest): Promise<Page<Grant>>;
-  grant(context: ProviderContext, grant: Grant): Promise<void>;
-  revoke(context: ProviderContext, grant: Grant): Promise<void>;
+  privilegeCatalog(context: ProviderContext): Promise<PrivilegeCatalog>;
+  grants(context: ProviderContext, principal: string): Promise<GrantEntry[]>;
+  preview(context: ProviderContext, changes: readonly GrantChange[]): Promise<GrantPreview>;
+  apply(context: ProviderContext, changes: readonly GrantChange[]): Promise<GrantApplyResult>;
 }

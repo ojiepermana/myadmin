@@ -1,12 +1,16 @@
 import { SESSION_COOKIE_NAME, type AuthService, type SessionValidation } from '@myadmin/auth';
 import {
   DbError,
+  type GrantChange,
+  type GrantScope,
+  type ObjectRef,
   type PrincipalAttribute,
   type PrincipalAttributeValue,
 } from '@myadmin/database-core';
 import type { AnyElysia } from 'elysia';
 import {
   SecurityServiceError,
+  type GrantSecurityChangeSet,
   type PrincipalSecurityInput,
   type PrincipalSecurityService,
 } from './security';
@@ -150,6 +154,88 @@ function changeInput(value: unknown): { changes: PrincipalAttribute[] } | undefi
   const changes = attributes(value['changes']);
   return changes === undefined ? undefined : { changes };
 }
+
+function grantScope(value: unknown): value is GrantScope {
+  return value === 'database' || value === 'table';
+}
+
+function objectRef(value: unknown): ObjectRef | undefined {
+  if (!record(value)) return undefined;
+  const allowed = ['database', 'schema', 'name', 'type'];
+  if (Object.keys(value).some((key) => !allowed.includes(key))) return undefined;
+  if (
+    typeof value['database'] !== 'string' ||
+    !value['database'] ||
+    typeof value['name'] !== 'string' ||
+    !value['name'] ||
+    !['database', 'table'].includes(String(value['type']))
+  )
+    return undefined;
+  if (
+    value['schema'] !== undefined &&
+    value['schema'] !== null &&
+    (typeof value['schema'] !== 'string' || !value['schema'])
+  )
+    return undefined;
+  return {
+    database: value['database'],
+    ...(value['schema'] === undefined ? {} : { schema: value['schema'] as string | null }),
+    name: value['name'],
+    type: value['type'] as 'database' | 'table',
+  };
+}
+
+function grantChanges(value: unknown): GrantChange[] | undefined {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 100) return undefined;
+  const result: GrantChange[] = [];
+  for (const item of value) {
+    if (
+      !record(item) ||
+      Object.keys(item).some(
+        (key) => !['action', 'principal', 'scope', 'ref', 'privilege'].includes(key),
+      )
+    )
+      return undefined;
+    const ref = objectRef(item['ref']);
+    if (
+      (item['action'] !== 'grant' && item['action'] !== 'revoke') ||
+      typeof item['principal'] !== 'string' ||
+      !item['principal'] ||
+      !grantScope(item['scope']) ||
+      !ref ||
+      ref.type !== item['scope'] ||
+      typeof item['privilege'] !== 'string' ||
+      !item['privilege']
+    )
+      return undefined;
+    result.push({
+      action: item['action'],
+      principal: item['principal'],
+      scope: item['scope'],
+      ref,
+      privilege: item['privilege'],
+    });
+  }
+  return result;
+}
+
+function grantChangeSet(value: unknown): GrantSecurityChangeSet | undefined {
+  if (
+    !record(value) ||
+    Object.keys(value).some((key) => !['changes', 'confirmRevoke'].includes(key))
+  )
+    return undefined;
+  const changes = grantChanges(value['changes']);
+  if (
+    !changes ||
+    (value['confirmRevoke'] !== undefined && typeof value['confirmRevoke'] !== 'boolean')
+  )
+    return undefined;
+  return {
+    changes,
+    ...(value['confirmRevoke'] === undefined ? {} : { confirmRevoke: value['confirmRevoke'] }),
+  };
+}
 function errorResponse(request: Request, error: unknown): Response {
   if (error instanceof SecurityServiceError)
     return apiError(request, error.status, error.code, error.message, error.details);
@@ -212,6 +298,60 @@ export function registerSecurityRoutes(
         return apiError(request, 422, 'VALIDATION_ERROR', 'connectionId is required.');
       return options.securityService
         .form(current.value.user, connectionId)
+        .then((value) => jsonResponse(value))
+        .catch((error) => errorResponse(request, error));
+    })
+    .get(path('/security/principals/:name/grants'), ({ request, params }) => {
+      const current = actor(request, options);
+      if (current instanceof Response) return current;
+      const connectionId = new URL(request.url).searchParams.get('connectionId');
+      if (!connectionId)
+        return apiError(request, 422, 'VALIDATION_ERROR', 'connectionId is required.');
+      return options.securityService
+        .grants(current.value.user, connectionId, String((params as { name: string }).name))
+        .then((value) => jsonResponse({ items: value, total: value.length }))
+        .catch((error) => errorResponse(request, error));
+    })
+    .get(path('/security/privileges/catalog'), ({ request }) => {
+      const current = actor(request, options);
+      if (current instanceof Response) return current;
+      const connectionId = new URL(request.url).searchParams.get('connectionId');
+      if (!connectionId)
+        return apiError(request, 422, 'VALIDATION_ERROR', 'connectionId is required.');
+      return options.securityService
+        .privilegeCatalog(current.value.user, connectionId)
+        .then((value) => jsonResponse(value))
+        .catch((error) => errorResponse(request, error));
+    })
+    .post(path('/security/grants/preview'), async ({ request }) => {
+      const current = actor(request, options);
+      if (current instanceof Response) return current;
+      if (!csrfAllowed(request))
+        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      const body = await request.json().catch(() => undefined);
+      const connectionId =
+        record(body) && typeof body['connectionId'] === 'string' ? body['connectionId'] : undefined;
+      const changeSet = record(body) ? grantChangeSet(body['changeSet']) : undefined;
+      if (!connectionId || !changeSet)
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The privilege change set is invalid.');
+      return options.securityService
+        .preview(current.value.user, connectionId, changeSet)
+        .then((value) => jsonResponse(value))
+        .catch((error) => errorResponse(request, error));
+    })
+    .post(path('/security/grants/apply'), async ({ request }) => {
+      const current = actor(request, options);
+      if (current instanceof Response) return current;
+      if (!csrfAllowed(request))
+        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      const body = await request.json().catch(() => undefined);
+      const connectionId =
+        record(body) && typeof body['connectionId'] === 'string' ? body['connectionId'] : undefined;
+      const changeSet = record(body) ? grantChangeSet(body['changeSet']) : undefined;
+      if (!connectionId || !changeSet)
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The privilege change set is invalid.');
+      return options.securityService
+        .apply(current.value.user, connectionId, changeSet)
         .then((value) => jsonResponse(value))
         .catch((error) => errorResponse(request, error));
     })

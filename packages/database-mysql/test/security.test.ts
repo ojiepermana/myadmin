@@ -89,4 +89,93 @@ describe('MySQL principal security adapter', () => {
     expect(statement).toContain('BY ?');
     expect(statement).toContain('new-secret');
   });
+
+  test('UT-0046-AC2 exposes database and table privileges from the provider', async () => {
+    const adapter = new MysqlSecurityAdapter(
+      new MysqlConnectionAdapter({ sqlFactory: () => clientFor([], []) }),
+    );
+    const catalog = await adapter.privilegeCatalog(context());
+    expect(catalog.levels.map((level) => level.scope)).toEqual(['database', 'table']);
+    expect(
+      catalog.levels.find((level) => level.scope === 'table')?.privileges.map((item) => item.name),
+    ).toEqual([
+      'SELECT',
+      'INSERT',
+      'UPDATE',
+      'DELETE',
+      'CREATE',
+      'DROP',
+      'ALTER',
+      'INDEX',
+      'REFERENCES',
+      'CREATE VIEW',
+      'SHOW VIEW',
+      'TRIGGER',
+    ]);
+  });
+
+  test('IT-0046-AC1 parses SHOW GRANTS into normalized effective entries', async () => {
+    const adapter = new MysqlSecurityAdapter(
+      new MysqlConnectionAdapter({
+        sqlFactory: () =>
+          clientFor(
+            [
+              {
+                'Grants for analyst@%':
+                  "GRANT SELECT, INSERT ON `app`.`orders` TO 'analyst'@'%' WITH GRANT OPTION",
+              },
+            ],
+            [],
+          ),
+      }),
+    );
+    await expect(adapter.grants(context(), 'analyst@%')).resolves.toEqual([
+      {
+        principal: 'analyst@%',
+        scope: 'table',
+        ref: { database: 'app', name: 'orders', type: 'table' },
+        privilege: 'SELECT',
+        grantable: true,
+      },
+      {
+        principal: 'analyst@%',
+        scope: 'table',
+        ref: { database: 'app', name: 'orders', type: 'table' },
+        privilege: 'INSERT',
+        grantable: true,
+      },
+    ]);
+  });
+
+  test('IT-0046-AC4 reports each MySQL statement independently', async () => {
+    const statements: string[] = [];
+    const adapter = new MysqlSecurityAdapter(
+      new MysqlConnectionAdapter({ sqlFactory: () => clientFor([], statements) }),
+    );
+    const result = await adapter.apply(context(), [
+      {
+        action: 'grant',
+        principal: 'analyst@%',
+        scope: 'table',
+        ref: { database: 'app', name: 'orders', type: 'table' },
+        privilege: 'SELECT',
+      },
+      {
+        action: 'revoke',
+        principal: 'analyst@%',
+        scope: 'table',
+        ref: { database: 'app', name: 'orders', type: 'table' },
+        privilege: 'INSERT',
+      },
+    ]);
+    expect(result.statements.every((item) => item.status === 'applied')).toBe(true);
+    expect(
+      statements.some((item) => item.includes("GRANT SELECT ON `app`.`orders` TO 'analyst'@'%'")),
+    ).toBe(true);
+    expect(
+      statements.some((item) =>
+        item.includes("REVOKE INSERT ON `app`.`orders` FROM 'analyst'@'%'"),
+      ),
+    ).toBe(true);
+  });
 });

@@ -1,14 +1,19 @@
 import {
   DbError,
-  unsupportedError,
   type ConnectionContext,
   type ConnectionHandle,
+  type GrantApplyResult,
+  type GrantChange,
+  type GrantEntry,
+  type GrantPreview,
+  type GrantScope,
   type Page,
   type Principal,
   type PrincipalAttribute,
   type PrincipalFormDescription,
   type PrincipalMutation,
   type PrincipalPageRequest,
+  type PrivilegeCatalog,
   type ProviderContext,
   type SecurityPort,
 } from '@myadmin/database-core';
@@ -17,6 +22,42 @@ import type { MysqlConnectionAdapter } from '../driver/mysql-connection';
 const MAX_PAGE_SIZE = 500;
 const DEFAULT_PAGE_SIZE = 100;
 const ATTRIBUTE_KEYS = new Set(['host', 'authPlugin', 'accountLocked', 'passwordExpired']);
+const PRIVILEGES = {
+  database: [
+    'SELECT',
+    'INSERT',
+    'UPDATE',
+    'DELETE',
+    'CREATE',
+    'DROP',
+    'ALTER',
+    'INDEX',
+    'REFERENCES',
+    'CREATE TEMPORARY TABLES',
+    'LOCK TABLES',
+    'EXECUTE',
+    'CREATE VIEW',
+    'SHOW VIEW',
+    'CREATE ROUTINE',
+    'ALTER ROUTINE',
+    'EVENT',
+    'TRIGGER',
+  ],
+  table: [
+    'SELECT',
+    'INSERT',
+    'UPDATE',
+    'DELETE',
+    'CREATE',
+    'DROP',
+    'ALTER',
+    'INDEX',
+    'REFERENCES',
+    'CREATE VIEW',
+    'SHOW VIEW',
+    'TRIGGER',
+  ],
+} as const;
 type Row = Record<string, unknown>;
 
 function rowsOf(value: unknown): Row[] {
@@ -77,7 +118,119 @@ function principalFromRow(row: Row): Principal {
 function sqlString(value: string): string {
   if (value.includes('\u0000'))
     throw new DbError({ category: 'syntax_error', message: 'MySQL principal value is invalid' });
-  return `'${value.replaceAll("'", "''")}'`;
+  return `'${value.replaceAll('\\', '\\\\').replaceAll("'", "''")}'`;
+}
+
+function identifier(value: string): string {
+  if (!value || value.includes('\u0000'))
+    throw new DbError({ category: 'syntax_error', message: 'MySQL object identifier is invalid' });
+  return `\`${value.replaceAll('`', '``')}\``;
+}
+
+function label(value: string): string {
+  return value
+    .toLowerCase()
+    .replaceAll('_', ' ')
+    .replace(/^./, (item) => item.toUpperCase());
+}
+
+function catalog(): PrivilegeCatalog {
+  return {
+    engine: 'mysql',
+    levels: (Object.entries(PRIVILEGES) as Array<[GrantScope, readonly string[]]>).map(
+      ([scope, privileges]) => ({
+        scope,
+        privileges: privileges.map((name) => ({ name, label: label(name) })),
+      }),
+    ),
+  };
+}
+
+function grantScope(value: unknown): value is GrantScope {
+  return value === 'database' || value === 'table';
+}
+
+function validateChange(change: GrantChange): void {
+  if (!grantScope(change.scope) || !change.principal.trim() || !change.privilege.trim())
+    throw new DbError({ category: 'syntax_error', message: 'MySQL grant change is invalid' });
+  if (!(PRIVILEGES[change.scope] as readonly string[]).includes(change.privilege))
+    throw new DbError({
+      category: 'syntax_error',
+      message: `MySQL privilege ${change.privilege} is not available for ${change.scope}`,
+    });
+  if (
+    change.scope === 'database' &&
+    (change.ref.type !== 'database' || change.ref.database !== change.ref.name)
+  )
+    throw new DbError({ category: 'syntax_error', message: 'MySQL database reference is invalid' });
+  if (
+    change.scope === 'table' &&
+    (change.ref.type !== 'table' ||
+      change.ref.database.length === 0 ||
+      change.ref.name.length === 0)
+  )
+    throw new DbError({ category: 'syntax_error', message: 'MySQL table reference is invalid' });
+}
+
+function accountName(principal: string): { user: string; host: string } {
+  const at = principal.lastIndexOf('@');
+  if (at < 1 || at === principal.length - 1)
+    throw new DbError({ category: 'syntax_error', message: 'MySQL principal must be user@host' });
+  return { user: principal.slice(0, at), host: principal.slice(at + 1) };
+}
+
+function compileGrant(change: GrantChange): GrantPreview['statements'][number] {
+  validateChange(change);
+  const { user, host } = accountName(change.principal);
+  const object =
+    change.scope === 'database'
+      ? `${identifier(change.ref.database)}.*`
+      : `${identifier(change.ref.database)}.${identifier(change.ref.name)}`;
+  return {
+    ...change,
+    statement: `${change.action === 'grant' ? 'GRANT' : 'REVOKE'} ${change.privilege} ON ${object} ${change.action === 'grant' ? 'TO' : 'FROM'} ${sqlString(user)}@${sqlString(host)}`,
+  };
+}
+
+function unquoteIdentifier(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('`') || !trimmed.endsWith('`')) return undefined;
+  return trimmed.slice(1, -1).replaceAll('``', '`');
+}
+
+function grantRows(row: Row, principal: string): GrantEntry[] {
+  const statement = Object.values(row).find((value): value is string => typeof value === 'string');
+  if (!statement) return [];
+  const match = /^GRANT\s+(.+?)\s+ON\s+(.+?)\s+TO\s+.+?(?:\s+WITH\s+GRANT OPTION)?\s*$/i.exec(
+    statement,
+  );
+  if (!match) return [];
+  const rawPrivileges = match[1]?.trim();
+  const object = match[2]?.trim();
+  if (!rawPrivileges || !object || rawPrivileges.toUpperCase() === 'USAGE') return [];
+  const [databaseToken, tableToken] = object.split('.', 2);
+  const database = databaseToken ? unquoteIdentifier(databaseToken) : undefined;
+  if (!database) return [];
+  const table =
+    tableToken === '*' ? undefined : tableToken ? unquoteIdentifier(tableToken) : undefined;
+  const scope: GrantScope = table ? 'table' : 'database';
+  const allowed = PRIVILEGES[scope] as readonly string[];
+  const names =
+    rawPrivileges.toUpperCase() === 'ALL PRIVILEGES'
+      ? [...allowed]
+      : rawPrivileges.split(',').map((value) => value.trim().toUpperCase());
+  const grantable = /\sWITH\s+GRANT OPTION\s*$/i.test(statement);
+  return names
+    .filter((privilege) => allowed.includes(privilege))
+    .map((privilege) => ({
+      principal,
+      scope,
+      ref: table
+        ? { database, name: table, type: 'table' as const }
+        : { database, name: database, type: 'database' as const },
+      privilege,
+      grantable,
+    }));
 }
 function account(request: PrincipalMutation): { user: string; host: string } {
   const principal = request.principal;
@@ -246,20 +399,55 @@ export class MysqlSecurityAdapter implements SecurityPort {
       ),
     );
   }
-  public grants(): Promise<Page<never>> {
-    return Promise.reject(
-      unsupportedError('Grant administration is not implemented in this security slice'),
-    );
+  public async privilegeCatalog(context: ProviderContext): Promise<PrivilegeCatalog> {
+    void context;
+    return catalog();
   }
-  public grant(): Promise<void> {
-    return Promise.reject(
-      unsupportedError('Grant administration is not implemented in this security slice'),
+
+  public async grants(context: ProviderContext, principal: string): Promise<GrantEntry[]> {
+    const { user, host } = accountName(principal);
+    const rows = await this.withHandle(context, (handle) =>
+      this.connection.execute<Row>(handle, `SHOW GRANTS FOR ${sqlString(user)}@${sqlString(host)}`),
     );
+    return rows.flatMap((row) => grantRows(row, principal));
   }
-  public revoke(): Promise<void> {
-    return Promise.reject(
-      unsupportedError('Grant administration is not implemented in this security slice'),
-    );
+
+  public async preview(
+    context: ProviderContext,
+    changes: readonly GrantChange[],
+  ): Promise<GrantPreview> {
+    void context;
+    return { statements: changes.map(compileGrant) };
+  }
+
+  public async apply(
+    context: ProviderContext,
+    changes: readonly GrantChange[],
+  ): Promise<GrantApplyResult> {
+    const statements = changes.map(compileGrant);
+    return this.withHandle(context, async (handle) => {
+      const result: GrantApplyResult['statements'] = [];
+      for (const statement of statements) {
+        try {
+          await this.connection.execute(handle, statement.statement);
+          result.push({ ...statement, status: 'applied' });
+        } catch (error) {
+          const failure =
+            error instanceof DbError
+              ? error
+              : new DbError({ category: 'internal', message: String(error) });
+          result.push({
+            ...statement,
+            status: 'failed',
+            error: {
+              code: failure.category,
+              message: `Operation ${statement.statement} failed: ${failure.message}`,
+            },
+          });
+        }
+      }
+      return { statements: result };
+    });
   }
   private async withHandle<T>(
     context: ProviderContext,

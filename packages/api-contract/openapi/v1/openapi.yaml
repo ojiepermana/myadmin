@@ -121,6 +121,14 @@ paths:
     $ref: ./paths/security-principal.yaml
   /security/principals/{name}/reset-password:
     $ref: ./paths/security-principal-reset.yaml
+  /security/principals/{name}/grants:
+    $ref: ./paths/security-principal-grants.yaml
+  /security/privileges/catalog:
+    $ref: ./paths/security-privilege-catalog.yaml
+  /security/grants/preview:
+    $ref: ./paths/security-grants.yaml
+  /security/grants/apply:
+    $ref: ./paths/security-grants-apply.yaml
   /query/history:
     $ref: ./paths/query-history.yaml
   /query/history/{id}:
@@ -271,6 +279,34 @@ components:
       $ref: ./components/schemas/security.yaml#/PrincipalResetPasswordRequest
     PrincipalDropRequest:
       $ref: ./components/schemas/security.yaml#/PrincipalDropRequest
+    GrantScope:
+      $ref: ./components/schemas/security.yaml#/GrantScope
+    GrantObjectRef:
+      $ref: ./components/schemas/security.yaml#/GrantObjectRef
+    GrantEntry:
+      $ref: ./components/schemas/security.yaml#/GrantEntry
+    GrantPage:
+      $ref: ./components/schemas/security.yaml#/GrantPage
+    PrivilegeDefinition:
+      $ref: ./components/schemas/security.yaml#/PrivilegeDefinition
+    PrivilegeCatalogLevel:
+      $ref: ./components/schemas/security.yaml#/PrivilegeCatalogLevel
+    PrivilegeCatalog:
+      $ref: ./components/schemas/security.yaml#/PrivilegeCatalog
+    GrantChange:
+      $ref: ./components/schemas/security.yaml#/GrantChange
+    GrantChangeSet:
+      $ref: ./components/schemas/security.yaml#/GrantChangeSet
+    GrantRequest:
+      $ref: ./components/schemas/security.yaml#/GrantRequest
+    GrantStatement:
+      $ref: ./components/schemas/security.yaml#/GrantStatement
+    GrantPreview:
+      $ref: ./components/schemas/security.yaml#/GrantPreview
+    GrantApplyStatement:
+      $ref: ./components/schemas/security.yaml#/GrantApplyStatement
+    GrantApplyResult:
+      $ref: ./components/schemas/security.yaml#/GrantApplyResult
     ConnectionPage:
       $ref: ./components/schemas/connection.yaml#/ConnectionPage
     ServerGroupInput:

@@ -90,6 +90,61 @@ export interface Grant {
   grantable?: boolean;
 }
 
+export type GrantScope = 'database' | 'table';
+
+export interface GrantEntry {
+  principal: string;
+  scope: GrantScope;
+  ref: ObjectRef;
+  privilege: string;
+  grantable: boolean;
+}
+
+export interface PrivilegeDefinition {
+  name: string;
+  label: string;
+}
+
+export interface PrivilegeCatalogLevel {
+  scope: GrantScope;
+  privileges: PrivilegeDefinition[];
+}
+
+export interface PrivilegeCatalog {
+  engine: DatabaseEngine;
+  levels: PrivilegeCatalogLevel[];
+}
+
+export interface GrantChange {
+  action: 'grant' | 'revoke';
+  principal: string;
+  scope: GrantScope;
+  ref: ObjectRef;
+  privilege: string;
+}
+
+export interface GrantStatement {
+  action: GrantChange['action'];
+  principal: string;
+  scope: GrantScope;
+  ref: ObjectRef;
+  privilege: string;
+  statement: string;
+}
+
+export interface GrantPreview {
+  statements: GrantStatement[];
+}
+
+export interface GrantApplyStatement extends GrantStatement {
+  status: 'applied' | 'failed';
+  error?: { code: string; message: string };
+}
+
+export interface GrantApplyResult {
+  statements: GrantApplyStatement[];
+}
+
 export interface DatabaseDefinition {
   name: string;
   owner?: string;

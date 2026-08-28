@@ -1,14 +1,19 @@
 import {
   DbError,
-  unsupportedError,
   type ConnectionContext,
   type ConnectionHandle,
+  type GrantApplyResult,
+  type GrantChange,
+  type GrantEntry,
+  type GrantPreview,
+  type GrantScope,
   type Page,
   type Principal,
   type PrincipalAttribute,
   type PrincipalFormDescription,
   type PrincipalMutation,
   type PrincipalPageRequest,
+  type PrivilegeCatalog,
   type ProviderContext,
   type SecurityPort,
 } from '@myadmin/database-core';
@@ -25,6 +30,10 @@ const ATTRIBUTE_KEYS = new Set([
   'connectionLimit',
   'validUntil',
 ]);
+const PRIVILEGES = {
+  database: ['CONNECT', 'CREATE', 'TEMP'],
+  table: ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'],
+} as const;
 
 type Row = Record<string, unknown>;
 
@@ -182,6 +191,92 @@ function isHandle(value: ProviderContext): value is ConnectionHandle {
   return 'id' in value && 'openedAt' in value;
 }
 
+function label(value: string): string {
+  return value
+    .toLowerCase()
+    .replaceAll('_', ' ')
+    .replace(/^./, (item) => item.toUpperCase());
+}
+
+function catalog(): PrivilegeCatalog {
+  return {
+    engine: 'postgresql',
+    levels: (Object.entries(PRIVILEGES) as Array<[GrantScope, readonly string[]]>).map(
+      ([scope, privileges]) => ({
+        scope,
+        privileges: privileges.map((name) => ({ name, label: label(name) })),
+      }),
+    ),
+  };
+}
+
+function grantScope(value: unknown): value is GrantScope {
+  return value === 'database' || value === 'table';
+}
+
+function validateChange(change: GrantChange): void {
+  if (!grantScope(change.scope) || !change.principal.trim() || !change.privilege.trim()) {
+    throw new DbError({ category: 'syntax_error', message: 'PostgreSQL grant change is invalid' });
+  }
+  const allowed = PRIVILEGES[change.scope] as readonly string[];
+  if (!allowed.includes(change.privilege)) {
+    throw new DbError({
+      category: 'syntax_error',
+      message: `PostgreSQL privilege ${change.privilege} is not available for ${change.scope}`,
+    });
+  }
+  if (change.scope === 'database') {
+    if (change.ref.type !== 'database' || change.ref.name !== change.ref.database)
+      throw new DbError({
+        category: 'syntax_error',
+        message: 'PostgreSQL database reference is invalid',
+      });
+  } else if (
+    change.ref.type !== 'table' ||
+    !change.ref.schema ||
+    change.ref.name.length === 0 ||
+    change.ref.database.length === 0
+  ) {
+    throw new DbError({
+      category: 'syntax_error',
+      message: 'PostgreSQL table reference is invalid',
+    });
+  }
+}
+
+function compileGrant(change: GrantChange): GrantPreview['statements'][number] {
+  validateChange(change);
+  const object =
+    change.scope === 'database'
+      ? `DATABASE ${quotePostgresqlIdentifier(change.ref.database)}`
+      : `TABLE ${quotePostgresqlIdentifier(change.ref.schema!)}.${quotePostgresqlIdentifier(change.ref.name)}`;
+  const statement = `${change.action === 'grant' ? 'GRANT' : 'REVOKE'} ${change.privilege} ON ${object} ${change.action === 'grant' ? 'TO' : 'FROM'} ${quotePostgresqlIdentifier(change.principal)}`;
+  return { ...change, statement };
+}
+
+function grantFromRow(row: Row, principal: string): GrantEntry | undefined {
+  const scope = row['scope'];
+  const privilege = stringValue(row['privilege']);
+  const database = stringValue(row['database_name']);
+  const schema = stringValue(row['schema_name']);
+  const name = stringValue(row['object_name']);
+  if (!grantScope(scope) || !privilege || !database || !name) return undefined;
+  const ref =
+    scope === 'database'
+      ? { database, name, type: 'database' as const }
+      : schema
+        ? { database, schema, name, type: 'table' as const }
+        : undefined;
+  if (!ref) return undefined;
+  return {
+    principal,
+    scope,
+    ref,
+    privilege,
+    grantable: booleanValue(row['grantable']) ?? false,
+  };
+}
+
 /** PostgreSQL role administration with catalog mapping and quoted identifiers. */
 export class PostgresqlSecurityAdapter implements SecurityPort {
   public constructor(private readonly connection: PostgresqlConnectionAdapter) {}
@@ -291,20 +386,97 @@ export class PostgresqlSecurityAdapter implements SecurityPort {
     );
   }
 
-  public grants(): Promise<Page<never>> {
-    return Promise.reject(
-      unsupportedError('Grant administration is not implemented in this security slice'),
-    );
+  public async privilegeCatalog(context: ProviderContext): Promise<PrivilegeCatalog> {
+    void context;
+    return catalog();
   }
-  public grant(): Promise<void> {
-    return Promise.reject(
-      unsupportedError('Grant administration is not implemented in this security slice'),
-    );
+
+  public async grants(context: ProviderContext, principal: string): Promise<GrantEntry[]> {
+    if (!principal.trim() || principal.includes('\u0000'))
+      throw new DbError({ category: 'syntax_error', message: 'PostgreSQL principal is invalid' });
+    const sql = `WITH RECURSIVE effective_roles(oid) AS (
+                     SELECT oid FROM pg_roles WHERE rolname = ?
+                     UNION
+                     SELECT membership.roleid
+                       FROM pg_auth_members membership
+                       JOIN effective_roles ON effective_roles.oid = membership.member
+                   )
+                 SELECT 'database' AS scope, d.datname AS database_name, NULL AS schema_name,
+                        d.datname AS object_name, acl.privilege_type AS privilege,
+                        acl.is_grantable AS grantable
+                   FROM pg_database d
+                   CROSS JOIN LATERAL aclexplode(COALESCE(d.datacl, acldefault('d', d.datdba))) acl
+                  WHERE acl.grantee = 0 OR acl.grantee IN (SELECT oid FROM effective_roles)
+                  UNION ALL
+                 SELECT 'table' AS scope, current_database() AS database_name,
+                        n.nspname AS schema_name, c.relname AS object_name,
+                        acl.privilege_type AS privilege, acl.is_grantable AS grantable
+                   FROM pg_class c
+                   JOIN pg_namespace n ON n.oid = c.relnamespace
+                   CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl, acldefault('r', c.relowner))) acl
+                  WHERE c.relkind IN ('r', 'p')
+                    AND (acl.grantee = 0 OR acl.grantee IN (SELECT oid FROM effective_roles))
+                  ORDER BY scope, database_name, schema_name NULLS FIRST, object_name, privilege`;
+    const rows = await this.withHandle(context, (handle) =>
+      this.connection.executeParameterized<Row[]>(handle, sql.split('?'), [principal]),
+    ).then(rowsOf);
+    return rows
+      .map((row) => grantFromRow(row, principal))
+      .filter((value): value is GrantEntry => value !== undefined);
   }
-  public revoke(): Promise<void> {
-    return Promise.reject(
-      unsupportedError('Grant administration is not implemented in this security slice'),
-    );
+
+  public async preview(
+    context: ProviderContext,
+    changes: readonly GrantChange[],
+  ): Promise<GrantPreview> {
+    void context;
+    return { statements: changes.map(compileGrant) };
+  }
+
+  public async apply(
+    context: ProviderContext,
+    changes: readonly GrantChange[],
+  ): Promise<GrantApplyResult> {
+    const statements = changes.map(compileGrant);
+    return this.withHandle(context, async (handle) => {
+      const result: GrantApplyResult['statements'] = [];
+      let transactionStarted = false;
+      try {
+        await this.connection.execute(handle, 'BEGIN');
+        transactionStarted = true;
+        for (const statement of statements) {
+          try {
+            await this.connection.execute(handle, statement.statement);
+            result.push({ ...statement, status: 'applied' });
+          } catch (error) {
+            const failure =
+              error instanceof DbError
+                ? error
+                : new DbError({ category: 'internal', message: String(error) });
+            throw failure;
+          }
+        }
+        await this.connection.execute(handle, 'COMMIT');
+        return { statements: result };
+      } catch (error) {
+        if (transactionStarted)
+          await this.connection.execute(handle, 'ROLLBACK').catch(() => undefined);
+        const failure =
+          error instanceof DbError
+            ? error
+            : new DbError({ category: 'internal', message: String(error) });
+        return {
+          statements: statements.map((statement) => ({
+            ...statement,
+            status: 'failed',
+            error: {
+              code: failure.category,
+              message: `Operation ${statement.statement} failed: ${failure.message}`,
+            },
+          })),
+        };
+      }
+    });
   }
 
   private async withHandle<T>(

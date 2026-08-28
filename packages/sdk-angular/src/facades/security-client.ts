@@ -11,6 +11,12 @@ export type PrincipalPage =
 export type PrincipalCreateRequest = components['schemas']['PrincipalCreateRequest'];
 export type PrincipalChangeRequest = components['schemas']['PrincipalChangeRequest'];
 export type PrincipalResetPasswordRequest = components['schemas']['PrincipalResetPasswordRequest'];
+export type SecurityGrant = components['schemas']['GrantEntry'];
+export type SecurityGrantPage = components['schemas']['GrantPage'];
+export type SecurityPrivilegeCatalog = components['schemas']['PrivilegeCatalog'];
+export type SecurityGrantRequest = components['schemas']['GrantRequest'];
+export type SecurityGrantPreview = components['schemas']['GrantPreview'];
+export type SecurityGrantApplyResult = components['schemas']['GrantApplyResult'];
 
 /** Typed Angular facade for provider declared database principal administration. */
 export class SecurityClient {
@@ -73,6 +79,40 @@ export class SecurityClient {
       method: 'DELETE',
       path: `/security/principals/${encodeURIComponent(name)}?connectionId=${encodeURIComponent(connectionId)}`,
       body: { confirmName },
+      requiresSession: true,
+    });
+  }
+
+  public grants(name: string, connectionId: string): Observable<SecurityGrantPage> {
+    return this.transport.request<SecurityGrantPage>({
+      method: 'GET',
+      path: `/security/principals/${encodeURIComponent(name)}/grants?connectionId=${encodeURIComponent(connectionId)}`,
+      requiresSession: true,
+    });
+  }
+
+  public privilegeCatalog(connectionId: string): Observable<SecurityPrivilegeCatalog> {
+    return this.transport.request<SecurityPrivilegeCatalog>({
+      method: 'GET',
+      path: `/security/privileges/catalog?connectionId=${encodeURIComponent(connectionId)}`,
+      requiresSession: true,
+    });
+  }
+
+  public previewGrants(request: SecurityGrantRequest): Observable<SecurityGrantPreview> {
+    return this.transport.request<SecurityGrantPreview>({
+      method: 'POST',
+      path: '/security/grants/preview',
+      body: request,
+      requiresSession: true,
+    });
+  }
+
+  public applyGrants(request: SecurityGrantRequest): Observable<SecurityGrantApplyResult> {
+    return this.transport.request<SecurityGrantApplyResult>({
+      method: 'POST',
+      path: '/security/grants/apply',
+      body: request,
       requiresSession: true,
     });
   }

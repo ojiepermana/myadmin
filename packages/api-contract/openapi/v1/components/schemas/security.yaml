@@ -110,3 +110,147 @@ PrincipalDropRequest:
   required: [confirmName]
   properties:
     confirmName: { type: string, minLength: 1 }
+
+GrantScope:
+  type: string
+  enum: [database, table]
+
+GrantObjectRef:
+  type: object
+  additionalProperties: false
+  required: [database, name, type]
+  properties:
+    database: { type: string, minLength: 1 }
+    schema: { type: [string, 'null'], minLength: 1 }
+    name: { type: string, minLength: 1 }
+    type: { type: string, enum: [database, table] }
+
+GrantEntry:
+  type: object
+  additionalProperties: false
+  required: [principal, scope, ref, privilege, grantable]
+  properties:
+    principal: { type: string, minLength: 1 }
+    scope: { $ref: '#/GrantScope' }
+    ref: { $ref: '#/GrantObjectRef' }
+    privilege: { type: string, minLength: 1 }
+    grantable: { type: boolean }
+
+GrantPage:
+  type: object
+  additionalProperties: false
+  required: [items, total]
+  properties:
+    items:
+      type: array
+      items: { $ref: '#/GrantEntry' }
+    total: { type: integer, minimum: 0 }
+
+PrivilegeDefinition:
+  type: object
+  additionalProperties: false
+  required: [name, label]
+  properties:
+    name: { type: string, minLength: 1 }
+    label: { type: string, minLength: 1 }
+
+PrivilegeCatalogLevel:
+  type: object
+  additionalProperties: false
+  required: [scope, privileges]
+  properties:
+    scope: { $ref: '#/GrantScope' }
+    privileges:
+      type: array
+      items: { $ref: '#/PrivilegeDefinition' }
+
+PrivilegeCatalog:
+  type: object
+  additionalProperties: false
+  required: [engine, levels]
+  properties:
+    engine: { type: string, enum: [postgresql, mysql] }
+    levels:
+      type: array
+      items: { $ref: '#/PrivilegeCatalogLevel' }
+
+GrantChange:
+  type: object
+  additionalProperties: false
+  required: [action, principal, scope, ref, privilege]
+  properties:
+    action: { type: string, enum: [grant, revoke] }
+    principal: { type: string, minLength: 1 }
+    scope: { $ref: '#/GrantScope' }
+    ref: { $ref: '#/GrantObjectRef' }
+    privilege: { type: string, minLength: 1 }
+
+GrantChangeSet:
+  type: object
+  additionalProperties: false
+  required: [changes]
+  properties:
+    changes:
+      type: array
+      minItems: 1
+      maxItems: 100
+      items: { $ref: '#/GrantChange' }
+    confirmRevoke: { type: boolean }
+
+GrantRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, changeSet]
+  properties:
+    connectionId: { type: string, minLength: 1 }
+    changeSet: { $ref: '#/GrantChangeSet' }
+
+GrantStatement:
+  type: object
+  additionalProperties: false
+  required: [action, principal, scope, ref, privilege, statement]
+  properties:
+    action: { type: string, enum: [grant, revoke] }
+    principal: { type: string, minLength: 1 }
+    scope: { $ref: '#/GrantScope' }
+    ref: { $ref: '#/GrantObjectRef' }
+    privilege: { type: string, minLength: 1 }
+    statement: { type: string, minLength: 1 }
+
+GrantPreview:
+  type: object
+  additionalProperties: false
+  required: [statements]
+  properties:
+    statements:
+      type: array
+      items: { $ref: '#/GrantStatement' }
+
+GrantApplyStatement:
+  type: object
+  additionalProperties: false
+  required: [action, principal, scope, ref, privilege, statement, status]
+  properties:
+    action: { type: string, enum: [grant, revoke] }
+    principal: { type: string, minLength: 1 }
+    scope: { $ref: '#/GrantScope' }
+    ref: { $ref: '#/GrantObjectRef' }
+    privilege: { type: string, minLength: 1 }
+    statement: { type: string, minLength: 1 }
+    status: { type: string, enum: [applied, failed] }
+    error:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code: { type: string, minLength: 1 }
+        message: { type: string, minLength: 1 }
+
+GrantApplyResult:
+  type: object
+  additionalProperties: false
+  required: [statements]
+  properties:
+    statements:
+      type: array
+      items: { $ref: '#/GrantApplyStatement' }
