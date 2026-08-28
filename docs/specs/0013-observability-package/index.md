@@ -1,7 +1,7 @@
 # 0013. Package observability
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -87,12 +87,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Bangun logger inti (level, JSON lines, modul, penulis stdout plus file dengan rotasi), memenuhi **AC-1**, **AC-7**.
-2. Bangun correlation (AsyncLocalStorage, generator UUIDv7) dan middleware transport yang memasangnya, memenuhi **AC-2**.
-3. Pasang redaction wajib pada fungsi tulis, memenuhi **AC-4**.
-4. Bangun error handler transport tunggal yang memancarkan `ApiError` 500 generik plus log stack tersensor, memenuhi **AC-3**, **AC-5**.
-5. Bangun metric counter dasar, memenuhi **AC-6**.
-6. Tambahkan aturan lint larangan console langsung; unit test seluruh AC.
+1. [x] Bangun logger inti (level, JSON lines, modul, penulis stdout plus file dengan rotasi), memenuhi **AC-1**, **AC-7**.
+2. [x] Bangun correlation (AsyncLocalStorage, generator UUIDv7) dan middleware transport yang memasangnya, memenuhi **AC-2**.
+3. [x] Pasang redaction wajib pada fungsi tulis, memenuhi **AC-4**.
+4. [x] Bangun error handler transport tunggal yang memancarkan `ApiError` 500 generik plus log stack tersensor, memenuhi **AC-3**, **AC-5**.
+5. [x] Bangun metric counter dasar, memenuhi **AC-6**.
+6. [x] Tambahkan aturan lint larangan console langsung; unit test seluruh AC.
 
 ## Consequences
 

@@ -23,4 +23,10 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['apps/server/src/**/*.ts', 'packages/*/src/**/*.ts'],
+    rules: {
+      'no-console': 'error',
+    },
+  },
 );

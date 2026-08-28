@@ -176,7 +176,9 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
 
   let application: ReturnType<typeof createServerApp>;
   try {
-    application = (hooks.composeApp ?? (() => createServerApp()))(config);
+    const composeApp =
+      hooks.composeApp ?? ((loadedConfig) => createServerApp({ config: loadedConfig }));
+    application = composeApp(config);
   } catch (error) {
     if (internalDatabase) {
       try {

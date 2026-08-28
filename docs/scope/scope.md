@@ -222,10 +222,11 @@ Loader konfigurasi tunggal tervalidasi. Done when: prioritas flag env file defau
 Log JSON terstruktur, correlation ID, error handler tunggal. Done when: setiap error klien membawa correlation yang bisa ditemukan di log dan log tersensor.
 
 - [x] Design it (spec): [0013](../specs/0013-observability-package/index.md)
-- [ ] Build it: /develop observability-package
-  - [ ] Logger JSON plus file rotasi plus larangan console (AC-1, AC-7)
-  - [ ] Correlation AsyncLocalStorage plus middleware plus error handler ApiError 500 (AC-2, AC-3, AC-5)
-  - [ ] Redaction wajib di jalur tulis dan metric dasar (AC-4, AC-6)
+- [x] Build it: /develop observability-package
+  - [x] Logger JSON plus file rotasi plus larangan console (AC-1, AC-7)
+  - [x] Correlation AsyncLocalStorage plus middleware plus error handler ApiError 500 (AC-2, AC-3, AC-5)
+  - [x] Redaction wajib di jalur tulis dan metric dasar (AC-4, AC-6)
+  - code in `packages/observability/`, `apps/server/src/`, `apps/cli/src/bootstrap/runtime-lifecycle.ts`, and `tooling/eslint/eslint.config.mjs`
 - [ ] [Verify it](../specs/0013-observability-package/verify.md): /check verify observability-package
 - [ ] [Test it](../specs/0013-observability-package/test.md): /test observability-package
 

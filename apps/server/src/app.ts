@@ -1,4 +1,11 @@
 import { Elysia } from 'elysia';
+import { resolveDataDirectory, type MyadminConfig } from '@myadmin/config';
+import {
+  createCorrelationId,
+  getCorrelationId,
+  installObservability,
+  type ObservabilityOptions,
+} from '@myadmin/observability';
 import packageManifest from '../../../package.json' with { type: 'json' };
 import {
   resolveAssetSource,
@@ -13,13 +20,29 @@ export interface ServerStartOptions {
   host?: string;
   port?: number;
   assetSource?: AssetSource;
+  config?: MyadminConfig;
+  observability?: ObservabilityOptions;
 }
 
 export interface RunningServer {
   stop(force?: boolean): Promise<void>;
 }
 
-export function createServerApp(options: { assetSource?: AssetSource } = {}) {
+export interface ServerAppOptions {
+  assetSource?: AssetSource;
+  config?: MyadminConfig;
+  observability?: ObservabilityOptions;
+}
+
+function observabilityOptions(options: ServerAppOptions): ObservabilityOptions {
+  return {
+    dataDir: options.config?.dataDir ?? resolveDataDirectory(),
+    logLevel: options.config?.log.level,
+    ...options.observability,
+  };
+}
+
+export function createServerApp(options: ServerAppOptions = {}) {
   let sourcePromise: ReturnType<typeof resolveAssetSource> | undefined;
   const source = async () => {
     sourcePromise ??= options.assetSource
@@ -28,7 +51,7 @@ export function createServerApp(options: { assetSource?: AssetSource } = {}) {
     return sourcePromise;
   };
 
-  return new Elysia()
+  return installObservability(new Elysia(), observabilityOptions(options))
     .get('/health', () => ({
       status: 'ok',
       version: packageManifest.version,
@@ -51,9 +74,11 @@ function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Resp
   });
 }
 
-function apiError(request: Request, status: number, code: string, message: string): Response {
-  const correlationId = request.headers.get('x-correlation-id') || crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId }, status);
+function apiError(_request: Request, status: number, code: string, message: string): Response {
+  const correlationId = getCorrelationId() ?? createCorrelationId();
+  return jsonResponse({ code, message, correlationId }, status, {
+    'x-correlation-id': correlationId,
+  });
 }
 
 function isCredentials(value: unknown): value is Credentials {
@@ -95,11 +120,14 @@ function hasSession(request: Request): boolean {
  * In memory contract fixture for the initial API surface.
  * Feature specs replace these handlers with their persistent implementations.
  */
-export function createApp() {
+export function createApp(options: { observability?: ObservabilityOptions } = {}) {
   let initialized = false;
   let currentUser: User | undefined;
 
-  return new Elysia()
+  return installObservability(
+    new Elysia(),
+    observabilityOptions({ observability: options.observability }),
+  )
     .get('/health', () => ({
       status: 'ok' as const,
       version: packageManifest.version,
@@ -153,7 +181,11 @@ export function createApp() {
 export const app = createServerApp();
 
 export async function startServer(options: ServerStartOptions = {}): Promise<RunningServer> {
-  const serverApp = createServerApp({ assetSource: options.assetSource });
+  const serverApp = createServerApp({
+    assetSource: options.assetSource,
+    config: options.config,
+    observability: options.observability,
+  });
   serverApp.listen({ hostname: options.host ?? host, port: options.port ?? port });
   if (!serverApp.server) {
     throw new Error('HTTP server did not start');
