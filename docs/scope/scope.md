@@ -201,10 +201,11 @@ Log JSON terstruktur, correlation ID, error handler tunggal. Done when: setiap e
 ### 14. UI foundation dan theme `in-progress`
 @ojiepermana/angular sebagai fondasi tunggal plus theme Myadmin. Done when: light dark system bekerja hidup, preferensi bertahan, dan design system kedua terlarang oleh lint.
 - [x] Design it (spec): [0014](../specs/0014-ui-foundation-theme/index.md)
-- [ ] Build it: /develop ui-foundation-theme
-  - [ ] Instalasi paket (verifikasi npm) plus konfigurasi theme dan store preferensi (AC-1 sampai AC-4)
-  - [ ] Audit kapabilitas komponen V1 plus halaman demo dev (AC-5, AC-6)
-  - [ ] Aturan lint larangan design system kedua (AC-7)
+- [x] Build it: /develop ui-foundation-theme
+  - [x] Instalasi paket (verifikasi npm) plus konfigurasi theme dan store preferensi (AC-1 sampai AC-4)
+  - [x] Audit kapabilitas komponen V1 plus halaman demo dev (AC-5, AC-6)
+  - [x] Aturan lint larangan design system kedua (AC-7)
+  - code in `apps/web/src/app/core/theme/`, `apps/web/src/app/features/ui-foundation-demo/`, and `scripts/quality/check-ui-boundary.ts`
 - [ ] [Verify it](../specs/0014-ui-foundation-theme/verify.md): /check verify ui-foundation-theme
 - [ ] [Test it](../specs/0014-ui-foundation-theme/test.md): /test ui-foundation-theme
 

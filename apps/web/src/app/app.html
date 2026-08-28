@@ -1,9 +1,20 @@
-<main class="shell">
-  <p class="eyebrow">MYADMIN FOUNDATION</p>
-  <h1>Database administration, ready to grow.</h1>
-  <p class="lede">Angular {{ moduleName }} is connected to the root source modules.</p>
-  <div class="status" role="status">
-    <span class="dot" aria-hidden="true"></span>
-    <span>Web application scaffold is healthy</span>
-  </div>
-</main>
+<div class="app-root min-h-screen bg-background text-foreground">
+  <header
+    class="flex items-center justify-between border-b border-border bg-card/80 px-6 py-4 backdrop-blur sm:px-8"
+  >
+    <a href="/" class="flex items-center gap-3 text-foreground no-underline">
+      <span
+        class="flex size-9 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground"
+        >M</span
+      >
+      <span>
+        <span class="block text-sm font-semibold tracking-tight">MyAdmin</span>
+        <span class="block text-xs text-muted-foreground">Angular {{ moduleName }}</span>
+      </span>
+    </a>
+    <span class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground"
+      >Foundation</span
+    >
+  </header>
+  <router-outlet />
+</div>

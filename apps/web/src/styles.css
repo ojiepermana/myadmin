@@ -1,0 +1,20 @@
+@import '@ojiepermana/angular-theme/theme-full.css';
+@import 'tailwindcss';
+@import '@ojiepermana/angular-theme/styles/css/base/tailwind.css';
+@source '../../../node_modules/@ojiepermana/angular-component';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--theme-font-sans);
+}

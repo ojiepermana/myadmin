@@ -1,0 +1,213 @@
+<main class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:px-8 lg:gap-10 lg:py-14">
+  <section class="grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
+    <div class="space-y-5">
+      <div class="flex flex-wrap items-center gap-2">
+        <Badge>Internal demo</Badge>
+        <span class="text-sm text-muted-foreground">/__dev/ui-foundation</span>
+      </div>
+      <div class="space-y-3">
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+          MyAdmin foundation
+        </p>
+        <h1 class="max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+          Calm control for serious database work.
+        </h1>
+        <p class="max-w-2xl text-lg leading-relaxed text-muted-foreground">
+          A living reference for the single UI foundation, semantic tokens, and theme behavior that
+          every V1 surface inherits.
+        </p>
+      </div>
+    </div>
+
+    <Card class="bg-card/70 shadow-lg">
+      <CardHeader>
+        <CardTitle>Theme preference</CardTitle>
+        <CardDescription
+          >Switch modes without a reload. System follows the operating system.</CardDescription
+        >
+      </CardHeader>
+      <CardContent class="space-y-4">
+        <div class="grid gap-2">
+          <label for="theme-mode" class="text-sm font-medium">Color mode</label>
+          <select
+            id="theme-mode"
+            NativeSelect
+            [ngModel]="themePreference.mode()"
+            (ngModelChange)="setMode($event)"
+          >
+            @for (mode of modes; track mode) {
+              <option NativeSelectOption [value]="mode">{{ mode | titlecase }}</option>
+            }
+          </select>
+        </div>
+        <div
+          class="flex items-center justify-between rounded-md border border-border bg-muted/40 p-3 text-sm"
+        >
+          <span>Effective mode</span>
+          <Badge variant="secondary">{{ themePreference.resolvedMode() }}</Badge>
+        </div>
+      </CardContent>
+      <CardFooter class="flex items-center justify-between gap-4">
+        <span class="text-xs text-muted-foreground">Stored in localStorage</span>
+        <button Button type="button" size="sm" (click)="showToast()">Save signal</button>
+      </CardFooter>
+    </Card>
+  </section>
+
+  <Alert>
+    <svg
+      aria-hidden="true"
+      class="size-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 8v4m0 4h.01"></path>
+    </svg>
+    <AlertTitle>Foundation status: ready</AlertTitle>
+    <AlertDescription>
+      Accent, radius, typography, spacing, and color mode are configured through the foundation
+      extension API.
+    </AlertDescription>
+  </Alert>
+
+  <section class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+    <Card>
+      <CardHeader>
+        <CardTitle>Composition primitives</CardTitle>
+        <CardDescription
+          >Use semantic controls directly, then compose them into domain surfaces.</CardDescription
+        >
+      </CardHeader>
+      <CardContent class="space-y-6">
+        <div class="flex flex-wrap items-center gap-3">
+          <button Button type="button">Primary action</button>
+          <button Button type="button" variant="outline">Secondary</button>
+          <Badge variant="outline">Stable API</Badge>
+        </div>
+        <div class="grid gap-2">
+          <label for="workspace-name" class="text-sm font-medium">Workspace name</label>
+          <input id="workspace-name" Input value="Production analytics" />
+          <p class="text-sm text-muted-foreground">
+            Native form controls retain their accessible semantics.
+          </p>
+        </div>
+        <div
+          class="flex items-start justify-between gap-4 rounded-md border border-border bg-muted/30 p-4"
+        >
+          <div class="space-y-1">
+            <p id="details-label" class="font-medium">Show implementation details</p>
+            <p id="details-description" class="text-sm text-muted-foreground">
+              Keep the capability reference visible while reviewing the page.
+            </p>
+          </div>
+          <Switch
+            [ngModel]="showDetails()"
+            (ngModelChange)="showDetails.set($event)"
+            name="show-details"
+            aria-labelledby="details-label"
+            aria-describedby="details-description"
+          />
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>Capability pulse</CardTitle>
+        <CardDescription>Representative data stays readable in either color mode.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        @if (showDetails()) {
+          <div class="overflow-x-auto rounded-md border border-border">
+            <Table>
+              <caption class="sr-only">
+                Foundation component capability status
+              </caption>
+              <thead TableHeader>
+                <tr TableRow>
+                  <th TableHead>Need</th>
+                  <th TableHead>Status</th>
+                  <th TableHead>Foundation API</th>
+                </tr>
+              </thead>
+              <tbody TableBody>
+                @for (capability of capabilities; track capability.name) {
+                  <tr TableRow>
+                    <td TableCell class="font-medium">{{ capability.name }}</td>
+                    <td TableCell>
+                      <Badge variant="secondary">{{ capability.status }}</Badge>
+                    </td>
+                    <td TableCell class="font-mono text-xs">{{ capability.usage }}</td>
+                  </tr>
+                }
+              </tbody>
+            </Table>
+          </div>
+        } @else {
+          <div class="space-y-3" role="status" aria-label="Loading capability reference">
+            <Spinner aria-label="Loading capability reference" />
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-4 w-full" />
+            <Skeleton class="h-4 w-2/3" />
+          </div>
+        }
+      </CardContent>
+    </Card>
+  </section>
+
+  <section class="space-y-4">
+    <div class="space-y-1">
+      <h2 class="text-2xl font-semibold tracking-tight">Stateful surfaces</h2>
+      <p class="text-muted-foreground">
+        Tabs and resizable panes cover the interaction patterns used by later V1 features.
+      </p>
+    </div>
+    <Tabs [(value)]="activeTab" class="w-full">
+      <TabsList variant="line">
+        <button TabsTrigger value="overview">Overview</button>
+        <button TabsTrigger value="tokens">Tokens</button>
+        <button TabsTrigger value="accessibility">Accessibility</button>
+      </TabsList>
+      <TabsContent value="overview" class="mt-5">
+        <ResizablePanelGroup
+          orientation="horizontal"
+          class="min-h-64 rounded-md border border-border bg-card"
+        >
+          <ResizablePanel defaultSize="38%" minSize="25%" maxSize="55%" class="p-5">
+            <p class="text-sm font-medium text-primary">Navigation region</p>
+            <p class="mt-2 text-sm text-muted-foreground">
+              Reserved for the later app shell. This demo does not add navigation.
+            </p>
+          </ResizablePanel>
+          <ResizableHandle withHandle aria-label="Resize foundation preview panels" />
+          <ResizablePanel defaultSize="62%" minSize="45%" maxSize="75%" class="p-5">
+            <p class="text-sm font-medium">Workspace preview</p>
+            <p class="mt-2 text-sm text-muted-foreground">
+              A clean handoff surface for database specific features.
+            </p>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </TabsContent>
+      <TabsContent value="tokens" class="mt-5">
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div class="rounded-md border border-border bg-primary p-5 text-primary-foreground">
+            Accent
+          </div>
+          <div class="rounded-md border border-border bg-muted p-5 text-foreground">Neutral</div>
+          <div class="rounded-md border border-border bg-card p-5 text-card-foreground shadow-sm">
+            Surface
+          </div>
+        </div>
+      </TabsContent>
+      <TabsContent value="accessibility" class="mt-5">
+        <p class="rounded-md border border-border bg-card p-5 text-sm text-muted-foreground">
+          Keyboard focus, native semantics, persistent labels, live status, and reduced motion are
+          covered by the foundation primitives and this composition.
+        </p>
+      </TabsContent>
+    </Tabs>
+  </section>
+</main>

@@ -30,10 +30,20 @@
                 "input": "apps/web/public"
               }
             ],
-            "styles": ["apps/web/src/styles.scss"]
+            "styles": ["apps/web/src/styles.css"]
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "apps/web/src/environments/environment.ts",
+                  "with": "apps/web/src/environments/environment.production.ts"
+                },
+                {
+                  "replace": "apps/web/src/app/app.routes.ts",
+                  "with": "apps/web/src/app/app.routes.production.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
