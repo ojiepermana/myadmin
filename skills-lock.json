@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "bun-sqlite": {
+      "source": "secondsky/claude-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/bun/skills/bun-sqlite/SKILL.md",
+      "computedHash": "df3aa7f294c627a80ec75ca23398caaf64d41577d6c55a4541e32ad7e9186a3e"
+    },
+    "playwright-cli": {
+      "source": "microsoft/playwright-cli",
+      "sourceType": "github",
+      "skillPath": "skills/playwright-cli/SKILL.md",
+      "computedHash": "f602822b51bcb6d033749c60731b8f1e80f308222fcb2e4af551905a817c6e08"
+    }
+  }
+}
