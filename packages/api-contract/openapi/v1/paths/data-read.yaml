@@ -1,0 +1,60 @@
+post:
+  operationId: readData
+  tags: [data]
+  summary: Read one bounded page from a table or view
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/data.yaml#/DataReadRequest
+  responses:
+    '200':
+      description: A bounded data page
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/data.yaml#/DataReadResponse
+    '401':
+      description: The session is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The request failed CSRF validation.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The table or view was not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The read request is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider failed to read the data.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

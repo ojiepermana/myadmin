@@ -529,8 +529,8 @@ Browse table berhalaman dengan filter terstruktur aman. Done when: table sejuta 
 
 - [x] Design it (spec): [0037](../specs/0037-data-browser-read/index.md)
 - [ ] Build it: /develop data-browser-read
-  - [ ] Kontrak read plus penerjemah filter sort pagination di kedua provider (AC-1 sampai AC-5)
-  - [ ] Tab data dengan grid mode browser, filter kolom, pemilih kolom (AC-6, AC-7)
+  - [x] Kontrak read plus penerjemah filter sort pagination di kedua provider (AC-1 sampai AC-5)
+  - [x] Tab data dengan grid mode browser, filter kolom, pemilih kolom (AC-6, AC-7)
   - [ ] Test NFR-01, injeksi, dan e2e (AC-8, AC-9)
 - [ ] [Verify it](../specs/0037-data-browser-read/verify.md): /check verify data-browser-read
 - [ ] [Test it](../specs/0037-data-browser-read/test.md): /test data-browser-read

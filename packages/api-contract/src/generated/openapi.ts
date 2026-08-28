@@ -483,6 +483,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/data/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read one bounded page from a table or view */
+        post: operations["readData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1332,6 +1349,66 @@ export interface components {
         };
         DatabaseDropRequest: {
             confirmName: string;
+        };
+        DataColumnMetadata: {
+            comment?: string;
+            dataType: string;
+            name: string;
+            nullable: boolean;
+            position?: number;
+            primary: boolean;
+        };
+        DataFilter: {
+            column: string;
+            /** @enum {string} */
+            operator: "=" | "!=" | ">" | ">=" | "<" | "<=" | "contains" | "startsWith" | "endsWith" | "is null" | "is not null" | "in";
+            value?: unknown;
+            values?: unknown[];
+        };
+        DataObjectRef: {
+            database: string;
+            name: string;
+            schema: string | null;
+            /** @enum {string} */
+            type: "table" | "view";
+        };
+        DataPage: {
+            hasMore: boolean;
+            limit: number;
+            offset: number;
+        };
+        DataPageInput: {
+            limit?: number;
+            offset?: number;
+        };
+        DataReadRequest: {
+            columns?: string[];
+            connectionId: string;
+            filters?: components["schemas"]["DataFilter"][];
+            page?: components["schemas"]["DataPageInput"];
+            ref: components["schemas"]["DataObjectRef"];
+            search?: string;
+            sort?: components["schemas"]["DataSort"][];
+            /** @enum {string} */
+            total?: "auto" | "exact" | "estimate";
+        };
+        DataReadResponse: {
+            columns: string[];
+            columnsMeta: components["schemas"]["DataColumnMetadata"][];
+            page: components["schemas"]["DataPage"];
+            ref: components["schemas"]["DataObjectRef"];
+            rows: components["schemas"]["SerializedDataRow"][];
+            total: components["schemas"]["DataTotal"];
+        };
+        DataSort: {
+            column: string;
+            /** @enum {string} */
+            direction: "asc" | "desc";
+        };
+        DataTotal: {
+            /** @enum {string} */
+            kind: "exact" | "estimate";
+            value: number;
         };
         ExplorerChildPage: {
             cursor: string | null;
@@ -3847,6 +3924,86 @@ export interface operations {
                 };
             };
             /** @description The database returned a normalized test error. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    readData: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataReadRequest"];
+            };
+        };
+        responses: {
+            /** @description A bounded data page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataReadResponse"];
+                };
+            };
+            /** @description The session is invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request failed CSRF validation. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The table or view was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The read request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider failed to read the data. */
             502: {
                 headers: {
                     [name: string]: unknown;

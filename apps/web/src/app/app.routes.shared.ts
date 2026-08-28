@@ -123,10 +123,15 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
                                     import('./features/query-history/query-history').then(
                                       ({ QueryHistory }) => QueryHistory,
                                     )
-                                : () =>
-                                    import('./features/route-placeholder/route-placeholder').then(
-                                      ({ RoutePlaceholder }) => RoutePlaceholder,
-                                    ),
+                                : definition.id === 'data-browser'
+                                  ? () =>
+                                      import('./features/data-browser/data-browser').then(
+                                        ({ DataBrowser }) => DataBrowser,
+                                      )
+                                  : () =>
+                                      import('./features/route-placeholder/route-placeholder').then(
+                                        ({ RoutePlaceholder }) => RoutePlaceholder,
+                                      ),
   }));
 
   const devRoutes: Routes = includeDevDemo

@@ -203,6 +203,7 @@ function persistableContext(context: Readonly<Record<string, unknown>>) {
     connectionId?: string;
     database?: string;
     schema?: string;
+    ref?: string;
     draftSql?: string;
     connectionMissing?: boolean;
     savedQueryName?: string;

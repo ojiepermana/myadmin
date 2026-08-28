@@ -146,6 +146,59 @@ export interface ViewDefinition {
   definition: string;
 }
 
+export type DataFilterOperator =
+  | 'eq'
+  | 'neq'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'contains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'isNull'
+  | 'isNotNull'
+  | 'in';
+
+export interface DataFilter {
+  readonly column: string;
+  readonly operator: DataFilterOperator;
+  readonly value?: unknown;
+  readonly values?: readonly unknown[];
+}
+
+export interface DataSort {
+  readonly column: string;
+  readonly direction: 'asc' | 'desc';
+}
+
+export interface DataPageRequest {
+  readonly table: ObjectRef;
+  readonly limit?: number;
+  readonly offset?: number;
+  readonly columns?: readonly string[];
+  readonly filters?: readonly DataFilter[];
+  readonly search?: string;
+  readonly sort?: readonly DataSort[];
+  readonly total?: 'auto' | 'exact' | 'estimate';
+}
+
+export interface DataColumnMetadata extends ColumnDefinition {
+  readonly primary: boolean;
+}
+
+export interface DataTotal {
+  readonly value: number;
+  readonly kind: 'exact' | 'estimate';
+}
+
+export interface DataPage {
+  readonly rows: DataRow[];
+  readonly columns: DataColumnMetadata[];
+  readonly total: DataTotal;
+  readonly hasMore: boolean;
+}
+
 export type DataRow = Record<string, unknown>;
 
 /** A JSON safe cell that keeps values such as bigint and bytes lossless. */
@@ -159,13 +212,6 @@ export type QueryCell =
   | { type: 'json'; value: string };
 
 export type SerializedDataRow = Record<string, QueryCell>;
-
-export interface DataPageRequest extends PageRequest {
-  table: ObjectRef;
-  columns?: string[];
-  filter?: Record<string, unknown>;
-  sort?: Array<{ column: string; direction: 'asc' | 'desc' }>;
-}
 
 export interface MutationResult {
   affectedRows: number;

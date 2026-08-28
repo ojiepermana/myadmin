@@ -10,12 +10,14 @@ import { MysqlMetadataAdapter, type MysqlMetadataOptions } from './metadata/mysq
 import { MysqlMonitoringAdapter } from './monitoring';
 import { MysqlDatabasePort } from './database';
 import { MysqlSecurityAdapter } from './security';
+import { MysqlDataAdapter } from './data';
 
 export const moduleName = '@myadmin/database-mysql' as const;
 
 export * from './capabilities/mysql-capabilities';
 export * from './backup';
 export * from './database';
+export * from './data';
 export * from './driver/client';
 export * from './driver/mysql-connection';
 export * from './driver/mysql-query';
@@ -37,6 +39,7 @@ export class MysqlProvider implements DatabaseProvider {
   public readonly monitoring: MysqlMonitoringAdapter;
   public readonly database: MysqlDatabasePort;
   public readonly security: MysqlSecurityAdapter;
+  public readonly data: MysqlDataAdapter;
 
   public constructor(
     options: MysqlConnectionAdapterOptions & MysqlBackupToolPaths = {},
@@ -48,6 +51,7 @@ export class MysqlProvider implements DatabaseProvider {
     this.capability = new MysqlCapabilityAdapter(this.connection, this.backup);
     this.query = new MysqlQueryAdapter(this.connection);
     this.metadata = new MysqlMetadataAdapter(this.connection, metadataOptions);
+    this.data = new MysqlDataAdapter(this.connection, this.metadata);
     this.monitoring = new MysqlMonitoringAdapter(this.connection, { now: options.now });
     this.security = new MysqlSecurityAdapter(this.connection);
   }

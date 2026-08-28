@@ -129,6 +129,8 @@ paths:
     $ref: ./paths/query-saved.yaml
   /query/saved/{id}:
     $ref: ./paths/query-saved-by-id.yaml
+  /data/read:
+    $ref: ./paths/data-read.yaml
 components:
   schemas:
     ApiError:
@@ -337,6 +339,24 @@ components:
       $ref: ./components/schemas/database.yaml#/DatabaseCreateOptions
     DatabaseDropRequest:
       $ref: ./components/schemas/database.yaml#/DatabaseDropRequest
+    DataObjectRef:
+      $ref: ./components/schemas/data.yaml#/DataObjectRef
+    DataPage:
+      $ref: ./components/schemas/data.yaml#/DataPage
+    DataPageInput:
+      $ref: ./components/schemas/data.yaml#/DataPageInput
+    DataSort:
+      $ref: ./components/schemas/data.yaml#/DataSort
+    DataFilter:
+      $ref: ./components/schemas/data.yaml#/DataFilter
+    DataTotal:
+      $ref: ./components/schemas/data.yaml#/DataTotal
+    DataColumnMetadata:
+      $ref: ./components/schemas/data.yaml#/DataColumnMetadata
+    DataReadRequest:
+      $ref: ./components/schemas/data.yaml#/DataReadRequest
+    DataReadResponse:
+      $ref: ./components/schemas/data.yaml#/DataReadResponse
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

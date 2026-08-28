@@ -1,0 +1,13 @@
+.data-browser-page {
+  background: radial-gradient(
+    circle at 85% 0%,
+    color-mix(in srgb, var(--primary) 8%, transparent),
+    transparent 28rem
+  );
+}
+
+app-result-grid {
+  display: block;
+  min-height: 0;
+  flex: 1;
+}

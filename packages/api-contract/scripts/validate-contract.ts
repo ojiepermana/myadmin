@@ -73,6 +73,7 @@ const initialPaths = {
   '/query/history/{id}': 'paths/query-history-by-id.yaml',
   '/query/saved': 'paths/query-saved.yaml',
   '/query/saved/{id}': 'paths/query-saved-by-id.yaml',
+  '/data/read': 'paths/data-read.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);

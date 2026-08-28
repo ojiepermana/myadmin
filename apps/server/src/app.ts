@@ -74,6 +74,7 @@ import { registerSecurityRoutes } from './security/routes';
 import { QueryHistoryService } from './query/query-history';
 import { DatabaseManagementService } from './database-management/database-management';
 import { registerDatabaseManagementRoutes } from './database-management/routes';
+import { registerDataBrowserRoutes } from './data-browser/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -1531,6 +1532,12 @@ export function createServerApp(options: ServerAppOptions = {}) {
         secureCookies,
       });
     }
+    application = registerDataBrowserRoutes(application, '/api/v1', {
+      authService,
+      setupService,
+      connectionManager,
+      secureCookies,
+    });
   }
   if (queryExecutionService && authService) {
     application = registerQueryRoutes(application, '/api/v1', {
@@ -1697,6 +1704,12 @@ export function createApp(
     authService,
     setupService,
     service: databaseManagementService,
+    secureCookies: false,
+  });
+  application = registerDataBrowserRoutes(application, '', {
+    authService,
+    setupService,
+    connectionManager,
     secureCookies: false,
   });
   const backupService =

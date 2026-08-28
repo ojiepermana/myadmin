@@ -1,5 +1,5 @@
 import type { ProviderContext } from './metadata';
-import type { DataPageRequest, DataRow, MutationResult, ObjectRef, Page } from '../models';
+import type { DataPage, DataPageRequest, DataRow, MutationResult, ObjectRef } from '../models';
 
 export interface DataInsertRequest {
   table: ObjectRef;
@@ -23,8 +23,11 @@ export interface DataBulkDeleteRequest {
 }
 
 /** Server side data access and mutations. Unsupported writes fail closed. */
-export interface DataPort {
-  page(context: ProviderContext, request: DataPageRequest): Promise<Page<DataRow>>;
+export interface DataReadPort {
+  page(context: ProviderContext, request: DataPageRequest): Promise<DataPage>;
+}
+
+export interface DataPort extends DataReadPort {
   insert(context: ProviderContext, request: DataInsertRequest): Promise<MutationResult>;
   update(context: ProviderContext, request: DataUpdateRequest): Promise<MutationResult>;
   delete(context: ProviderContext, request: DataDeleteRequest): Promise<MutationResult>;

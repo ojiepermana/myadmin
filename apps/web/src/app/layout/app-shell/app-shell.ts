@@ -290,7 +290,11 @@ export class AppShell {
     const definition = [DEV_ROUTE, ...V1_ROUTE_DEFINITIONS].find((item) => item.path === path);
     if (!definition) return;
     if (definition.type !== 'query-editor') {
-      this.workspace.openTab(this.toTab(definition));
+      this.workspace.openTab(
+        definition.type === 'data-browser'
+          ? this.toDataBrowserTab(definition, parsed)
+          : this.toTab(definition),
+      );
       return;
     }
     const tabId = parsed.searchParams.get('tab') || this.newQueryTabId();
@@ -305,6 +309,30 @@ export class AppShell {
       type: definition.type,
       title: definition.title,
       context: { route: `/${definition.path}` },
+    };
+  }
+
+  private toDataBrowserTab(definition: AppRouteDefinition, url: URL): TabDescriptor {
+    const connectionId = url.searchParams.get('connection');
+    const ref = url.searchParams.get('ref');
+    if (!connectionId || !ref) return this.toTab(definition);
+    let title = definition.title;
+    try {
+      const parsed = JSON.parse(ref) as { name?: unknown };
+      if (typeof parsed.name === 'string' && parsed.name.length > 0) title = parsed.name;
+    } catch {
+      // The data browser validates the reference and presents its empty state.
+    }
+    const id = `data-browser-${connectionId}-${ref}`.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 128);
+    return {
+      id,
+      type: definition.type,
+      title,
+      context: {
+        route: `${url.pathname}${url.search}`,
+        connectionId,
+        ref,
+      },
     };
   }
 

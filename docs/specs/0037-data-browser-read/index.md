@@ -1,7 +1,7 @@
 # 0037. Data browser: jalur baca
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-DATA-01 dan FR-DATA-02: pagination server side (page/cursor, total atau estim
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin membuka table jutaan baris dan menelusurinya per halaman dengan filter dan sort tanpa membekukan apa pun.
 
 **Acceptance criteria**:
@@ -38,17 +39,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Pagination offset dengan tie breaker PK (dipilih)
 
 **Pros**:
+
 - Model halaman bernomor yang diminta FR (page, limit); sederhana untuk sort dan filter bebas; tie breaker menstabilkan.
 
 **Cons**:
+
 - Offset dalam jauh lambat di tabel raksasa; diterima untuk pola pemakaian browse, dan keyset menjadi optimasi V2 bila terbukti perlu.
 
 ### Option 2: Keyset pagination
 
 **Pros**:
+
 - Cepat konsisten di kedalaman mana pun.
 
 **Cons**:
+
 - Tidak cocok dengan lompat ke halaman N dan sort multi kolom bebas; kompleksitas tinggi untuk kebutuhan browse interaktif.
 
 ## Decision
@@ -66,19 +71,22 @@ FR meminta model halaman eksplisit; offset dengan tie breaker memenuhi itu denga
 **Data model sketch**: tidak ada tabel internal; bentuk request/response di kontrak.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /data/read | POST | connectionId, ref, page, sort[], filters[], search?, columns? | rows, columnsMeta, total { value, kind: exact|estimate } | pemilik, tersambung | 409 NOT_CONNECTED, 422 filter/op tidak valid, DbError |
+
+| Endpoint   | Method | Key inputs                                                    | Key outputs                                   | Auth       | Key errors          |
+| ---------- | ------ | ------------------------------------------------------------- | --------------------------------------------- | ---------- | ------------------- |
+| /data/read | POST   | connectionId, ref, page, sort[], filters[], search?, columns? | rows, columnsMeta, total { value, kind: exact | estimate } | pemilik, tersambung | 409 NOT_CONNECTED, 422 filter/op tidak valid, DbError |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| rows | nilai sel berlabel tipe | provider DataPort.page |
-| columnsMeta | tipe, nullable, pk | describeTable (cache metadata) |
-| total | nilai plus jenis | COUNT bila murah/diminta; selain itu estimate katalog |
-| operator tersedia per kolom | daftar | pemetaan tipe kolom → operator, di satu modul UI/kontrak |
+
+| Action                      | Value produced / displayed | Source                                                   |
+| --------------------------- | -------------------------- | -------------------------------------------------------- |
+| rows                        | nilai sel berlabel tipe    | provider DataPort.page                                   |
+| columnsMeta                 | tipe, nullable, pk         | describeTable (cache metadata)                           |
+| total                       | nilai plus jenis           | COUNT bila murah/diminta; selain itu estimate katalog    |
+| operator tersedia per kolom | daftar                     | pemetaan tipe kolom → operator, di satu modul UI/kontrak |
 
 **Key invariants**:
+
 - Klien tidak pernah mengirim SQL untuk jalur ini; hanya struktur filter/sort dari daftar tertutup.
 - Setiap query data berhalaman; tidak ada jalur tanpa limit (NFR-01).
 - Sort selalu deterministik (tie breaker).
@@ -102,12 +110,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Menelusuri data nyata menjadi aman dan responsif; fondasi jalur tulis (spec 0038) dan export selection (0047).
 
 **Negative / tradeoffs**:
+
 - Offset dalam lambat pada tabel raksasa; jujur ditampilkan lewat waktu muat, dengan keyset sebagai optimasi masa depan.
 
 **Neutral**:
+
 - Operator filter bisa bertambah di V2 tanpa mengubah arsitektur (daftar tertutup diperluas).
 
 ## Follow-up
@@ -117,9 +128,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-DATA-01, FR-DATA-02, NFR-01; spec 0023, 0025, 0033 (bentuk sel), 0034.
 
 **Practices & standards**:
+
 - Filter sebagai struktur data, bukan SQL; pagination deterministik; kejujuran biaya COUNT.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

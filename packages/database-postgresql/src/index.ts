@@ -4,6 +4,7 @@ export const moduleName = '@myadmin/database-postgresql' as const;
 export * from './capabilities';
 export * from './backup';
 export * from './database';
+export * from './data';
 export * from './connection';
 export * from './driver';
 export * from './mappers';

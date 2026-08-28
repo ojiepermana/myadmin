@@ -47,6 +47,17 @@ export interface FullExportRequest {
   readonly format: ResultExportFormat;
 }
 
+export interface DataBrowserFilterChange {
+  readonly column: string;
+  readonly value: string;
+}
+
+export interface DataBrowserSortChange {
+  readonly column: string;
+  readonly direction: 'asc' | 'desc' | null;
+  readonly additive: boolean;
+}
+
 interface FullCellValue {
   readonly column: string;
   readonly cell: QueryCell | undefined;
@@ -73,7 +84,10 @@ export class ResultGrid {
   readonly result = input.required<QueryResult>();
   readonly executionId = input<string | null>(null);
   readonly fullExportEnabled = input(false);
+  readonly mode = input<'query' | 'data-browser'>('query');
   readonly fullExportRequested = output<FullExportRequest>();
+  readonly dataBrowserFilterChange = output<DataBrowserFilterChange>();
+  readonly dataBrowserSortChange = output<DataBrowserSortChange>();
 
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
@@ -137,13 +151,21 @@ export class ResultGrid {
 
   protected updateFilter(column: string, value: string): void {
     this.filters.update((current) => ({ ...current, [column]: value }));
+    if (this.mode() === 'data-browser') this.dataBrowserFilterChange.emit({ column, value });
   }
 
-  protected sortBy(column: string): void {
+  protected sortBy(column: string, event?: MouseEvent): void {
     this.sort.update((current) => {
       if (!current || current.column !== column) return { column, direction: 'asc' };
       return current.direction === 'asc' ? { column, direction: 'desc' } : null;
     });
+    if (this.mode() === 'data-browser') {
+      this.dataBrowserSortChange.emit({
+        column,
+        direction: this.sort()?.direction ?? null,
+        additive: event?.shiftKey === true,
+      });
+    }
   }
 
   protected sortIndicator(column: string): string {

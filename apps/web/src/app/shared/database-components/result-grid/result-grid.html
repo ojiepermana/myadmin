@@ -18,7 +18,7 @@
         <span class="result-grid-summary-divider" aria-hidden="true">·</span>
         <span>{{ result().durationMs }} ms</span>
       }
-      @if (result().truncated) {
+      @if (result().truncated && mode() === 'query') {
         <Badge variant="secondary">Truncated, loaded rows only</Badge>
       }
     </div>
@@ -67,7 +67,7 @@
     </div>
   </div>
 
-  @if (result().truncated) {
+  @if (result().truncated && mode() === 'query') {
     <p class="result-grid-notice" role="status">
       This result is truncated. Client sorting and exports use the {{ result().rows.length }} loaded
       rows; the full export job will be enabled by the export service.
@@ -121,7 +121,7 @@
                     type="button"
                     class="result-grid-sort-button"
                     [attr.aria-label]="'Sort ' + column.name"
-                    (click)="sortBy(column.name)"
+                    (click)="sortBy(column.name, $event)"
                   >
                     <span>{{ column.name }}</span>
                     <span class="result-grid-sort-indicator" aria-hidden="true">{{
