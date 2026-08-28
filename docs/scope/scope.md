@@ -196,10 +196,10 @@ ADR keamanan: keyfile plus override env, argon2id. Done when: first run menghasi
 AES-256-GCM dengan AAD plus modul sensor tiga lapis. Done when: file db terbukti bebas plaintext dan tiga saluran keluaran tersensor.
 
 - [x] Design it (spec): [0011](../specs/0011-credential-vault-redaction/index.md)
-- [ ] Build it: /develop credential-vault-redaction
-  - [ ] Vault encrypt decrypt dengan AAD, key_id check, API use (AC-1 sampai AC-4)
-  - [ ] Modul redaction tiga mekanisme plus integrasi saluran keluar (AC-5, AC-6)
-  - [ ] Test keamanan termasuk pemindaian byte file db (AC-7)
+- [x] Build it: /develop credential-vault-redaction
+  - [x] Vault encrypt decrypt dengan AAD, key_id check, API use (AC-1 sampai AC-4)
+  - [x] Modul redaction tiga mekanisme plus integrasi saluran keluar (AC-5, AC-6)
+  - [x] Test keamanan termasuk pemindaian byte file db (AC-7)
 - [ ] [Verify it](../specs/0011-credential-vault-redaction/verify.md): /check verify credential-vault-redaction
 - [ ] [Test it](../specs/0011-credential-vault-redaction/test.md): /test credential-vault-redaction
 
