@@ -9,7 +9,7 @@ import {
   InitialAdminService,
   InMemoryRateLimiter,
 } from '../../../packages/auth/src';
-import { PasswordHasher } from '../../../packages/crypto/src';
+import { PasswordHasher, passwordHashNeedsRehash } from '../../../packages/crypto/src';
 import { createServerApp, disposeServerApp } from '../../../apps/server/src/app';
 import {
   closeDatabase,
@@ -107,6 +107,30 @@ describe('login and session security', () => {
     expect(result.response.status).toBe(200);
     expect(await result.response.json()).not.toHaveProperty('token');
     expect(result.response.headers.get('set-cookie')).toContain('HttpOnly');
+  });
+
+  test('SEC-0010-AC8 rehashes a legacy password after a successful login', async () => {
+    const value = await initializedApp();
+    const user = value.store.users.findByUsername('security-admin');
+    if (!user) throw new Error('Expected the synthetic admin user');
+    const oldHash = await Bun.password.hash('synthetic-password-0017', {
+      algorithm: 'argon2id',
+      memoryCost: 8,
+      timeCost: 1,
+    });
+    value.store.users.update({
+      ...user,
+      passwordHash: oldHash,
+      updatedAt: new Date('2026-08-28T00:00:00.000Z'),
+    });
+
+    const result = await login(value.app);
+    const replacement = value.store.users.findByUsername('security-admin')?.passwordHash;
+
+    expect(result.response.status).toBe(200);
+    expect(replacement).toBeDefined();
+    expect(replacement).not.toBe(oldHash);
+    expect(passwordHashNeedsRehash(replacement ?? '')).toBe(false);
   });
 
   test('SEC-0017-AC2 uses one public failure and the dummy verification path', async () => {

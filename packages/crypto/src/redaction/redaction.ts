@@ -13,7 +13,7 @@ const sensitiveFieldNames = new Set([
 ]);
 
 const sensitiveLabelPattern =
-  '(?:password|passwd|pwd|secret|token|passphrase|credential|(?:api|private)?[_-]?key)';
+  '(?:password|passwd|pwd|secret|token|passphrase|credential|master[_-]?key|(?:api|private)?[_-]?key)';
 const quotedLabelPattern = new RegExp(
   `(\\b${sensitiveLabelPattern}(?:s|[_-][A-Za-z0-9_-]+)?\\b\\s*[=:]\\s*)(["'])(.*?)\\2`,
   'gi',

@@ -119,9 +119,9 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 - [x] Bangun `key-management/key-provider.ts` (resolusi sumber, first run atomik, permission check, keyId) dan `passphrase.ts` untuk parsing env, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-4**.
 - [x] Bangun `password/password-hasher.ts` (argon2id eksplisit, verify, needsRehash) dan `password-policy.ts`, memenuhi **AC-6**, **AC-7**, **AC-8**.
-- [ ] Daftarkan doctor check keyfile (lewat registry spec 0007), memenuhi **AC-4**.
-- [ ] Pastikan redaction awal menutup nilai key dan hash di logger sementara (lengkap di spec 0011), memenuhi **AC-5**.
-- [ ] Unit test menyeluruh di `packages/crypto/test/` dan test keamanan di `tests/security/crypto/`, memenuhi **AC-9**.
+- [x] Daftarkan doctor check keyfile (lewat registry spec 0007), memenuhi **AC-4**.
+- [x] Pastikan redaction awal menutup nilai key dan hash di logger sementara (lengkap di spec 0011), memenuhi **AC-5**.
+- [x] Unit test menyeluruh di `packages/crypto/test/` dan test keamanan di `tests/security/crypto/`, memenuhi **AC-9**.
 
 ## Consequences
 

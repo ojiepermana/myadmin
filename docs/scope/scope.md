@@ -186,10 +186,11 @@ Port dan repository untuk semua tabel internal plus unit of work dan fake. Done 
 ADR keamanan: keyfile plus override env, argon2id. Done when: first run menghasilkan keyfile 0600, override bekerja, hash dan verify teruji.
 
 - [x] Design it (spec): [0010](../specs/0010-key-provider-password-hashing/index.md)
-- [ ] Build it: /develop key-provider-password-hashing
+- [x] Build it: /develop key-provider-password-hashing
   - [x] Key provider (first run atomik, permission check, keyId, override) (AC-1 sampai AC-4)
   - [x] Password hasher argon2id, policy, needsRehash (AC-6, AC-7, AC-8)
-  - [ ] Doctor check keyfile dan test keamanan (AC-4, AC-5, AC-9)
+  - [x] Doctor check keyfile dan test keamanan (AC-4, AC-5, AC-9)
+  - code in `apps/cli/src/commands/doctor.ts`, `apps/cli/src/bootstrap/runtime-lifecycle.ts`, `packages/auth/src/session.ts`, `packages/crypto/src/redaction/`, and `tests/security/crypto/`
 - [ ] [Verify it](../specs/0010-key-provider-password-hashing/verify.md): /check verify key-provider-password-hashing
 - [ ] [Test it](../specs/0010-key-provider-password-hashing/test.md): /test key-provider-password-hashing
 

@@ -9,6 +9,13 @@ import {
   type ConfigEnvironment,
 } from '@myadmin/config';
 import {
+  assertKeyFilePermissions,
+  KeyProviderError,
+  MASTER_KEY_FILE_MODE,
+  parseMasterKey,
+  resolveMasterKeyPath,
+} from '@myadmin/crypto';
+import {
   assertSqliteDatabaseHealthy,
   closeDatabase,
   getMigrationStatus,
@@ -230,6 +237,89 @@ export async function runWebAssetsCheck(assetSource?: AssetSource): Promise<Chec
   }
 }
 
+function keyFileMode(mode: number): string {
+  return `0${(mode & 0o777).toString(8).padStart(3, '0')}`;
+}
+
+export async function runKeyFileCheck(
+  dataDirectory: string,
+  env: ConfigEnvironment = process.env,
+): Promise<CheckResult> {
+  const configuredKey = env['MYADMIN_MASTER_KEY']?.trim();
+  if (configuredKey) {
+    try {
+      parseMasterKey(configuredKey);
+      return result('ok', 'The master key is configured through MYADMIN_MASTER_KEY.', undefined, {
+        source: 'env',
+      });
+    } catch {
+      return result(
+        'fail',
+        'MYADMIN_MASTER_KEY is invalid.',
+        'Set MYADMIN_MASTER_KEY to a base64 or hex encoded 32 byte key, then run myadmin doctor again.',
+        { source: 'env' },
+      );
+    }
+  }
+
+  const path = resolveMasterKeyPath({ dataDirectory, env });
+  if (!path) {
+    return result(
+      'fail',
+      'The master key file path could not be resolved.',
+      'Set MYADMIN_KEY_FILE or provide a data directory, then run myadmin doctor again.',
+    );
+  }
+
+  const details = { source: 'file', path };
+  try {
+    const file = await stat(path);
+    if (!file.isFile()) {
+      return result(
+        'fail',
+        'The master key path is not a file.',
+        'Replace it with a regular key file, then run myadmin doctor again.',
+        details,
+      );
+    }
+    assertKeyFilePermissions(path, file.mode);
+    return result(
+      'ok',
+      `The master key file exists with secure permissions (${keyFileMode(file.mode)}).`,
+      undefined,
+      { ...details, mode: keyFileMode(file.mode) },
+    );
+  } catch (error) {
+    if (error instanceof KeyProviderError && error.code === 'insecure_key_file') {
+      return result(
+        'fail',
+        'The master key file permissions are too open.',
+        `Change the master key file permissions to ${MASTER_KEY_FILE_MODE.toString(8)}, then run myadmin doctor again.`,
+        details,
+      );
+    }
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: unknown }).code === 'ENOENT'
+    ) {
+      return result(
+        'fail',
+        'The master key file was not found.',
+        'Run myadmin serve once to create it, or set MYADMIN_MASTER_KEY, then run myadmin doctor again.',
+        details,
+      );
+    }
+    return result(
+      'fail',
+      'The master key file could not be inspected.',
+      'Check the key file path and permissions, then run myadmin doctor again.',
+      details,
+    );
+  }
+}
+
 function configCheckArguments(
   options: DoctorCommandOptions,
   dataDirectory: string,
@@ -297,6 +387,11 @@ export function createDefaultDoctorChecks(
           { ...options, presenter: { info: () => undefined, error: () => undefined } },
           dataDirectory,
         ),
+    },
+    {
+      id: 'key-file',
+      title: 'Master key file',
+      run: () => runKeyFileCheck(dataDirectory, options.env),
     },
   ];
 }

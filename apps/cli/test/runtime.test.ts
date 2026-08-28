@@ -229,6 +229,9 @@ describe('UT-0006-AC8 bootstrap order', () => {
           order.push('prepare');
           return dataDirectoryPaths(root);
         },
+        loadMasterKey: async () => {
+          order.push('master-key');
+        },
         runMigrations: async () => {
           order.push('migrations');
         },
@@ -242,7 +245,7 @@ describe('UT-0006-AC8 bootstrap order', () => {
         },
       },
     });
-    expect(order).toEqual(['resolve', 'prepare', 'migrations', 'compose', 'listen']);
+    expect(order).toEqual(['resolve', 'prepare', 'master-key', 'migrations', 'compose', 'listen']);
     await runtime.shutdown();
   });
 });

@@ -6,6 +6,7 @@ import {
   type ConfigMetadata,
   type MyadminConfig,
 } from '@myadmin/config';
+import { loadMasterKey } from '@myadmin/crypto';
 import {
   dataDirectoryPaths,
   prepareDataDirectory,
@@ -38,6 +39,10 @@ export interface RuntimeOptions {
 export interface RuntimeBootstrapHooks {
   resolveDataDirectory?: typeof resolveDataDirectory;
   prepareDataDirectory?: typeof prepareDataDirectory;
+  loadMasterKey?: (
+    dataDirectory: string,
+    env: Readonly<Record<string, string | undefined>>,
+  ) => Promise<unknown>;
   runMigrations?: (paths: DataDirectoryPaths) => Promise<void>;
   composeApp?: (config: MyadminConfig, database?: Database) => ReturnType<typeof createServerApp>;
   listen?: (
@@ -147,6 +152,20 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
   } catch (error) {
     presentBootstrapFailure(presenter, 'config', error);
     throw new BootstrapError('config', 'Could not load configuration', error);
+  }
+
+  try {
+    await (
+      hooks.loadMasterKey ??
+      ((root, environment) =>
+        loadMasterKey({
+          dataDirectory: root,
+          env: environment,
+        }))
+    )(dataDirectory, env);
+  } catch (error) {
+    presentBootstrapFailure(presenter, 'master key', error);
+    throw new BootstrapError('master key', 'Could not load master key', error);
   }
 
   try {

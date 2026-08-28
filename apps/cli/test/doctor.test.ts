@@ -1,9 +1,15 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { KeyProvider } from '@myadmin/crypto';
 import { parseCliFlags } from '../src/main';
-import { runAuditCheck, runDoctorCommand, runSqliteCheck } from '../src/commands/doctor';
+import {
+  runAuditCheck,
+  runDoctorCommand,
+  runKeyFileCheck,
+  runSqliteCheck,
+} from '../src/commands/doctor';
 import { formatDoctorJson, formatDoctorText } from '../src/output/diagnostics';
 import { createDoctorRegistry, type DoctorCheck } from '../src/runtime/doctor';
 import { runMigrateCommand } from '../src/commands/migrate';
@@ -35,6 +41,7 @@ async function temporaryDataDirectory(): Promise<string> {
   await mkdir(join(dataDirectory, 'logs'));
   await mkdir(join(dataDirectory, 'backups'));
   await mkdir(join(dataDirectory, 'temp'));
+  await new KeyProvider({ dataDirectory, env: {} }).load();
   return dataDirectory;
 }
 
@@ -90,7 +97,7 @@ describe('IT-0007-AC1 and IT-0007-AC2 doctor checks', () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(result.summary).toEqual({ total: 6, ok: 6, warning: 0, fail: 0 });
+    expect(result.summary).toEqual({ total: 7, ok: 7, warning: 0, fail: 0 });
     expect(result.checks.map((check) => check.id)).toEqual([
       'data-directory',
       'data-subdirectories',
@@ -98,9 +105,38 @@ describe('IT-0007-AC1 and IT-0007-AC2 doctor checks', () => {
       'audit',
       'web-assets',
       'config',
+      'key-file',
     ]);
     expect(output.messages[0]).toContain('[OK] Data directory');
     expect(output.messages[0]).not.toContain('Action');
+  });
+
+  test('IT-0010-AC4 reports insecure key file permissions with a repair action and no key material', async () => {
+    const dataDirectory = await temporaryDataDirectory();
+    const path = join(dataDirectory, 'config', 'master.key');
+    await chmod(path, 0o644);
+
+    const result = await runKeyFileCheck(dataDirectory, {});
+
+    expect(result).toMatchObject({
+      status: 'fail',
+      message: 'The master key file permissions are too open.',
+      action: expect.stringContaining('600'),
+      details: { source: 'file', path },
+    });
+    expect(JSON.stringify(result)).not.toContain('master key file contents');
+  });
+
+  test('SEC-0010-AC5 accepts a valid environment key without requiring the key file', async () => {
+    const dataDirectory = await temporaryDataDirectory();
+    await rm(join(dataDirectory, 'config', 'master.key'));
+    const key = '11'.repeat(32);
+
+    await expect(runKeyFileCheck(dataDirectory, { MYADMIN_MASTER_KEY: key })).resolves.toEqual({
+      status: 'ok',
+      message: 'The master key is configured through MYADMIN_MASTER_KEY.',
+      details: { source: 'env' },
+    });
   });
 
   test('reports audit row count and estimated size without a retention action', async () => {

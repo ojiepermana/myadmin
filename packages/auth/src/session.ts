@@ -197,6 +197,16 @@ export class AuthService {
     this.loginRateLimiter.reset(ipKey);
     this.loginRateLimiter.reset(usernameKey);
 
+    if (verification.needsRehash) {
+      const passwordHash = await this.passwordHasher.hash(input.password);
+      const updatedAt = this.now();
+      this.store.transaction(({ users }) => {
+        const current = users.findById(user.id);
+        if (!current || !current.isActive || current.passwordHash !== user.passwordHash) return;
+        users.update({ ...current, passwordHash, updatedAt });
+      });
+    }
+
     const token = tokenFromBytes(this.randomBytes(SESSION_TOKEN_BYTES));
     const createdAt = this.now();
     const session: Session = {
