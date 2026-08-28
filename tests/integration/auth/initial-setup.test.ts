@@ -68,6 +68,19 @@ describe('initial setup integration', () => {
     expect(protectedResponse.status).toBe(409);
     expect(await protectedResponse.json()).toMatchObject({ code: 'SETUP_REQUIRED' });
 
+    const backupResponse = await request(
+      app,
+      '/api/v1/backup',
+      jsonInit({
+        connectionId: 'connection-before-setup',
+        database: 'app',
+        scope: 'both',
+        compress: true,
+      }),
+    );
+    expect(backupResponse.status).toBe(409);
+    expect(await backupResponse.json()).toMatchObject({ code: 'SETUP_REQUIRED' });
+
     const setupAgain = await request(app, '/api/v1/setup/status');
     expect(await setupAgain.json()).toEqual({ initialized: false });
   });

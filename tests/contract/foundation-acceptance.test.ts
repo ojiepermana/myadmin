@@ -296,7 +296,7 @@ describe('spec 0004 codegen and contract pipeline acceptance', () => {
       'utf8',
     );
     expect(generated).toContain('auto-generated');
-    expect(generator).toContain('`${generatedFile}.tmp`');
+    expect(generator).toContain('`${generatedFile}.${process.pid}.${randomUUID()}.tmp`');
     expect(generator).toContain('renameSync(temporaryFile, generatedFile)');
   });
 

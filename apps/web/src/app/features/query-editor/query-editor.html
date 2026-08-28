@@ -302,6 +302,9 @@
                 @if (statement.durationMs !== undefined) {
                   <span>{{ statement.durationMs }} ms</span>
                 }
+                @if (statement.message) {
+                  <span>{{ statement.message }}</span>
+                }
               </div>
               @if (statement.result) {
                 <app-result-grid
@@ -385,6 +388,36 @@
         (click)="confirmDisconnect()"
       >
         {{ disconnecting() ? 'Disconnecting…' : 'Disconnect session' }}
+      </button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+<AlertDialog [(open)]="databaseChangeOpen">
+  <AlertDialogContent size="sm">
+    <AlertDialogHeader>
+      <AlertDialogTitle>Switch database and close the transaction?</AlertDialogTitle>
+      <AlertDialogDescription>
+        The active provider transaction belongs to the current database. Switching to “{{
+          pendingDatabase()
+        }}” will close this tab session and discard its open transaction.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <button
+        type="button"
+        AlertDialogCancel
+        [disabled]="changingDatabase()"
+        (click)="cancelDatabaseChange()"
+      >
+        Keep current database
+      </button>
+      <button
+        type="button"
+        AlertDialogAction
+        [disabled]="changingDatabase()"
+        (click)="confirmDatabaseChange()"
+      >
+        {{ changingDatabase() ? 'Switching…' : 'Switch database' }}
       </button>
     </AlertDialogFooter>
   </AlertDialogContent>

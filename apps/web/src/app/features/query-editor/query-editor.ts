@@ -7,7 +7,7 @@ import {
   type CompletionResult,
 } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
-import { MySQL, PostgreSQL, sql } from '@codemirror/lang-sql';
+import { sql } from '@codemirror/lang-sql';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
 import { Compartment, EditorState } from '@codemirror/state';
 import {
@@ -58,8 +58,14 @@ import {
   DialogTitleComponent,
 } from '@ojiepermana/angular/component/dialog';
 import { QueryTabLauncher } from './query-tab-launcher.service';
+import {
+  dialectForEngine,
+  metadataKindForQuery,
+  queryShortcutMode,
+  type QueryMetadataKind,
+} from './query-editor-policy';
 
-type MetadataKind = 'schemas' | 'objects' | 'columns';
+type MetadataKind = QueryMetadataKind;
 
 @Component({
   selector: 'app-query-editor',
@@ -122,6 +128,9 @@ export class QueryEditor implements AfterViewInit {
   protected readonly explainMessage = signal<string | null>(null);
   protected readonly disconnectOpen = signal(false);
   protected readonly disconnecting = signal(false);
+  protected readonly databaseChangeOpen = signal(false);
+  protected readonly pendingDatabase = signal<string | null>(null);
+  protected readonly changingDatabase = signal(false);
   protected readonly busy = computed(() => {
     const state = this.execution()?.state;
     return state === 'queued' || state === 'running' || state === 'cancelling';
@@ -195,7 +204,8 @@ export class QueryEditor implements AfterViewInit {
             {
               key: 'Mod-Enter',
               run: () => {
-                void this.execute('full');
+                const selection = this.editor?.state.selection.main;
+                void this.execute(queryShortcutMode(selection !== undefined && !selection.empty));
                 return true;
               },
             },
@@ -204,7 +214,7 @@ export class QueryEditor implements AfterViewInit {
             ...searchKeymap,
             indentWithTab,
           ]),
-          this.language.of(sql({ dialect: this.dialectFor(this.engine()) })),
+          this.language.of(sql({ dialect: dialectForEngine(this.engine()) })),
           autocompletion({ override: [(context) => this.complete(context)] }),
           EditorView.updateListener.of((update) => {
             if (!update.docChanged) return;
@@ -317,6 +327,40 @@ export class QueryEditor implements AfterViewInit {
   }
 
   protected onDatabaseChange(value: string): void {
+    if (value === this.database()) return;
+    if (this.execution()?.transactionActive) {
+      this.pendingDatabase.set(value);
+      this.databaseChangeOpen.set(true);
+      return;
+    }
+    this.applyDatabaseChange(value);
+  }
+
+  protected cancelDatabaseChange(): void {
+    this.pendingDatabase.set(null);
+    this.databaseChangeOpen.set(false);
+  }
+
+  protected async confirmDatabaseChange(): Promise<void> {
+    const value = this.pendingDatabase();
+    if (value === null || this.changingDatabase()) return;
+    this.changingDatabase.set(true);
+    this.stopWatching?.();
+    try {
+      await firstValueFrom(this.sdk.query.closeSession(this.tabId, true));
+      this.execution.set(null);
+      this.applyDatabaseChange(value);
+      this.cancelDatabaseChange();
+    } catch (error) {
+      this.message.set(
+        error instanceof Error ? error.message : 'The active transaction could not be closed.',
+      );
+    } finally {
+      this.changingDatabase.set(false);
+    }
+  }
+
+  private applyDatabaseChange(value: string): void {
     this.database.set(value);
     this.persistContext();
   }
@@ -462,9 +506,7 @@ export class QueryEditor implements AfterViewInit {
 
   protected metadataKind(): MetadataKind {
     const text = this.editor?.state.sliceDoc(0, this.editor.state.selection.main.head) ?? '';
-    if (/\b(from|join)\s+[\w$]+\.[\w$]*$/i.test(text)) return 'columns';
-    if (/\b(from|join|update|into)\s+[\w$.]*$/i.test(text)) return 'objects';
-    return 'schemas';
+    return metadataKindForQuery(text);
   }
 
   protected statusLabel(): string {
@@ -719,13 +761,9 @@ export class QueryEditor implements AfterViewInit {
     }
   }
 
-  private dialectFor(engine: 'postgresql' | 'mysql') {
-    return engine === 'mysql' ? MySQL : PostgreSQL;
-  }
-
   private reconfigureDialect(engine: 'postgresql' | 'mysql'): void {
     this.editor?.dispatch({
-      effects: this.language.reconfigure(sql({ dialect: this.dialectFor(engine) })),
+      effects: this.language.reconfigure(sql({ dialect: dialectForEngine(engine) })),
     });
   }
 }

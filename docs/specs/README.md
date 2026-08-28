@@ -5,6 +5,24 @@ berurutan; sebuah spec boleh dimulai bila seluruh prasyaratnya selesai. Bila
 nomor dan dependency berbeda, dependency menjadi sumber kebenaran. Status hidup
 di masing masing file spec. Indeks ini dimiliki oleh /architect.
 
+## Resolusi status 2026-08-29
+
+Enam spec yang sebelumnya berstatus `Proposed`, yaitu `0016`, `0017`, `0019`,
+`0033`, `0048`, dan `0050`, diputuskan menjadi `In Progress`. Implementasinya
+telah tersedia dan dapat diuji secara lokal, tetapi bukti acceptance belum
+lengkap pada semua AC, terutama proof visual, database nyata, dan proof
+operasional eksternal. Status tidak dinaikkan menjadi `Accepted` sebelum setiap
+AC memiliki evidence nyata dan checklist `verify.md` yang sesuai. Tidak ada spec
+yang saat ini berstatus `Proposed`.
+
+Keputusan teknis lanjutan pada tanggal yang sama: budget bundle Angular tetap
+`900kB` untuk warning dan `1MB` untuk error. Build production saat ini berada
+di bawah batas tersebut (`893.70kB` initial), sehingga threshold tidak dinaikkan;
+optimasi bundle menjadi pekerjaan berikutnya bila warning terlampaui. Validasi
+date-time RFC3339 menggunakan mode penuh AJV, alias `vi.*` tidak tersisa pada
+source dan test aktif, dan batasan MySQL Bun SQL untuk `sslmode=disable` serta
+`caching_sha2_password` sudah didokumentasikan di spec provider.
+
 Sumber kebutuhan: [v1-feature-specification.md](../../plan/v1-feature-specification.md), [struktur.md](../../plan/struktur.md), [feature.md](../../plan/feature.md). Folder rencana hidup di `plan/` pada akar repo.
 
 Repo memakai tepat satu `package.json` di akar. Istilah package internal pada indeks dan spec berarti modul source di bawah `packages/*`, bukan package manager package dengan manifest sendiri.

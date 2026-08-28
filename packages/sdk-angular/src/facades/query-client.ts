@@ -92,7 +92,7 @@ export class QueryClient {
     connectionId: string;
     database: string;
     tabSessionId: string;
-    kind: 'schemas' | 'objects' | 'columns';
+    kind: 'schemas' | 'objects' | 'columns' | 'keywords';
     schema?: string;
     table?: string;
   }): Observable<QueryAutocompleteResponse> {

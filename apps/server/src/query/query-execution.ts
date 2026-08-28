@@ -40,7 +40,7 @@ export interface QueryAutocompleteInput {
   readonly schema?: string;
   readonly table?: string;
   readonly tabSessionId: string;
-  readonly kind: 'schemas' | 'objects' | 'columns';
+  readonly kind: 'schemas' | 'objects' | 'columns' | 'keywords';
 }
 
 export interface QueryAutocompleteItem {
@@ -52,6 +52,47 @@ export interface QueryAutocompleteItem {
 export interface QueryAutocompleteResponse {
   readonly items: QueryAutocompleteItem[];
 }
+
+const SQL_KEYWORDS: Record<DatabaseEngine, readonly string[]> = {
+  postgresql: [
+    'ALTER',
+    'BEGIN',
+    'COMMIT',
+    'CREATE',
+    'DELETE',
+    'DROP',
+    'EXPLAIN',
+    'FROM',
+    'INSERT',
+    'JOIN',
+    'LIMIT',
+    'ORDER BY',
+    'ROLLBACK',
+    'SELECT',
+    'SET',
+    'UPDATE',
+    'WHERE',
+  ],
+  mysql: [
+    'ALTER',
+    'BEGIN',
+    'COMMIT',
+    'CREATE',
+    'DELETE',
+    'DROP',
+    'EXPLAIN',
+    'FROM',
+    'INSERT',
+    'JOIN',
+    'LIMIT',
+    'ORDER BY',
+    'ROLLBACK',
+    'SELECT',
+    'SET',
+    'UPDATE',
+    'WHERE',
+  ],
+};
 
 export interface QueryExplainInput {
   readonly connectionId: string;
@@ -591,7 +632,7 @@ export class QueryExecutionService {
     rawInput: QueryAutocompleteInput,
   ): Promise<QueryAutocompleteResponse> {
     const kind = rawInput.kind;
-    if (kind !== 'schemas' && kind !== 'objects' && kind !== 'columns') {
+    if (kind !== 'schemas' && kind !== 'objects' && kind !== 'columns' && kind !== 'keywords') {
       throw new QueryExecutionServiceError(
         'QUERY_VALIDATION_FAILED',
         'Metadata kind is invalid.',
@@ -618,7 +659,11 @@ export class QueryExecutionService {
       throw new QueryExecutionServiceError('QUERY_UNAVAILABLE', 'Metadata is unavailable.', 503);
     }
     const items: QueryAutocompleteItem[] = [];
-    if (kind === 'schemas') {
+    if (kind === 'keywords') {
+      for (const keyword of SQL_KEYWORDS[session.serverInfo.engine]) {
+        items.push({ label: keyword, kind: 'keyword', detail: session.serverInfo.engine });
+      }
+    } else if (kind === 'schemas') {
       const page = await metadata.listSchemas(session.handle, database, { limit: 100 });
       for (const schema of page.items) items.push({ label: schema.name, kind: 'schema' });
     } else if (kind === 'objects') {

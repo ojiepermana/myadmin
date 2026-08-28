@@ -27,6 +27,12 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is incomplete or the backup request conflicts with an active operation.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
     '422':
       description: Request validation or saved credential validation failed.
       content:

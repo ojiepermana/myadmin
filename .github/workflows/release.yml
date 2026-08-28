@@ -121,7 +121,19 @@ jobs:
             --apple-id "$APPLE_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
-            --wait
+            --wait \
+            --output-format json | tee "$RUNNER_TEMP/myadmin-${{ matrix.target }}-notary.json"
+          grep -q '"status"[[:space:]]*:[[:space:]]*"Accepted"' \
+            "$RUNNER_TEMP/myadmin-${{ matrix.target }}-notary.json"
+      - name: Verify macOS signature and notarization result
+        if: startsWith(matrix.target, 'macos-') && env.MACOS_CERTIFICATE != '' && env.MACOS_CERTIFICATE_PASSWORD != '' && env.MACOS_SIGNING_IDENTITY != '' && env.APPLE_ID != '' && env.APPLE_APP_SPECIFIC_PASSWORD != '' && env.APPLE_TEAM_ID != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary="dist/binaries/${{ matrix.target }}/myadmin"
+          codesign --verify --deep --strict --verbose=4 "$binary"
+          codesign -dv --verbose=4 "$binary" 2>&1 | tee "$RUNNER_TEMP/myadmin-${{ matrix.target }}-codesign.txt"
+          grep -q '^TeamIdentifier=' "$RUNNER_TEMP/myadmin-${{ matrix.target }}-codesign.txt"
       - name: Import Windows signing certificate
         if: matrix.target == 'windows-x64' && env.WINDOWS_CERTIFICATE != '' && env.WINDOWS_CERTIFICATE_PASSWORD != ''
         shell: pwsh
@@ -139,6 +151,8 @@ jobs:
           if (-not $signTool) { throw 'signtool.exe was not found on the Windows runner.' }
           & $signTool.FullName sign /sha1 $env:WINDOWS_CERT_THUMBPRINT /fd SHA256 /td SHA256 /tr https://timestamp.digicert.com "dist/binaries/${{ matrix.target }}/myadmin.exe"
           if ($LASTEXITCODE -ne 0) { throw "signtool.exe exited with $LASTEXITCODE" }
+          & $signTool.FullName verify /pa /all /v "dist/binaries/${{ matrix.target }}/myadmin.exe"
+          if ($LASTEXITCODE -ne 0) { throw "signtool.exe verification exited with $LASTEXITCODE" }
           Remove-Item (Join-Path $env:RUNNER_TEMP 'myadmin-signing.pfx') -Force -ErrorAction SilentlyContinue
       - name: Record signing status
         shell: bash

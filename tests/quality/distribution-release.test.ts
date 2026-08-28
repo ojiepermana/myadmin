@@ -23,6 +23,10 @@ describe('distribution release invariants', () => {
     const workflow = await text('.github/workflows/release.yml');
     expect(workflow).toContain('apple-actions/import-codesign-certs@v3');
     expect(workflow).toContain('xcrun notarytool submit');
+    expect(workflow).toContain('--output-format json');
+    expect(workflow).toContain('codesign --verify --deep --strict --verbose=4');
+    expect(workflow).toContain('codesign -dv --verbose=4');
+    expect(workflow).toContain('signtool.exe verification exited');
     expect(workflow).toContain('signtool.exe');
     expect(workflow).toContain('Record signing status');
     expect(workflow).toContain('artifact is unsigned');

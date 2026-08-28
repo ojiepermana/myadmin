@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Dijalankan 2026-08-29 melalui `bun run test` dan suite connection-manager terarah; 555 pass, 8 skip karena fixture database, 0 fail pada checkout setelah perubahan audit.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -58,18 +58,18 @@ UI: halaman connections berisi daftar per group, form buat dan ubah dengan bagia
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | n/a | `IT-0026-AC1` | `CT-0026-AC1` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | n/a | `IT-0026-AC2` | n/a | n/a | `SEC-0026-AC2` | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | n/a | `IT-0026-AC3` | n/a | n/a | `SEC-0026-AC3` | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | `IT-0026-AC4` | n/a | n/a | `SEC-0026-AC4` | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | n/a | `IT-0026-AC5` | n/a | `E2E-0026-AC5` | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | `IT-0026-AC6` | n/a | n/a | `SEC-0026-AC6` | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | `IT-0026-AC7` | n/a | `E2E-0026-AC7` | n/a | n/a | n/a | n/a | n/a |
-| [AC-8](#ac-8) | n/a | n/a | n/a | n/a | `SEC-0026-AC8` | n/a | n/a | n/a | n/a |
-| [AC-9](#ac-9) | n/a | `IT-0026-AC9` | n/a | n/a | `SEC-0026-AC9` | n/a | n/a | n/a | n/a |
-| [AC-10](#ac-10) | n/a | n/a | n/a | `E2E-0026-AC10` | n/a | n/a | `VIS-0026-AC10` | n/a | n/a |
+| AC              | Unit | Integration   | Contract      | E2E             | Security       | Performance | Visual          | Smoke | Manual atau external |
+| --------------- | ---- | ------------- | ------------- | --------------- | -------------- | ----------- | --------------- | ----- | -------------------- |
+| [AC-1](#ac-1)   | n/a  | `IT-0026-AC1` | `CT-0026-AC1` | n/a             | n/a            | n/a         | n/a             | n/a   | n/a                  |
+| [AC-2](#ac-2)   | n/a  | `IT-0026-AC2` | n/a           | n/a             | `SEC-0026-AC2` | n/a         | n/a             | n/a   | n/a                  |
+| [AC-3](#ac-3)   | n/a  | `IT-0026-AC3` | n/a           | n/a             | `SEC-0026-AC3` | n/a         | n/a             | n/a   | n/a                  |
+| [AC-4](#ac-4)   | n/a  | `IT-0026-AC4` | n/a           | n/a             | `SEC-0026-AC4` | n/a         | n/a             | n/a   | n/a                  |
+| [AC-5](#ac-5)   | n/a  | `IT-0026-AC5` | n/a           | `E2E-0026-AC5`  | n/a            | n/a         | n/a             | n/a   | n/a                  |
+| [AC-6](#ac-6)   | n/a  | `IT-0026-AC6` | n/a           | n/a             | `SEC-0026-AC6` | n/a         | n/a             | n/a   | n/a                  |
+| [AC-7](#ac-7)   | n/a  | `IT-0026-AC7` | n/a           | `E2E-0026-AC7`  | n/a            | n/a         | n/a             | n/a   | n/a                  |
+| [AC-8](#ac-8)   | n/a  | n/a           | n/a           | n/a             | `SEC-0026-AC8` | n/a         | n/a             | n/a   | n/a                  |
+| [AC-9](#ac-9)   | n/a  | `IT-0026-AC9` | n/a           | n/a             | `SEC-0026-AC9` | n/a         | n/a             | n/a   | n/a                  |
+| [AC-10](#ac-10) | n/a  | n/a           | n/a           | `E2E-0026-AC10` | n/a            | n/a         | `VIS-0026-AC10` | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
@@ -79,43 +79,43 @@ Tidak ada unit yang diwajibkan oleh acceptance criteria saat ini.
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0026-AC1` | [AC-1](#ac-1) | POST /connections menerima descriptor lengkap (label, engine, host, port, database awal opsional, username, sslMode plus opsi TLS non rahasia, connectTimeout... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0026-AC2` | [AC-2](#ac-2) | bila saveSecret true, secret dienkripsi vault dan disimpan di connection_credentials; bila false, koneksi tersimpan tanpa credential dan pemakaian nanti memi... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `IT-0026-AC3` | [AC-3](#ac-3) | POST /connections/test menguji tanpa menyimpan: menerima descriptor plus secret transient, atau id koneksi tersimpan (memakai credential vault); hasil ternor... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `IT-0026-AC4` | [AC-4](#ac-4) | PATCH /connections/:id mengubah descriptor dan opsional mengganti atau menghapus secret tersimpan; GET /connections mengembalikan daftar milik sendiri (semua... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `IT-0026-AC5` | [AC-5](#ac-5) | DELETE /connections/:id meminta konfirmasi eksplisit di UI, menghapus descriptor dan credential nya (cascade), memutus sesi provider aktif koneksi itu, dan d... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `IT-0026-AC6` | [AC-6](#ac-6) | POST /connections/:id/duplicate menyalin descriptor dengan label baru; credential ikut tersalin hanya bila pemilik yang menduplikasi dan memilih menyalin. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| `IT-0026-AC6` | [AC-6](#ac-6) | POST /connections/:id/duplicate menyalin descriptor dengan label baru; credential ikut tersalin hanya bila pemilik yang menduplikasi dan memilih menyalin.       | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 | `IT-0026-AC7` | [AC-7](#ac-7) | server group CRUD (/server-groups): nama unik per pemilik, warna, urutan; koneksi bisa dipindah group; menghapus group tidak menghapus koneksinya (koneksi me... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
-| `IT-0026-AC9` | [AC-9](#ac-9) | mutasi koneksi (create, update, delete, ganti secret) menghasilkan audit event tanpa secret (FR-AUD-01). | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
+| `IT-0026-AC9` | [AC-9](#ac-9) | mutasi koneksi (create, update, delete, ganti secret) menghasilkan audit event tanpa secret (FR-AUD-01).                                                         | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
 
 ## Test tambahan
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0026-AC1` | [AC-1](#ac-1) | POST /connections menerima descriptor lengkap (label, engine, host, port, database awal opsional, username, sslMode plus opsi TLS non rahasia, connectTimeout... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `E2E-0026-AC5` | [AC-5](#ac-5) | DELETE /connections/:id meminta konfirmasi eksplisit di UI, menghapus descriptor dan credential nya (cascade), memutus sesi provider aktif koneksi itu, dan d... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `E2E-0026-AC7` | [AC-7](#ac-7) | server group CRUD (/server-groups): nama unik per pemilik, warna, urutan; koneksi bisa dipindah group; menghapus group tidak menghapus koneksinya (koneksi me... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| ID              | AC              | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                       |
+| --------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------- |
+| `E2E-0026-AC5`  | [AC-5](#ac-5)   | DELETE /connections/:id meminta konfirmasi eksplisit di UI, menghapus descriptor dan credential nya (cascade), memutus sesi provider aktif koneksi itu, dan d... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi.  |
+| `E2E-0026-AC7`  | [AC-7](#ac-7)   | server group CRUD (/server-groups): nama unik per pemilik, warna, urutan; koneksi bisa dipindah group; menghapus group tidak menghapus koneksinya (koneksi me... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi.  |
 | `E2E-0026-AC10` | [AC-10](#ac-10) | UI: halaman connections berisi daftar per group, form buat dan ubah dengan bagian TLS dan timeout, aksi test dengan hasil inline, duplicate, delete dengan ko... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-10 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0026-AC2` | [AC-2](#ac-2) | bila saveSecret true, secret dienkripsi vault dan disimpan di connection_credentials; bila false, koneksi tersimpan tanpa credential dan pemakaian nanti memi... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `SEC-0026-AC3` | [AC-3](#ac-3) | POST /connections/test menguji tanpa menyimpan: menerima descriptor plus secret transient, atau id koneksi tersimpan (memakai credential vault); hasil ternor... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `SEC-0026-AC4` | [AC-4](#ac-4) | PATCH /connections/:id mengubah descriptor dan opsional mengganti atau menghapus secret tersimpan; GET /connections mengembalikan daftar milik sendiri (semua... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `SEC-0026-AC6` | [AC-6](#ac-6) | POST /connections/:id/duplicate menyalin descriptor dengan label baru; credential ikut tersalin hanya bila pemilik yang menduplikasi dan memilih menyalin. | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| `SEC-0026-AC6` | [AC-6](#ac-6) | POST /connections/:id/duplicate menyalin descriptor dengan label baru; credential ikut tersalin hanya bila pemilik yang menduplikasi dan memilih menyalin.       | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 | `SEC-0026-AC8` | [AC-8](#ac-8) | otorisasi: pemilik penuh atas koneksinya; Admin dapat list semua descriptor dan menghapus koneksi siapa pun (diaudit dengan actor Admin), tapi tidak dapat me... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
-| `SEC-0026-AC9` | [AC-9](#ac-9) | mutasi koneksi (create, update, delete, ganti secret) menghasilkan audit event tanpa secret (FR-AUD-01). | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
+| `SEC-0026-AC9` | [AC-9](#ac-9) | mutasi koneksi (create, update, delete, ganti secret) menghasilkan audit event tanpa secret (FR-AUD-01).                                                         | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
 
 ### Performance
 
@@ -123,8 +123,8 @@ Tidak ada performance yang diwajibkan oleh acceptance criteria saat ini.
 
 ### Visual dan accessibility
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID              | AC              | Fokus                                                                                                                                                            | Scenario terencana                                                                    | Expected result                                       |
+| --------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | `VIS-0026-AC10` | [AC-10](#ac-10) | UI: halaman connections berisi daftar per group, form buat dan ubah dengan bagian TLS dan timeout, aksi test dengan hasil inline, duplicate, delete dengan ko... | Kunci viewport, mode warna, state komponen, interaksi keyboard, dan bukti screenshot. | Seluruh outcome dan failure boundary AC-10 terpenuhi. |
 
 ### Smoke dan operational acceptance
@@ -147,12 +147,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

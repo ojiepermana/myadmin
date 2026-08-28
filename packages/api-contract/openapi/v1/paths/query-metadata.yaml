@@ -38,7 +38,7 @@ get:
       required: true
       schema:
         type: string
-        enum: [schemas, objects, columns]
+        enum: [schemas, objects, columns, keywords]
   responses:
     '200':
       description: Metadata completion items.

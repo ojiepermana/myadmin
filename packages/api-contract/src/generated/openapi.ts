@@ -3380,6 +3380,15 @@ export interface operations {
                     "application/json": components["schemas"]["api-error"];
                 };
             };
+            /** @description Initial setup is incomplete or the backup request conflicts with an active operation. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
             /** @description Request validation or saved credential validation failed. */
             422: {
                 headers: {
@@ -6613,7 +6622,7 @@ export interface operations {
             query: {
                 connectionId: string;
                 database: string;
-                kind: "schemas" | "objects" | "columns";
+                kind: "schemas" | "objects" | "columns" | "keywords";
                 schema?: string;
                 table?: string;
                 tabSessionId: string;

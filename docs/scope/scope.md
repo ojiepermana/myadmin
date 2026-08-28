@@ -465,7 +465,7 @@ Pohon lazy data driven dengan context menu bergerbang capability. Done when: tel
 Pencarian nama object server side dari panel explorer. Done when: pencarian pada 2000 table cepat dan hasil bisa dilompati ke node.
 
 - [x] Design it (spec): [0032](../specs/0032-object-search/index.md)
-- [x] Build it: /develop object-search
+- [ ] Build it: /develop object-search
   - [x] Endpoint search paginated (AC-1, AC-2)
   - [x] UI pencarian dengan debounce, abort, dan lompat ke node (AC-3, AC-4, AC-5)
   - [x] E2e pada fixture besar (AC-6)
@@ -515,7 +515,7 @@ Membatalkan eksekusi berjalan dan rencana eksekusi teks. Done when: query tidur 
 Riwayat otomatis dan query bernama, privat per user. Done when: pencarian riwayat, buka ulang berkonteks, dan isolasi antar user terbukti.
 
 - [x] Design it (spec): [0036](../specs/0036-query-history-saved-queries/index.md)
-- [x] Build it: /develop query-history-saved-queries
+- [ ] Build it: /develop query-history-saved-queries
   - [x] Endpoint history berfilter plus saved queries CRUD berkepemilikan (AC-1, AC-2, AC-4, AC-6)
   - [x] Halaman dua tab plus panel cepat editor plus simpan cepat (AC-5, AC-7)
   - [ ] E2e dan test otorisasi (AC-3, AC-8)
@@ -590,7 +590,7 @@ Create dan alter kolom lewat change set dengan pratinjau DDL wajib. Done when: y
 PK, FK, unique, check, index komposit di mesin change set yang sama. Done when: FK dengan aturan ON dan composite unique bekerja dua engine lewat pratinjau.
 
 - [x] Design it (spec): [0042](../specs/0042-table-designer-indexes-constraints/index.md)
-- [x] Build it: /develop table-designer-indexes-constraints
+- [ ] Build it: /develop table-designer-indexes-constraints
   - [x] Perluasan change set dan kompilator plus snapshot (AC-2 sampai AC-5)
   - [x] UI tab index dan constraint plus editor FK (AC-1, AC-3, AC-5)
   - [x] Konfirmasi destructive, peringatan dampak PK FK, audit, dan invalidasi row identity (AC-6, AC-7)

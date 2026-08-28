@@ -277,7 +277,9 @@ function metadataInput(request: Request): QueryAutocompleteInput | null {
   const tabSessionId = url.searchParams.get('tabSessionId');
   const kind = url.searchParams.get('kind');
   if (!connectionId || !database || !tabSessionId) return null;
-  if (kind !== 'schemas' && kind !== 'objects' && kind !== 'columns') return null;
+  if (kind !== 'schemas' && kind !== 'objects' && kind !== 'columns' && kind !== 'keywords') {
+    return null;
+  }
   return {
     connectionId,
     database,

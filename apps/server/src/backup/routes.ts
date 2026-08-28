@@ -77,7 +77,7 @@ function session(
   options: BackupRouteOptions,
 ): Response | Extract<SessionValidation, { authenticated: true }> {
   if (!options.setupService?.isInitialized()) {
-    return apiError(request, 428, 'SETUP_REQUIRED', 'Complete initial setup before using backups.');
+    return apiError(request, 409, 'SETUP_REQUIRED', 'Complete initial setup before using backups.');
   }
   const validation = options.authService.validateSession(cookieValue(request, SESSION_COOKIE_NAME));
   if (validation.authenticated) return validation;

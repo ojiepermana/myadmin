@@ -72,6 +72,14 @@ async function waitForHttp(url: string, timeoutMs = 15_000): Promise<Response> {
   throw new Error(`Timed out waiting for ${url}: ${lastError}`);
 }
 
+async function stopChild(child: Bun.Subprocess, timeoutMs = 5_000): Promise<boolean> {
+  child.kill('SIGTERM');
+  return await Promise.race([
+    child.exited.then(() => true),
+    Bun.sleep(timeoutMs).then(() => false),
+  ]);
+}
+
 async function runPreCommitFixture(source: string): Promise<CommandResult> {
   const fixtureRoot = await mkdtemp(join(tmpdir(), 'myadmin-pre-commit-'));
   try {
@@ -168,10 +176,15 @@ describe('spec 0001 foundation acceptance', () => {
           ws: true,
         });
       } finally {
-        child.kill('SIGTERM');
-        await child.exited;
-        await stdout;
-        await stderr;
+        const stopped = await stopChild(child);
+        if (!stopped) {
+          child.kill('SIGKILL');
+          await child.exited;
+        }
+        expect(stopped).toBe(true);
+        if (stopped) {
+          await Promise.all([stdout, stderr]);
+        }
         await rm(dataRoot, { recursive: true, force: true });
       }
     },

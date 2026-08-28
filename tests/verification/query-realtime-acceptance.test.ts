@@ -614,9 +614,15 @@ describe('query and realtime Elysia route acceptance slice', () => {
       '/api/v1/query/metadata?connectionId=connection-1&database=app&schema=public&table=users&tabSessionId=tab-1&kind=columns',
       sessionInit(value.cookie),
     );
+    const keywords = await request(
+      value.app,
+      '/api/v1/query/metadata?connectionId=connection-1&database=app&tabSessionId=tab-1&kind=keywords',
+      sessionInit(value.cookie),
+    );
     expect(schemas.status).toBe(200);
     expect(objects.status).toBe(200);
     expect(columns.status).toBe(200);
+    expect(keywords.status).toBe(200);
     expect(await schemas.json()).toEqual({ items: [{ label: 'public', kind: 'schema' }] });
     expect(await objects.json()).toMatchObject({
       items: [
@@ -630,6 +636,12 @@ describe('query and realtime Elysia route acceptance slice', () => {
         { label: 'id', kind: 'column', detail: 'bigint' },
         { label: 'email', kind: 'column', detail: 'text' },
       ],
+    });
+    expect(await keywords.json()).toMatchObject({
+      items: expect.arrayContaining([
+        { label: 'SELECT', kind: 'keyword', detail: 'postgresql' },
+        { label: 'WHERE', kind: 'keyword', detail: 'postgresql' },
+      ]),
     });
     expect(value.gateway.opened).toEqual(['connection-1']);
   });
