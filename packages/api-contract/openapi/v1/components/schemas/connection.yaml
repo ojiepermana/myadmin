@@ -1,0 +1,229 @@
+ConnectionTlsOptions:
+  type: object
+  additionalProperties: false
+  properties:
+    ca:
+      type: string
+      minLength: 1
+      description: Custom CA material. This is transport configuration, not a credential.
+    serverName:
+      type: string
+      minLength: 1
+
+ConnectionInput:
+  type: object
+  required:
+    - label
+    - engine
+    - host
+    - port
+    - username
+    - sslMode
+    - connectTimeoutMs
+  properties:
+    label:
+      type: string
+      minLength: 1
+      maxLength: 128
+    engine:
+      type: string
+      enum: [postgresql, mysql]
+    host:
+      type: string
+      minLength: 1
+      maxLength: 255
+    port:
+      type: integer
+      minimum: 1
+      maximum: 65535
+    database:
+      type: [string, 'null']
+    username:
+      type: string
+      minLength: 1
+      maxLength: 128
+    sslMode:
+      type: string
+      enum: [disable, require, verify-ca, verify-full]
+    tlsOptions:
+      oneOf:
+        - $ref: '#/ConnectionTlsOptions'
+        - type: 'null'
+    connectTimeoutMs:
+      type: integer
+      minimum: 1
+    groupId:
+      type: [string, 'null']
+    tag:
+      type: [string, 'null']
+      maxLength: 64
+    color:
+      type: [string, 'null']
+      maxLength: 64
+
+ConnectionCreateRequest:
+  allOf:
+    - $ref: '#/ConnectionInput'
+    - type: object
+      required:
+        - saveSecret
+      properties:
+        secret:
+          type: string
+          format: password
+        saveSecret:
+          type: boolean
+  unevaluatedProperties: false
+
+Connection:
+  allOf:
+    - $ref: '#/ConnectionInput'
+    - type: object
+      required:
+        - id
+        - owner
+        - groupId
+        - database
+        - tlsOptions
+        - tag
+        - color
+        - hasSavedSecret
+      properties:
+        id:
+          type: string
+          minLength: 1
+        owner:
+          $ref: '#/ConnectionOwner'
+        groupId:
+          type: [string, 'null']
+        database:
+          type: [string, 'null']
+        tlsOptions:
+          oneOf:
+            - $ref: '#/ConnectionTlsOptions'
+            - type: 'null'
+        tag:
+          type: [string, 'null']
+        color:
+          type: [string, 'null']
+        hasSavedSecret:
+          type: boolean
+  unevaluatedProperties: false
+
+ConnectionOwner:
+  type: object
+  additionalProperties: false
+  required: [id, username]
+  properties:
+    id:
+      type: string
+      minLength: 1
+    username:
+      type: string
+      minLength: 1
+
+ConnectionPatch:
+  type: object
+  additionalProperties: false
+  minProperties: 1
+  properties:
+    label:
+      type: string
+      minLength: 1
+      maxLength: 128
+    engine:
+      type: string
+      enum: [postgresql, mysql]
+    host:
+      type: string
+      minLength: 1
+      maxLength: 255
+    port:
+      type: integer
+      minimum: 1
+      maximum: 65535
+    database:
+      type: [string, 'null']
+    username:
+      type: string
+      minLength: 1
+      maxLength: 128
+    sslMode:
+      type: string
+      enum: [disable, require, verify-ca, verify-full]
+    tlsOptions:
+      oneOf:
+        - $ref: '#/ConnectionTlsOptions'
+        - type: 'null'
+    connectTimeoutMs:
+      type: integer
+      minimum: 1
+    groupId:
+      type: [string, 'null']
+    tag:
+      type: [string, 'null']
+      maxLength: 64
+    color:
+      type: [string, 'null']
+      maxLength: 64
+    secret:
+      type: string
+      format: password
+    clearSecret:
+      type: boolean
+
+ConnectionDuplicateRequest:
+  type: object
+  additionalProperties: false
+  required: [newLabel]
+  properties:
+    newLabel:
+      type: string
+      minLength: 1
+      maxLength: 128
+    copySecret:
+      type: boolean
+      default: false
+
+ConnectionTestRequest:
+  oneOf:
+    - allOf:
+        - $ref: '#/ConnectionInput'
+        - type: object
+          properties:
+            secret:
+              type: string
+              format: password
+      unevaluatedProperties: false
+    - type: object
+      additionalProperties: false
+      required: [connectionId]
+      properties:
+        connectionId:
+          type: string
+          minLength: 1
+
+ConnectionTestResponse:
+  type: object
+  additionalProperties: false
+  required: [success, version, latencyMs]
+  properties:
+    success:
+      const: true
+    version:
+      type: string
+      minLength: 1
+    latencyMs:
+      type: integer
+      minimum: 0
+
+ConnectionPage:
+  allOf:
+    - $ref: './pagination.yaml#/PaginatedResponse'
+    - type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/Connection'
+      required: [items]

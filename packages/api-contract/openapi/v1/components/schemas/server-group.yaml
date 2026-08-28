@@ -1,0 +1,58 @@
+ServerGroupInput:
+  type: object
+  additionalProperties: false
+  required: [name]
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 128
+    color:
+      type: [string, 'null']
+      maxLength: 64
+    sortOrder:
+      type: integer
+
+ServerGroupPatch:
+  type: object
+  additionalProperties: false
+  minProperties: 1
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 128
+    color:
+      type: [string, 'null']
+      maxLength: 64
+    sortOrder:
+      type: integer
+
+ServerGroup:
+  type: object
+  additionalProperties: false
+  required: [id, name]
+  properties:
+    id:
+      type: string
+      minLength: 1
+    name:
+      type: string
+      minLength: 1
+      maxLength: 128
+    color:
+      type: [string, 'null']
+      maxLength: 64
+    sortOrder:
+      type: integer
+
+ServerGroupPage:
+  allOf:
+    - $ref: './pagination.yaml#/PaginatedResponse'
+    - type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/ServerGroup'
+      required: [items]

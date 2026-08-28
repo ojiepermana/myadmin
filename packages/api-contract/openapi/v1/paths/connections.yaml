@@ -1,0 +1,73 @@
+get:
+  operationId: listConnections
+  tags: [connections]
+  summary: List saved connections
+  parameters:
+    - $ref: ../components/parameters/page.yaml
+    - $ref: ../components/parameters/page-size.yaml
+  responses:
+    '200':
+      description: Saved connection descriptors without secret material.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/connection.yaml#/ConnectionPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Pagination values are invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+post:
+  operationId: createConnection
+  tags: [connections]
+  summary: Create a saved connection
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/connection.yaml#/ConnectionCreateRequest
+  responses:
+    '201':
+      description: Connection descriptor created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/connection.yaml#/Connection
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or ownership check failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The label is already used by this owner.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Connection validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

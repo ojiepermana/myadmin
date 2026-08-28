@@ -33,6 +33,12 @@ const initialPaths = {
   '/users/{id}': 'paths/user.yaml',
   '/users/{id}/reset-password': 'paths/user-reset-password.yaml',
   '/workspace': 'paths/workspace.yaml',
+  '/connections': 'paths/connections.yaml',
+  '/connections/test': 'paths/connections-test.yaml',
+  '/connections/{id}': 'paths/connection-by-id.yaml',
+  '/connections/{id}/duplicate': 'paths/connection-duplicate.yaml',
+  '/server-groups': 'paths/server-groups.yaml',
+  '/server-groups/{id}': 'paths/server-group-by-id.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);

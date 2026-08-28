@@ -1,0 +1,778 @@
+<main
+  class="connections-page mx-auto flex w-full max-w-[96rem] flex-col gap-8 px-5 py-8 sm:px-8 lg:py-10"
+  aria-labelledby="connections-title"
+>
+  <header
+    class="flex flex-col gap-5 border-b border-border/70 pb-7 lg:flex-row lg:items-end lg:justify-between"
+  >
+    <div class="max-w-3xl space-y-3">
+      <div
+        class="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em]"
+      >
+        <span class="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary"
+          >Connection manager</span
+        >
+        <span class="font-mono font-normal tracking-normal text-muted-foreground"
+          >/connections</span
+        >
+      </div>
+      <h1
+        id="connections-title"
+        class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
+      >
+        Your database connections
+      </h1>
+      <p class="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+        Keep trusted database descriptors close at hand. Saved passwords stay encrypted and are
+        never shown in this workspace.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <span
+        class="rounded-full border border-border bg-muted/35 px-3 py-2 text-sm text-muted-foreground"
+      >
+        {{ connections().length }} {{ connections().length === 1 ? 'connection' : 'connections' }}
+      </span>
+      <button Button type="button" (click)="openCreate()" aria-label="Create a new connection">
+        <svg
+          aria-hidden="true"
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M12 5v14M5 12h14" stroke-linecap="round"></path>
+        </svg>
+        New connection
+      </button>
+    </div>
+  </header>
+
+  @if (inlineMessage()) {
+    <p
+      class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700"
+      role="status"
+    >
+      {{ inlineMessage() }}
+    </p>
+  }
+
+  @if (error()) {
+    <div
+      class="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      role="alert"
+    >
+      <span>{{ error() }}</span>
+      <button Button type="button" variant="outline" size="sm" (click)="load()">Try again</button>
+    </div>
+  }
+
+  @if (editorOpen()) {
+    <section
+      class="rounded-xl border border-primary/25 bg-card/90 p-5 shadow-lg sm:p-7"
+      aria-labelledby="editor-title"
+    >
+      <div
+        class="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-border/70 pb-5"
+      >
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            {{ editingId() ? 'Edit saved descriptor' : 'New saved descriptor' }}
+          </p>
+          <h2 id="editor-title" class="mt-2 text-2xl font-semibold tracking-tight">
+            {{ editingId() ? 'Tune this connection' : 'Add a database connection' }}
+          </h2>
+          <p class="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Test the route before saving. Passwords are used only for this request unless you
+            explicitly save one.
+          </p>
+        </div>
+        <button
+          Button
+          type="button"
+          variant="ghost"
+          (click)="closeEditor()"
+          [disabled]="saving() || testing()"
+        >
+          Close editor
+        </button>
+      </div>
+
+      <form class="space-y-7" (submit)="$event.preventDefault(); saveConnection()">
+        <fieldset class="space-y-4">
+          <legend class="text-base font-semibold">Connection identity</legend>
+          <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <div class="grid gap-2 xl:col-span-2">
+              <label for="connection-label" class="text-sm font-medium"
+                >Label <span class="text-destructive" aria-hidden="true">*</span></label
+              >
+              <input
+                id="connection-label"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="formModel().label"
+                (input)="updateForm('label', $any($event.target).value)"
+                required
+                autocomplete="off"
+              />
+            </div>
+            <div class="grid gap-2">
+              <label for="connection-engine" class="text-sm font-medium"
+                >Engine <span class="text-destructive" aria-hidden="true">*</span></label
+              >
+              <select
+                id="connection-engine"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="formModel().engine"
+                (change)="onEngineChange($any($event.target).value)"
+              >
+                <option value="postgresql">PostgreSQL</option>
+                <option value="mysql">MySQL</option>
+              </select>
+            </div>
+            <div class="grid gap-2">
+              <label for="connection-group" class="text-sm font-medium">Server group</label>
+              <select
+                id="connection-group"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="formModel().groupId"
+                (change)="updateForm('groupId', $any($event.target).value)"
+              >
+                <option value="">No group</option>
+                @for (group of groups(); track trackGroup($index, group)) {
+                  <option [value]="group.id">{{ group.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-4">
+          <legend class="text-base font-semibold">Server address</legend>
+          <div class="grid gap-5 md:grid-cols-6">
+            <div class="grid gap-2 md:col-span-4">
+              <label for="connection-host" class="text-sm font-medium"
+                >Host <span class="text-destructive" aria-hidden="true">*</span></label
+              >
+              <input
+                id="connection-host"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="formModel().host"
+                (input)="updateForm('host', $any($event.target).value)"
+                required
+                autocomplete="url"
+              />
+            </div>
+            <div class="grid gap-2 md:col-span-1">
+              <label for="connection-port" class="text-sm font-medium"
+                >Port <span class="text-destructive" aria-hidden="true">*</span></label
+              >
+              <input
+                id="connection-port"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                type="number"
+                min="1"
+                max="65535"
+                [value]="formModel().port"
+                (input)="updateForm('port', +$any($event.target).value)"
+                required
+                inputmode="numeric"
+              />
+            </div>
+            <div class="grid gap-2 md:col-span-1">
+              <label for="connection-database" class="text-sm font-medium">Database</label>
+              <input
+                id="connection-database"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="formModel().database"
+                (input)="updateForm('database', $any($event.target).value)"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+          <div class="grid gap-5 md:grid-cols-2">
+            <div class="grid gap-2">
+              <label for="connection-username" class="text-sm font-medium"
+                >Username <span class="text-destructive" aria-hidden="true">*</span></label
+              >
+              <input
+                id="connection-username"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="formModel().username"
+                (input)="updateForm('username', $any($event.target).value)"
+                required
+                autocomplete="username"
+              />
+            </div>
+            <div class="grid gap-2">
+              <label for="connection-timeout" class="text-sm font-medium"
+                >Connect timeout (ms)
+                <span class="text-destructive" aria-hidden="true">*</span></label
+              >
+              <input
+                id="connection-timeout"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                type="number"
+                min="1"
+                [value]="formModel().connectTimeoutMs"
+                (input)="updateForm('connectTimeoutMs', +$any($event.target).value)"
+                required
+                inputmode="numeric"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-4">
+          <legend class="text-base font-semibold">TLS and transport</legend>
+          <p class="text-sm text-muted-foreground">
+            TLS never downgrades silently. Custom CA and server name are non secret connection
+            settings.
+          </p>
+          <div class="grid gap-5 md:grid-cols-3">
+            <div class="grid gap-2">
+              <label for="connection-tls-mode" class="text-sm font-medium">TLS mode</label>
+              <select
+                id="connection-tls-mode"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="formModel().sslMode"
+                (change)="onTlsModeChange($any($event.target).value)"
+              >
+                <option value="disable">Disabled</option>
+                <option value="require">Require encryption</option>
+                <option value="verify-ca">Verify CA</option>
+                <option value="verify-full">Verify full hostname</option>
+              </select>
+            </div>
+            <div class="grid gap-2">
+              <label for="connection-ca" class="text-sm font-medium">Custom CA</label>
+              <input
+                id="connection-ca"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                [value]="formModel().ca"
+                (input)="updateForm('ca', $any($event.target).value)"
+                [disabled]="formModel().sslMode === 'disable'"
+                autocomplete="off"
+              />
+            </div>
+            <div class="grid gap-2">
+              <label for="connection-server-name" class="text-sm font-medium"
+                >TLS server name</label
+              >
+              <input
+                id="connection-server-name"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                [value]="formModel().serverName"
+                (input)="updateForm('serverName', $any($event.target).value)"
+                [disabled]="formModel().sslMode === 'disable'"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-4">
+          <legend class="text-base font-semibold">Credential handling</legend>
+          <div class="grid gap-5 md:grid-cols-2">
+            <div class="grid gap-2">
+              <label for="connection-secret" class="text-sm font-medium">{{
+                editingId() ? 'Replace saved password' : 'Password'
+              }}</label>
+              <input
+                id="connection-secret"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                type="password"
+                [value]="formModel().secret"
+                (input)="updateForm('secret', $any($event.target).value)"
+                autocomplete="new-password"
+              />
+              <p class="text-xs text-muted-foreground">
+                Leave blank to keep the existing secret, or use a transient password for testing.
+              </p>
+            </div>
+            <div
+              class="flex flex-col justify-end gap-3 rounded-lg border border-border bg-muted/25 p-4 text-sm"
+            >
+              @if (!editingId()) {
+                <label class="flex items-start gap-3">
+                  <input
+                    class="mt-1 size-4 accent-primary"
+                    type="checkbox"
+                    [checked]="formModel().saveSecret"
+                    (change)="updateForm('saveSecret', $any($event.target).checked)"
+                  />
+                  <span
+                    ><span class="font-medium">Save password in the vault</span
+                    ><span class="mt-1 block text-xs text-muted-foreground"
+                      >Turn this off when the password should be requested only for a future test or
+                      session.</span
+                    ></span
+                  >
+                </label>
+              } @else {
+                <label class="flex items-start gap-3">
+                  <input
+                    class="mt-1 size-4 accent-primary"
+                    type="checkbox"
+                    [checked]="formModel().clearSecret"
+                    (change)="updateForm('clearSecret', $any($event.target).checked)"
+                  />
+                  <span
+                    ><span class="font-medium">Remove the saved password</span
+                    ><span class="mt-1 block text-xs text-muted-foreground"
+                      >The next use will need a transient password.</span
+                    ></span
+                  >
+                </label>
+              }
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-4">
+          <legend class="text-base font-semibold">Presentation</legend>
+          <div class="grid gap-5 md:grid-cols-3">
+            <div class="grid gap-2">
+              <label for="connection-tag" class="text-sm font-medium">Tag</label>
+              <input
+                id="connection-tag"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="formModel().tag"
+                (input)="updateForm('tag', $any($event.target).value)"
+                autocomplete="off"
+              />
+            </div>
+            <div class="grid gap-2">
+              <label for="connection-color" class="text-sm font-medium">Accent color</label>
+              <input
+                id="connection-color"
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="formModel().color"
+                (input)="updateForm('color', $any($event.target).value)"
+                autocomplete="off"
+              />
+            </div>
+            <div class="flex items-end justify-end gap-3 md:col-span-1">
+              <button
+                Button
+                type="button"
+                variant="outline"
+                (click)="testCurrentConnection()"
+                [disabled]="testing() || saving()"
+              >
+                {{ testing() ? 'Testing…' : 'Test connection' }}
+              </button>
+              <button Button type="submit" [disabled]="saving() || testing()">
+                {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Save connection' }}
+              </button>
+            </div>
+          </div>
+        </fieldset>
+
+        @if (testResult()) {
+          <p
+            class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700"
+            role="status"
+            aria-live="polite"
+          >
+            Connection succeeded. Server version {{ testResult()?.version }}, latency
+            {{ testResult()?.latencyMs }} ms.
+          </p>
+        }
+      </form>
+    </section>
+  }
+
+  @if (loading()) {
+    <section
+      class="grid gap-6 lg:grid-cols-[18rem_1fr]"
+      aria-label="Loading connections"
+      aria-busy="true"
+    >
+      <div class="h-72 animate-pulse rounded-xl border border-border bg-muted/35"></div>
+      <div class="space-y-4">
+        <div class="h-24 animate-pulse rounded-xl border border-border bg-muted/35"></div>
+        <div class="h-24 animate-pulse rounded-xl border border-border bg-muted/35"></div>
+      </div>
+    </section>
+  } @else {
+    <section class="grid gap-6 lg:grid-cols-[18rem_1fr]" aria-label="Saved connections workspace">
+      <aside class="space-y-5">
+        <Card class="bg-card/70">
+          <CardHeader>
+            <CardTitle id="groups-title" class="text-lg">Server groups</CardTitle>
+            <CardDescription>Organize descriptors by environment or team.</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-2">
+            <button
+              Button
+              type="button"
+              variant="ghost"
+              class="w-full justify-start"
+              [attr.aria-pressed]="selectedGroupId() === null"
+              (click)="selectGroup(null)"
+            >
+              <span class="size-2 rounded-full bg-primary" aria-hidden="true"></span>
+              All connections
+              <span class="ms-auto text-xs text-muted-foreground">{{ connections().length }}</span>
+            </button>
+            @for (group of groups(); track trackGroup($index, group)) {
+              <div class="flex items-center gap-1">
+                <button
+                  Button
+                  type="button"
+                  variant="ghost"
+                  class="min-w-0 flex-1 justify-start"
+                  [attr.aria-pressed]="selectedGroupId() === group.id"
+                  (click)="selectGroup(group.id)"
+                >
+                  <span
+                    class="size-2 rounded-full"
+                    [style.backgroundColor]="group.color || 'hsl(var(--primary))'"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="truncate">{{ group.name }}</span>
+                  <span class="ms-auto text-xs text-muted-foreground">{{
+                    connections().filter((connection) => connection.groupId === group.id).length
+                  }}</span>
+                </button>
+                <button
+                  Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  [attr.aria-label]="'Edit ' + group.name"
+                  (click)="startGroupEdit(group)"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="size-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      d="m4 16-.5 4.5L8 20l11-11a2.1 2.1 0 0 0-3-3L5 17"
+                      stroke-linejoin="round"
+                    ></path>
+                    <path d="m14 7 3 3" stroke-linecap="round"></path>
+                  </svg>
+                </button>
+                <button
+                  Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  [attr.aria-label]="'Delete ' + group.name"
+                  (click)="confirmDeleteGroup(group)"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="size-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      d="M5 7h14M10 11v6m4-6v6M8 7l1-3h6l1 3m-9 0 1 14h8l1-14"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
+            }
+            @if (groups().length === 0) {
+              <p class="px-3 py-2 text-sm text-muted-foreground">
+                No groups yet. Add one to make environments easier to scan.
+              </p>
+            }
+          </CardContent>
+        </Card>
+
+        <Card class="bg-muted/20">
+          <CardHeader>
+            <CardTitle class="text-base">{{
+              editingGroupId() ? 'Rename group' : 'New group'
+            }}</CardTitle>
+          </CardHeader>
+          <form (submit)="$event.preventDefault(); saveGroup()">
+            <CardContent class="space-y-3">
+              <div class="grid gap-2">
+                <label for="group-name" class="text-sm font-medium">Group name</label>
+                <input
+                  id="group-name"
+                  class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  [value]="groupModel().name"
+                  (input)="updateGroupForm('name', $any($event.target).value)"
+                  required
+                />
+              </div>
+              <div class="grid gap-2">
+                <label for="group-color" class="text-sm font-medium">Color</label>
+                <input
+                  id="group-color"
+                  class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  [value]="groupModel().color"
+                  (input)="updateGroupForm('color', $any($event.target).value)"
+                />
+              </div>
+            </CardContent>
+            <CardFooter class="justify-end gap-2">
+              @if (editingGroupId()) {
+                <button Button type="button" variant="ghost" (click)="startGroupCreate()">
+                  Cancel
+                </button>
+              }
+              <button Button type="submit" size="sm">
+                {{ editingGroupId() ? 'Update group' : 'Add group' }}
+              </button>
+            </CardFooter>
+          </form>
+        </Card>
+      </aside>
+
+      <div class="connection-list min-w-0 space-y-6" aria-labelledby="groups-title">
+        @if (connections().length === 0) {
+          <Card class="border-dashed bg-card/60">
+            <CardContent
+              class="flex min-h-72 flex-col items-center justify-center gap-4 p-8 text-center"
+            >
+              <span
+                class="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+                aria-hidden="true"
+              >
+                <svg
+                  class="size-7"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                >
+                  <circle cx="7" cy="12" r="3"></circle>
+                  <circle cx="17" cy="7" r="3"></circle>
+                  <circle cx="17" cy="17" r="3"></circle>
+                  <path d="m9.5 10.5 5-2M9.5 13.5l5 2" stroke-linecap="round"></path>
+                </svg>
+              </span>
+              <div class="space-y-2">
+                <h2 class="text-xl font-semibold">Start with a trusted route</h2>
+                <p class="max-w-md text-sm leading-relaxed text-muted-foreground">
+                  Create a saved descriptor for a PostgreSQL or MySQL server. You can test it first
+                  and decide whether the password belongs in the vault.
+                </p>
+              </div>
+              <button Button type="button" (click)="openCreate()">Create first connection</button>
+            </CardContent>
+          </Card>
+        } @else if (
+          groupedConnections().every((section) => !hasVisibleConnections(section.items))
+        ) {
+          <Card class="border-dashed bg-card/60"
+            ><CardContent
+              class="flex min-h-56 flex-col items-center justify-center gap-3 p-8 text-center"
+              ><h2 class="text-xl font-semibold">No connections in {{ selectedGroupLabel() }}</h2>
+              <p class="text-sm text-muted-foreground">
+                Choose another group or move a saved connection here from its editor.
+              </p></CardContent
+            ></Card
+          >
+        } @else {
+          @for (section of groupedConnections(); track section.group?.id ?? 'ungrouped') {
+            @if (hasVisibleConnections(section.items)) {
+              <section
+                class="space-y-3"
+                [attr.aria-labelledby]="
+                  section.group ? 'group-' + section.group.id : 'ungrouped-title'
+                "
+              >
+                <div class="flex items-center justify-between gap-4">
+                  <div class="flex min-w-0 items-center gap-3">
+                    <span class="size-2.5 rounded-full bg-primary" aria-hidden="true"></span>
+                    <h2
+                      class="truncate text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                      [id]="section.group ? 'group-' + section.group.id : 'ungrouped-title'"
+                    >
+                      {{ section.group?.name || 'Ungrouped' }}
+                    </h2>
+                  </div>
+                  <span class="text-xs text-muted-foreground">{{
+                    visibleItems(section.items).length
+                  }}</span>
+                </div>
+                <div class="grid gap-4 xl:grid-cols-2">
+                  @for (
+                    connection of visibleItems(section.items);
+                    track trackConnection($index, connection)
+                  ) {
+                    <article
+                      class="connection-card rounded-xl border border-border bg-card/80 p-5 shadow-sm"
+                    >
+                      <div class="flex items-start justify-between gap-4">
+                        <div class="min-w-0 space-y-2">
+                          <div class="flex flex-wrap items-center gap-2">
+                            <h3 class="truncate text-lg font-semibold">{{ connection.label }}</h3>
+                            <span
+                              class="rounded-full border border-border bg-muted/35 px-2 py-0.5 text-xs font-medium"
+                              >{{
+                                connection.engine === 'postgresql' ? 'PostgreSQL' : 'MySQL'
+                              }}</span
+                            >
+                          </div>
+                          <p class="truncate font-mono text-sm text-muted-foreground">
+                            {{ connection.host }}:{{ connection.port
+                            }}{{ connection.database ? '/' + connection.database : '' }}
+                          </p>
+                        </div>
+                        <span
+                          class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                          aria-hidden="true"
+                          ><svg
+                            class="size-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                          >
+                            <circle cx="7" cy="12" r="3"></circle>
+                            <circle cx="17" cy="7" r="3"></circle>
+                            <circle cx="17" cy="17" r="3"></circle>
+                            <path d="m9.5 10.5 5-2M9.5 13.5l5 2" stroke-linecap="round"></path></svg
+                        ></span>
+                      </div>
+                      <dl class="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                        <div>
+                          <dt class="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                            User
+                          </dt>
+                          <dd class="mt-1 truncate font-medium">{{ connection.username }}</dd>
+                        </div>
+                        <div>
+                          <dt class="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                            TLS
+                          </dt>
+                          <dd class="mt-1 font-medium">
+                            {{ connection.sslMode === 'disable' ? 'Disabled' : connection.sslMode }}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                            Password
+                          </dt>
+                          <dd class="mt-1 font-medium">
+                            {{ connection.hasSavedSecret ? 'Vault saved' : 'Transient only' }}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                            Owner
+                          </dt>
+                          <dd class="mt-1 truncate font-medium">{{ connection.owner.username }}</dd>
+                        </div>
+                      </dl>
+                      <div
+                        class="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-4"
+                      >
+                        <div class="flex flex-wrap gap-2">
+                          @if (connection.tag) {
+                            <span
+                              class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
+                              >{{ connection.tag }}</span
+                            >
+                          }
+                          @if (connection.hasSavedSecret) {
+                            <span
+                              class="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-700"
+                              >Encrypted secret</span
+                            >
+                          }
+                        </div>
+                        <div class="flex items-center gap-1">
+                          <button
+                            Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            (click)="duplicate(connection)"
+                          >
+                            Duplicate</button
+                          ><button
+                            Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            [disabled]="authSession.currentUser()?.id !== connection.owner.id"
+                            (click)="openEdit(connection)"
+                          >
+                            Edit</button
+                          ><button
+                            Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            [attr.aria-label]="'Delete ' + connection.label"
+                            (click)="confirmDelete(connection)"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  }
+                </div>
+              </section>
+            }
+          }
+        }
+      </div>
+    </section>
+  }
+</main>
+
+<Dialog [open]="deleteTarget() !== null" (openChange)="$event || deleteTarget.set(null)">
+  <DialogHeader
+    ><DialogTitle>Delete {{ deleteTarget()?.label }}?</DialogTitle
+    ><DialogDescription
+      >This removes the saved descriptor, its encrypted password, and any active provider session.
+      The action cannot be undone.</DialogDescription
+    ></DialogHeader
+  >
+  <DialogContent
+    ><p class="text-sm text-muted-foreground">
+      You are about to delete
+      <span class="font-semibold text-foreground">{{ deleteTarget()?.label }}</span> at
+      <span class="font-mono text-foreground">{{ deleteTarget()?.host }}</span
+      >.
+    </p></DialogContent
+  >
+  <DialogFooter
+    ><button Button type="button" variant="outline" DialogClose>Cancel</button
+    ><button Button type="button" variant="destructive" (click)="deleteConnection()">
+      Delete connection
+    </button></DialogFooter
+  >
+</Dialog>
+
+<Dialog [open]="deleteGroupTarget() !== null" (openChange)="$event || deleteGroupTarget.set(null)">
+  <DialogHeader
+    ><DialogTitle>Delete {{ deleteGroupTarget()?.name }}?</DialogTitle
+    ><DialogDescription
+      >The group will be removed, but its connections will stay safe and become
+      ungrouped.</DialogDescription
+    ></DialogHeader
+  >
+  <DialogContent
+    ><p class="text-sm text-muted-foreground">
+      Any connection in this group will remain in your list. You can assign it to another group
+      later.
+    </p></DialogContent
+  >
+  <DialogFooter
+    ><button Button type="button" variant="outline" DialogClose>Cancel</button
+    ><button Button type="button" variant="destructive" (click)="deleteGroup()">
+      Delete group
+    </button></DialogFooter
+  >
+</Dialog>

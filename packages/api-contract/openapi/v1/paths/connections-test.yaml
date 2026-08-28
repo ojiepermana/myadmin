@@ -1,0 +1,47 @@
+post:
+  operationId: testConnection
+  tags: [connections]
+  summary: Test a database connection
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/connection.yaml#/ConnectionTestRequest
+  responses:
+    '200':
+      description: Normalized successful connection test.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/connection.yaml#/ConnectionTestResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or ownership check failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Request validation or a transient password is required.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '429':
+      description: Connection test rate limit exceeded.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The database returned a normalized test error.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

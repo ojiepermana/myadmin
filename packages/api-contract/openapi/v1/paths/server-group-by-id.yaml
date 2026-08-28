@@ -1,0 +1,86 @@
+patch:
+  operationId: updateServerGroup
+  tags: [connections]
+  summary: Update a server group
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/server-group.yaml#/ServerGroupPatch
+  responses:
+    '200':
+      description: Updated server group.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/server-group.yaml#/ServerGroup
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: Only the owner may edit a server group.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Server group not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The group name is already used by this owner.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Group validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+delete:
+  operationId: deleteServerGroup
+  tags: [connections]
+  summary: Delete a server group
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    '204':
+      description: Server group deleted and its connections ungrouped.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: Only the owner may delete a server group.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Server group not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

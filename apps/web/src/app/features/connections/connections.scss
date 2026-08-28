@@ -1,0 +1,30 @@
+:host {
+  display: block;
+}
+
+.connections-page {
+  min-height: 100%;
+}
+
+.connection-list {
+  min-width: 0;
+}
+
+.connection-card {
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.connection-card:hover {
+  border-color: hsl(var(--primary) / 0.45);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connection-card {
+    transition: none;
+  }
+}

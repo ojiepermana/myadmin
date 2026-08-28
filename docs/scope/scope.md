@@ -387,12 +387,12 @@ Introspeksi information_schema dengan hierarki datar. Done when: bentuk hasil id
 Kelola koneksi tersimpan dengan credential terenkripsi dan batas Admin yang jelas. Done when: alur buat, test, ubah, duplikasi, hapus bekerja dua engine tanpa satu pun secret bocor.
 
 - [x] Design it (spec): [0026](../specs/0026-connection-manager-crud/index.md)
-- [ ] Build it: /develop connection-manager-crud
-  - [ ] Use case CRUD koneksi plus vault plus policies otorisasi plus audit (AC-1, AC-2, AC-4 sampai AC-9)
-  - [ ] Endpoint test dengan secret transient plus rate limit (AC-3)
-  - [ ] Halaman connections lengkap plus server group plus e2e dan test keamanan (AC-7, AC-10)
+- [x] Build it: /develop connection-manager-crud
+  - [x] Use case CRUD koneksi plus vault plus policies otorisasi plus audit (AC-1, AC-2, AC-4 sampai AC-9)
+  - [x] Endpoint test dengan secret transient plus rate limit (AC-3)
+  - [x] Halaman connections lengkap plus server group plus e2e dan test keamanan (AC-7, AC-10)
 - [ ] [Verify it](../specs/0026-connection-manager-crud/verify.md): /check verify connection-manager-crud
-- [ ] [Test it](../specs/0026-connection-manager-crud/test.md): /test connection-manager-crud
+- [x] [Test it](../specs/0026-connection-manager-crud/test.md): /test connection-manager-crud
 
 ### 27. Connection lifecycle dan status `in-progress`
 

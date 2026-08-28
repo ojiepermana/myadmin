@@ -1,0 +1,54 @@
+post:
+  operationId: duplicateConnection
+  tags: [connections]
+  summary: Duplicate a saved connection
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/connection.yaml#/ConnectionDuplicateRequest
+  responses:
+    '201':
+      description: Duplicated connection descriptor.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/connection.yaml#/Connection
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: Only the owner may duplicate a connection.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Connection not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The label is already used by this owner.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Duplicate input validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

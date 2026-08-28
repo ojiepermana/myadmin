@@ -1,6 +1,7 @@
 import { inject, type EnvironmentProviders, type Provider } from '@angular/core';
 import { AuthClient } from '../facades/auth-client';
 import { AuditClient } from '../facades/audit-client';
+import { ConnectionsClient } from '../facades/connections-client';
 import { HealthClient } from '../facades/health-client';
 import { JobsClient } from '../facades/jobs-client';
 import { SetupClient } from '../facades/setup-client';
@@ -23,10 +24,11 @@ export function provideMyadminSdk(
     JobsClient,
     SetupClient,
     SettingsClient,
-    WorkspaceClient,
-    AuthClient,
-    AuditClient,
-    UserClient,
+  WorkspaceClient,
+  AuthClient,
+  AuditClient,
+  UserClient,
+  ConnectionsClient,
     MyadminSdk,
   ];
 }
@@ -39,6 +41,7 @@ export function provideMyadminSdkTransport(transport: SdkTransport): Provider {
 export class MyadminSdk {
   public readonly auth = inject(AuthClient);
   public readonly audit = inject(AuditClient);
+  public readonly connections = inject(ConnectionsClient);
   public readonly health = inject(HealthClient);
   public readonly jobs = inject(JobsClient);
   public readonly setup = inject(SetupClient);

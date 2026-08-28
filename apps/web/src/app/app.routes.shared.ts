@@ -71,6 +71,9 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
     loadComponent:
       definition.id === 'auth'
         ? () => import('./features/login/login').then(({ Login }) => Login)
+        : definition.id === 'connections'
+          ? () =>
+              import('./features/connections/connections').then(({ Connections }) => Connections)
         : definition.id === 'settings'
           ? () => import('./features/settings/settings').then(({ Settings }) => Settings)
         : definition.id === 'audit'

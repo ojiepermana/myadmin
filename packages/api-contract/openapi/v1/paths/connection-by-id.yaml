@@ -1,0 +1,86 @@
+patch:
+  operationId: updateConnection
+  tags: [connections]
+  summary: Update a saved connection
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/connection.yaml#/ConnectionPatch
+  responses:
+    '200':
+      description: Updated connection descriptor.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/connection.yaml#/Connection
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: Only the owner may edit a connection.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Connection not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The label is already used by this owner.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Connection validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+delete:
+  operationId: deleteConnection
+  tags: [connections]
+  summary: Delete a saved connection
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    '204':
+      description: Connection and saved credential deleted.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The caller cannot delete this connection.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Connection not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

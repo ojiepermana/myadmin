@@ -49,6 +49,18 @@ paths:
     $ref: ./paths/user-reset-password.yaml
   /workspace:
     $ref: ./paths/workspace.yaml
+  /connections:
+    $ref: ./paths/connections.yaml
+  /connections/test:
+    $ref: ./paths/connections-test.yaml
+  /connections/{id}:
+    $ref: ./paths/connection-by-id.yaml
+  /connections/{id}/duplicate:
+    $ref: ./paths/connection-duplicate.yaml
+  /server-groups:
+    $ref: ./paths/server-groups.yaml
+  /server-groups/{id}:
+    $ref: ./paths/server-group-by-id.yaml
 components:
   schemas:
     ApiError:
@@ -115,6 +127,34 @@ components:
       $ref: ./components/schemas/workspace.yaml#/WorkspacePanels
     Health:
       $ref: ./components/schemas/health.yaml
+    ConnectionTlsOptions:
+      $ref: ./components/schemas/connection.yaml#/ConnectionTlsOptions
+    ConnectionInput:
+      $ref: ./components/schemas/connection.yaml#/ConnectionInput
+    ConnectionCreateRequest:
+      $ref: ./components/schemas/connection.yaml#/ConnectionCreateRequest
+    ConnectionOwner:
+      $ref: ./components/schemas/connection.yaml#/ConnectionOwner
+    Connection:
+      $ref: ./components/schemas/connection.yaml#/Connection
+    ConnectionPatch:
+      $ref: ./components/schemas/connection.yaml#/ConnectionPatch
+    ConnectionDuplicateRequest:
+      $ref: ./components/schemas/connection.yaml#/ConnectionDuplicateRequest
+    ConnectionTestRequest:
+      $ref: ./components/schemas/connection.yaml#/ConnectionTestRequest
+    ConnectionTestResponse:
+      $ref: ./components/schemas/connection.yaml#/ConnectionTestResponse
+    ConnectionPage:
+      $ref: ./components/schemas/connection.yaml#/ConnectionPage
+    ServerGroupInput:
+      $ref: ./components/schemas/server-group.yaml#/ServerGroupInput
+    ServerGroupPatch:
+      $ref: ./components/schemas/server-group.yaml#/ServerGroupPatch
+    ServerGroup:
+      $ref: ./components/schemas/server-group.yaml#/ServerGroup
+    ServerGroupPage:
+      $ref: ./components/schemas/server-group.yaml#/ServerGroupPage
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

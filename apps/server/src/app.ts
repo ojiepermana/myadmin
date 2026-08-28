@@ -17,6 +17,10 @@ import {
   type UpdateUserRoleStatusInput,
 } from '@myadmin/auth';
 import { AuditAdminReader, isAuditAction } from '@myadmin/audit';
+import { CredentialVault } from '@myadmin/crypto';
+import { MysqlProvider } from '@myadmin/database-mysql';
+import { ProviderRegistry } from '@myadmin/database-core';
+import { createPostgresqlProvider } from '@myadmin/database-postgresql';
 import { resolveDataDirectory, type MyadminConfig } from '@myadmin/config';
 import { SettingsServiceError, type SettingsService } from '@myadmin/settings';
 import type { AuditAdminRepository, AuditFilter, AuditResult } from '@myadmin/internal-domain';
@@ -47,6 +51,12 @@ import {
   type WorkspacePersistenceStore,
 } from './workspace';
 import { MAX_WORKSPACE_STATE_BYTES } from '@myadmin/workspace';
+import {
+  ConnectionManagerService,
+  createConnectionManager,
+  type ActiveConnectionSessionRegistry,
+} from './connections/connection-manager';
+import { registerConnectionRoutes } from './connections/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -61,6 +71,11 @@ export interface ServerStartOptions {
   authService?: AuthService;
   settingsService?: SettingsService;
   userManagementService?: UserManagementService;
+  connectionManager?: ConnectionManagerService;
+  providerRegistry?: ProviderRegistry;
+  credentialVault?: CredentialVault;
+  activeConnectionSessions?: ActiveConnectionSessionRegistry;
+  connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
   jobManager?: JobManager;
@@ -82,6 +97,11 @@ export interface ServerAppOptions {
   authService?: AuthService;
   settingsService?: SettingsService;
   userManagementService?: UserManagementService;
+  connectionManager?: ConnectionManagerService;
+  providerRegistry?: ProviderRegistry;
+  credentialVault?: CredentialVault;
+  activeConnectionSessions?: ActiveConnectionSessionRegistry;
+  connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
   jobManager?: JobManager;
@@ -117,6 +137,32 @@ function authServiceForStore(
 
 function workspaceServiceForStore(store: WorkspacePersistenceStore): WorkspaceService {
   return new WorkspaceService(store);
+}
+
+function providerRegistryForServer(): ProviderRegistry {
+  return new ProviderRegistry([createPostgresqlProvider(), new MysqlProvider()]);
+}
+
+function connectionManagerForDatabase(
+  database: Database,
+  config: MyadminConfig | undefined,
+  options: ServerAppOptions,
+): ConnectionManagerService {
+  const store = storeForDatabase(database);
+  const providers = options.providerRegistry ?? providerRegistryForServer();
+  if (options.credentialVault) {
+    return new ConnectionManagerService({
+      store,
+      providers,
+      vault: options.credentialVault,
+      activeSessions: options.activeConnectionSessions,
+      testRateLimiter: options.connectionTestRateLimiter,
+    });
+  }
+  return createConnectionManager(store, config?.dataDir ?? resolveDataDirectory(), providers, {
+    activeSessions: options.activeConnectionSessions,
+    testRateLimiter: options.connectionTestRateLimiter,
+  });
 }
 
 export const host = defaultHost;
@@ -1302,6 +1348,19 @@ export function createServerApp(options: ServerAppOptions = {}) {
     secureCookies,
     workspaceService,
   );
+  const connectionManager =
+    options.connectionManager ??
+    (options.database
+      ? connectionManagerForDatabase(options.database, options.config, options)
+      : undefined);
+  if (connectionManager && authService) {
+    application = registerConnectionRoutes(application, '/api/v1', {
+      authService,
+      setupService,
+      connectionManager,
+      secureCookies,
+    });
+  }
   if (authService) {
     application = registerWebSocketRoute(
       application,
@@ -1337,6 +1396,15 @@ export function createApp(
   const setupService = new InitialAdminService({ store });
   const authService = new AuthService(store);
   const userManagementService = new UserManagementService({ store });
+  const contractKey = new Uint8Array(32).fill(7);
+  const credentialVault = new CredentialVault({
+    keyProvider: { load: async () => ({ key: contractKey, keyId: 'contract-key' }) },
+  });
+  const connectionManager = new ConnectionManagerService({
+    store,
+    providers: providerRegistryForServer(),
+    vault: credentialVault,
+  });
   const setupRateLimiter = new InMemoryRateLimiter();
 
   let application: AnyElysia = installObservability(
@@ -1370,7 +1438,7 @@ export function createApp(
     false,
     workspaceServiceForStore(store),
   );
-  return registerJobsRoutes(
+  application = registerJobsRoutes(
     application,
     '',
     setupService,
@@ -1378,6 +1446,12 @@ export function createApp(
     false,
     options.jobManager ?? new JobManager(),
   );
+  return registerConnectionRoutes(application, '', {
+    authService,
+    setupService,
+    connectionManager,
+    secureCookies: false,
+  });
 }
 
 export const app = createServerApp();
@@ -1407,6 +1481,11 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       loginRateLimiter: options.loginRateLimiter,
       jobManager: options.jobManager,
       auditRepository: options.auditRepository,
+      connectionManager: options.connectionManager,
+      providerRegistry: options.providerRegistry,
+      credentialVault: options.credentialVault,
+      activeConnectionSessions: options.activeConnectionSessions,
+      connectionTestRateLimiter: options.connectionTestRateLimiter,
       websocketCheckIntervalMs: options.websocketCheckIntervalMs,
       workspaceService: options.workspaceService,
       observability: options.observability,

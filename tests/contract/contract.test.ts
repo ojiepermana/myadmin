@@ -299,4 +299,56 @@ describe('API contract', () => {
       await responsePayload(reset),
     );
   });
+
+  test('CT-0026 validates connection manager response schemas', async () => {
+    const document = await loadContract(contractPath);
+    const operations = contractOperations(document);
+    const connection = {
+      id: 'connection-1',
+      owner: { id: 'user-1', username: 'admin' },
+      groupId: null,
+      label: 'Production database',
+      engine: 'postgresql',
+      host: 'db.internal.test',
+      port: 5432,
+      database: 'app',
+      username: 'app_user',
+      sslMode: 'disable',
+      tlsOptions: null,
+      connectTimeoutMs: 3_000,
+      tag: 'production',
+      color: null,
+      hasSavedSecret: true,
+    };
+
+    assertResponseMatchesContract(
+      document,
+      operation(operations, 'createConnection'),
+      201,
+      connection,
+    );
+    assertResponseMatchesContract(document, operation(operations, 'listConnections'), 200, {
+      items: [connection],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+    });
+    assertResponseMatchesContract(document, operation(operations, 'testConnection'), 200, {
+      success: true,
+      version: 'fixture-16',
+      latencyMs: 2,
+    });
+    assertResponseMatchesContract(document, operation(operations, 'createServerGroup'), 201, {
+      id: 'group-1',
+      name: 'Production',
+      color: '#22c55e',
+      sortOrder: 1,
+    });
+    assertResponseMatchesContract(document, operation(operations, 'listServerGroups'), 200, {
+      items: [{ id: 'group-1', name: 'Production', color: '#22c55e', sortOrder: 1 }],
+      page: 1,
+      pageSize: 100,
+      total: 1,
+    });
+  });
 });

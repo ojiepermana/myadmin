@@ -1,0 +1,61 @@
+get:
+  operationId: listServerGroups
+  tags: [connections]
+  summary: List server groups
+  parameters:
+    - $ref: ../components/parameters/page.yaml
+    - $ref: ../components/parameters/page-size.yaml
+  responses:
+    '200':
+      description: Server groups owned by the current user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/server-group.yaml#/ServerGroupPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+post:
+  operationId: createServerGroup
+  tags: [connections]
+  summary: Create a server group
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/server-group.yaml#/ServerGroupInput
+  responses:
+    '201':
+      description: Server group created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/server-group.yaml#/ServerGroup
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF check failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The group name is already used by this owner.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Group validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
