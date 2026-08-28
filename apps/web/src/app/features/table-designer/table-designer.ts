@@ -1,10 +1,14 @@
 import { CommonModule } from '@angular/common';
+import { CdkDrag, CdkDropList, type CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   MyadminSdk,
   type TableAlteration,
   type TableChangeSet,
+  type TableConstraintInput,
+  type TableIndexInput,
+  type TableReferentialAction,
   type TableColumnInput,
   type TableDdlPreview,
   type TableDestructiveImpact,
@@ -18,6 +22,7 @@ import {
   type TableOperation,
   type TableOperationConfirmation,
 } from '../../shared/database-components/table-operation-dialog/table-operation-dialog';
+import type { ExplorerSearchResult } from '@myadmin/sdk-angular';
 
 interface TableRef {
   database: string;
@@ -28,6 +33,13 @@ interface TableRef {
 interface EditorColumn extends TableColumnInput {
   originalName?: string;
 }
+type EditorIndex = TableIndexInput & {
+  originalName?: string;
+  method?: string;
+};
+type EditorConstraint = TableConstraintInput & {
+  originalName?: string;
+};
 
 function refFromQuery(value: string | null): TableRef | null {
   if (!value) return null;
@@ -60,10 +72,65 @@ function messageFor(error: unknown): string {
     : 'The table designer could not complete that request.';
 }
 
+function columnsFromText(value: string): string[] {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function constraintFromMetadata(value: {
+  name: string;
+  type: string;
+  columns?: string[];
+  expression?: string;
+  referencedTable?: { database: string; schema?: string | null; name: string; type: string };
+  referencedColumns?: string[];
+  onDelete?: string;
+  onUpdate?: string;
+}): EditorConstraint | null {
+  if (value.type === 'check' && value.expression !== undefined)
+    return {
+      type: 'check',
+      name: value.name,
+      expression: value.expression,
+      originalName: value.name,
+    };
+  if ((value.type === 'primaryKey' || value.type === 'unique') && value.columns?.length)
+    return {
+      type: value.type,
+      name: value.name,
+      columns: [...value.columns],
+      originalName: value.name,
+    };
+  if (
+    value.type === 'foreignKey' &&
+    value.columns?.length &&
+    value.referencedTable &&
+    value.referencedColumns?.length &&
+    value.referencedTable.type === 'table'
+  )
+    return {
+      type: 'foreignKey',
+      name: value.name,
+      columns: [...value.columns],
+      referencedTable: {
+        ...value.referencedTable,
+        schema: value.referencedTable.schema ?? null,
+        type: 'table',
+      },
+      referencedColumns: [...value.referencedColumns],
+      ...(value.onDelete ? { onDelete: value.onDelete as TableReferentialAction } : {}),
+      ...(value.onUpdate ? { onUpdate: value.onUpdate as TableReferentialAction } : {}),
+      originalName: value.name,
+    };
+  return null;
+}
+
 @Component({
   selector: 'app-table-designer',
   standalone: true,
-  imports: [CommonModule, TableOperationDialog],
+  imports: [CommonModule, CdkDrag, CdkDropList, TableOperationDialog],
   templateUrl: './table-designer.html',
   styleUrl: './table-designer.scss',
 })
@@ -80,6 +147,13 @@ export class TableDesigner {
   private readonly typesState = signal<TableTypeCatalog | null>(null);
   private readonly columnsState = signal<EditorColumn[]>([freshColumn()]);
   private readonly originalColumnsState = signal<EditorColumn[]>([]);
+  private readonly indexesState = signal<EditorIndex[]>([]);
+  private readonly originalIndexesState = signal<EditorIndex[]>([]);
+  private readonly constraintsState = signal<EditorConstraint[]>([]);
+  private readonly originalConstraintsState = signal<EditorConstraint[]>([]);
+  private readonly sectionState = signal<'columns' | 'indexes' | 'constraints'>('columns');
+  private readonly targetSearchState = signal('');
+  private readonly targetResultsState = signal<readonly ExplorerSearchResult[]>([]);
   private readonly previewState = signal<TableDdlPreview | null>(null);
   private readonly loadingState = signal(true);
   private readonly savingState = signal(false);
@@ -95,6 +169,11 @@ export class TableDesigner {
   protected readonly tableName = this.tableNameState.asReadonly();
   protected readonly types = this.typesState.asReadonly();
   protected readonly columns = this.columnsState.asReadonly();
+  protected readonly indexes = this.indexesState.asReadonly();
+  protected readonly constraints = this.constraintsState.asReadonly();
+  protected readonly section = this.sectionState.asReadonly();
+  protected readonly targetSearch = this.targetSearchState.asReadonly();
+  protected readonly targetResults = this.targetResultsState.asReadonly();
   protected readonly preview = this.previewState.asReadonly();
   protected readonly loading = this.loadingState.asReadonly();
   protected readonly saving = this.savingState.asReadonly();
@@ -152,6 +231,27 @@ export class TableDesigner {
             await firstValueFrom(this.sdk.tableOperations.impact(connectionId, this.ref()!)),
           );
         }
+        const indexes = (description.indexes ?? [])
+          .filter((index) => !index.primary)
+          .map((index) => ({
+            name: index.name,
+            originalName: index.name,
+            columns: [...index.columns],
+            unique: index.unique,
+            ...(index.method ? { method: index.method } : {}),
+          }));
+        this.originalIndexesState.set(indexes);
+        this.indexesState.set(indexes.map((index) => ({ ...index, columns: [...index.columns] })));
+        const constraints = (description.constraints ?? [])
+          .map(constraintFromMetadata)
+          .filter((constraint): constraint is EditorConstraint => constraint !== null);
+        this.originalConstraintsState.set(constraints);
+        this.constraintsState.set(
+          constraints.map((constraint) => ({
+            ...constraint,
+            ...('columns' in constraint ? { columns: [...constraint.columns] } : {}),
+          })) as EditorConstraint[],
+        );
       }
     } catch (error) {
       this.errorState.set(messageFor(error));
@@ -166,6 +266,162 @@ export class TableDesigner {
   }
   protected addColumn(): void {
     this.columnsState.update((columns) => [...columns, freshColumn()]);
+    this.previewState.set(null);
+  }
+  protected selectSection(section: 'columns' | 'indexes' | 'constraints'): void {
+    this.sectionState.set(section);
+  }
+  protected addIndex(): void {
+    this.indexesState.update((items) => [...items, { columns: [], unique: false }]);
+    this.sectionState.set('indexes');
+    this.previewState.set(null);
+  }
+  protected removeIndex(index: number): void {
+    this.indexesState.update((items) => items.filter((_, candidate) => candidate !== index));
+    this.previewState.set(null);
+  }
+  protected updateIndex(
+    index: number,
+    field: 'name' | 'unique' | 'columns',
+    value: string | boolean,
+  ): void {
+    this.indexesState.update((items) =>
+      items.map((item, candidate) =>
+        candidate === index
+          ? { ...item, [field]: field === 'columns' ? columnsFromText(value as string) : value }
+          : item,
+      ),
+    );
+    this.previewState.set(null);
+  }
+  protected dropIndexColumn(event: CdkDragDrop<string[]>, index: number): void {
+    this.indexesState.update((items) =>
+      items.map((item, candidate) => {
+        if (candidate !== index) return item;
+        const columns = [...item.columns];
+        moveItemInArray(columns, event.previousIndex, event.currentIndex);
+        return { ...item, columns };
+      }),
+    );
+    this.previewState.set(null);
+  }
+  protected addConstraint(type: 'primaryKey' | 'foreignKey' | 'unique' | 'check'): void {
+    const constraint: EditorConstraint =
+      type === 'check'
+        ? { type, expression: '' }
+        : type === 'foreignKey'
+          ? {
+              type,
+              columns: [],
+              referencedTable: {
+                database: this.ref()?.database ?? '',
+                schema: this.ref()?.schema ?? null,
+                name: '',
+                type: 'table',
+              },
+              referencedColumns: [],
+            }
+          : { type, columns: [] };
+    this.constraintsState.update((items) => [...items, constraint]);
+    this.sectionState.set('constraints');
+    this.previewState.set(null);
+  }
+  protected removeConstraint(index: number): void {
+    this.constraintsState.update((items) => items.filter((_, candidate) => candidate !== index));
+    this.previewState.set(null);
+  }
+  protected constraintColumns(constraint: EditorConstraint): readonly string[] {
+    return 'columns' in constraint ? constraint.columns : [];
+  }
+  protected updateConstraintColumns(index: number, value: string): void {
+    this.constraintsState.update((items) =>
+      items.map((item, candidate) =>
+        candidate === index && 'columns' in item
+          ? { ...item, columns: columnsFromText(value) }
+          : item,
+      ),
+    );
+    this.previewState.set(null);
+  }
+  protected updateConstraintField(index: number, field: string, value: string): void {
+    const nextValue = field === 'referencedColumns' ? columnsFromText(value) : value || undefined;
+    this.constraintsState.update((items) =>
+      items.map((item, candidate) =>
+        candidate === index ? ({ ...item, [field]: nextValue } as EditorConstraint) : item,
+      ),
+    );
+    this.previewState.set(null);
+  }
+  protected updateConstraintType(
+    index: number,
+    type: 'primaryKey' | 'foreignKey' | 'unique' | 'check',
+  ): void {
+    const current = this.constraints()[index];
+    if (!current) return;
+    const next: EditorConstraint =
+      type === 'check'
+        ? {
+            type,
+            name: current.name,
+            expression: 'expression' in current ? current.expression : '',
+          }
+        : type === 'foreignKey'
+          ? {
+              type,
+              name: current.name,
+              columns: 'columns' in current ? current.columns : [],
+              referencedTable:
+                'referencedTable' in current
+                  ? current.referencedTable
+                  : {
+                      database: this.ref()?.database ?? '',
+                      schema: this.ref()?.schema ?? null,
+                      name: '',
+                      type: 'table',
+                    },
+              referencedColumns: 'referencedColumns' in current ? current.referencedColumns : [],
+            }
+          : { type, name: current.name, columns: 'columns' in current ? current.columns : [] };
+    this.constraintsState.update((items) =>
+      items.map((item, candidate) => (candidate === index ? next : item)),
+    );
+    this.previewState.set(null);
+  }
+  protected async searchTargets(event: Event): Promise<void> {
+    const query = (event.target as HTMLInputElement).value;
+    this.targetSearchState.set(query);
+    if (!query.trim() || !this.connectionId()) {
+      this.targetResultsState.set([]);
+      return;
+    }
+    try {
+      this.targetResultsState.set(
+        (
+          await firstValueFrom(
+            this.sdk.explorer.searchObjects(this.connectionId(), query, {
+              types: ['table'],
+              database: this.ref()?.database,
+            }),
+          )
+        ).items,
+      );
+    } catch {
+      this.targetResultsState.set([]);
+    }
+  }
+  protected chooseTarget(index: number, target: ExplorerSearchResult): void {
+    this.constraintsState.update((items) =>
+      items.map((item, candidate) =>
+        candidate === index && item.type === 'foreignKey'
+          ? {
+              ...item,
+              referencedTable: { ...target, schema: target.schema ?? null, type: 'table' },
+            }
+          : item,
+      ),
+    );
+    this.targetResultsState.set([]);
+    this.targetSearchState.set(target.schema ? `${target.schema}.${target.name}` : target.name);
     this.previewState.set(null);
   }
   protected removeColumn(index: number): void {
@@ -267,6 +523,8 @@ export class TableDesigner {
       this.noticeState.set('Table changes applied. Explorer metadata was refreshed.');
       this.previewState.set(null);
       this.confirmState.set(false);
+      const ref = this.ref();
+      if (ref) this.workspace.markTableTabsStale(ref);
       await this.explorer.refreshRoot();
     } catch (error) {
       this.errorState.set(messageFor(error));
@@ -381,6 +639,23 @@ export class TableDesigner {
           void originalName;
           return rest;
         }),
+        ...(this.indexes().length
+          ? {
+              indexes: this.indexes().map(({ originalName, method, ...index }) => {
+                void originalName;
+                void method;
+                return index;
+              }),
+            }
+          : {}),
+        ...(this.constraints().length
+          ? {
+              constraints: this.constraints().map(({ originalName, ...constraint }) => {
+                void originalName;
+                return constraint;
+              }),
+            }
+          : {}),
       };
     const original = new Map(
       this.originalColumns().map((column) => [column.originalName ?? column.name, column]),
@@ -417,10 +692,69 @@ export class TableDesigner {
       original.delete(column.originalName);
     }
     for (const name of original.keys()) alterations.push({ kind: 'drop', name });
+    const originalIndexes = new Map(
+      this.originalIndexes().map((item) => [item.originalName ?? item.name ?? '', item]),
+    );
+    for (const index of this.indexes()) {
+      const name = index.originalName;
+      const { originalName, method, ...value } = index;
+      void originalName;
+      void method;
+      if (!name) alterations.push({ kind: 'addIndex', index: value });
+      else {
+        const previous = originalIndexes.get(name);
+        if (!previous) continue;
+        if (
+          JSON.stringify(value) !==
+          JSON.stringify({
+            name: previous.name,
+            columns: previous.columns,
+            unique: previous.unique,
+          })
+        ) {
+          alterations.push({ kind: 'dropIndex', name });
+          alterations.push({ kind: 'addIndex', index: value });
+        }
+        originalIndexes.delete(name);
+      }
+    }
+    for (const name of originalIndexes.keys())
+      if (name) alterations.push({ kind: 'dropIndex', name });
+    const originalConstraints = new Map(
+      this.originalConstraints().map((item) => [item.originalName ?? item.name ?? '', item]),
+    );
+    for (const constraint of this.constraints()) {
+      const name = constraint.originalName;
+      const { originalName, ...value } = constraint;
+      void originalName;
+      if (!name) alterations.push({ kind: 'addConstraint', constraint: value });
+      else {
+        const previous = originalConstraints.get(name);
+        if (!previous) continue;
+        if (
+          JSON.stringify(value) !==
+          JSON.stringify(
+            Object.fromEntries(Object.entries(previous).filter(([key]) => key !== 'originalName')),
+          )
+        ) {
+          alterations.push({ kind: 'dropConstraint', name, type: previous.type });
+          alterations.push({ kind: 'addConstraint', constraint: value });
+        }
+        originalConstraints.delete(name);
+      }
+    }
+    for (const name of originalConstraints.keys())
+      if (name) alterations.push({ kind: 'dropConstraint', name });
     return { operation: 'alter' as const, ref, alterations };
   }
 
   private originalColumns(): readonly EditorColumn[] {
     return this.originalColumnsState();
+  }
+  private originalIndexes(): readonly EditorIndex[] {
+    return this.originalIndexesState();
+  }
+  private originalConstraints(): readonly EditorConstraint[] {
+    return this.originalConstraintsState();
   }
 }

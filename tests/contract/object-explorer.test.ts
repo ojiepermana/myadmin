@@ -63,6 +63,8 @@ describe('object explorer contract', () => {
     assertResponseMatchesContract(document, operation(operations, 'describeExplorerObject'), 200, {
       ref: { database: 'app', schema: 'public', name: 'users', type: 'table' },
       columns: [{ name: 'id', dataType: 'integer', nullable: false }],
+      indexes: [],
+      constraints: [],
       estimatedRows: 10,
     });
     assertResponseMatchesContract(

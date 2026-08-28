@@ -6,6 +6,10 @@ import { MYADMIN_SDK_TRANSPORT, type SdkTransport } from '../transport/transport
 export type TableChangeSet = components['schemas']['TableChangeSet'];
 export type TableColumnInput = components['schemas']['TableColumnInput'];
 export type TableAlteration = components['schemas']['TableAlteration'];
+export type TableIndexInput = components['schemas']['TableIndex'];
+export type TableConstraintInput = components['schemas']['TableConstraint'];
+export type TableReferentialAction =
+  'NO ACTION' | 'RESTRICT' | 'CASCADE' | 'SET NULL' | 'SET DEFAULT';
 export type TableTypeCatalog = components['schemas']['TableTypeCatalog'];
 export type TableDdlPreview = components['schemas']['TableDdlPreview'];
 export type TableDdlApplyResult = components['schemas']['TableDdlApplyResult'];

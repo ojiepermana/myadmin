@@ -26,6 +26,11 @@ describe('table designer contract', () => {
       engine: 'postgresql',
       version: '16.4',
       types: [{ name: 'integer', label: 'Integer', parameters: [] }],
+      rules: {
+        onDelete: ['NO ACTION', 'RESTRICT', 'CASCADE', 'SET NULL', 'SET DEFAULT'],
+        onUpdate: ['NO ACTION', 'RESTRICT', 'CASCADE', 'SET NULL', 'SET DEFAULT'],
+        maxColumns: 32,
+      },
       capability: {
         engine: 'postgresql',
         version: '16.4',

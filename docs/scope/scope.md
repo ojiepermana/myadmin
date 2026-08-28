@@ -588,10 +588,11 @@ Create dan alter kolom lewat change set dengan pratinjau DDL wajib. Done when: y
 PK, FK, unique, check, index komposit di mesin change set yang sama. Done when: FK dengan aturan ON dan composite unique bekerja dua engine lewat pratinjau.
 
 - [x] Design it (spec): [0042](../specs/0042-table-designer-indexes-constraints/index.md)
-- [ ] Build it: /develop table-designer-indexes-constraints
-  - [ ] Perluasan change set dan kompilator plus snapshot (AC-2 sampai AC-5)
-  - [ ] UI tab index dan constraint plus editor FK (AC-1, AC-3, AC-5)
-  - [ ] Konfirmasi destructive, peringatan dampak PK FK, audit, e2e (AC-6, AC-7, AC-8)
+- [x] Build it: /develop table-designer-indexes-constraints
+  - [x] Perluasan change set dan kompilator plus snapshot (AC-2 sampai AC-5)
+  - [x] UI tab index dan constraint plus editor FK (AC-1, AC-3, AC-5)
+  - [x] Konfirmasi destructive, peringatan dampak PK FK, audit, dan invalidasi row identity (AC-6, AC-7)
+  - [ ] E2e dua engine lewat fixture database/browser (AC-8)
 - [ ] [Verify it](../specs/0042-table-designer-indexes-constraints/verify.md): /check verify table-designer-indexes-constraints
 - [ ] [Test it](../specs/0042-table-designer-indexes-constraints/test.md): /test table-designer-indexes-constraints
 

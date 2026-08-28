@@ -4,8 +4,11 @@ import type {
   TableChangeSet,
   TableColumnInput,
   TableColumnPatch,
+  TableConstraintInput,
   TableDefaultValue,
   TableGeneratedValue,
+  TableIndexInput,
+  TableReferentialAction,
 } from '@myadmin/database-core';
 import type { AnyElysia } from 'elysia';
 import type { ConnectionActor } from '../connections/connection-manager';
@@ -129,6 +132,110 @@ function integer(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value);
 }
 
+const REFERENTIAL_ACTIONS: readonly TableReferentialAction[] = [
+  'NO ACTION',
+  'RESTRICT',
+  'CASCADE',
+  'SET NULL',
+  'SET DEFAULT',
+];
+
+function stringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(string);
+}
+
+function parseIndex(value: unknown): TableIndexInput | null {
+  if (
+    !record(value) ||
+    !allowed(value, ['name', 'columns', 'unique']) ||
+    !stringArray(value['columns'])
+  )
+    return null;
+  if (value['name'] !== undefined && !string(value['name'])) return null;
+  if (value['unique'] !== undefined && !boolean(value['unique'])) return null;
+  return {
+    columns: value['columns'],
+    ...(value['name'] === undefined ? {} : { name: value['name'] }),
+    ...(value['unique'] === undefined ? {} : { unique: value['unique'] }),
+  };
+}
+
+function parseObjectRef(value: unknown): Record<string, unknown> | null {
+  if (!record(value) || !allowed(value, ['database', 'schema', 'name', 'type'])) return null;
+  if (!string(value['database']) || !string(value['name']) || value['type'] !== 'table')
+    return null;
+  if (value['schema'] !== undefined && value['schema'] !== null && !string(value['schema']))
+    return null;
+  return value;
+}
+
+function parseConstraint(value: unknown): TableConstraintInput | null {
+  if (!record(value) || !string(value['type'])) return null;
+  if (value['name'] !== undefined && !string(value['name'])) return null;
+  if (value['type'] === 'check') {
+    if (!allowed(value, ['type', 'name', 'expression']) || !string(value['expression']))
+      return null;
+    return {
+      type: 'check',
+      expression: value['expression'],
+      ...(value['name'] === undefined ? {} : { name: value['name'] }),
+    };
+  }
+  if (
+    value['type'] !== 'primaryKey' &&
+    value['type'] !== 'unique' &&
+    value['type'] !== 'foreignKey'
+  )
+    return null;
+  if (!stringArray(value['columns']) || value['columns'].length === 0) return null;
+  if (value['type'] !== 'foreignKey') {
+    if (!allowed(value, ['type', 'name', 'columns'])) return null;
+    return {
+      type: value['type'],
+      columns: value['columns'],
+      ...(value['name'] === undefined ? {} : { name: value['name'] }),
+    };
+  }
+  if (
+    !allowed(value, [
+      'type',
+      'name',
+      'columns',
+      'referencedTable',
+      'referencedColumns',
+      'onDelete',
+      'onUpdate',
+    ]) ||
+    !parseObjectRef(value['referencedTable']) ||
+    !stringArray(value['referencedColumns']) ||
+    value['referencedColumns'].length !== value['columns'].length ||
+    (value['onDelete'] !== undefined &&
+      !REFERENTIAL_ACTIONS.includes(value['onDelete'] as TableReferentialAction)) ||
+    (value['onUpdate'] !== undefined &&
+      !REFERENTIAL_ACTIONS.includes(value['onUpdate'] as TableReferentialAction))
+  )
+    return null;
+  const ref = value['referencedTable'] as Record<string, unknown>;
+  return {
+    type: 'foreignKey',
+    columns: value['columns'],
+    referencedColumns: value['referencedColumns'],
+    referencedTable: {
+      database: ref['database'] as string,
+      schema: ref['schema'] === undefined ? null : (ref['schema'] as string | null),
+      name: ref['name'] as string,
+      type: 'table',
+    },
+    ...(value['name'] === undefined ? {} : { name: value['name'] }),
+    ...(value['onDelete'] === undefined
+      ? {}
+      : { onDelete: value['onDelete'] as TableReferentialAction }),
+    ...(value['onUpdate'] === undefined
+      ? {}
+      : { onUpdate: value['onUpdate'] as TableReferentialAction }),
+  };
+}
+
 function parseDefault(value: unknown): TableDefaultValue | undefined | null {
   if (value === undefined) return undefined;
   if (
@@ -227,6 +334,43 @@ function parseAlterations(value: unknown): readonly TableAlteration[] | null {
       result.push({ kind: 'rename', name: item['name'], newName: item['newName'] });
       continue;
     }
+    if (item['kind'] === 'addIndex') {
+      if (!allowed(item, ['kind', 'index'])) return null;
+      const index = parseIndex(item['index']);
+      if (!index) return null;
+      result.push({ kind: 'addIndex', index });
+      continue;
+    }
+    if (item['kind'] === 'dropIndex') {
+      if (!allowed(item, ['kind', 'name']) || !string(item['name'])) return null;
+      result.push({ kind: 'dropIndex', name: item['name'] });
+      continue;
+    }
+    if (item['kind'] === 'addConstraint') {
+      if (!allowed(item, ['kind', 'constraint'])) return null;
+      const constraint = parseConstraint(item['constraint']);
+      if (!constraint) return null;
+      result.push({ kind: 'addConstraint', constraint });
+      continue;
+    }
+    if (item['kind'] === 'dropConstraint') {
+      if (
+        !allowed(item, ['kind', 'name', 'type']) ||
+        !string(item['name']) ||
+        (item['type'] !== undefined &&
+          (typeof item['type'] !== 'string' ||
+            !['primaryKey', 'foreignKey', 'unique', 'check'].includes(item['type'])))
+      )
+        return null;
+      result.push({
+        kind: 'dropConstraint',
+        name: item['name'],
+        ...(item['type'] === undefined
+          ? {}
+          : { type: item['type'] as TableConstraintInput['type'] }),
+      });
+      continue;
+    }
     if (
       item['kind'] !== 'modify' ||
       !allowed(item, ['kind', 'name', 'changes']) ||
@@ -275,7 +419,7 @@ function parseAlterations(value: unknown): readonly TableAlteration[] | null {
 function parseChangeSet(value: unknown): TableChangeSet | null {
   if (
     !record(value) ||
-    !allowed(value, ['operation', 'ref', 'columns', 'alterations']) ||
+    !allowed(value, ['operation', 'ref', 'columns', 'indexes', 'constraints', 'alterations']) ||
     (value['operation'] !== 'create' && value['operation'] !== 'alter') ||
     !record(value['ref'])
   )
@@ -302,7 +446,24 @@ function parseChangeSet(value: unknown): TableChangeSet | null {
     if (!Array.isArray(value['columns'])) return null;
     const columns = value['columns'].map(parseColumn);
     if (columns.some((item): item is null => item === null)) return null;
-    return { ...base, columns: columns as TableColumnInput[] };
+    const indexes = value['indexes'] === undefined ? [] : value['indexes'];
+    const constraints = value['constraints'] === undefined ? [] : value['constraints'];
+    if (!Array.isArray(indexes) || !Array.isArray(constraints)) return null;
+    const parsedIndexes = indexes.map(parseIndex);
+    const parsedConstraints = constraints.map(parseConstraint);
+    if (
+      parsedIndexes.some((item): item is null => item === null) ||
+      parsedConstraints.some((item): item is null => item === null)
+    )
+      return null;
+    return {
+      ...base,
+      columns: columns as TableColumnInput[],
+      ...(parsedIndexes.length === 0 ? {} : { indexes: parsedIndexes as TableIndexInput[] }),
+      ...(parsedConstraints.length === 0
+        ? {}
+        : { constraints: parsedConstraints as TableConstraintInput[] }),
+    };
   }
   const alterations = parseAlterations(value['alterations']);
   return alterations === null ? null : { ...base, alterations };

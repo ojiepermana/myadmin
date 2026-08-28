@@ -33,6 +33,7 @@ function fixture() {
       version: '16.4',
       types: [],
       capability: {} as never,
+      rules: { onDelete: [], onUpdate: [], maxColumns: 32 },
     }),
     preview: async () => preview,
     apply: async (): Promise<TableDdlApplyResult> => {

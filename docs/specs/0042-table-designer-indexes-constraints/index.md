@@ -1,7 +1,7 @@
 # 0042. Table designer: index dan constraint
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-TBL-02: PK, FK, unique, check, dan composite index dapat dibuat, diubah, dan 
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin mengatur kunci, relasi, dan index table dari satu tempat dengan SQL yang terlihat.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Perluasan change set spec 0041 (dipilih)
 
 **Pros**:
+
 - Satu mesin, satu pratinjau, satu pola konfirmasi; ubah sebagai drop plus add tampil jujur.
 
 **Cons**:
+
 - Change set semakin kaya; ditangani dengan tipe diskriminatif per operasi.
 
 ### Option 2: Endpoint terpisah per jenis constraint
 
 **Pros**:
+
 - Permukaan kecil per operasi.
 
 **Cons**:
+
 - Kehilangan pratinjau gabungan dan atomisitas PostgreSQL untuk beberapa perubahan sekaligus; duplikasi pola.
 
 ## Decision
@@ -65,14 +70,16 @@ Perubahan struktur yang saling terkait (drop PK lama, add PK baru, index penduku
 **API surface**: memakai preview/apply spec 0041 tanpa endpoint baru.
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| keadaan kini | index dan constraint | describeTable |
-| aturan ON tersedia | daftar per engine | modul aturan provider |
-| validasi FK | kecocokan tipe, index pendukung | provider saat preview |
-| gerbang check | checkConstraints | capability koneksi |
+
+| Action             | Value produced / displayed      | Source                |
+| ------------------ | ------------------------------- | --------------------- |
+| keadaan kini       | index dan constraint            | describeTable         |
+| aturan ON tersedia | daftar per engine               | modul aturan provider |
+| validasi FK        | kecocokan tipe, index pendukung | provider saat preview |
+| gerbang check      | checkConstraints                | capability koneksi    |
 
 **Key invariants**:
+
 - Sama dengan spec 0041 (kompilasi tunggal, konfirmasi destructive di server, audit sebelum sukses).
 - Nama constraint dan index hasil generate mengikuti pola konsisten bila pengguna tidak menamai (`fk_<table>_<kolom>` dan sejenisnya, didokumentasikan).
 
@@ -86,20 +93,23 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Perluas `TableChangeSet` di kontrak dan kompilator kedua provider (index, PK, FK, unique, check; drop plus add untuk ubah) dengan test snapshot, memenuhi **AC-2** sampai **AC-5**.
-2. UI tab Index dan Constraint (daftar, editor FK dengan pencari target, composite dengan pengurutan, check ekspresi), memenuhi **AC-1**, **AC-3**, **AC-5**.
-3. Konfirmasi destructive dan peringatan dampak PK/FK, audit, invalidasi plus refresh rowIdentity, memenuhi **AC-6**, **AC-7**.
-4. E2e dua engine, memenuhi **AC-8**.
+1. [x] Perluas `TableChangeSet` di kontrak dan kompilator kedua provider (index, PK, FK, unique, check; drop plus add untuk ubah) dengan test snapshot, memenuhi **AC-2** sampai **AC-5**.
+2. [x] UI tab Index dan Constraint (daftar, editor FK dengan pencari target, composite dengan pengurutan, check ekspresi), memenuhi **AC-1**, **AC-3**, **AC-5**.
+3. [x] Konfirmasi destructive dan peringatan dampak PK/FK, audit, invalidasi plus refresh rowIdentity, memenuhi **AC-6**, **AC-7**.
+4. [ ] E2e dua engine, memenuhi **AC-8** (menunggu lingkungan database/browser fixture).
 
 ## Consequences
 
 **Positive**:
+
 - Table designer lengkap untuk struktur; FR-TBL-02 selesai dengan transparansi yang sama.
 
 **Negative / tradeoffs**:
+
 - Drop plus add untuk ubah berarti jendela tanpa constraint di engine non transaksional; pratinjau memperingatkan.
 
 **Neutral**:
+
 - Tipe index khusus engine (GIN, HASH, FULLTEXT) adalah V2 sesuai feature.md; V1 memakai default engine.
 
 ## Follow-up
@@ -109,9 +119,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-TBL-02; feature.md baris index dan constraint; spec 0023, 0025, 0041.
 
 **Practices & standards**:
+
 - Perubahan struktur sebagai change set utuh; kejujuran drop plus add.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

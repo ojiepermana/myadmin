@@ -47,16 +47,67 @@ export interface TableColumnPatch {
   readonly primaryKey?: boolean;
 }
 
+export type TableReferentialAction =
+  'NO ACTION' | 'RESTRICT' | 'CASCADE' | 'SET NULL' | 'SET DEFAULT';
+
+export interface TableIndexInput {
+  readonly name?: string;
+  readonly columns: readonly string[];
+  readonly unique?: boolean;
+}
+
+export type TableConstraintInput =
+  | {
+      readonly type: 'primaryKey';
+      readonly name?: string;
+      readonly columns: readonly string[];
+    }
+  | {
+      readonly type: 'foreignKey';
+      readonly name?: string;
+      readonly columns: readonly string[];
+      readonly referencedTable: ObjectRef;
+      readonly referencedColumns: readonly string[];
+      readonly onDelete?: TableReferentialAction;
+      readonly onUpdate?: TableReferentialAction;
+    }
+  | {
+      readonly type: 'unique';
+      readonly name?: string;
+      readonly columns: readonly string[];
+    }
+  | {
+      readonly type: 'check';
+      readonly name?: string;
+      readonly expression: string;
+    };
+
+export interface TableDesignerRules {
+  readonly onDelete: readonly TableReferentialAction[];
+  readonly onUpdate: readonly TableReferentialAction[];
+  readonly maxColumns: number;
+}
+
 export type TableAlteration =
   | { readonly kind: 'add'; readonly column: TableColumnInput }
   | { readonly kind: 'modify'; readonly name: string; readonly changes: TableColumnPatch }
   | { readonly kind: 'rename'; readonly name: string; readonly newName: string }
-  | { readonly kind: 'drop'; readonly name: string };
+  | { readonly kind: 'drop'; readonly name: string }
+  | { readonly kind: 'addIndex'; readonly index: TableIndexInput }
+  | { readonly kind: 'dropIndex'; readonly name: string }
+  | { readonly kind: 'addConstraint'; readonly constraint: TableConstraintInput }
+  | {
+      readonly kind: 'dropConstraint';
+      readonly name: string;
+      readonly type?: TableConstraintInput['type'];
+    };
 
 export interface TableChangeSet {
   readonly operation: 'create' | 'alter';
   readonly ref: ObjectRef;
   readonly columns?: readonly TableColumnInput[];
+  readonly indexes?: readonly TableIndexInput[];
+  readonly constraints?: readonly TableConstraintInput[];
   readonly alterations?: readonly TableAlteration[];
 }
 
@@ -65,12 +116,15 @@ export interface TableTypeCatalog {
   readonly version: string;
   readonly types: readonly TableTypeDefinition[];
   readonly capability: CapabilityDescription;
+  readonly rules: TableDesignerRules;
 }
 
 export interface TableDdlStatement {
   readonly sql: string;
   readonly warning?: string;
   readonly destructiveColumns?: readonly string[];
+  readonly destructiveIndexes?: readonly string[];
+  readonly destructiveConstraints?: readonly string[];
 }
 
 export interface TableDdlPreview {

@@ -6,6 +6,7 @@ import {
   type ColumnDefinition,
   type ConnectionContext,
   type ConnectionHandle,
+  type TableConstraintInput,
   type ProviderContext,
   type TableAlteration,
   type TableChangeSet,
@@ -16,6 +17,8 @@ import {
   type TableDdlStatement,
   type TableDdlStatementResult,
   type TableDesignerPort,
+  type TableIndexInput,
+  type TableReferentialAction,
   type TableTypeCatalog,
   type TableTypeDefinition,
   type TableValidationIssue,
@@ -53,6 +56,14 @@ const NUMERIC_TYPES = new Set([
   'real',
   'double precision',
 ]);
+const POSTGRES_REFERENTIAL_ACTIONS: readonly TableReferentialAction[] = [
+  'NO ACTION',
+  'RESTRICT',
+  'CASCADE',
+  'SET NULL',
+  'SET DEFAULT',
+];
+const POSTGRES_MAX_CONSTRAINT_COLUMNS = 32;
 function isHandle(value: ProviderContext): value is ConnectionHandle {
   return 'id' in value && 'openedAt' in value;
 }
@@ -283,6 +294,50 @@ function quoteLiteral(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
+function generatedName(prefix: string, table: string, columns: readonly string[]): string {
+  return `${prefix}_${table}_${columns.join('_')}`.slice(0, 63);
+}
+
+function validateColumnList(
+  names: readonly string[],
+  columns: ReadonlyMap<string, ColumnDefinition | TableColumnInput>,
+  path: string,
+): void {
+  const issues: TableValidationIssue[] = [];
+  if (names.length === 0) issues.push(issue(path, 'required', 'At least one column is required.'));
+  if (names.length > POSTGRES_MAX_CONSTRAINT_COLUMNS)
+    issues.push(
+      issue(
+        path,
+        'too_many_columns',
+        `This PostgreSQL provider supports at most ${POSTGRES_MAX_CONSTRAINT_COLUMNS} columns per index or constraint.`,
+      ),
+    );
+  const seen = new Set<string>();
+  names.forEach((name, index) => {
+    const key = name.toLocaleLowerCase();
+    if (!columns.has(key))
+      issues.push(issue(`${path}[${index}]`, 'not_found', `Column ${name} does not exist.`));
+    if (seen.has(key))
+      issues.push(issue(`${path}[${index}]`, 'duplicate_name', 'Columns must be unique.'));
+    seen.add(key);
+  });
+  if (issues.length > 0) throw new TableChangeValidationError(issues);
+}
+
+function normalizedPostgresType(value: string): string {
+  const type = value.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (type === 'character varying' || type.startsWith('character varying(')) return 'varchar';
+  if (type === 'character' || type.startsWith('character(')) return 'char';
+  if (type === 'timestamp without time zone') return 'timestamp';
+  if (type === 'timestamp with time zone') return 'timestamptz';
+  return type.replace(/\(\d+(?:,\d+)?\)/, '');
+}
+
+function indexSql(target: string, index: TableIndexInput, name: string): string {
+  return `CREATE${index.unique ? ' UNIQUE' : ''} INDEX ${quotePostgresqlIdentifier(name)} ON ${target} (${index.columns.map(quotePostgresqlIdentifier).join(', ')})`;
+}
+
 function defaultSql(value: TableDefaultValue | undefined, type: string): string {
   if (!value) return '';
   if (value.kind === 'expression') return ` DEFAULT ${expression(value.value, 'default')}`;
@@ -424,6 +479,11 @@ export class PostgresqlTableDesigner implements TableDesignerPort {
       version: (await this.connection.serverInfo(handle)).version,
       types: TYPES,
       capability: await this.capability(handle),
+      rules: {
+        onDelete: POSTGRES_REFERENTIAL_ACTIONS,
+        onUpdate: POSTGRES_REFERENTIAL_ACTIONS,
+        maxColumns: POSTGRES_MAX_CONSTRAINT_COLUMNS,
+      },
     }));
   }
 
@@ -500,9 +560,20 @@ export class PostgresqlTableDesigner implements TableDesignerPort {
         throw new TableChangeValidationError([
           issue('ref.name', 'conflict', 'A table with this name already exists.'),
         ]);
-      statements.push({
-        sql: `CREATE TABLE ${alterTarget(ref)} (${columns.map(columnSql).join(', ')})`,
-      });
+      const working = new Map(columns.map((column) => [column.name.toLocaleLowerCase(), column]));
+      const indexes = [...(changeSet.indexes ?? [])];
+      const constraints = [...(changeSet.constraints ?? [])];
+      const definitions = columns.map(columnSql);
+      for (const [index, constraint] of constraints.entries())
+        definitions.push(
+          await this.constraintSql(handle, ref, constraint, working, `constraints[${index}]`),
+        );
+      this.validateIndexInputs(indexes, working, constraints, 'indexes');
+      statements.push({ sql: `CREATE TABLE ${alterTarget(ref)} (${definitions.join(', ')})` });
+      for (const index of indexes) {
+        const name = index.name ?? generatedName('idx', ref.name, index.columns);
+        statements.push({ sql: indexSql(alterTarget(ref), index, name) });
+      }
       columns
         .filter((column) => column.comment !== undefined)
         .forEach((column) => {
@@ -518,8 +589,20 @@ export class PostgresqlTableDesigner implements TableDesignerPort {
       const working = new Map(
         current.columns.map((column) => [column.name.toLocaleLowerCase(), column]),
       );
+      const indexes = [...current.indexes];
+      const constraints = [...current.constraints];
       for (const [index, alteration] of (changeSet.alterations ?? []).entries()) {
-        this.compileAlteration(statements, working, ref, alteration, capability, index);
+        await this.compileAlteration(
+          handle,
+          statements,
+          working,
+          indexes,
+          constraints,
+          ref,
+          alteration,
+          capability,
+          index,
+        );
       }
       if ((changeSet.alterations ?? []).length === 0)
         throw new TableChangeValidationError([
@@ -541,20 +624,145 @@ export class PostgresqlTableDesigner implements TableDesignerPort {
         ),
       ],
       destructive: withWarnings.some(
-        (statement) => (statement.destructiveColumns?.length ?? 0) > 0,
+        (statement) =>
+          (statement.destructiveColumns?.length ?? 0) > 0 ||
+          (statement.destructiveIndexes?.length ?? 0) > 0 ||
+          (statement.destructiveConstraints?.length ?? 0) > 0,
       ),
     };
   }
 
-  private compileAlteration(
+  private async compileAlteration(
+    handle: ConnectionHandle,
     statements: TableDdlStatement[],
     working: Map<string, ColumnDefinition>,
+    indexes: Array<{ name: string; columns: string[]; unique: boolean; primary: boolean }>,
+    constraints: Array<{ name: string; type: string; columns?: string[] }>,
     ref: { schema: string; name: string },
     alteration: TableAlteration,
     capability: CapabilityDescription,
     index: number,
-  ): void {
+  ): Promise<void> {
     const target = alterTarget(ref);
+    if (alteration.kind === 'addIndex') {
+      const name =
+        alteration.index.name ?? generatedName('idx', ref.name, alteration.index.columns);
+      this.validateIndexInputs(
+        [alteration.index],
+        working,
+        constraints,
+        `alterations[${index}].index`,
+      );
+      if (
+        [...indexes, ...constraints].some(
+          (item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+        )
+      )
+        throw new TableChangeValidationError([
+          issue(
+            `alterations[${index}].index.name`,
+            'conflict',
+            'An index or constraint with this name already exists.',
+          ),
+        ]);
+      indexes.push({
+        name,
+        columns: [...alteration.index.columns],
+        unique: alteration.index.unique === true,
+        primary: false,
+      });
+      statements.push({ sql: indexSql(target, alteration.index, name) });
+      return;
+    }
+    if (alteration.kind === 'dropIndex') {
+      identifier(alteration.name, `alterations[${index}].name`);
+      const position = indexes.findIndex(
+        (candidate) => candidate.name.toLocaleLowerCase() === alteration.name.toLocaleLowerCase(),
+      );
+      if (position < 0)
+        throw new TableChangeValidationError([
+          issue(`alterations[${index}].name`, 'not_found', 'The index does not exist.'),
+        ]);
+      if (indexes[position]?.primary)
+        throw new TableChangeValidationError([
+          issue(
+            `alterations[${index}].name`,
+            'unsupported',
+            'Drop the primary key as a constraint, not as an index.',
+          ),
+        ]);
+      indexes.splice(position, 1);
+      statements.push({
+        sql: `DROP INDEX ${quotePostgresqlIdentifier(ref.schema)}.${quotePostgresqlIdentifier(alteration.name)}`,
+        destructiveIndexes: [alteration.name],
+      });
+      return;
+    }
+    if (alteration.kind === 'addConstraint') {
+      const constraint = alteration.constraint;
+      const name =
+        constraint.name ??
+        generatedName(
+          constraint.type === 'foreignKey'
+            ? 'fk'
+            : constraint.type === 'primaryKey'
+              ? 'pk'
+              : constraint.type === 'check'
+                ? 'chk'
+                : 'uq',
+          ref.name,
+          'columns' in constraint ? constraint.columns : [],
+        );
+      if (
+        [...indexes, ...constraints].some(
+          (item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+        )
+      )
+        throw new TableChangeValidationError([
+          issue(
+            `alterations[${index}].constraint.name`,
+            'conflict',
+            'An index or constraint with this name already exists.',
+          ),
+        ]);
+      const sql = await this.constraintSql(
+        handle,
+        ref,
+        { ...constraint, name },
+        working,
+        `alterations[${index}].constraint`,
+      );
+      constraints.push({
+        name,
+        type: constraint.type,
+        columns: 'columns' in constraint ? [...constraint.columns] : undefined,
+      });
+      statements.push({ sql: `ALTER TABLE ${target} ADD ${sql}` });
+      return;
+    }
+    if (alteration.kind === 'dropConstraint') {
+      identifier(alteration.name, `alterations[${index}].name`);
+      const position = constraints.findIndex(
+        (candidate) => candidate.name.toLocaleLowerCase() === alteration.name.toLocaleLowerCase(),
+      );
+      if (position < 0)
+        throw new TableChangeValidationError([
+          issue(`alterations[${index}].name`, 'not_found', 'The constraint does not exist.'),
+        ]);
+      const type = alteration.type ?? constraints[position]?.type ?? 'other';
+      constraints.splice(position, 1);
+      statements.push({
+        sql: `ALTER TABLE ${target} DROP CONSTRAINT ${quotePostgresqlIdentifier(alteration.name)}`,
+        destructiveConstraints: [alteration.name],
+        warning:
+          type === 'primaryKey'
+            ? 'Dropping the primary key removes the row identity used by the data browser.'
+            : type === 'foreignKey'
+              ? 'Dropping the foreign key removes relational integrity.'
+              : undefined,
+      });
+      return;
+    }
     if (alteration.kind === 'add') {
       validateColumn(alteration.column, `alterations[${index}].column`, capability);
       if (working.has(alteration.column.name.toLocaleLowerCase()))
@@ -650,6 +858,120 @@ export class PostgresqlTableDesigner implements TableDesignerPort {
         });
     }
     working.set(current.name.toLocaleLowerCase(), { ...current, ...next, dataType: next.dataType });
+  }
+
+  private validateIndexInputs(
+    indexes: readonly TableIndexInput[],
+    columns: ReadonlyMap<string, ColumnDefinition | TableColumnInput>,
+    constraints: readonly { name?: string }[],
+    path: string,
+  ): void {
+    const names = new Set<string>();
+    for (const [index, value] of indexes.entries()) {
+      validateColumnList(value.columns, columns, `${path}[${index}].columns`);
+      const name = value.name ?? generatedName('idx', 'table', value.columns);
+      if (
+        names.has(name.toLocaleLowerCase()) ||
+        constraints.some((item) => item.name?.toLocaleLowerCase() === name.toLocaleLowerCase())
+      )
+        throw new TableChangeValidationError([
+          issue(
+            `${path}[${index}].name`,
+            'conflict',
+            'An index or constraint with this name already exists.',
+          ),
+        ]);
+      names.add(name.toLocaleLowerCase());
+    }
+  }
+
+  private async constraintSql(
+    handle: ConnectionHandle,
+    ref: { schema: string; name: string },
+    input: TableConstraintInput,
+    columns: ReadonlyMap<string, ColumnDefinition | TableColumnInput>,
+    path: string,
+  ): Promise<string> {
+    const named =
+      input.name ??
+      generatedName(
+        input.type === 'foreignKey'
+          ? 'fk'
+          : input.type === 'primaryKey'
+            ? 'pk'
+            : input.type === 'check'
+              ? 'chk'
+              : 'uq',
+        ref.name,
+        'columns' in input ? input.columns : [],
+      );
+    const prefix = `CONSTRAINT ${quotePostgresqlIdentifier(named)} `;
+    if (input.type === 'check')
+      return `${prefix}CHECK (${expression(input.expression, `${path}.expression`)})`;
+    validateColumnList(input.columns, columns, `${path}.columns`);
+    if (input.type === 'primaryKey')
+      return `${prefix}PRIMARY KEY (${input.columns.map(quotePostgresqlIdentifier).join(', ')})`;
+    if (input.type === 'unique')
+      return `${prefix}UNIQUE (${input.columns.map(quotePostgresqlIdentifier).join(', ')})`;
+    if (input.referencedTable.type !== 'table')
+      throw new TableChangeValidationError([
+        issue(
+          `${path}.referencedTable.type`,
+          'invalid_type',
+          'The referenced object must be a table.',
+        ),
+      ]);
+    if (input.onDelete && !POSTGRES_REFERENTIAL_ACTIONS.includes(input.onDelete))
+      throw new TableChangeValidationError([
+        issue(
+          `${path}.onDelete`,
+          'invalid_rule',
+          'The ON DELETE rule is not supported by PostgreSQL.',
+        ),
+      ]);
+    if (input.onUpdate && !POSTGRES_REFERENTIAL_ACTIONS.includes(input.onUpdate))
+      throw new TableChangeValidationError([
+        issue(
+          `${path}.onUpdate`,
+          'invalid_rule',
+          'The ON UPDATE rule is not supported by PostgreSQL.',
+        ),
+      ]);
+    const target = await this.metadata.describeTable(handle, {
+      database: input.referencedTable.database,
+      schema: input.referencedTable.schema ?? ref.schema,
+      name: input.referencedTable.name,
+      type: 'table',
+    });
+    const targetColumns = new Map(
+      target.columns.map((column) => [column.name.toLocaleLowerCase(), column]),
+    );
+    validateColumnList(input.referencedColumns, targetColumns, `${path}.referencedColumns`);
+    if (input.referencedColumns.length !== input.columns.length)
+      throw new TableChangeValidationError([
+        issue(path, 'invalid_length', 'Foreign key column lists must have the same length.'),
+      ]);
+    input.columns.forEach((column, index) => {
+      const local = columns.get(column.toLocaleLowerCase());
+      const remote = targetColumns.get(input.referencedColumns[index]!.toLocaleLowerCase());
+      if (
+        local &&
+        remote &&
+        normalizedPostgresType(local.dataType) !== normalizedPostgresType(remote.dataType)
+      )
+        throw new TableChangeValidationError([
+          issue(
+            `${path}.columns[${index}]`,
+            'incompatible_type',
+            `Column ${column} must have a compatible type with ${input.referencedColumns[index]}.`,
+          ),
+        ]);
+    });
+    const targetRef = alterTarget({
+      schema: input.referencedTable.schema ?? ref.schema,
+      name: input.referencedTable.name,
+    });
+    return `${prefix}FOREIGN KEY (${input.columns.map(quotePostgresqlIdentifier).join(', ')}) REFERENCES ${targetRef} (${input.referencedColumns.map(quotePostgresqlIdentifier).join(', ')})${input.onDelete ? ` ON DELETE ${input.onDelete}` : ''}${input.onUpdate ? ` ON UPDATE ${input.onUpdate}` : ''}`;
   }
 
   private async capability(handle: ConnectionHandle): Promise<CapabilityDescription> {

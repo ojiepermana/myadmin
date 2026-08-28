@@ -97,6 +97,133 @@ TableColumnPatch:
     primaryKey:
       type: boolean
 
+TableIndex:
+  type: object
+  additionalProperties: false
+  required: [columns]
+  properties:
+    name:
+      type: string
+    columns:
+      type: array
+      minItems: 1
+      items:
+        type: string
+    unique:
+      type: boolean
+
+TableIndexMetadata:
+  type: object
+  additionalProperties: false
+  required: [name, columns, unique, primary]
+  properties:
+    name:
+      type: string
+    columns:
+      type: array
+      items:
+        type: string
+    unique:
+      type: boolean
+    primary:
+      type: boolean
+    method:
+      type: string
+    predicate:
+      type: string
+
+TableConstraintMetadata:
+  type: object
+  additionalProperties: false
+  required: [name, type]
+  properties:
+    name:
+      type: string
+    type:
+      type: string
+      enum: [primaryKey, foreignKey, unique, check, notNull, exclusion, other]
+    columns:
+      type: array
+      items:
+        type: string
+    expression:
+      type: string
+    referencedTable:
+      $ref: './explorer.yaml#/ExplorerObjectRef'
+    referencedColumns:
+      type: array
+      items:
+        type: string
+    onUpdate:
+      type: string
+    onDelete:
+      type: string
+
+TableConstraint:
+  oneOf:
+    - type: object
+      additionalProperties: false
+      required: [type, columns]
+      properties:
+        type:
+          const: primaryKey
+        name:
+          type: string
+        columns:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    - type: object
+      additionalProperties: false
+      required: [type, columns, referencedTable, referencedColumns]
+      properties:
+        type:
+          const: foreignKey
+        name:
+          type: string
+        columns:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        referencedTable:
+          $ref: './explorer.yaml#/ExplorerObjectRef'
+        referencedColumns:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        onDelete:
+          type: string
+          enum: [NO ACTION, RESTRICT, CASCADE, SET NULL, SET DEFAULT]
+        onUpdate:
+          type: string
+          enum: [NO ACTION, RESTRICT, CASCADE, SET NULL, SET DEFAULT]
+    - type: object
+      additionalProperties: false
+      required: [type, columns]
+      properties:
+        type:
+          const: unique
+        name:
+          type: string
+        columns:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    - type: object
+      additionalProperties: false
+      required: [type, expression]
+      properties:
+        type:
+          const: check
+        name:
+          type: string
+        expression:
+          type: string
+
 TableAlteration:
   oneOf:
     - type: object
@@ -135,6 +262,41 @@ TableAlteration:
           type: string
         changes:
           $ref: '#/TableColumnPatch'
+    - type: object
+      additionalProperties: false
+      required: [kind, index]
+      properties:
+        kind:
+          const: addIndex
+        index:
+          $ref: '#/TableIndex'
+    - type: object
+      additionalProperties: false
+      required: [kind, name]
+      properties:
+        kind:
+          const: dropIndex
+        name:
+          type: string
+    - type: object
+      additionalProperties: false
+      required: [kind, constraint]
+      properties:
+        kind:
+          const: addConstraint
+        constraint:
+          $ref: '#/TableConstraint'
+    - type: object
+      additionalProperties: false
+      required: [kind, name]
+      properties:
+        kind:
+          const: dropConstraint
+        name:
+          type: string
+        type:
+          type: string
+          enum: [primaryKey, foreignKey, unique, check]
 
 TableChangeSet:
   type: object
@@ -150,6 +312,14 @@ TableChangeSet:
       type: array
       items:
         $ref: '#/TableColumnInput'
+    indexes:
+      type: array
+      items:
+        $ref: '#/TableIndex'
+    constraints:
+      type: array
+      items:
+        $ref: '#/TableConstraint'
     alterations:
       type: array
       items:
@@ -186,7 +356,7 @@ TableApplyRequest:
 TableTypeCatalog:
   type: object
   additionalProperties: false
-  required: [engine, version, types, capability]
+  required: [engine, version, types, capability, rules]
   properties:
     engine:
       type: string
@@ -199,6 +369,24 @@ TableTypeCatalog:
         $ref: '#/TableType'
     capability:
       $ref: './capability.yaml'
+    rules:
+      type: object
+      additionalProperties: false
+      required: [onDelete, onUpdate, maxColumns]
+      properties:
+        onDelete:
+          type: array
+          items:
+            type: string
+            enum: [NO ACTION, RESTRICT, CASCADE, SET NULL, SET DEFAULT]
+        onUpdate:
+          type: array
+          items:
+            type: string
+            enum: [NO ACTION, RESTRICT, CASCADE, SET NULL, SET DEFAULT]
+        maxColumns:
+          type: integer
+          minimum: 1
 
 TableDdlStatement:
   type: object
@@ -210,6 +398,14 @@ TableDdlStatement:
     warning:
       type: string
     destructiveColumns:
+      type: array
+      items:
+        type: string
+    destructiveIndexes:
+      type: array
+      items:
+        type: string
+    destructiveConstraints:
       type: array
       items:
         type: string

@@ -134,7 +134,7 @@ ExplorerColumn:
 ExplorerObjectDescription:
   type: object
   additionalProperties: false
-  required: [ref, columns]
+  required: [ref, columns, indexes, constraints]
   properties:
     ref:
       $ref: '#/ExplorerObjectRef'
@@ -146,6 +146,14 @@ ExplorerObjectDescription:
       type: number
     comment:
       type: string
+    indexes:
+      type: array
+      items:
+        $ref: './table-designer.yaml#/TableIndexMetadata'
+    constraints:
+      type: array
+      items:
+        $ref: './table-designer.yaml#/TableConstraintMetadata'
 
 ExplorerSearchPage:
   type: object

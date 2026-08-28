@@ -80,6 +80,169 @@ h2 {
   background: hsl(var(--card));
   padding: 1.25rem;
 }
+.designer-tabs {
+  display: flex;
+  gap: 0.35rem;
+  border-bottom: 1px solid hsl(var(--border));
+  margin: -0.25rem -0.25rem 1.1rem;
+  padding: 0 0.25rem;
+}
+.designer-tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 0.65rem 0.75rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.designer-tabs button:hover,
+.designer-tabs button:focus-visible,
+.designer-tabs button.active-tab {
+  border-bottom-color: hsl(var(--primary));
+  color: hsl(var(--foreground));
+}
+.designer-tabs span {
+  display: inline-grid;
+  min-width: 1.3rem;
+  margin-left: 0.25rem;
+  border-radius: 999px;
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
+  padding: 0.12rem 0.3rem;
+  font-size: 0.68rem;
+  text-align: center;
+}
+.structure-heading {
+  align-items: flex-start;
+}
+.structure-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+.structure-card {
+  position: relative;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.6rem;
+  background: hsl(var(--background));
+  padding: 1rem;
+}
+.structure-card strong {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+}
+.structure-meta {
+  display: block;
+  margin-top: 0.25rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.7rem;
+}
+.constraint-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+.constraint-actions .button {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.7rem;
+}
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  align-self: end;
+  min-height: 2.25rem;
+}
+.toggle-label input {
+  width: 1rem;
+  height: 1rem;
+}
+.drag-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-height: 2rem;
+  margin-top: 0.75rem;
+  border: 1px dashed hsl(var(--border));
+  border-radius: 0.35rem;
+  padding: 0.4rem;
+}
+.column-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid hsl(var(--primary) / 0.28);
+  border-radius: 999px;
+  background: hsl(var(--primary) / 0.1);
+  padding: 0.3rem 0.55rem;
+  color: hsl(var(--foreground));
+  cursor: grab;
+  font:
+    0.72rem ui-monospace,
+    monospace;
+}
+.column-chip:active {
+  cursor: grabbing;
+}
+.empty-structure {
+  border: 1px dashed hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8rem;
+}
+.constraint-gate {
+  margin-top: 1rem;
+  border-left: 3px solid hsl(38 92% 50%);
+  padding-left: 0.7rem;
+}
+.target-results {
+  grid-column: 1 / -1;
+  max-height: 10rem;
+  overflow: auto;
+  margin: -0.5rem 0 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.35rem;
+  background: hsl(var(--card));
+  padding: 0.25rem;
+  list-style: none;
+}
+.target-results button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0.5rem;
+  color: hsl(var(--foreground));
+  text-align: start;
+  cursor: pointer;
+  font:
+    0.75rem ui-monospace,
+    monospace;
+}
+.target-results button:hover,
+.target-results button:focus-visible {
+  background: hsl(var(--primary) / 0.1);
+}
+.statement-card {
+  display: grid;
+  gap: 0.35rem;
+}
+.statement-card > span {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.statement-card small {
+  color: hsl(38 70% 30%);
+  font-size: 0.7rem;
+}
 .column-list {
   display: grid;
   gap: 0.8rem;
@@ -331,5 +494,8 @@ pre {
   .wide,
   .generated-field {
     grid-column: auto;
+  }
+  .constraint-actions {
+    justify-content: flex-start;
   }
 }

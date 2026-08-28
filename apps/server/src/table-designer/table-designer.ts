@@ -88,6 +88,12 @@ export class TableDesignerService {
               destructiveColumns: preview.statements.flatMap(
                 (statement) => statement.destructiveColumns ?? [],
               ),
+              destructiveIndexes: preview.statements.flatMap(
+                (statement) => statement.destructiveIndexes ?? [],
+              ),
+              destructiveConstraints: preview.statements.flatMap(
+                (statement) => statement.destructiveConstraints ?? [],
+              ),
               table: this.targetLabel(changeSet),
             },
           );
@@ -165,7 +171,19 @@ export class TableDesignerService {
       table: this.targetLabel(changeSet),
       statementCount: preview.statements.length,
       destructive: preview.destructive,
-      changes: (changeSet.alterations ?? []).map((alteration) => alteration.kind),
+      changes: [
+        ...(changeSet.alterations ?? []).map((alteration) => alteration.kind),
+        ...(changeSet.indexes ?? []).map(() => 'addIndex'),
+        ...(changeSet.constraints ?? []).map(() => 'addConstraint'),
+      ],
+      indexCount: changeSet.indexes?.length ?? 0,
+      constraintCount: changeSet.constraints?.length ?? 0,
+      destructiveIndexes: preview.statements.flatMap(
+        (statement) => statement.destructiveIndexes ?? [],
+      ),
+      destructiveConstraints: preview.statements.flatMap(
+        (statement) => statement.destructiveConstraints ?? [],
+      ),
     };
   }
 

@@ -47,132 +47,404 @@
 
     <section class="workspace-grid">
       <div class="editor-panel">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Columns</p>
-            <h2>{{ columns().length }} fields</h2>
+        <nav class="designer-tabs" aria-label="Table structure sections">
+          <button
+            type="button"
+            [class.active-tab]="section() === 'columns'"
+            (click)="selectSection('columns')"
+          >
+            Columns <span>{{ columns().length }}</span>
+          </button>
+          <button
+            type="button"
+            [class.active-tab]="section() === 'indexes'"
+            (click)="selectSection('indexes')"
+          >
+            Indexes <span>{{ indexes().length }}</span>
+          </button>
+          <button
+            type="button"
+            [class.active-tab]="section() === 'constraints'"
+            (click)="selectSection('constraints')"
+          >
+            Constraints <span>{{ constraints().length }}</span>
+          </button>
+        </nav>
+        @if (section() === 'columns') {
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Columns</p>
+              <h2>{{ columns().length }} fields</h2>
+            </div>
+            <button type="button" class="button secondary" (click)="addColumn()">Add column</button>
           </div>
-          <button type="button" class="button secondary" (click)="addColumn()">Add column</button>
-        </div>
-        <div class="column-list">
-          @for (column of columns(); track $index; let index = $index) {
-            <article class="column-card">
-              <div class="column-card-header">
-                <span class="column-number">{{ index + 1 }}</span
-                ><input
-                  class="column-name"
-                  aria-label="Column name"
-                  placeholder="column_name"
-                  [value]="column.name"
-                  (input)="updateColumn(index, 'name', $event)"
-                /><button
-                  type="button"
-                  class="icon-button"
-                  aria-label="Remove column"
-                  (click)="removeColumn(index)"
-                >
-                  ×
-                </button>
-              </div>
-              <div class="field-grid">
-                <label
-                  >Type<select
-                    [value]="column.dataType"
-                    (change)="updateColumn(index, 'dataType', $event)"
-                  >
-                    @for (type of types()!.types; track type.name) {
-                      <option [value]="type.name">{{ type.label }}</option>
-                    }
-                  </select></label
-                >
-                @if (typeParameters(column).includes('length')) {
-                  <label
-                    >Length<input
-                      type="number"
-                      min="1"
-                      [value]="column.length ?? ''"
-                      (input)="updateColumn(index, 'length', $event)"
-                  /></label>
-                }
-                @if (typeParameters(column).includes('precision')) {
-                  <label
-                    >Precision<input
-                      type="number"
-                      min="1"
-                      [value]="column.precision ?? ''"
-                      (input)="updateColumn(index, 'precision', $event)"
-                  /></label>
-                }
-                @if (typeParameters(column).includes('scale')) {
-                  <label
-                    >Scale<input
-                      type="number"
-                      min="0"
-                      [value]="column.scale ?? ''"
-                      (input)="updateColumn(index, 'scale', $event)"
-                  /></label>
-                }
-                <label class="wide"
-                  >Default expression<input
-                    placeholder="NULL or CURRENT_TIMESTAMP"
-                    [value]="column.default?.value ?? ''"
-                    (input)="updateDefault(index, $event)"
-                /></label>
-                <label class="wide"
-                  >Comment<input
-                    [value]="column.comment ?? ''"
-                    (input)="updateColumn(index, 'comment', $event)"
-                /></label>
-              </div>
-              <div class="toggle-row">
-                <label
+          <div class="column-list">
+            @for (column of columns(); track $index; let index = $index) {
+              <article class="column-card">
+                <div class="column-card-header">
+                  <span class="column-number">{{ index + 1 }}</span
                   ><input
-                    type="checkbox"
-                    [checked]="column.nullable"
-                    (change)="updateColumn(index, 'nullable', $event)"
-                  />
-                  Nullable</label
-                >
-                <div class="capability-option">
+                    class="column-name"
+                    aria-label="Column name"
+                    placeholder="column_name"
+                    [value]="column.name"
+                    (input)="updateColumn(index, 'name', $event)"
+                  /><button
+                    type="button"
+                    class="icon-button"
+                    aria-label="Remove column"
+                    (click)="removeColumn(index)"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div class="field-grid">
+                  <label
+                    >Type<select
+                      [value]="column.dataType"
+                      (change)="updateColumn(index, 'dataType', $event)"
+                    >
+                      @for (type of types()!.types; track type.name) {
+                        <option [value]="type.name">{{ type.label }}</option>
+                      }
+                    </select></label
+                  >
+                  @if (typeParameters(column).includes('length')) {
+                    <label
+                      >Length<input
+                        type="number"
+                        min="1"
+                        [value]="column.length ?? ''"
+                        (input)="updateColumn(index, 'length', $event)"
+                    /></label>
+                  }
+                  @if (typeParameters(column).includes('precision')) {
+                    <label
+                      >Precision<input
+                        type="number"
+                        min="1"
+                        [value]="column.precision ?? ''"
+                        (input)="updateColumn(index, 'precision', $event)"
+                    /></label>
+                  }
+                  @if (typeParameters(column).includes('scale')) {
+                    <label
+                      >Scale<input
+                        type="number"
+                        min="0"
+                        [value]="column.scale ?? ''"
+                        (input)="updateColumn(index, 'scale', $event)"
+                    /></label>
+                  }
+                  <label class="wide"
+                    >Default expression<input
+                      placeholder="NULL or CURRENT_TIMESTAMP"
+                      [value]="column.default?.value ?? ''"
+                      (input)="updateDefault(index, $event)"
+                  /></label>
+                  <label class="wide"
+                    >Comment<input
+                      [value]="column.comment ?? ''"
+                      (input)="updateColumn(index, 'comment', $event)"
+                  /></label>
+                </div>
+                <div class="toggle-row">
                   <label
                     ><input
                       type="checkbox"
-                      [checked]="column.identity"
-                      [disabled]="!types()!.capability.capabilities['identityColumns']"
-                      (change)="updateColumn(index, 'identity', $event)"
+                      [checked]="column.nullable"
+                      (change)="updateColumn(index, 'nullable', $event)"
                     />
-                    Identity / auto increment</label
+                    Nullable</label
                   >
-                  @if (!types()!.capability.capabilities['identityColumns']) {
-                    <small class="capability-hint">{{
-                      types()!.capability.reasons?.['identityColumns']
-                    }}</small>
+                  <div class="capability-option">
+                    <label
+                      ><input
+                        type="checkbox"
+                        [checked]="column.identity"
+                        [disabled]="!types()!.capability.capabilities['identityColumns']"
+                        (change)="updateColumn(index, 'identity', $event)"
+                      />
+                      Identity / auto increment</label
+                    >
+                    @if (!types()!.capability.capabilities['identityColumns']) {
+                      <small class="capability-hint">{{
+                        types()!.capability.reasons?.['identityColumns']
+                      }}</small>
+                    }
+                  </div>
+                  <label
+                    ><input
+                      type="checkbox"
+                      [checked]="column.primaryKey"
+                      (change)="updateColumn(index, 'primaryKey', $event)"
+                    />
+                    Primary key</label
+                  >
+                </div>
+                <label class="generated-field"
+                  >Generated expression<input
+                    placeholder="price * quantity"
+                    [value]="column.generated?.expression ?? ''"
+                    [disabled]="!types()!.capability.capabilities['generatedColumns']"
+                    (input)="updateGenerated(index, $event)"
+                /></label>
+                @if (!types()!.capability.capabilities['generatedColumns']) {
+                  <small class="capability-hint generated-hint">{{
+                    types()!.capability.reasons?.['generatedColumns']
+                  }}</small>
+                }
+              </article>
+            }
+          </div>
+        }
+        @if (section() === 'indexes') {
+          <div class="section-heading structure-heading">
+            <div>
+              <p class="eyebrow">Indexes</p>
+              <h2>{{ indexes().length }} index{{ indexes().length === 1 ? '' : 'es' }}</h2>
+            </div>
+            <button type="button" class="button secondary" (click)="addIndex()">Add index</button>
+          </div>
+          <div class="structure-list">
+            @if (indexes().length === 0) {
+              <p class="empty-structure">
+                No secondary indexes yet. Add one to speed up a common lookup.
+              </p>
+            }
+            @for (index of indexes(); track $index; let indexNumber = $index) {
+              <article class="structure-card">
+                <div class="column-card-header">
+                  <div>
+                    <p class="eyebrow">Index {{ indexNumber + 1 }}</p>
+                    <strong>{{ index.name || 'Generated name' }}</strong
+                    ><small class="structure-meta"
+                      >{{ index.unique ? 'Unique' : 'Non-unique'
+                      }}{{ index.method ? ' · ' + index.method : '' }}</small
+                    >
+                  </div>
+                  <button
+                    type="button"
+                    class="icon-button"
+                    aria-label="Remove index"
+                    (click)="removeIndex(indexNumber)"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div class="field-grid">
+                  <label
+                    >Name<input
+                      [value]="index.name ?? ''"
+                      placeholder="idx_table_column"
+                      (input)="updateIndex(indexNumber, 'name', $any($event.target).value)"
+                  /></label>
+                  <label class="toggle-label"
+                    ><input
+                      type="checkbox"
+                      [checked]="index.unique"
+                      (change)="updateIndex(indexNumber, 'unique', $any($event.target).checked)"
+                    />
+                    Unique</label
+                  >
+                  <label class="wide"
+                    >Columns, comma separated<input
+                      [value]="index.columns.join(', ')"
+                      placeholder="first_name, last_name"
+                      (input)="updateIndex(indexNumber, 'columns', $any($event.target).value)"
+                  /></label>
+                </div>
+                <div
+                  class="drag-columns"
+                  cdkDropList
+                  [cdkDropListData]="index.columns"
+                  (cdkDropListDropped)="dropIndexColumn($event, indexNumber)"
+                  aria-label="Index column order"
+                >
+                  @for (column of index.columns; track $index) {
+                    <span cdkDrag class="column-chip"
+                      ><span aria-hidden="true">⋮⋮</span>{{ column }}</span
+                    >
                   }
                 </div>
-                <label
-                  ><input
-                    type="checkbox"
-                    [checked]="column.primaryKey"
-                    (change)="updateColumn(index, 'primaryKey', $event)"
-                  />
-                  Primary key</label
+                <small class="capability-hint"
+                  >Drag the chips to change the composite index order. Maximum
+                  {{ types()!.rules.maxColumns }} columns for this engine.</small
                 >
-              </div>
-              <label class="generated-field"
-                >Generated expression<input
-                  placeholder="price * quantity"
-                  [value]="column.generated?.expression ?? ''"
-                  [disabled]="!types()!.capability.capabilities['generatedColumns']"
-                  (input)="updateGenerated(index, $event)"
-              /></label>
-              @if (!types()!.capability.capabilities['generatedColumns']) {
-                <small class="capability-hint generated-hint">{{
-                  types()!.capability.reasons?.['generatedColumns']
-                }}</small>
-              }
-            </article>
+              </article>
+            }
+          </div>
+        }
+        @if (section() === 'constraints') {
+          <div class="section-heading structure-heading">
+            <div>
+              <p class="eyebrow">Constraints</p>
+              <h2>{{ constraints().length }} rule{{ constraints().length === 1 ? '' : 's' }}</h2>
+            </div>
+            <div class="constraint-actions">
+              <button type="button" class="button secondary" (click)="addConstraint('primaryKey')">
+                Add PK</button
+              ><button type="button" class="button secondary" (click)="addConstraint('foreignKey')">
+                Add FK</button
+              ><button type="button" class="button secondary" (click)="addConstraint('unique')">
+                Add unique</button
+              ><button
+                type="button"
+                class="button secondary"
+                [disabled]="!types()!.capability.capabilities['checkConstraints']"
+                (click)="addConstraint('check')"
+              >
+                Add check
+              </button>
+            </div>
+          </div>
+          @if (!types()!.capability.capabilities['checkConstraints']) {
+            <p class="capability-hint constraint-gate">
+              Check constraints are disabled.
+              {{ types()!.capability.reasons?.['checkConstraints'] }}
+            </p>
           }
-        </div>
+          <div class="structure-list">
+            @if (constraints().length === 0) {
+              <p class="empty-structure">
+                No table constraints yet. Primary keys and relationships will appear here.
+              </p>
+            }
+            @for (constraint of constraints(); track $index; let constraintNumber = $index) {
+              <article class="structure-card">
+                <div class="column-card-header">
+                  <div>
+                    <p class="eyebrow">Constraint {{ constraintNumber + 1 }}</p>
+                    <strong>{{ constraint.name || 'Generated name' }}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    class="icon-button"
+                    aria-label="Remove constraint"
+                    (click)="removeConstraint(constraintNumber)"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div class="field-grid">
+                  <label
+                    >Type<select
+                      [value]="constraint.type"
+                      (change)="updateConstraintType(constraintNumber, $any($event.target).value)"
+                    >
+                      <option value="primaryKey">Primary key</option>
+                      <option value="foreignKey">Foreign key</option>
+                      <option value="unique">Unique</option>
+                      <option
+                        value="check"
+                        [disabled]="!types()!.capability.capabilities['checkConstraints']"
+                      >
+                        Check
+                      </option>
+                    </select></label
+                  >
+                  <label
+                    >Name<input
+                      [value]="constraint.name ?? ''"
+                      placeholder="pk_table"
+                      (input)="
+                        updateConstraintField(constraintNumber, 'name', $any($event.target).value)
+                      "
+                  /></label>
+                  @if (constraint.type !== 'check') {
+                    <label class="wide"
+                      >Columns, comma separated<input
+                        [value]="constraintColumns(constraint).join(', ')"
+                        placeholder="id, tenant_id"
+                        (input)="
+                          updateConstraintColumns(constraintNumber, $any($event.target).value)
+                        "
+                    /></label>
+                  }
+                  @if (constraint.type === 'check') {
+                    <label class="wide"
+                      >Check expression<textarea
+                        rows="3"
+                        [value]="$any(constraint).expression"
+                        placeholder="balance >= 0"
+                        (input)="
+                          updateConstraintField(
+                            constraintNumber,
+                            'expression',
+                            $any($event.target).value
+                          )
+                        "
+                      ></textarea>
+                    </label>
+                  }
+                  @if (constraint.type === 'foreignKey') {
+                    <label class="wide"
+                      >Target table<input
+                        [value]="targetSearch() || $any(constraint).referencedTable.name"
+                        placeholder="Search tables"
+                        (input)="searchTargets($event)"
+                    /></label>
+                    @if (targetResults().length) {
+                      <ul class="target-results">
+                        @for (target of targetResults(); track target.database + target.name) {
+                          <li>
+                            <button type="button" (click)="chooseTarget(constraintNumber, target)">
+                              {{ target.schema ? target.schema + '.' : '' }}{{ target.name }}
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    }
+                    <label
+                      >Target columns<input
+                        [value]="$any(constraint).referencedColumns.join(', ')"
+                        placeholder="id"
+                        (input)="
+                          updateConstraintField(
+                            constraintNumber,
+                            'referencedColumns',
+                            $any($event.target).value
+                          )
+                        "
+                    /></label>
+                    <label
+                      >On delete<select
+                        [value]="$any(constraint).onDelete ?? 'NO ACTION'"
+                        (change)="
+                          updateConstraintField(
+                            constraintNumber,
+                            'onDelete',
+                            $any($event.target).value
+                          )
+                        "
+                      >
+                        @for (rule of types()!.rules.onDelete; track rule) {
+                          <option [value]="rule">{{ rule }}</option>
+                        }
+                      </select></label
+                    >
+                    <label
+                      >On update<select
+                        [value]="$any(constraint).onUpdate ?? 'NO ACTION'"
+                        (change)="
+                          updateConstraintField(
+                            constraintNumber,
+                            'onUpdate',
+                            $any($event.target).value
+                          )
+                        "
+                      >
+                        @for (rule of types()!.rules.onUpdate; track rule) {
+                          <option [value]="rule">{{ rule }}</option>
+                        }
+                      </select></label
+                    >
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        }
       </div>
 
       <aside class="preview-panel">
@@ -196,7 +468,13 @@
           }
           <div class="sql-list">
             @for (statement of result.statements; track $index) {
-              <pre><code>{{ statement.sql }}</code></pre>
+              <div class="statement-card">
+                <span>Statement {{ $index + 1 }}</span>
+                <pre><code>{{ statement.sql }}</code></pre>
+                @if (statement.warning) {
+                  <small>{{ statement.warning }}</small>
+                }
+              </div>
             }
           </div>
           <button
@@ -223,15 +501,23 @@
   <div class="modal-backdrop">
     <section class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <p class="eyebrow">Destructive change</p>
-      <h2 id="confirm-title">Drop column from {{ tableName() }}?</h2>
+      <h2 id="confirm-title">Apply destructive table changes?</h2>
       <p>
-        This change can remove existing data. Review the preview, then confirm that you want to drop
-        the listed column before applying.
+        Review the preview carefully. Dropping a primary key can remove row identity from the data
+        browser, and dropping a foreign key removes relational integrity.
       </p>
       <ul>
         @for (statement of preview()?.statements ?? []; track $index) {
           @for (column of statement.destructiveColumns ?? []; track column) {
             <li>{{ column }} on {{ tableName() }}</li>
+          }
+        }
+        @for (statement of preview()?.statements ?? []; track $index) {
+          @for (index of statement.destructiveIndexes ?? []; track index) {
+            <li>Index {{ index }} on {{ tableName() }}</li>
+          }
+          @for (constraint of statement.destructiveConstraints ?? []; track constraint) {
+            <li>Constraint {{ constraint }} on {{ tableName() }}</li>
           }
         }
       </ul>

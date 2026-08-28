@@ -61,6 +61,8 @@ export type ExplorerDatabaseChild = ExplorerSchemaChild | ExplorerObjectGroupChi
 export interface ExplorerObjectDescription {
   readonly ref: ObjectRef;
   readonly columns: TableDescription['columns'];
+  readonly indexes: TableDescription['indexes'];
+  readonly constraints: TableDescription['constraints'];
   readonly estimatedRows?: number;
   readonly comment?: string;
 }
@@ -253,16 +255,22 @@ export class ObjectExplorerService {
           message: 'Only table descriptions are available in the explorer.',
         });
       }
-      const description: Pick<TableDescription, 'ref' | 'columns' | 'estimatedRows' | 'comment'> =
-        metadata.describeTable
-          ? await metadata.describeTable(session.handle, ref)
-          : {
-              ref,
-              columns: (await metadata.listColumns(session.handle, ref)).items,
-            };
+      const description: Pick<
+        TableDescription,
+        'ref' | 'columns' | 'indexes' | 'constraints' | 'estimatedRows' | 'comment'
+      > = metadata.describeTable
+        ? await metadata.describeTable(session.handle, ref)
+        : {
+            ref,
+            columns: (await metadata.listColumns(session.handle, ref)).items,
+            indexes: (await metadata.listIndexes(session.handle, ref)).items,
+            constraints: (await metadata.listConstraints(session.handle, ref)).items,
+          };
       return {
         ref: description.ref,
         columns: description.columns,
+        indexes: description.indexes,
+        constraints: description.constraints,
         ...(description.estimatedRows === undefined
           ? {}
           : { estimatedRows: description.estimatedRows }),

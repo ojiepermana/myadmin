@@ -1956,7 +1956,9 @@ export interface components {
         ExplorerObjectDescription: {
             columns: components["schemas"]["ExplorerColumn"][];
             comment?: string;
+            constraints: components["schemas"]["TableConstraintMetadata"][];
             estimatedRows?: number;
+            indexes: components["schemas"]["TableIndexMetadata"][];
             ref: components["schemas"]["ExplorerObjectRef"];
         };
         ExplorerObjectGroupChild: {
@@ -2607,6 +2609,24 @@ export interface components {
             /** @constant */
             kind: "modify";
             name: string;
+        } | {
+            index: components["schemas"]["TableIndex"];
+            /** @constant */
+            kind: "addIndex";
+        } | {
+            /** @constant */
+            kind: "dropIndex";
+            name: string;
+        } | {
+            constraint: components["schemas"]["TableConstraint"];
+            /** @constant */
+            kind: "addConstraint";
+        } | {
+            /** @constant */
+            kind: "dropConstraint";
+            name: string;
+            /** @enum {string} */
+            type?: "primaryKey" | "foreignKey" | "unique" | "check";
         };
         TableApplyRequest: components["schemas"]["TableDdlRequest"] & {
             confirmDestructive?: boolean;
@@ -2614,6 +2634,8 @@ export interface components {
         TableChangeSet: {
             alterations?: components["schemas"]["TableAlteration"][];
             columns?: components["schemas"]["TableColumnInput"][];
+            constraints?: components["schemas"]["TableConstraint"][];
+            indexes?: components["schemas"]["TableIndex"][];
             /** @enum {string} */
             operation: "create" | "alter";
             ref: components["schemas"]["ExplorerObjectRef"];
@@ -2643,6 +2665,44 @@ export interface components {
             primaryKey?: boolean;
             scale?: number | null;
         };
+        TableConstraint: {
+            columns: string[];
+            name?: string;
+            /** @constant */
+            type: "primaryKey";
+        } | {
+            columns: string[];
+            name?: string;
+            /** @enum {string} */
+            onDelete?: "NO ACTION" | "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT";
+            /** @enum {string} */
+            onUpdate?: "NO ACTION" | "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT";
+            referencedColumns: string[];
+            referencedTable: components["schemas"]["ExplorerObjectRef"];
+            /** @constant */
+            type: "foreignKey";
+        } | {
+            columns: string[];
+            name?: string;
+            /** @constant */
+            type: "unique";
+        } | {
+            expression: string;
+            name?: string;
+            /** @constant */
+            type: "check";
+        };
+        TableConstraintMetadata: {
+            columns?: string[];
+            expression?: string;
+            name: string;
+            onDelete?: string;
+            onUpdate?: string;
+            referencedColumns?: string[];
+            referencedTable?: components["schemas"]["ExplorerObjectRef"];
+            /** @enum {string} */
+            type: "primaryKey" | "foreignKey" | "unique" | "check" | "notNull" | "exclusion" | "other";
+        };
         TableDdlApplyResult: {
             committed: boolean;
             /** @enum {string} */
@@ -2663,6 +2723,8 @@ export interface components {
         };
         TableDdlStatement: {
             destructiveColumns?: string[];
+            destructiveConstraints?: string[];
+            destructiveIndexes?: string[];
             sql: string;
             warning?: string;
         };
@@ -2703,6 +2765,19 @@ export interface components {
             connectionId: string;
             ref: components["schemas"]["TableOperationRef"];
         };
+        TableIndex: {
+            columns: string[];
+            name?: string;
+            unique?: boolean;
+        };
+        TableIndexMetadata: {
+            columns: string[];
+            method?: string;
+            name: string;
+            predicate?: string;
+            primary: boolean;
+            unique: boolean;
+        };
         TableOperationBaseRequest: {
             connectionId: string;
             ref: components["schemas"]["TableOperationRef"];
@@ -2736,6 +2811,11 @@ export interface components {
             capability: components["schemas"]["capability"];
             /** @enum {string} */
             engine: "postgresql" | "mysql";
+            rules: {
+                maxColumns: number;
+                onDelete: ("NO ACTION" | "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT")[];
+                onUpdate: ("NO ACTION" | "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT")[];
+            };
             types: components["schemas"]["TableType"][];
             version: string;
         };
