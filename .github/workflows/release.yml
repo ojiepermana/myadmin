@@ -105,7 +105,7 @@ jobs:
       - run: bun run build:binaries -- --target=${{ matrix.target }}
       - name: Import macOS Developer ID certificate
         if: startsWith(matrix.target, 'macos-') && env.MACOS_CERTIFICATE != '' && env.MACOS_CERTIFICATE_PASSWORD != '' && env.MACOS_SIGNING_IDENTITY != ''
-        uses: apple-actions/import-codesign-certs@v3
+        uses: apple-actions/import-codesign-certs@v7
         with:
           p12-file-base64: ${{ secrets.MACOS_DEVELOPER_ID_CERTIFICATE_P12_BASE64 }}
           p12-password: ${{ secrets.MACOS_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
