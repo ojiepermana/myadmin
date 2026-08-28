@@ -4,6 +4,7 @@ export type ConfigOverrides = {
   server?: Partial<MyadminConfig['server']>;
   dataDir?: string;
   session?: Partial<MyadminConfig['session']>;
+  provider?: Partial<MyadminConfig['provider']>;
   security?: Partial<MyadminConfig['security']>;
   log?: Partial<MyadminConfig['log']>;
   limits?: Partial<MyadminConfig['limits']>;
@@ -31,6 +32,8 @@ const flagPaths: Readonly<Record<string, string>> = {
   '--session.idleTimeoutMinutes': 'session.idleTimeoutMinutes',
   '--session-absolute-timeout-hours': 'session.absoluteTimeoutHours',
   '--session.absoluteTimeoutHours': 'session.absoluteTimeoutHours',
+  '--provider-idle-timeout-minutes': 'provider.idleTimeoutMinutes',
+  '--provider.idleTimeoutMinutes': 'provider.idleTimeoutMinutes',
   '--secure-cookies': 'security.secureCookies',
   '--security.secureCookies': 'security.secureCookies',
   '--log-level': 'log.level',
@@ -155,6 +158,7 @@ export function parseConfigFlags(argv: readonly string[] = []): ConfigOverrides 
       path === 'server.port' ||
       path === 'session.idleTimeoutMinutes' ||
       path === 'session.absoluteTimeoutHours' ||
+      path === 'provider.idleTimeoutMinutes' ||
       path === 'limits.uploadMaxBytes' ||
       path === 'limits.resultMaxRows' ||
       path === 'history.maxEntriesPerUser'

@@ -51,6 +51,7 @@ describe('UT-0012-AC1 configuration schema and defaults', () => {
       'dataDir',
       'session.idleTimeoutMinutes',
       'session.absoluteTimeoutHours',
+      'provider.idleTimeoutMinutes',
       'security.secureCookies',
       'log.level',
       'limits.uploadMaxBytes',
@@ -63,6 +64,7 @@ describe('UT-0012-AC1 configuration schema and defaults', () => {
     ]);
     expect(config.server).toEqual({ host: '127.0.0.1', port: 8080 });
     expect(config.session).toEqual({ idleTimeoutMinutes: 720, absoluteTimeoutHours: 168 });
+    expect(config.provider).toEqual({ idleTimeoutMinutes: 30 });
     expect(config.security.secureCookies).toBe(false);
     expect(config.log.level).toBe('info');
     expect(config.limits).toEqual({ uploadMaxBytes: 512 * 1024 * 1024, resultMaxRows: 1000 });

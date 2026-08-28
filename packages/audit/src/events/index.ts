@@ -25,6 +25,8 @@ export const AuditEvents = {
     created: required('connection.created', 'connection'),
     updated: required('connection.updated', 'connection'),
     deleted: required('connection.deleted', 'connection'),
+    opened: required('connection.opened', 'connection'),
+    closed: required('connection.closed', 'connection'),
   },
   user: {
     created: required('user.created', 'user'),

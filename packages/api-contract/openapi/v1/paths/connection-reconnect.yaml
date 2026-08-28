@@ -1,0 +1,54 @@
+post:
+  operationId: reconnectConnection
+  tags: [connections]
+  summary: Reopen a provider session
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/connection.yaml#/ConnectionLifecycleRequest
+  responses:
+    '200':
+      description: Provider session reopened.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/connection.yaml#/ConnectionLifecycleResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or ownership check failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: A connection attempt is already in progress.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: A transient password is required or the request is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider returned a normalized connection error.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

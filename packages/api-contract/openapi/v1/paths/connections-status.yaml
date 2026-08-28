@@ -1,0 +1,17 @@
+get:
+  operationId: getConnectionStatus
+  tags: [connections]
+  summary: Get provider session status for the current user
+  responses:
+    '200':
+      description: Current lifecycle status for every saved connection owned by the user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/connection.yaml#/ConnectionStatusResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

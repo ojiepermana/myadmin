@@ -236,6 +236,13 @@ function duplicateInput(value: unknown): DuplicateConnectionInput | null {
   return { newLabel: value['newLabel'], copySecret: value['copySecret'] as boolean | undefined };
 }
 
+function lifecycleInput(value: unknown): { secret?: string } | null {
+  if (value === undefined) return {};
+  if (!isRecord(value) || !hasOnlyKeys(value, ['secret'])) return null;
+  if (value['secret'] !== undefined && typeof value['secret'] !== 'string') return null;
+  return value['secret'] === undefined ? {} : { secret: value['secret'] };
+}
+
 function groupInput(value: unknown): ServerGroupInput | null {
   if (
     !isRecord(value) ||
@@ -341,6 +348,15 @@ export function registerConnectionRoutes(
 ): AnyElysia {
   const path = (suffix: string) => `${prefix}${suffix}`;
   return application
+    .get(path('/connections/status'), async ({ request }) => {
+      const actor = actorForRequest(request, options);
+      if (actor instanceof Response) return actor;
+      try {
+        return jsonResponse(await options.connectionManager.status(actor));
+      } catch (error) {
+        return connectionErrorResponse(request, error);
+      }
+    })
     .get(path('/connections'), ({ request }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
@@ -403,6 +419,41 @@ export function registerConnectionRoutes(
             input,
             body['secret'] as string | undefined,
           ),
+        );
+      } catch (error) {
+        return connectionErrorResponse(request, error);
+      }
+    })
+    .post(path('/connections/:id/connect'), async ({ request, params }) => {
+      const actor = protectedMutation(request, options);
+      if (actor instanceof Response) return actor;
+      const body = lifecycleInput(await readJson(request));
+      if (!body) return invalidBody(request);
+      try {
+        return jsonResponse(await options.connectionManager.connect(actor, params.id, body.secret));
+      } catch (error) {
+        return connectionErrorResponse(request, error);
+      }
+    })
+    .post(path('/connections/:id/disconnect'), async ({ request, params }) => {
+      const actor = protectedMutation(request, options);
+      if (actor instanceof Response) return actor;
+      const body = lifecycleInput(await readJson(request));
+      if (!body) return invalidBody(request);
+      try {
+        return jsonResponse(await options.connectionManager.disconnect(actor, params.id));
+      } catch (error) {
+        return connectionErrorResponse(request, error);
+      }
+    })
+    .post(path('/connections/:id/reconnect'), async ({ request, params }) => {
+      const actor = protectedMutation(request, options);
+      if (actor instanceof Response) return actor;
+      const body = lifecycleInput(await readJson(request));
+      if (!body) return invalidBody(request);
+      try {
+        return jsonResponse(
+          await options.connectionManager.reconnect(actor, params.id, body.secret),
         );
       } catch (error) {
         return connectionErrorResponse(request, error);

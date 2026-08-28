@@ -23,6 +23,56 @@
   transform: translateY(-1px);
 }
 
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted) / 0.35);
+  padding: 0.125rem 0.5rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.connection-status-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: hsl(var(--muted-foreground) / 0.65);
+}
+
+.connection-status.status-connected {
+  border-color: hsl(142 71% 45% / 0.35);
+  background: hsl(142 71% 45% / 0.1);
+  color: hsl(142 71% 30%);
+}
+
+.connection-status.status-connected .connection-status-dot {
+  background: hsl(142 71% 40%);
+}
+
+.connection-status.status-connecting {
+  border-color: hsl(38 92% 50% / 0.35);
+  background: hsl(38 92% 50% / 0.1);
+  color: hsl(32 80% 34%);
+}
+
+.connection-status.status-connecting .connection-status-dot {
+  background: hsl(38 92% 50%);
+}
+
+.connection-status.status-error {
+  border-color: hsl(0 72% 51% / 0.35);
+  background: hsl(0 72% 51% / 0.1);
+  color: hsl(0 62% 42%);
+}
+
+.connection-status.status-error .connection-status-dot {
+  background: hsl(0 72% 51%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .connection-card {
     transition: none;

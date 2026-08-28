@@ -401,10 +401,10 @@ Kelola koneksi tersimpan dengan credential terenkripsi dan batas Admin yang jela
 Connect eksplisit, registry sesi aktif, status jujur di sidebar dan status bar. Done when: status yang tampil selalu sama dengan kenyataan server dan reconnect memulihkan error.
 
 - [x] Design it (spec): [0027](../specs/0027-connection-lifecycle-status/index.md)
-- [ ] Build it: /develop connection-lifecycle-status
-  - [ ] Registry sesi aktif plus transisi plus idle timeout plus pembersihan (AC-2, AC-5, AC-6, AC-9)
-  - [ ] Endpoint connect disconnect reconnect status plus audit (AC-1, AC-3, AC-4, AC-8)
-  - [ ] UI status sidebar dan status bar plus dialog password transient plus e2e (AC-4, AC-7)
+- [x] Build it: /develop connection-lifecycle-status
+  - [x] Registry sesi aktif plus transisi plus idle timeout plus pembersihan (AC-2, AC-5, AC-6, AC-9)
+  - [x] Endpoint connect disconnect reconnect status plus audit (AC-1, AC-3, AC-4, AC-8)
+  - [x] UI status sidebar dan status bar plus dialog password transient plus e2e (AC-4, AC-7)
 - [ ] [Verify it](../specs/0027-connection-lifecycle-status/verify.md): /check verify connection-lifecycle-status
 - [ ] [Test it](../specs/0027-connection-lifecycle-status/test.md): /test connection-lifecycle-status
 

@@ -33,7 +33,8 @@ export interface SessionRepository {
   revoke(id: EntityId, revokedAt?: Date): void;
   revokeAllForUser(userId: EntityId, revokedAt?: Date): number;
   revokeAllForUserExcept(userId: EntityId, exceptSessionId: EntityId, revokedAt?: Date): number;
-  deleteExpired(at?: Date): number;
+  listExpired(at?: Date, idleTimeoutMinutes?: number): Session[];
+  deleteExpired(at?: Date, idleTimeoutMinutes?: number): number;
 }
 
 export interface ConnectionRepository {

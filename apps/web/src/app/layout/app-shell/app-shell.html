@@ -472,9 +472,9 @@
                     <span class="size-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
                     <span class="text-sm text-muted-foreground">Shell services are ready.</span>
                   </div>
-                  <span class="hidden text-xs text-muted-foreground sm:inline"
-                    >No active connection</span
-                  >
+                  <span class="hidden text-xs text-muted-foreground sm:inline">{{
+                    activeConnectionSummary()
+                  }}</span>
                 </div>
               </div>
             </ResizablePanel>
@@ -511,7 +511,7 @@
       ></span>
       {{ realtimeLabel() }}
     </span>
-    <span class="hidden sm:inline">Workspace state syncs to this account.</span>
+    <span class="hidden sm:inline" aria-live="polite">{{ activeConnectionSummary() }}</span>
     <span>{{ workspace.tabs().length }} {{ workspace.tabs().length === 1 ? 'tab' : 'tabs' }}</span>
   </footer>
 </div>

@@ -95,9 +95,26 @@ export class SqliteSessionRepository implements SessionRepository {
     );
   }
 
-  public deleteExpired(at = this.now()): number {
+  public listExpired(at = this.now(), idleTimeoutMinutes = 0): Session[] {
+    const rows = prepare<SessionRow>(
+      this.database,
+      `SELECT ${SESSION_COLUMNS} FROM sessions WHERE expires_at <= ? OR (? > 0 AND COALESCE(last_seen_at, created_at) <= ?)`,
+    ).all(
+      toIso(at),
+      idleTimeoutMinutes,
+      toIso(new Date(at.getTime() - idleTimeoutMinutes * 60_000)),
+    );
+    return rows.map(mapSession);
+  }
+
+  public deleteExpired(at = this.now(), idleTimeoutMinutes = 0): number {
+    const expired = this.listExpired(at, idleTimeoutMinutes);
+    if (expired.length === 0) return 0;
+    const placeholders = expired.map(() => '?').join(', ');
     return changes(
-      this.database.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(toIso(at)),
+      this.database
+        .prepare(`DELETE FROM sessions WHERE id IN (${placeholders})`)
+        .run(...expired.map((session) => session.id)),
     );
   }
 }

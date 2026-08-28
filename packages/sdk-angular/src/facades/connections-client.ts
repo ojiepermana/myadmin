@@ -10,6 +10,12 @@ export type ConnectionDuplicateRequest = components['schemas']['ConnectionDuplic
 export type ConnectionTestRequest = components['schemas']['ConnectionTestRequest'];
 export type ConnectionTestResponse =
   operations['testConnection']['responses'][200]['content']['application/json'];
+export type ConnectionLifecycleRequest = components['schemas']['ConnectionLifecycleRequest'];
+export type ConnectionLifecycleResponse =
+  operations['connectConnection']['responses'][200]['content']['application/json'];
+export type ConnectionStatus = components['schemas']['ConnectionStatus'];
+export type ConnectionStatusResponse =
+  operations['getConnectionStatus']['responses'][200]['content']['application/json'];
 export type ConnectionPage =
   operations['listConnections']['responses'][200]['content']['application/json'];
 export type ServerGroup = components['schemas']['ServerGroup'];
@@ -48,6 +54,46 @@ export class ConnectionsClient {
       method: 'POST',
       path: '/connections/test',
       body: request,
+      requiresSession: true,
+    });
+  }
+
+  public connect(
+    id: string,
+    request?: ConnectionLifecycleRequest,
+  ): Observable<ConnectionLifecycleResponse> {
+    return this.transport.request<ConnectionLifecycleResponse>({
+      method: 'POST',
+      path: `/connections/${encodeURIComponent(id)}/connect`,
+      ...(request === undefined ? {} : { body: request }),
+      requiresSession: true,
+    });
+  }
+
+  public disconnect(id: string): Observable<ConnectionLifecycleResponse> {
+    return this.transport.request<ConnectionLifecycleResponse>({
+      method: 'POST',
+      path: `/connections/${encodeURIComponent(id)}/disconnect`,
+      requiresSession: true,
+    });
+  }
+
+  public reconnect(
+    id: string,
+    request?: ConnectionLifecycleRequest,
+  ): Observable<ConnectionLifecycleResponse> {
+    return this.transport.request<ConnectionLifecycleResponse>({
+      method: 'POST',
+      path: `/connections/${encodeURIComponent(id)}/reconnect`,
+      ...(request === undefined ? {} : { body: request }),
+      requiresSession: true,
+    });
+  }
+
+  public status(): Observable<ConnectionStatusResponse> {
+    return this.transport.request<ConnectionStatusResponse>({
+      method: 'GET',
+      path: '/connections/status',
       requiresSession: true,
     });
   }

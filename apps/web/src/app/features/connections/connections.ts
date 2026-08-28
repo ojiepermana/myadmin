@@ -2,6 +2,7 @@ import { computed, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   ConnectionsClient,
+  type ConnectionLifecycleRequest,
   type ConnectionCreateRequest,
   type ConnectionDuplicateRequest,
   type ConnectionPatch,
@@ -29,6 +30,7 @@ import {
 } from '@ojiepermana/angular/component/dialog';
 import { firstValueFrom } from 'rxjs';
 import { AuthSessionStore } from '../../core/auth/auth-session.store';
+import { ConnectionStatusStore } from '../../core/connections/connection-status.store';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { isSdkError } from '../../core/errors/sdk-error';
 
@@ -103,6 +105,7 @@ export class Connections {
   private readonly client = inject(ConnectionsClient);
   private readonly router = inject(Router);
   protected readonly authSession = inject(AuthSessionStore);
+  protected readonly connectionStatuses = inject(ConnectionStatusStore);
   protected readonly errorPresenter = inject(ErrorPresenterService);
 
   protected readonly connections = signal<Connection[]>([]);
@@ -121,6 +124,11 @@ export class Connections {
   protected readonly editingGroupId = signal<string | null>(null);
   protected readonly deleteTarget = signal<Connection | null>(null);
   protected readonly deleteGroupTarget = signal<ServerGroup | null>(null);
+  protected readonly lifecycleTarget = signal<Connection | null>(null);
+  protected readonly lifecycleAction = signal<'connect' | 'reconnect'>('connect');
+  protected readonly lifecycleSecret = signal('');
+  protected readonly lifecycleBusyId = signal<string | null>(null);
+  protected readonly lifecycleError = signal<string | null>(null);
 
   protected readonly groupedConnections = computed(() => {
     const items = this.connections();
@@ -156,6 +164,7 @@ export class Connections {
       ]);
       this.connections.set(connectionPage.items ?? []);
       this.groups.set(groupPage.items ?? []);
+      await this.connectionStatuses.refresh();
     } catch (reason) {
       this.error.set(this.messageFor(reason, 'Connections could not be loaded.'));
       this.errorPresenter.presentUnknown(reason);
@@ -310,6 +319,73 @@ export class Connections {
     } catch (reason) {
       this.error.set(this.messageFor(reason, 'The connection could not be duplicated.'));
       this.errorPresenter.presentUnknown(reason);
+    }
+  }
+
+  protected statusFor(connection: Connection) {
+    return this.connectionStatuses.statusFor(connection.id);
+  }
+
+  protected statusLabel(connection: Connection): string {
+    const status = this.statusFor(connection)?.status ?? 'disconnected';
+    if (status === 'connected') return 'Connected';
+    if (status === 'connecting') return 'Connecting';
+    if (status === 'error') return 'Error';
+    return 'Disconnected';
+  }
+
+  protected statusDetail(connection: Connection): string {
+    const status = this.statusFor(connection);
+    if (!status) return 'Not connected';
+    if (status.errorCategory) return status.errorCategory.replaceAll('_', ' ');
+    if (status.status === 'connected' && status.serverInfo) {
+      return `${status.serverInfo.version}${status.latencyMs === null ? '' : ` · ${status.latencyMs} ms`}`;
+    }
+    if (status.reason === 'idle_closed') return 'Closed after idle timeout';
+    return status.status === 'connecting' ? 'Opening provider session' : 'Not connected';
+  }
+
+  protected connect(connection: Connection): void {
+    this.beginLifecycle(connection, 'connect');
+  }
+
+  protected reconnect(connection: Connection): void {
+    this.beginLifecycle(connection, 'reconnect');
+  }
+
+  protected async disconnect(connection: Connection): Promise<void> {
+    if (this.lifecycleBusyId()) return;
+    this.lifecycleBusyId.set(connection.id);
+    this.error.set(null);
+    try {
+      await firstValueFrom(this.client.disconnect(connection.id));
+      this.connectionStatuses.setActive(connection.id);
+      await this.connectionStatuses.refresh();
+      this.inlineMessage.set(`${connection.label} disconnected.`);
+    } catch (reason) {
+      this.error.set(this.messageFor(reason, 'The connection could not be disconnected.'));
+      this.errorPresenter.presentUnknown(reason);
+    } finally {
+      this.lifecycleBusyId.set(null);
+    }
+  }
+
+  protected submitLifecycle(): void {
+    const target = this.lifecycleTarget();
+    if (!target || this.lifecycleSecret().length === 0) {
+      this.lifecycleError.set('Enter the database password to continue.');
+      return;
+    }
+    const secret = this.lifecycleSecret();
+    this.closeLifecyclePrompt();
+    void this.performLifecycle(target, this.lifecycleAction(), { secret });
+  }
+
+  protected closeLifecyclePrompt(): void {
+    if (this.lifecycleBusyId() === null) {
+      this.lifecycleTarget.set(null);
+      this.lifecycleSecret.set('');
+      this.lifecycleError.set(null);
     }
   }
 
@@ -469,5 +545,40 @@ export class Connections {
 
   private messageFor(reason: unknown, fallback: string): string {
     return isSdkError(reason) ? reason.message : fallback;
+  }
+
+  private beginLifecycle(connection: Connection, action: 'connect' | 'reconnect'): void {
+    if (this.lifecycleBusyId()) return;
+    this.lifecycleAction.set(action);
+    if (connection.hasSavedSecret) {
+      void this.performLifecycle(connection, action);
+      return;
+    }
+    this.lifecycleSecret.set('');
+    this.lifecycleError.set(null);
+    this.lifecycleTarget.set(connection);
+  }
+
+  private async performLifecycle(
+    connection: Connection,
+    action: 'connect' | 'reconnect',
+    request?: ConnectionLifecycleRequest,
+  ): Promise<void> {
+    this.lifecycleBusyId.set(connection.id);
+    this.error.set(null);
+    try {
+      const operation = action === 'connect' ? this.client.connect : this.client.reconnect;
+      await firstValueFrom(operation.call(this.client, connection.id, request));
+      this.connectionStatuses.setActive(connection.id);
+      await this.connectionStatuses.refresh();
+      this.inlineMessage.set(
+        `${connection.label} ${action === 'connect' ? 'connected' : 'reconnected'}.`,
+      );
+    } catch (reason) {
+      this.error.set(this.messageFor(reason, 'The connection lifecycle operation failed.'));
+      this.errorPresenter.presentUnknown(reason);
+    } finally {
+      this.lifecycleBusyId.set(null);
+    }
   }
 }

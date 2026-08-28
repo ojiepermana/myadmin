@@ -620,6 +620,20 @@
                                 connection.engine === 'postgresql' ? 'PostgreSQL' : 'MySQL'
                               }}</span
                             >
+                            <span
+                              class="connection-status"
+                              [class.status-connected]="
+                                statusFor(connection)?.status === 'connected'
+                              "
+                              [class.status-connecting]="
+                                statusFor(connection)?.status === 'connecting'
+                              "
+                              [class.status-error]="statusFor(connection)?.status === 'error'"
+                              [attr.aria-label]="statusLabel(connection)"
+                            >
+                              <span class="connection-status-dot" aria-hidden="true"></span>
+                              {{ statusLabel(connection) }}
+                            </span>
                           </div>
                           <p class="truncate font-mono text-sm text-muted-foreground">
                             {{ connection.host }}:{{ connection.port
@@ -641,6 +655,16 @@
                             <circle cx="17" cy="17" r="3"></circle>
                             <path d="m9.5 10.5 5-2M9.5 13.5l5 2" stroke-linecap="round"></path></svg
                         ></span>
+                      </div>
+                      <div
+                        class="connection-lifecycle mt-4 rounded-lg border border-border/70 bg-muted/20 px-3 py-2"
+                      >
+                        <div class="flex items-center justify-between gap-3 text-xs">
+                          <span class="text-muted-foreground">{{ statusDetail(connection) }}</span>
+                          @if (statusFor(connection)?.status === 'error') {
+                            <span class="font-medium text-destructive">Reconnect required</span>
+                          }
+                        </div>
                       </div>
                       <dl class="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                         <div>
@@ -690,6 +714,52 @@
                           }
                         </div>
                         <div class="flex items-center gap-1">
+                          @if (statusFor(connection)?.status === 'connected') {
+                            <button
+                              Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              [disabled]="lifecycleBusyId() === connection.id"
+                              (click)="disconnect(connection)"
+                            >
+                              Disconnect
+                            </button>
+                            <button
+                              Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              [disabled]="lifecycleBusyId() === connection.id"
+                              (click)="reconnect(connection)"
+                            >
+                              Reconnect
+                            </button>
+                          } @else {
+                            <button
+                              Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              [disabled]="
+                                lifecycleBusyId() === connection.id ||
+                                statusFor(connection)?.status === 'connecting'
+                              "
+                              (click)="
+                                statusFor(connection)?.status === 'error'
+                                  ? reconnect(connection)
+                                  : connect(connection)
+                              "
+                            >
+                              {{
+                                statusFor(connection)?.status === 'connecting'
+                                  ? 'Connecting…'
+                                  : statusFor(connection)?.status === 'error'
+                                    ? 'Reconnect'
+                                    : 'Connect'
+                              }}
+                            </button>
+                          }
                           <button
                             Button
                             type="button"
@@ -753,6 +823,42 @@
       Delete connection
     </button></DialogFooter
   >
+</Dialog>
+
+<Dialog [open]="lifecycleTarget() !== null" (openChange)="$event || closeLifecyclePrompt()">
+  <DialogHeader>
+    <DialogTitle>
+      {{ lifecycleAction() === 'connect' ? 'Connect to' : 'Reconnect to' }}
+      {{ lifecycleTarget()?.label }}
+    </DialogTitle>
+    <DialogDescription>
+      This password is used for this provider session only and is not saved.
+    </DialogDescription>
+  </DialogHeader>
+  <DialogContent>
+    <form class="grid gap-2" (submit)="$event.preventDefault(); submitLifecycle()">
+      <label for="lifecycle-secret" class="text-sm font-medium">Database password</label>
+      <input
+        id="lifecycle-secret"
+        type="password"
+        autocomplete="off"
+        class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        [value]="lifecycleSecret()"
+        (input)="lifecycleSecret.set($any($event.target).value)"
+        [attr.aria-invalid]="lifecycleError() ? 'true' : null"
+        required
+      />
+      @if (lifecycleError()) {
+        <p class="text-sm text-destructive" role="alert">{{ lifecycleError() }}</p>
+      }
+    </form>
+  </DialogContent>
+  <DialogFooter>
+    <button Button type="button" variant="outline" (click)="closeLifecyclePrompt()">Cancel</button>
+    <button Button type="button" (click)="submitLifecycle()">
+      {{ lifecycleAction() === 'connect' ? 'Connect' : 'Reconnect' }}
+    </button>
+  </DialogFooter>
 </Dialog>
 
 <Dialog [open]="deleteGroupTarget() !== null" (openChange)="$event || deleteGroupTarget.set(null)">

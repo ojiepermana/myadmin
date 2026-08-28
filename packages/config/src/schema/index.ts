@@ -22,6 +22,12 @@ export const configSchema = Type.Object(
       },
       { additionalProperties: false },
     ),
+    provider: Type.Object(
+      {
+        idleTimeoutMinutes: Type.Integer({ minimum: 1, default: 30, sensitive: false }),
+      },
+      { additionalProperties: false },
+    ),
     security: Type.Object(
       {
         secureCookies: Type.Boolean({ default: false, sensitive: false }),
@@ -131,6 +137,7 @@ export const configKeys = [
   'dataDir',
   'session.idleTimeoutMinutes',
   'session.absoluteTimeoutHours',
+  'provider.idleTimeoutMinutes',
   'security.secureCookies',
   'log.level',
   'limits.uploadMaxBytes',
@@ -161,6 +168,10 @@ export const configFieldMetadata: Readonly<Record<ConfigKey, ConfigFieldMetadata
     env: ['MYADMIN_SESSION_ABSOLUTE_TIMEOUT_HOURS'],
     sensitive: false,
   },
+  'provider.idleTimeoutMinutes': {
+    env: ['MYADMIN_PROVIDER_IDLE_TIMEOUT_MINUTES'],
+    sensitive: false,
+  },
   'security.secureCookies': { env: ['MYADMIN_SECURITY_SECURE_COOKIES'], sensitive: false },
   'log.level': { env: ['MYADMIN_LOG_LEVEL'], sensitive: false },
   'limits.uploadMaxBytes': { env: ['MYADMIN_LIMITS_UPLOAD_MAX_BYTES'], sensitive: false },
@@ -184,6 +195,9 @@ export const defaultConfigValues: Omit<MyadminConfig, 'dataDir'> = {
     idleTimeoutMinutes: 720,
     absoluteTimeoutHours: 168,
   },
+  provider: {
+    idleTimeoutMinutes: 30,
+  },
   security: {
     secureCookies: false,
   },
@@ -204,6 +218,7 @@ export function createDefaultConfig(options: DataDirectoryOptions = {}): Myadmin
   return {
     server: { ...defaultConfigValues.server },
     session: { ...defaultConfigValues.session },
+    provider: { ...defaultConfigValues.provider },
     security: { ...defaultConfigValues.security },
     log: { ...defaultConfigValues.log },
     limits: { ...defaultConfigValues.limits },

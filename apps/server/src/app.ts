@@ -143,11 +143,15 @@ function authServiceForStore(
   store: AuthStore,
   config: MyadminConfig | undefined,
   loginRateLimiter: InMemoryRateLimiter,
+  onSessionEnded?: (userId: string) => void | PromiseLike<void>,
 ): AuthService {
   return new AuthService(store, {
     loginRateLimiter,
     idleTimeoutMinutes: config?.session.idleTimeoutMinutes,
     absoluteTimeoutHours: config?.session.absoluteTimeoutHours,
+    ...(onSessionEnded === undefined
+      ? {}
+      : { sessionLifecycle: { onSessionEnded: (userId: string) => onSessionEnded(userId) } }),
   });
 }
 
@@ -170,6 +174,7 @@ type Credentials = { username: string; password: string };
 const sessionCleanupStops = new WeakMap<object, () => void>();
 const realtimeCleanupStops = new WeakMap<object, () => void>();
 const jobManagerCleanupStops = new WeakMap<object, () => void>();
+const connectionManagerCleanupStops = new WeakMap<object, () => Promise<void>>();
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
   return new Response(JSON.stringify(value), {
@@ -764,6 +769,7 @@ function registerAuthRoutes(
   setupService: InitialAdminService | undefined,
   authService: AuthService | undefined,
   secureCookies: boolean,
+  connectionSessionCleanup?: Pick<ConnectionManagerService, 'closeForUser'>,
 ): AnyElysia {
   const path = (suffix: string) => `${prefix}${suffix}`;
 
@@ -817,7 +823,7 @@ function registerAuthRoutes(
         return authErrorResponse(request, error, secureCookies);
       }
     })
-    .post(path('/auth/logout'), ({ request }) => {
+    .post(path('/auth/logout'), async ({ request }) => {
       if (!authService) {
         return apiError(request, 500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
       }
@@ -831,6 +837,7 @@ function registerAuthRoutes(
 
       try {
         authService.logout(sessionToken(request));
+        await connectionSessionCleanup?.closeForUser(validation.value.user.id);
         return new Response(null, {
           status: 204,
           headers: { 'set-cookie': clearSessionCookie(secureCookies) },
@@ -1247,6 +1254,21 @@ export function disposeServerApp(application: AnyElysia): void {
   realtimeCleanupStops.delete(application);
   jobManagerCleanupStops.get(application)?.();
   jobManagerCleanupStops.delete(application);
+  const disposeConnections = connectionManagerCleanupStops.get(application);
+  connectionManagerCleanupStops.delete(application);
+  if (disposeConnections) void disposeConnections();
+}
+
+export async function disposeServerAppAsync(application: AnyElysia): Promise<void> {
+  sessionCleanupStops.get(application)?.();
+  sessionCleanupStops.delete(application);
+  realtimeCleanupStops.get(application)?.();
+  realtimeCleanupStops.delete(application);
+  jobManagerCleanupStops.get(application)?.();
+  jobManagerCleanupStops.delete(application);
+  const disposeConnections = connectionManagerCleanupStops.get(application);
+  connectionManagerCleanupStops.delete(application);
+  if (disposeConnections) await disposeConnections();
 }
 
 export function createServerApp(options: ServerAppOptions = {}) {
@@ -1266,6 +1288,18 @@ export function createServerApp(options: ServerAppOptions = {}) {
     (runtimeStore
       ? new CredentialVault({ keyProvider: createKeyProvider({ dataDirectory }) })
       : undefined);
+  const connectionManager =
+    options.connectionManager ??
+    (runtimeStore && credentialVault
+      ? new ConnectionManagerService({
+          store: runtimeStore,
+          providers,
+          vault: credentialVault,
+          activeSessions: options.activeConnectionSessions,
+          testRateLimiter: options.connectionTestRateLimiter,
+          idleTimeoutMinutes: options.config?.provider.idleTimeoutMinutes,
+        })
+      : undefined);
   const setupService =
     options.initialAdminService ??
     (runtimeStore ? new InitialAdminService({ store: runtimeStore }) : undefined);
@@ -1274,7 +1308,12 @@ export function createServerApp(options: ServerAppOptions = {}) {
   const authService =
     options.authService ??
     (runtimeStore
-      ? authServiceForStore(runtimeStore, options.config, loginRateLimiter)
+      ? authServiceForStore(
+          runtimeStore,
+          options.config,
+          loginRateLimiter,
+          (userId) => connectionManager?.closeForUser(userId) ?? Promise.resolve(),
+        )
       : undefined);
   const jobManager = options.jobManager ?? new JobManager();
   const ownsJobManager = options.jobManager === undefined;
@@ -1337,6 +1376,7 @@ export function createServerApp(options: ServerAppOptions = {}) {
     setupService,
     authService,
     secureCookies,
+    { closeForUser: (userId) => connectionManager?.closeForUser(userId) ?? Promise.resolve() },
   );
   application = registerSettingsRoutes(
     application,
@@ -1380,17 +1420,6 @@ export function createServerApp(options: ServerAppOptions = {}) {
     secureCookies,
     workspaceService,
   );
-  const connectionManager =
-    options.connectionManager ??
-    (runtimeStore && credentialVault
-      ? new ConnectionManagerService({
-          store: runtimeStore,
-          providers,
-          vault: credentialVault,
-          activeSessions: options.activeConnectionSessions,
-          testRateLimiter: options.connectionTestRateLimiter,
-        })
-      : undefined);
   const backupService =
     options.backupService ??
     (runtimeStore && credentialVault
@@ -1441,9 +1470,13 @@ export function createServerApp(options: ServerAppOptions = {}) {
     ownsJobManager ? () => jobManager.dispose() : () => undefined,
   );
   if (authService) scheduleSessionCleanup(application, authService);
-  return application.all('*', async ({ request }) =>
+  application = application.all('*', async ({ request }) =>
     serveStaticAsset(request, { source: await source() }),
   );
+  if (connectionManager) {
+    connectionManagerCleanupStops.set(application, () => connectionManager!.dispose());
+  }
+  return application;
 }
 
 /** Contract fixture backed by the same auth implementation and an in-memory SQLite database. */
@@ -1477,7 +1510,14 @@ export function createApp(
     observabilityOptions({ observability: options.observability }),
   ).get('/health', () => ({ status: 'ok' as const, version: packageManifest.version }));
   application = registerSetupRoutes(application, '', setupService, setupRateLimiter);
-  application = registerAuthRoutes(application, '', setupService, authService, false);
+  application = registerAuthRoutes(
+    application,
+    '',
+    setupService,
+    authService,
+    false,
+    connectionManager,
+  );
   application = registerSettingsRoutes(
     application,
     '',
@@ -1576,13 +1616,13 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
         try {
           await runningServer.stop(force);
         } finally {
-          if (serverApp) disposeServerApp(serverApp);
+          if (serverApp) await disposeServerAppAsync(serverApp);
           if (ownsDatabase && database) closeDatabase(database);
         }
       },
     };
   } catch (error) {
-    if (serverApp) disposeServerApp(serverApp);
+    if (serverApp) await disposeServerAppAsync(serverApp);
     if (ownsDatabase && database) closeDatabase(database);
     throw error;
   }

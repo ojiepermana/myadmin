@@ -61,10 +61,18 @@ paths:
     $ref: ./paths/workspace.yaml
   /connections:
     $ref: ./paths/connections.yaml
+  /connections/status:
+    $ref: ./paths/connections-status.yaml
   /connections/test:
     $ref: ./paths/connections-test.yaml
   /connections/{id}:
     $ref: ./paths/connection-by-id.yaml
+  /connections/{id}/connect:
+    $ref: ./paths/connection-connect.yaml
+  /connections/{id}/disconnect:
+    $ref: ./paths/connection-disconnect.yaml
+  /connections/{id}/reconnect:
+    $ref: ./paths/connection-reconnect.yaml
   /connections/{id}/duplicate:
     $ref: ./paths/connection-duplicate.yaml
   /server-groups:
@@ -169,6 +177,14 @@ components:
       $ref: ./components/schemas/connection.yaml#/ConnectionTestRequest
     ConnectionTestResponse:
       $ref: ./components/schemas/connection.yaml#/ConnectionTestResponse
+    ConnectionLifecycleRequest:
+      $ref: ./components/schemas/connection.yaml#/ConnectionLifecycleRequest
+    ConnectionLifecycleResponse:
+      $ref: ./components/schemas/connection.yaml#/ConnectionLifecycleResponse
+    ConnectionStatus:
+      $ref: ./components/schemas/connection.yaml#/ConnectionStatus
+    ConnectionStatusResponse:
+      $ref: ./components/schemas/connection.yaml#/ConnectionStatusResponse
     ConnectionPage:
       $ref: ./components/schemas/connection.yaml#/ConnectionPage
     ServerGroupInput:

@@ -1,7 +1,7 @@
 # 0027. Connection manager: lifecycle dan status
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-CONN-03 menuntut connect, disconnect, reconnect mengubah state dengan benar; 
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin menyambungkan koneksi dan melihat statusnya jelas di sidebar dan status bar.
 - Sebagai pengguna dengan koneksi tanpa password tersimpan, saya ingin dimintai password saat menyambung, sekali per sesi sambung.
 
@@ -39,17 +40,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Connect eksplisit dengan registry per user per koneksi (dipilih)
 
 **Pros**:
+
 - Momen jelas untuk meminta password transient; status yang pengguna lihat sama dengan kenyataan server; cocok dengan mental model alat database.
 
 **Cons**:
+
 - Pengguna harus menekan connect; dianggap wajar untuk alat kelas ini.
 
 ### Option 2: Connect otomatis malas saat operasi pertama
 
 **Pros**:
+
 - Satu langkah lebih sedikit.
 
 **Cons**:
+
 - Tidak ada tempat alami meminta password transien; kegagalan koneksi muncul sebagai kegagalan fitur acak, membingungkan.
 
 ## Decision
@@ -69,22 +74,25 @@ Alat administrasi database harus mempertahankan kesesuaian antara indikator dan 
 **State transitions** (koneksi per user): disconnected → connecting → connected → (error | disconnected); error → connecting (reconnect); connected → disconnected (disconnect, idle_closed, logout, delete).
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /connections/:id/connect | POST | secret? (transient) | status, serverInfo, capabilities | pemilik | 401 secret salah (kategori auth_failed), 404, 409 sudah connecting |
-| /connections/:id/disconnect | POST | tidak ada | status | pemilik | 404 |
-| /connections/:id/reconnect | POST | secret? | status, serverInfo, capabilities | pemilik | sama dengan connect |
-| /connections/status | GET | tidak ada | daftar status | sesi | |
+
+| Endpoint                    | Method | Key inputs          | Key outputs                      | Auth    | Key errors                                                         |
+| --------------------------- | ------ | ------------------- | -------------------------------- | ------- | ------------------------------------------------------------------ |
+| /connections/:id/connect    | POST   | secret? (transient) | status, serverInfo, capabilities | pemilik | 401 secret salah (kategori auth_failed), 404, 409 sudah connecting |
+| /connections/:id/disconnect | POST   | tidak ada           | status                           | pemilik | 404                                                                |
+| /connections/:id/reconnect  | POST   | secret?             | status, serverInfo, capabilities | pemilik | sama dengan connect                                                |
+| /connections/status         | GET    | tidak ada           | daftar status                    | sesi    |                                                                    |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| connect | serverInfo, capabilities | provider describe saat open (spec 0022, 0024) |
-| status | latency | pengukuran ping saat connect dan test terakhir |
-| status | kategori error | `DbError.category` |
-| idle timeout | ambang | config `provider.idleTimeoutMinutes` (default 30, ditambahkan ke schema spec 0012) |
+
+| Action       | Value produced / displayed | Source                                                                             |
+| ------------ | -------------------------- | ---------------------------------------------------------------------------------- |
+| connect      | serverInfo, capabilities   | provider describe saat open (spec 0022, 0024)                                      |
+| status       | latency                    | pengukuran ping saat connect dan test terakhir                                     |
+| status       | kategori error             | `DbError.category`                                                                 |
+| idle timeout | ambang                     | config `provider.idleTimeoutMinutes` (default 30, ditambahkan ke schema spec 0012) |
 
 **Key invariants**:
+
 - Satu sesi provider per (user, koneksi); tidak ada sharing sesi antar user (bagian 8.2 butir 6: hak akses mengikuti credential koneksi).
 - Secret transient berumur satu permintaan connect; tidak masuk registry.
 - Status yang dilaporkan selalu berasal dari registry server, bukan dugaan klien.
@@ -92,6 +100,7 @@ Alat administrasi database harus mempertahankan kesesuaian antara indikator dan 
 **Security model**: connect/disconnect hanya pemilik (Admin pun tidak, konsisten spec 0026). Response status tidak memuat host detail bagi非 pemilik karena memang hanya milik sendiri yang dikembalikan.
 
 **Configuration required**:
+
 - `provider.idleTimeoutMinutes` (baru di schema config): default 30.
 
 **Critical test scenarios**:
@@ -109,13 +118,16 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Model sesi aktif menjadi fondasi query editor (sesi per tab, spec 0033) dan semua fitur database; status jujur sejak awal.
 
 **Negative / tradeoffs**:
+
 - Polling 10 detik sementara menambah request kecil; hilang saat spec 0029.
 - Tanpa auto retry, pengguna menekan reconnect sendiri; sesuai filosofi kejelasan.
 
 **Neutral**:
+
 - Idle timeout memutus sesi menganggur; query panjang yang berjalan bukan menganggur (aktivitas tercatat).
 
 ## Follow-up
@@ -125,9 +137,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-CONN-03, FR-CONN-04, FR-CONN-06, FR-OPS-01; spec 0022, 0024, 0026.
 
 **Practices & standards**:
+
 - Status dari sumber kebenaran tunggal; kegagalan eksplisit lebih baik daripada retry tersembunyi.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

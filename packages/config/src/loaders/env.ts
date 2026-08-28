@@ -43,6 +43,7 @@ function parseEnvironmentValue(key: ConfigKey, rawValue: string): unknown {
     key === 'server.port' ||
     key === 'session.idleTimeoutMinutes' ||
     key === 'session.absoluteTimeoutHours' ||
+    key === 'provider.idleTimeoutMinutes' ||
     key === 'limits.uploadMaxBytes' ||
     key === 'limits.resultMaxRows' ||
     key === 'history.maxEntriesPerUser'

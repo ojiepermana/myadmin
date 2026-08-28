@@ -227,6 +227,40 @@ export interface paths {
         patch: operations["updateConnection"];
         trace?: never;
     };
+    "/connections/{id}/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open a provider session for a saved connection */
+        post: operations["connectConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connections/{id}/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a provider session */
+        post: operations["disconnectConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/connections/{id}/duplicate": {
         parameters: {
             query?: never;
@@ -238,6 +272,40 @@ export interface paths {
         put?: never;
         /** Duplicate a saved connection */
         post: operations["duplicateConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connections/{id}/reconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen a provider session */
+        post: operations["reconnectConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connections/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get provider session status for the current user */
+        get: operations["getConnectionStatus"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -695,6 +763,31 @@ export interface components {
             tlsOptions?: components["schemas"]["ConnectionTlsOptions"] | null;
             username: string;
         };
+        ConnectionLifecycle: {
+            capability: components["schemas"]["capability"] | null;
+            /** Format: date-time */
+            changedAt: string;
+            connectionId: string;
+            errorCategory: ("auth_failed" | "connection_failed" | "tls_failed" | "timeout" | "permission_denied" | "not_found" | "conflict" | "syntax_error" | "constraint_violation" | "cancelled" | "unsupported" | "internal") | null;
+            latencyMs: number | null;
+            reason: "idle_closed" | null;
+            serverInfo: {
+                /** @enum {string} */
+                engine: "postgresql" | "mysql";
+                serverName?: string;
+                version: string;
+            } | null;
+            /** @enum {string} */
+            status: "disconnected" | "connecting" | "connected" | "error";
+        };
+        ConnectionLifecycleRequest: {
+            /**
+             * Format: password
+             * @description Transient password used only for this open attempt.
+             */
+            secret?: string;
+        };
+        ConnectionLifecycleResponse: components["schemas"]["ConnectionLifecycle"];
         ConnectionOwner: {
             id: string;
             username: string;
@@ -720,6 +813,15 @@ export interface components {
             tag?: string | null;
             tlsOptions?: components["schemas"]["ConnectionTlsOptions"] | null;
             username?: string;
+        };
+        ConnectionStatus: components["schemas"]["ConnectionLifecycle"] & {
+            /** @enum {string} */
+            engine: "postgresql" | "mysql";
+            id: string;
+            label: string;
+        };
+        ConnectionStatusResponse: {
+            items: components["schemas"]["ConnectionStatus"][];
         };
         ConnectionTestRequest: (components["schemas"]["ConnectionInput"] & {
             /** Format: password */
@@ -1805,6 +1907,126 @@ export interface operations {
             };
         };
     };
+    connectConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConnectionLifecycleRequest"];
+            };
+        };
+        responses: {
+            /** @description Provider session opened, or the existing connected session. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionLifecycle"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or ownership check failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description A connection attempt is already in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description A transient password is required or the request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider returned a normalized connection error. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    disconnectConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider session closed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionLifecycle"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or ownership check failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
     duplicateConnection: {
         parameters: {
             query?: never;
@@ -1867,6 +2089,106 @@ export interface operations {
             };
             /** @description Duplicate input validation failed. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    reconnectConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConnectionLifecycleRequest"];
+            };
+        };
+        responses: {
+            /** @description Provider session reopened. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionLifecycle"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or ownership check failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description A connection attempt is already in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description A transient password is required or the request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider returned a normalized connection error. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getConnectionStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current lifecycle status for every saved connection owned by the user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionStatusResponse"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -163,11 +163,22 @@ export class FakeSessionRepository implements SessionRepository {
     return count;
   }
 
-  public deleteExpired(at = now()): number {
+  public listExpired(at = now(), idleTimeoutMinutes = 0): Session[] {
+    return [...this.sessions.values()]
+      .filter(
+        (session) =>
+          session.expiresAt <= at ||
+          (idleTimeoutMinutes > 0 &&
+            (session.lastSeenAt ?? session.createdAt).getTime() + idleTimeoutMinutes * 60_000 <=
+              at.getTime()),
+      )
+      .map(copy);
+  }
+
+  public deleteExpired(at = now(), idleTimeoutMinutes = 0): number {
     let count = 0;
-    for (const [id, session] of this.sessions) {
-      if (session.expiresAt <= at) {
-        this.sessions.delete(id);
+    for (const session of this.listExpired(at, idleTimeoutMinutes)) {
+      if (this.sessions.delete(session.id)) {
         count += 1;
       }
     }

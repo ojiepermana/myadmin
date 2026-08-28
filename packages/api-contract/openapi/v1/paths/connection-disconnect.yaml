@@ -1,0 +1,36 @@
+post:
+  operationId: disconnectConnection
+  tags: [connections]
+  summary: Close a provider session
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    '200':
+      description: Provider session closed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/connection.yaml#/ConnectionLifecycleResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or ownership check failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Connection not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

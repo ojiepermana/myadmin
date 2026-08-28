@@ -2,10 +2,13 @@ import { AuditEvents, AuditWriter, type AuditRecordInput } from '@myadmin/audit'
 import {
   ConnectionContext,
   DbError,
+  type CapabilityDescription,
   type ConnectionDescriptor as ProviderConnectionDescriptor,
   type ConnectionHandle,
   type DatabaseProvider,
+  type DbErrorCategory,
   type ProviderRegistry,
+  type ServerInfo,
   type TlsMode,
 } from '@myadmin/database-core';
 import {
@@ -126,6 +129,7 @@ export interface ConnectionTestSuccess {
 }
 
 export interface ActiveConnectionSession {
+  readonly userId?: string;
   readonly connectionId: string;
   readonly provider: DatabaseProvider;
   readonly handle: ConnectionHandle;
@@ -135,9 +139,83 @@ export interface ActiveConnectionSessionRegistry {
   closeForConnection(connectionId: string): Promise<void>;
 }
 
-/** Runtime cleanup registry used by delete, without exposing lifecycle APIs from spec 0027. */
+export type ConnectionLifecycleStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+export type ConnectionLifecycleReason = 'idle_closed' | null;
+
+export interface ConnectionLifecycleView {
+  readonly connectionId: string;
+  readonly status: ConnectionLifecycleStatus;
+  readonly changedAt: Date;
+  readonly serverInfo: ServerInfo | null;
+  readonly capability: CapabilityDescription | null;
+  readonly latencyMs: number | null;
+  readonly errorCategory: DbErrorCategory | null;
+  readonly reason: ConnectionLifecycleReason;
+}
+
+export interface ConnectionStatusView extends ConnectionLifecycleView {
+  readonly id: string;
+  readonly label: string;
+  readonly engine: DatabaseEngine;
+}
+
+export interface ConnectionStatusResponse {
+  readonly items: ConnectionStatusView[];
+}
+
+interface LifecycleState extends ConnectionLifecycleView {
+  readonly userId: string;
+  readonly lastActivityAt: Date;
+  readonly session?: ActiveConnectionSession;
+  readonly token: number;
+}
+
+interface ConnectReservation {
+  readonly userId: string;
+  readonly connectionId: string;
+  readonly key: string;
+  readonly token: number;
+}
+
+type ReservationResult =
+  | { readonly kind: 'reserved'; readonly reservation: ConnectReservation }
+  | { readonly kind: 'connected' }
+  | { readonly kind: 'connecting' };
+
+function lifecycleKey(userId: string, connectionId: string): string {
+  return `${userId}\u0000${connectionId}`;
+}
+
+function snapshotNow(now: () => Date): Date {
+  return new Date(now().getTime());
+}
+
+/** User-scoped provider session registry and lifecycle state machine. */
 export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistry {
   private readonly sessions = new Map<string, ActiveConnectionSession[]>();
+  private readonly states = new Map<string, LifecycleState>();
+  private readonly now: () => Date;
+  private readonly idleTimeoutMinutes: number;
+  private readonly onIdleClosed?: (
+    userId: string,
+    connectionId: string,
+  ) => void | PromiseLike<void>;
+  private nextToken = 1;
+
+  public constructor(
+    options: {
+      now?: () => Date;
+      idleTimeoutMinutes?: number;
+      onIdleClosed?: (userId: string, connectionId: string) => void | PromiseLike<void>;
+    } = {},
+  ) {
+    this.now = options.now ?? (() => new Date());
+    this.idleTimeoutMinutes = options.idleTimeoutMinutes ?? 30;
+    this.onIdleClosed = options.onIdleClosed;
+    if (!Number.isInteger(this.idleTimeoutMinutes) || this.idleTimeoutMinutes < 1) {
+      throw new RangeError('Provider idle timeout must be a positive integer');
+    }
+  }
 
   public register(session: ActiveConnectionSession): () => void {
     const existing = this.sessions.get(session.connectionId) ?? [];
@@ -155,9 +233,216 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
   public async closeForConnection(connectionId: string): Promise<void> {
     const sessions = this.sessions.get(connectionId) ?? [];
     this.sessions.delete(connectionId);
-    await Promise.allSettled(
-      sessions.map((session) => session.provider.connection.close(session.handle)),
+    const lifecycleStates = [...this.states.values()].filter(
+      (state) => state.connectionId === connectionId,
     );
+    for (const state of lifecycleStates) this.markDisconnected(state, null);
+    await Promise.allSettled([
+      ...sessions.map((session) => session.provider.connection.close(session.handle)),
+      ...lifecycleStates.flatMap((state) =>
+        state.session ? [state.session.provider.connection.close(state.session.handle)] : [],
+      ),
+    ]);
+  }
+
+  public async closeForUser(userId: string): Promise<void> {
+    const lifecycleStates = [...this.states.values()].filter((state) => state.userId === userId);
+    for (const state of lifecycleStates) this.markDisconnected(state, null);
+    await Promise.allSettled(
+      lifecycleStates.flatMap((state) =>
+        state.session ? [state.session.provider.connection.close(state.session.handle)] : [],
+      ),
+    );
+  }
+
+  public async closeAll(): Promise<void> {
+    const lifecycleStates = [...this.states.values()];
+    for (const state of lifecycleStates) this.markDisconnected(state, null);
+    const legacySessions = [...this.sessions.values()].flat();
+    this.sessions.clear();
+    await Promise.allSettled([
+      ...legacySessions.map((session) => session.provider.connection.close(session.handle)),
+      ...lifecycleStates.flatMap((state) =>
+        state.session ? [state.session.provider.connection.close(state.session.handle)] : [],
+      ),
+    ]);
+  }
+
+  public reserve(userId: string, connectionId: string): ReservationResult {
+    const current = this.states.get(lifecycleKey(userId, connectionId));
+    if (current?.status === 'connected') return { kind: 'connected' };
+    if (current?.status === 'connecting') return { kind: 'connecting' };
+    const key = lifecycleKey(userId, connectionId);
+    const token = this.nextToken++;
+    const now = snapshotNow(this.now);
+    this.states.set(key, {
+      userId,
+      connectionId,
+      status: 'connecting',
+      changedAt: now,
+      serverInfo: current?.serverInfo ?? null,
+      capability: current?.capability ?? null,
+      latencyMs: current?.latencyMs ?? null,
+      errorCategory: null,
+      reason: null,
+      lastActivityAt: now,
+      token,
+    });
+    return { kind: 'reserved', reservation: { userId, connectionId, key, token } };
+  }
+
+  public complete(
+    reservation: ConnectReservation,
+    session: ActiveConnectionSession,
+    serverInfo: ServerInfo,
+    capability: CapabilityDescription,
+    latencyMs: number,
+  ): boolean {
+    const current = this.states.get(reservation.key);
+    if (!current || current.token !== reservation.token || current.status !== 'connecting') {
+      return false;
+    }
+    const now = snapshotNow(this.now);
+    this.states.set(reservation.key, {
+      ...current,
+      status: 'connected',
+      changedAt: now,
+      serverInfo,
+      capability,
+      latencyMs,
+      errorCategory: null,
+      reason: null,
+      lastActivityAt: now,
+      session,
+    });
+    return true;
+  }
+
+  public fail(reservation: ConnectReservation, category: DbErrorCategory): void {
+    const current = this.states.get(reservation.key);
+    if (!current || current.token !== reservation.token) return;
+    this.states.set(reservation.key, {
+      ...current,
+      status: 'error',
+      changedAt: snapshotNow(this.now),
+      errorCategory: category,
+      reason: null,
+      session: undefined,
+    });
+  }
+
+  public stateFor(userId: string, connectionId: string): ConnectionLifecycleView {
+    const state = this.states.get(lifecycleKey(userId, connectionId));
+    return state ? this.publicState(state) : this.defaultState(userId, connectionId);
+  }
+
+  public sessionFor(userId: string, connectionId: string): ActiveConnectionSession | undefined {
+    return this.states.get(lifecycleKey(userId, connectionId))?.session;
+  }
+
+  public touch(userId: string, connectionId: string, latencyMs?: number): void {
+    const key = lifecycleKey(userId, connectionId);
+    const state = this.states.get(key);
+    if (!state || state.status !== 'connected') return;
+    this.states.set(key, {
+      ...state,
+      lastActivityAt: snapshotNow(this.now),
+      ...(latencyMs === undefined ? {} : { latencyMs }),
+    });
+  }
+
+  public async disconnect(
+    userId: string,
+    connectionId: string,
+    reason: ConnectionLifecycleReason = null,
+  ): Promise<void> {
+    const state = this.states.get(lifecycleKey(userId, connectionId));
+    if (!state) return;
+    this.markDisconnected(state, reason);
+    if (state.session)
+      await Promise.allSettled([state.session.provider.connection.close(state.session.handle)]);
+  }
+
+  public async markError(
+    userId: string,
+    connectionId: string,
+    category: DbErrorCategory,
+  ): Promise<void> {
+    const key = lifecycleKey(userId, connectionId);
+    const state = this.states.get(key);
+    if (!state) return;
+    this.states.set(key, {
+      ...state,
+      status: 'error',
+      changedAt: snapshotNow(this.now),
+      errorCategory: category,
+      reason: null,
+      session: undefined,
+    });
+    if (state.session)
+      await Promise.allSettled([state.session.provider.connection.close(state.session.handle)]);
+  }
+
+  public async sweepIdle(at = snapshotNow(this.now)): Promise<number> {
+    const threshold = this.idleTimeoutMinutes * 60_000;
+    const idleStates = [...this.states.values()].filter(
+      (state) =>
+        state.status === 'connected' && at.getTime() - state.lastActivityAt.getTime() >= threshold,
+    );
+    for (const state of idleStates) this.markDisconnected(state, 'idle_closed', at);
+    await Promise.allSettled([
+      ...idleStates.flatMap((state) =>
+        state.session ? [state.session.provider.connection.close(state.session.handle)] : [],
+      ),
+      ...(this.onIdleClosed
+        ? idleStates.map((state) => this.onIdleClosed!(state.userId, state.connectionId))
+        : []),
+    ]);
+    return idleStates.length;
+  }
+
+  private markDisconnected(
+    state: LifecycleState,
+    reason: ConnectionLifecycleReason,
+    changedAt = snapshotNow(this.now),
+  ): void {
+    this.states.set(lifecycleKey(state.userId, state.connectionId), {
+      ...state,
+      status: 'disconnected',
+      changedAt,
+      errorCategory: null,
+      reason,
+      lastActivityAt: changedAt,
+      token: this.nextToken++,
+      session: undefined,
+    });
+  }
+
+  private publicState(state: LifecycleState): ConnectionLifecycleView {
+    return {
+      connectionId: state.connectionId,
+      status: state.status,
+      changedAt: state.changedAt,
+      serverInfo: state.serverInfo,
+      capability: state.capability,
+      latencyMs: state.latencyMs,
+      errorCategory: state.errorCategory,
+      reason: state.reason,
+    };
+  }
+
+  private defaultState(userId: string, connectionId: string): ConnectionLifecycleView {
+    void userId;
+    return {
+      connectionId,
+      status: 'disconnected',
+      changedAt: snapshotNow(this.now),
+      serverInfo: null,
+      capability: null,
+      latencyMs: null,
+      errorCategory: null,
+      reason: null,
+    };
   }
 }
 
@@ -172,7 +457,8 @@ export type ConnectionManagerErrorCode =
   | 'GROUP_NAME_CONFLICT'
   | 'SECRET_REQUIRED'
   | 'PROVIDER_UNAVAILABLE'
-  | 'CONNECTION_TEST_RATE_LIMITED';
+  | 'CONNECTION_TEST_RATE_LIMITED'
+  | 'CONNECTION_ALREADY_CONNECTING';
 
 export class ConnectionManagerError extends Error {
   public readonly code: ConnectionManagerErrorCode;
@@ -210,6 +496,7 @@ export interface ConnectionManagerOptions {
   readonly now?: () => Date;
   readonly testRateLimiter?: InMemoryRateLimiter;
   readonly activeSessions?: ActiveConnectionSessionRegistry;
+  readonly idleTimeoutMinutes?: number;
 }
 
 type StoredCredentialRecord = {
@@ -423,10 +710,11 @@ function auditInput(
   actor: ConnectionActor,
   connection: Connection,
   details?: JsonObject,
+  result: AuditRecordInput['result'] = 'success',
 ): AuditRecordInput {
   return {
     action,
-    result: 'success',
+    result,
     actorUserId: actor.id,
     targetRef: connection.id,
     connectionId: connection.id,
@@ -456,6 +744,9 @@ export class ConnectionManagerService {
   private readonly now: () => Date;
   private readonly testRateLimiter: InMemoryRateLimiter;
   private readonly activeSessions?: ActiveConnectionSessionRegistry;
+  private readonly lifecycleSessions: ConnectionSessionRegistry;
+  private readonly idleTimer: ReturnType<typeof setInterval>;
+  private disposed = false;
 
   public constructor(private readonly options: ConnectionManagerOptions) {
     this.auditWriter = options.auditWriter ?? new AuditWriter(options.store.audit);
@@ -468,6 +759,17 @@ export class ConnectionManagerService {
         windowMs: CONNECTION_TEST_RATE_WINDOW_MS,
       });
     this.activeSessions = options.activeSessions;
+    this.lifecycleSessions =
+      options.activeSessions instanceof ConnectionSessionRegistry
+        ? options.activeSessions
+        : new ConnectionSessionRegistry({
+            now: this.now,
+            idleTimeoutMinutes: options.idleTimeoutMinutes,
+            onIdleClosed: (userId, connectionId) => this.auditIdleClosed(userId, connectionId),
+          });
+    const idleSweepIntervalMs = Math.min(60_000, (options.idleTimeoutMinutes ?? 30) * 60_000);
+    this.idleTimer = setInterval(() => void this.sweepIdle(), idleSweepIntervalMs);
+    (this.idleTimer as { unref?: () => void }).unref?.();
   }
 
   public listConnections(actor: ConnectionActor, page = 1, pageSize = 20): Page<ConnectionView> {
@@ -496,6 +798,199 @@ export class ConnectionManagerService {
       window.page,
       window.pageSize,
     );
+  }
+
+  public async connect(
+    actor: ConnectionActor,
+    id: string,
+    secret?: string,
+  ): Promise<ConnectionLifecycleView> {
+    const connection = this.requireConnection(id);
+    this.assertConnectionOwner(actor, connection);
+    const current = this.lifecycleSessions.stateFor(actor.id, connection.id);
+    if (current.status === 'connected') return current;
+    if (current.status === 'connecting') {
+      throw new ConnectionManagerError(
+        'CONNECTION_ALREADY_CONNECTING',
+        'This connection is already connecting.',
+        409,
+      );
+    }
+
+    const encrypted = this.options.store.credentials.get(connection.id);
+    if (!encrypted && secret === undefined) {
+      this.auditLifecycle(
+        AuditEvents.connection.opened.action,
+        actor,
+        connection,
+        'failure',
+        'auth_failed',
+      );
+      throw new ConnectionManagerError(
+        'SECRET_REQUIRED',
+        'Enter a password to connect this connection.',
+        422,
+      );
+    }
+
+    const reservation = this.lifecycleSessions.reserve(actor.id, connection.id);
+    if (reservation.kind === 'connected') return this.lifecycleSessions.stateFor(actor.id, id);
+    if (reservation.kind === 'connecting') {
+      throw new ConnectionManagerError(
+        'CONNECTION_ALREADY_CONNECTING',
+        'This connection is already connecting.',
+        409,
+      );
+    }
+
+    try {
+      const opened = encrypted
+        ? await this.options.vault.decryptAndUse(
+            connection.id,
+            this.vaultCredential(encrypted),
+            (payload) => this.openProvider(connection, this.passwordFromPayload(payload)),
+          )
+        : await this.openProvider(connection, secret);
+      const session: ActiveConnectionSession = {
+        userId: actor.id,
+        connectionId: connection.id,
+        provider: opened.provider,
+        handle: opened.handle,
+      };
+      if (
+        !this.lifecycleSessions.complete(
+          reservation.reservation,
+          session,
+          opened.serverInfo,
+          opened.capability,
+          opened.latencyMs,
+        )
+      ) {
+        await Promise.allSettled([opened.provider.connection.close(opened.handle)]);
+        return this.lifecycleSessions.stateFor(actor.id, connection.id);
+      }
+      this.auditLifecycle(
+        AuditEvents.connection.opened.action,
+        actor,
+        connection,
+        'success',
+        undefined,
+        {
+          engine: opened.serverInfo.engine,
+          version: opened.serverInfo.version,
+          latencyMs: opened.latencyMs,
+        },
+      );
+      return this.lifecycleSessions.stateFor(actor.id, connection.id);
+    } catch (error) {
+      const category = this.dbErrorCategory(error);
+      this.lifecycleSessions.fail(reservation.reservation, category);
+      this.auditLifecycle(
+        AuditEvents.connection.opened.action,
+        actor,
+        connection,
+        'failure',
+        category,
+      );
+      throw error;
+    }
+  }
+
+  public async disconnect(actor: ConnectionActor, id: string): Promise<ConnectionLifecycleView> {
+    const connection = this.requireConnection(id);
+    this.assertConnectionOwner(actor, connection);
+    await this.lifecycleSessions.disconnect(actor.id, connection.id);
+    this.auditLifecycle(
+      AuditEvents.connection.closed.action,
+      actor,
+      connection,
+      'success',
+      undefined,
+      { reason: 'user_requested' },
+    );
+    return this.lifecycleSessions.stateFor(actor.id, connection.id);
+  }
+
+  public async reconnect(
+    actor: ConnectionActor,
+    id: string,
+    secret?: string,
+  ): Promise<ConnectionLifecycleView> {
+    const connection = this.requireConnection(id);
+    this.assertConnectionOwner(actor, connection);
+    const encrypted = this.options.store.credentials.get(connection.id);
+    if (!encrypted && secret === undefined) {
+      throw new ConnectionManagerError(
+        'SECRET_REQUIRED',
+        'Enter a password to reconnect this connection.',
+        422,
+      );
+    }
+    const state = this.lifecycleSessions.stateFor(actor.id, connection.id);
+    if (state.status === 'connecting') {
+      throw new ConnectionManagerError(
+        'CONNECTION_ALREADY_CONNECTING',
+        'This connection is already connecting.',
+        409,
+      );
+    }
+    if (state.status === 'connected') {
+      await this.lifecycleSessions.disconnect(actor.id, connection.id, null);
+      this.auditLifecycle(
+        AuditEvents.connection.closed.action,
+        actor,
+        connection,
+        'success',
+        undefined,
+        { reason: 'reconnect' },
+      );
+    }
+    return this.connect(actor, connection.id, secret);
+  }
+
+  public async status(actor: ConnectionActor): Promise<ConnectionStatusResponse> {
+    const connections = this.options.store.connections.listByOwner(actor.id);
+    const items: ConnectionStatusView[] = [];
+    for (const connection of connections) {
+      let lifecycle = this.lifecycleSessions.stateFor(actor.id, connection.id);
+      const session = this.lifecycleSessions.sessionFor(actor.id, connection.id);
+      if (lifecycle.status === 'connected' && session) {
+        try {
+          const ping = await session.provider.connection.ping(session.handle);
+          this.lifecycleSessions.touch(actor.id, connection.id, ping.latencyMs);
+          lifecycle = this.lifecycleSessions.stateFor(actor.id, connection.id);
+        } catch (error) {
+          await this.lifecycleSessions.markError(
+            actor.id,
+            connection.id,
+            this.dbErrorCategory(error),
+          );
+          lifecycle = this.lifecycleSessions.stateFor(actor.id, connection.id);
+        }
+      }
+      items.push({
+        ...lifecycle,
+        id: connection.id,
+        label: connection.label,
+        engine: connection.engine,
+      });
+    }
+    return { items };
+  }
+
+  public async closeForUser(userId: string): Promise<void> {
+    await this.lifecycleSessions.closeForUser(userId);
+  }
+
+  public async sweepIdle(at = this.now()): Promise<number> {
+    return this.lifecycleSessions.sweepIdle(at);
+  }
+
+  public async dispose(): Promise<void> {
+    if (this.disposed) return;
+    this.disposed = true;
+    clearInterval(this.idleTimer);
+    await this.lifecycleSessions.closeAll();
   }
 
   public async createConnection(
@@ -646,7 +1141,10 @@ export class ConnectionManagerService {
         }),
       );
     });
-    await this.activeSessions?.closeForConnection(connection.id);
+    await this.lifecycleSessions.closeForConnection(connection.id);
+    if (this.activeSessions && this.activeSessions !== this.lifecycleSessions) {
+      await this.activeSessions.closeForConnection(connection.id);
+    }
   }
 
   public async duplicateConnection(
@@ -985,6 +1483,101 @@ export class ConnectionManagerService {
       new ConnectionContext(connectionDescriptor(connection), this.passwordFromPayload(payload)),
     );
     return { success: true, version: result.version, latencyMs: result.latencyMs };
+  }
+
+  private async openProvider(
+    connection: Connection,
+    password: string | undefined,
+  ): Promise<{
+    provider: DatabaseProvider;
+    handle: ConnectionHandle;
+    serverInfo: ServerInfo;
+    capability: CapabilityDescription;
+    latencyMs: number;
+  }> {
+    let provider: DatabaseProvider;
+    try {
+      provider = this.options.providers.get(connection.engine);
+    } catch (error) {
+      if (error instanceof DbError) throw error;
+      throw new ConnectionManagerError(
+        'PROVIDER_UNAVAILABLE',
+        'The database provider is unavailable.',
+        503,
+        undefined,
+        error,
+      );
+    }
+
+    let handle: ConnectionHandle | undefined;
+    try {
+      handle = await provider.connection.open(
+        new ConnectionContext(connectionDescriptor(connection), password),
+      );
+      const serverInfo = await provider.connection.serverInfo(handle);
+      const capability = await provider.capability.describe(handle);
+      const pingStartedAt = performance.now();
+      const ping = await provider.connection.ping(handle);
+      const latencyMs = Number.isFinite(ping.latencyMs)
+        ? Math.max(0, Math.round(ping.latencyMs))
+        : Math.max(0, Math.round(performance.now() - pingStartedAt));
+      return { provider, handle, serverInfo, capability, latencyMs };
+    } catch (error) {
+      if (handle) await Promise.allSettled([provider.connection.close(handle)]);
+      if (error instanceof DbError || error instanceof ConnectionManagerError) throw error;
+      throw new DbError({
+        category: 'connection_failed',
+        message: 'The database provider could not open this connection.',
+        cause: error,
+      });
+    }
+  }
+
+  private dbErrorCategory(error: unknown): DbErrorCategory {
+    if (error instanceof DbError) return error.category;
+    if (error instanceof ConnectionManagerError && error.code === 'PROVIDER_UNAVAILABLE') {
+      return 'connection_failed';
+    }
+    return 'connection_failed';
+  }
+
+  private auditLifecycle(
+    action: AuditRecordInput['action'],
+    actor: ConnectionActor,
+    connection: Connection,
+    result: AuditRecordInput['result'],
+    category?: DbErrorCategory,
+    details?: JsonObject,
+  ): void {
+    this.options.store.transaction(() => {
+      this.auditWriter.record(
+        auditInput(
+          action,
+          actor,
+          connection,
+          {
+            ...(category === undefined ? {} : { category }),
+            ...(details ?? {}),
+          },
+          result,
+        ),
+      );
+    });
+  }
+
+  private auditIdleClosed(userId: string, connectionId: string): void {
+    const connection = this.options.store.connections.findById(connectionId);
+    if (!connection || connection.ownerUserId !== userId) return;
+    const user = this.options.store.users.findById(userId);
+    if (!user) return;
+    this.auditLifecycle(
+      AuditEvents.connection.closed.action,
+      { id: user.id, username: user.username, role: user.role },
+      connection,
+      'success',
+      undefined,
+      { reason: 'idle_closed' },
+    );
   }
 
   private passwordFromPayload(payload: CredentialPayload): string | undefined {

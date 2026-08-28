@@ -65,6 +65,7 @@ import { AuthSessionStore } from '../../core/auth/auth-session.store';
 import { DEV_ROUTE, V1_ROUTE_DEFINITIONS, type AppRouteDefinition } from '../../app.routes.shared';
 import { MyadminSdk } from '@myadmin/sdk-angular';
 import { firstValueFrom } from 'rxjs';
+import { ConnectionStatusStore } from '../../core/connections/connection-status.store';
 
 @Component({
   selector: 'app-shell',
@@ -115,6 +116,7 @@ export class AppShell {
   protected readonly errorPresenter = inject(ErrorPresenterService);
   protected readonly workspace = inject(WorkspaceStore);
   protected readonly authSession = inject(AuthSessionStore);
+  protected readonly connectionStatuses = inject(ConnectionStatusStore);
   private readonly workspacePersistence = inject(WorkspacePersistenceService);
   private readonly sdk = inject(MyadminSdk);
   private readonly router = inject(Router);
@@ -139,6 +141,18 @@ export class AppShell {
       default:
         return 'Realtime offline';
     }
+  });
+  protected readonly activeConnectionSummary = computed(() => {
+    const status = this.connectionStatuses.activeStatus();
+    if (!status) return 'No active connection';
+    const server = status.serverInfo
+      ? `${status.serverInfo.engine} ${status.serverInfo.version}`
+      : status.engine;
+    const latency = status.latencyMs === null ? '' : ` · ${status.latencyMs} ms`;
+    const detail = status.errorCategory
+      ? ` · ${status.errorCategory.replaceAll('_', ' ')}`
+      : latency;
+    return `${status.label} · ${status.status} · ${server}${detail}`;
   });
   protected readonly mainPanelHeight = computed(() =>
     this.workspace.bottomCollapsed() ? 100 : 100 - this.workspace.bottomHeight(),
@@ -170,6 +184,11 @@ export class AppShell {
       if (!this.mobileViewport()) {
         this.mobileSidebarOpen.set(false);
       }
+    });
+
+    effect(() => {
+      if (this.authSession.currentUser()) this.connectionStatuses.startPolling();
+      else this.connectionStatuses.stopPolling();
     });
   }
 

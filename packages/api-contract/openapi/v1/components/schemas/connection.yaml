@@ -217,6 +217,112 @@ ConnectionTestResponse:
       type: integer
       minimum: 0
 
+ConnectionLifecycleRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    secret:
+      type: string
+      format: password
+      description: Transient password used only for this open attempt.
+
+ConnectionLifecycle:
+  type: object
+  required:
+    - connectionId
+    - status
+    - changedAt
+    - serverInfo
+    - capability
+    - latencyMs
+    - errorCategory
+    - reason
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    status:
+      type: string
+      enum: [disconnected, connecting, connected, error]
+    changedAt:
+      type: string
+      format: date-time
+    serverInfo:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [engine, version]
+          properties:
+            engine:
+              type: string
+              enum: [postgresql, mysql]
+            version:
+              type: string
+              minLength: 1
+            serverName:
+              type: string
+        - type: 'null'
+    capability:
+      oneOf:
+        - $ref: './capability.yaml'
+        - type: 'null'
+    latencyMs:
+      oneOf:
+        - type: integer
+          minimum: 0
+        - type: 'null'
+    errorCategory:
+      oneOf:
+        - type: string
+          enum:
+            - auth_failed
+            - connection_failed
+            - tls_failed
+            - timeout
+            - permission_denied
+            - not_found
+            - conflict
+            - syntax_error
+            - constraint_violation
+            - cancelled
+            - unsupported
+            - internal
+        - type: 'null'
+    reason:
+      oneOf:
+        - type: string
+          enum: [idle_closed]
+        - type: 'null'
+
+ConnectionLifecycleResponse:
+  $ref: '#/ConnectionLifecycle'
+
+ConnectionStatus:
+  allOf:
+    - $ref: '#/ConnectionLifecycle'
+    - type: object
+      required: [id, label, engine]
+      properties:
+        id:
+          type: string
+          minLength: 1
+        label:
+          type: string
+          minLength: 1
+        engine:
+          type: string
+          enum: [postgresql, mysql]
+
+ConnectionStatusResponse:
+  type: object
+  additionalProperties: false
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/ConnectionStatus'
+
 ConnectionPage:
   allOf:
     - $ref: './pagination.yaml#/PaginatedResponse'

@@ -73,6 +73,18 @@ export type SessionValidation =
       readonly code: 'AUTH_UNAUTHENTICATED' | 'SESSION_EXPIRED';
     };
 
+export type SessionEndReason = 'logout' | 'expired';
+
+export interface SessionLifecycleCallbacks {
+  onSessionEnded(userId: string, reason: SessionEndReason): void | PromiseLike<void>;
+}
+
+type ExpiredSessionValidation = {
+  readonly authenticated: false;
+  readonly code: 'SESSION_EXPIRED';
+  readonly userId: string;
+};
+
 export type AuthStore = Pick<InternalUnitOfWork, 'users' | 'sessions' | 'audit' | 'transaction'>;
 
 export interface AuthServiceOptions {
@@ -86,6 +98,7 @@ export interface AuthServiceOptions {
   readonly idleTimeoutMinutes?: number;
   readonly absoluteTimeoutHours?: number;
   readonly touchIntervalMs?: number;
+  readonly sessionLifecycle?: SessionLifecycleCallbacks;
 }
 
 function publicUser(user: User): PublicUser {
@@ -132,6 +145,7 @@ export class AuthService {
   private readonly idleTimeoutMinutes: number;
   private readonly absoluteTimeoutHours: number;
   private readonly touchIntervalMs: number;
+  private readonly sessionLifecycle?: SessionLifecycleCallbacks;
 
   public constructor(
     private readonly store: AuthStore,
@@ -146,6 +160,7 @@ export class AuthService {
     this.idleTimeoutMinutes = options.idleTimeoutMinutes ?? 720;
     this.absoluteTimeoutHours = options.absoluteTimeoutHours ?? 168;
     this.touchIntervalMs = options.touchIntervalMs ?? SESSION_TOUCH_INTERVAL_MS;
+    this.sessionLifecycle = options.sessionLifecycle;
 
     if (!Number.isInteger(this.idleTimeoutMinutes) || this.idleTimeoutMinutes < 1) {
       throw new RangeError('Session idle timeout must be a positive integer');
@@ -239,36 +254,43 @@ export class AuthService {
     }
 
     const now = this.now();
-    return this.store.transaction(({ sessions, users }) => {
-      const session = sessions.findByTokenHash(tokenHash(token));
-      if (!session || session.revokedAt !== null) {
-        return { authenticated: false, code: 'AUTH_UNAUTHENTICATED' };
-      }
-      if (isExpired(session, now, this.idleTimeoutMinutes)) {
-        return { authenticated: false, code: 'SESSION_EXPIRED' };
-      }
+    const result = this.store.transaction<SessionValidation | ExpiredSessionValidation>(
+      ({ sessions, users }) => {
+        const session = sessions.findByTokenHash(tokenHash(token));
+        if (!session || session.revokedAt !== null) {
+          return { authenticated: false, code: 'AUTH_UNAUTHENTICATED' as const };
+        }
+        if (isExpired(session, now, this.idleTimeoutMinutes)) {
+          return { authenticated: false, code: 'SESSION_EXPIRED' as const, userId: session.userId };
+        }
 
-      const user = users.findById(session.userId);
-      if (!user || !user.isActive) {
-        return { authenticated: false, code: 'AUTH_UNAUTHENTICATED' };
-      }
+        const user = users.findById(session.userId);
+        if (!user || !user.isActive) {
+          return { authenticated: false, code: 'AUTH_UNAUTHENTICATED' as const };
+        }
 
-      if (
-        session.lastSeenAt === null ||
-        now.getTime() - session.lastSeenAt.getTime() >= this.touchIntervalMs
-      ) {
-        sessions.touch(session.id, now);
-        return {
-          authenticated: true,
-          value: {
-            session: { ...session, lastSeenAt: now },
-            user: publicUser(user),
-          },
-        };
-      }
+        if (
+          session.lastSeenAt === null ||
+          now.getTime() - session.lastSeenAt.getTime() >= this.touchIntervalMs
+        ) {
+          sessions.touch(session.id, now);
+          return {
+            authenticated: true,
+            value: {
+              session: { ...session, lastSeenAt: now },
+              user: publicUser(user),
+            },
+          };
+        }
 
-      return { authenticated: true, value: { session, user: publicUser(user) } };
-    });
+        return { authenticated: true as const, value: { session, user: publicUser(user) } };
+      },
+    );
+    if (!result.authenticated && 'userId' in result && result.code === 'SESSION_EXPIRED') {
+      this.notifySessionEnded(result.userId, 'expired');
+      return { authenticated: false, code: result.code };
+    }
+    return result;
   }
 
   public logout(token: string | undefined): SessionValidation {
@@ -285,6 +307,7 @@ export class AuthService {
         details: { username: authenticated.value.user.username },
       });
     });
+    this.notifySessionEnded(authenticated.value.user.id, 'logout');
     return authenticated;
   }
 
@@ -351,7 +374,27 @@ export class AuthService {
   }
 
   public deleteExpired(): number {
-    return this.store.transaction(({ sessions }) => sessions.deleteExpired(this.now()));
+    const now = this.now();
+    const result = this.store.transaction(({ sessions }) => {
+      const expired = sessions.listExpired(now, this.idleTimeoutMinutes);
+      return {
+        count: sessions.deleteExpired(now, this.idleTimeoutMinutes),
+        userIds: [...new Set(expired.map((session) => session.userId))],
+      };
+    });
+    for (const userId of result.userIds) this.notifySessionEnded(userId, 'expired');
+    return result.count;
+  }
+
+  private notifySessionEnded(userId: string, reason: SessionEndReason): void {
+    if (!this.sessionLifecycle) return;
+    try {
+      void Promise.resolve(this.sessionLifecycle.onSessionEnded(userId, reason)).catch(() => {
+        // Connection cleanup is best effort; authentication must remain synchronous.
+      });
+    } catch {
+      // A cleanup callback must never make validation or logout fail.
+    }
   }
 
   public static tokenHash(token: string): string {
