@@ -100,10 +100,11 @@ Sumber kebenaran API: kontrak multi file, error model, security scheme, event WS
 ### 04. Pipeline codegen dan contract test `in-progress`
 Tipe dari kontrak, drift check, harness kesesuaian server. Done when: drift kontrak dan endpoint bayangan menggagalkan CI.
 - [x] Design it (spec): [0004](../specs/0004-codegen-pipeline-contract-tests/index.md)
-- [ ] Build it: /develop codegen-pipeline-contract-tests
-  - [ ] Generasi tipe deterministik dan pemeriksaan drift (AC-1, AC-2, AC-6)
-  - [ ] Harness cakupan dua arah plus validasi response ajv (AC-3, AC-4, AC-5)
-  - [ ] Workflow contract.yml (AC-7)
+- [x] Build it: /develop codegen-pipeline-contract-tests
+  - [x] Generasi tipe deterministik dan pemeriksaan drift (AC-1, AC-2, AC-6)
+  - [x] Harness cakupan dua arah plus validasi response ajv (AC-3, AC-4, AC-5)
+  - [x] Workflow contract.yml (AC-7)
+  - code in `scripts/codegen/generate-contract-types.ts`, `tests/contract/`, dan `apps/server/src/app.ts`
 - [ ] [Verify it](../specs/0004-codegen-pipeline-contract-tests/verify.md): /check verify codegen-pipeline-contract-tests
 - [ ] [Test it](../specs/0004-codegen-pipeline-contract-tests/test.md): /test codegen-pipeline-contract-tests
 

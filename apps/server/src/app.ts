@@ -36,11 +36,123 @@ export function createServerApp(options: { assetSource?: AssetSource } = {}) {
     .all('*', async ({ request }) => serveStaticAsset(request, { source: await source() }));
 }
 
-export const app = createServerApp();
 export const host = process.env['MYADMIN_HOST'] || defaultHost;
 const configuredPort = Number(process.env['MYADMIN_PORT'] || defaultPort);
 export const port =
   Number.isInteger(configuredPort) && configuredPort > 0 ? configuredPort : defaultPort;
+
+type User = { id: string; username: string; role: 'admin' | 'user' };
+type Credentials = { username: string; password: string };
+
+const sessionCookie = 'myadmin_session=contract-session';
+
+function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { 'content-type': 'application/json', ...headers },
+  });
+}
+
+function apiError(request: Request, status: number, code: string, message: string): Response {
+  const correlationId = request.headers.get('x-correlation-id') || crypto.randomUUID();
+  return jsonResponse({ code, message, correlationId }, status);
+}
+
+function isCredentials(value: unknown): value is Credentials {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return (
+    Object.keys(record).length === 2 &&
+    typeof record['username'] === 'string' &&
+    record['username'].length > 0 &&
+    typeof record['password'] === 'string' &&
+    record['password'].length > 0
+  );
+}
+
+async function readJson(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch {
+    return undefined;
+  }
+}
+
+function userFor(username: string): User {
+  return { id: `user-${username}`, username, role: 'admin' };
+}
+
+function hasSession(request: Request): boolean {
+  return (
+    request.headers
+      .get('cookie')
+      ?.split(';')
+      .some((cookie) => cookie.trim() === sessionCookie) ?? false
+  );
+}
+
+/**
+ * In memory contract fixture for the initial API surface.
+ * Feature specs replace these handlers with their persistent implementations.
+ */
+export function createApp() {
+  let initialized = false;
+  let currentUser: User | undefined;
+
+  return new Elysia()
+    .get('/health', () => ({
+      status: 'ok' as const,
+      version: packageManifest.version,
+    }))
+    .get('/setup/status', () => ({ initialized }))
+    .post('/setup/admin', async ({ request }) => {
+      const body = await readJson(request);
+      if (!isCredentials(body)) {
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+      }
+      if (initialized) {
+        return apiError(
+          request,
+          409,
+          'SETUP_ALREADY_INITIALIZED',
+          'The application is already initialized.',
+        );
+      }
+      initialized = true;
+      currentUser = userFor(body.username);
+      return jsonResponse({ user: currentUser }, 201);
+    })
+    .post('/auth/login', async ({ request }) => {
+      const body = await readJson(request);
+      if (!isCredentials(body)) {
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+      }
+      currentUser = userFor(body.username);
+      return jsonResponse({ user: currentUser }, 200, {
+        'set-cookie': `${sessionCookie}; Path=/; HttpOnly; SameSite=Lax`,
+      });
+    })
+    .post('/auth/logout', ({ request }) => {
+      if (!hasSession(request)) {
+        return apiError(request, 401, 'AUTH_UNAUTHENTICATED', 'A valid session is required.');
+      }
+      currentUser = undefined;
+      return new Response(null, {
+        status: 204,
+        headers: { 'set-cookie': 'myadmin_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax' },
+      });
+    })
+    .get('/auth/me', ({ request }) => {
+      if (!hasSession(request) || !currentUser) {
+        return apiError(request, 401, 'AUTH_UNAUTHENTICATED', 'A valid session is required.');
+      }
+      return currentUser;
+    });
+}
+
+export const app = createServerApp();
 
 export async function startServer(options: ServerStartOptions = {}): Promise<RunningServer> {
   const serverApp = createServerApp({ assetSource: options.assetSource });

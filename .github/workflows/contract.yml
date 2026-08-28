@@ -7,6 +7,10 @@ on:
       - 'packages/api-contract/**'
       - 'scripts/validate-contract.ts'
       - 'scripts/bundle-contract.ts'
+      - 'scripts/codegen/**'
+      - 'tests/contract/**'
+      - 'apps/server/**'
+      - 'packages/api-contract/src/generated/**'
       - 'redocly.yaml'
       - 'package.json'
       - 'bun.lock'
@@ -16,6 +20,10 @@ on:
       - 'packages/api-contract/**'
       - 'scripts/validate-contract.ts'
       - 'scripts/bundle-contract.ts'
+      - 'scripts/codegen/**'
+      - 'tests/contract/**'
+      - 'apps/server/**'
+      - 'packages/api-contract/src/generated/**'
       - 'redocly.yaml'
       - 'package.json'
       - 'bun.lock'
@@ -31,3 +39,5 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run validate-contract
       - run: bun run bundle:contract
+      - run: bun run check:contract-drift
+      - run: bun run test:contract
