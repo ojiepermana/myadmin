@@ -53,6 +53,8 @@ export interface ConstraintDefinition {
   expression?: string;
   referencedTable?: ObjectRef;
   referencedColumns?: string[];
+  onUpdate?: string;
+  onDelete?: string;
 }
 
 export type PrincipalType = 'user' | 'role' | 'account' | 'other';

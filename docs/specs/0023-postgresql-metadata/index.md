@@ -97,12 +97,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Bangun fungsi quoting identifier tunggal plus test, memenuhi **AC-6**.
-2. Implementasikan listDatabases, listSchemas, listObjects paginated, memenuhi **AC-1**, **AC-2**.
-3. Implementasikan describeTable lengkap dan getViewDefinition, listRoutines, memenuhi **AC-3**, **AC-4**.
-4. Implementasikan searchObjects paginated, memenuhi **AC-5**.
-5. Tambah panggilan ukuran malas dan cache TTL pendek, memenuhi **AC-1**.
-6. Test integrasi dua versi PostgreSQL, test kontrak generik, dan test performa 2000 table, memenuhi **AC-7**, **AC-8**.
+1. [x] Bangun fungsi quoting identifier tunggal plus test, memenuhi **AC-6**.
+2. [x] Implementasikan listDatabases, listSchemas, listObjects paginated, memenuhi **AC-1**, **AC-2**.
+3. [x] Implementasikan describeTable lengkap dan getViewDefinition, listRoutines, memenuhi **AC-3**, **AC-4**.
+4. [x] Implementasikan searchObjects paginated, memenuhi **AC-5**.
+5. [x] Tambah panggilan ukuran malas dan cache TTL pendek, memenuhi **AC-1**.
+6. [x] Test integrasi dua versi PostgreSQL, test kontrak generik, dan test performa 2000 table, memenuhi **AC-7**, **AC-8**.
 
 ## Consequences
 

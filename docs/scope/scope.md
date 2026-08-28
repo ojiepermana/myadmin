@@ -351,10 +351,11 @@ Bun.sql, TLS tegas, capability, mapping SQLSTATE, infrastruktur cancel. Done whe
 Introspeksi pg_catalog lazy dan paginated. Done when: describeTable cukup untuk designer dan 2000 table tetap responsif.
 
 - [x] Design it (spec): [0023](../specs/0023-postgresql-metadata/index.md)
-- [ ] Build it: /develop postgresql-metadata
+- [x] Build it: /develop postgresql-metadata
   - [x] Quoting terpusat plus daftar database schema object paginated (AC-1, AC-2, AC-6)
-  - [ ] describeTable lengkap, definisi view, routine (AC-3, AC-4)
-  - [ ] Pencarian object plus ukuran malas plus test performa (AC-5, AC-7, AC-8)
+  - [x] describeTable lengkap, definisi view, routine (AC-3, AC-4)
+  - [x] Pencarian object plus ukuran malas plus test performa (AC-5, AC-7, AC-8)
+  - code in `packages/database-postgresql/src/metadata/`, `packages/database-postgresql/test/postgresql-metadata.test.ts`, and `tests/integration/postgresql/metadata.test.ts`
 - [ ] [Verify it](../specs/0023-postgresql-metadata/verify.md): /check verify postgresql-metadata
 - [ ] [Test it](../specs/0023-postgresql-metadata/test.md): /test postgresql-metadata
 
