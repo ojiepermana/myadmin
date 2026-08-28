@@ -1,5 +1,12 @@
 import { createServerApp, type RunningServer } from '../../../../apps/server/src/app';
 import {
+  loadConfigWithMetadata,
+  parseConfigFlags,
+  resolveConfigFilePath,
+  type ConfigMetadata,
+  type MyadminConfig,
+} from '@myadmin/config';
+import {
   dataDirectoryPaths,
   prepareDataDirectory,
   resolveDataDirectory,
@@ -15,9 +22,12 @@ import {
 import type { Database } from 'bun:sqlite';
 
 export interface RuntimeOptions {
+  argv?: readonly string[];
   host?: string;
   port?: number;
   dataDirectory?: string;
+  config?: MyadminConfig;
+  configMetadata?: ConfigMetadata;
   env?: Record<string, string | undefined>;
   presenter?: TerminalPresenter;
   shutdownTimeoutMs?: number;
@@ -29,7 +39,7 @@ export interface RuntimeBootstrapHooks {
   resolveDataDirectory?: typeof resolveDataDirectory;
   prepareDataDirectory?: typeof prepareDataDirectory;
   runMigrations?: (paths: DataDirectoryPaths) => Promise<void>;
-  composeApp?: typeof createServerApp;
+  composeApp?: (config: MyadminConfig) => ReturnType<typeof createServerApp>;
   listen?: (
     app: ReturnType<typeof createServerApp>,
     host: string,
@@ -38,6 +48,8 @@ export interface RuntimeBootstrapHooks {
 }
 
 export interface RuntimeContext {
+  config: MyadminConfig;
+  configMetadata?: ConfigMetadata;
   host: string;
   port: number;
   dataDirectory: string;
@@ -56,28 +68,6 @@ export class BootstrapError extends Error {
     super(message);
     this.name = 'BootstrapError';
   }
-}
-
-function configuredPort(
-  value: number | undefined,
-  env: Record<string, string | undefined>,
-): number {
-  const candidate = value ?? Number(env['MYADMIN_PORT'] ?? 8080);
-  if (!Number.isInteger(candidate) || candidate < 1 || candidate > 65535) {
-    throw new Error('port must be an integer from 1 to 65535');
-  }
-  return candidate;
-}
-
-function configuredHost(
-  value: string | undefined,
-  env: Record<string, string | undefined>,
-): string {
-  const candidate = value || env['MYADMIN_HOST'] || '127.0.0.1';
-  if (!candidate.trim()) {
-    throw new Error('host must not be empty');
-  }
-  return candidate;
 }
 
 async function stopServer(server: RunningServer, timeoutMs: number): Promise<void> {
@@ -108,14 +98,22 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
   const env = options.env ?? process.env;
   const presenter = options.presenter ?? consoleTerminalPresenter;
   const hooks = options.hooks ?? {};
-  const host = configuredHost(options.host, env);
-  const port = configuredPort(options.port, env);
+  const configArgv = [...(options.argv ?? [])];
+  if (options.host !== undefined) configArgv.push('--host', options.host);
+  if (options.port !== undefined) configArgv.push('--port', String(options.port));
+  if (options.dataDirectory !== undefined) {
+    configArgv.push('--data-dir', options.dataDirectory);
+  }
+
+  const configFlags = parseConfigFlags(configArgv);
+  const dataDirectoryOverride =
+    options.dataDirectory ?? (configFlags.dataDir as string | undefined);
   let internalDatabase: Database | undefined;
 
   let dataDirectory: string;
   try {
     dataDirectory = (hooks.resolveDataDirectory ?? resolveDataDirectory)({
-      override: options.dataDirectory,
+      override: dataDirectoryOverride,
       env,
     });
   } catch (error) {
@@ -129,6 +127,26 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
   } catch (error) {
     presentBootstrapFailure(presenter, 'prepare data directory', error);
     throw new BootstrapError('prepare data directory', 'Could not prepare data directory', error);
+  }
+
+  let config: MyadminConfig;
+  let configMetadata: ConfigMetadata | undefined;
+  try {
+    if (options.config) {
+      config = options.config;
+      configMetadata = options.configMetadata;
+    } else {
+      const loaded = await loadConfigWithMetadata(
+        configArgv,
+        env,
+        resolveConfigFilePath(dataDirectory),
+      );
+      config = loaded.config;
+      configMetadata = loaded.metadata;
+    }
+  } catch (error) {
+    presentBootstrapFailure(presenter, 'config', error);
+    throw new BootstrapError('config', 'Could not load configuration', error);
   }
 
   try {
@@ -158,7 +176,7 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
 
   let application: ReturnType<typeof createServerApp>;
   try {
-    application = (hooks.composeApp ?? createServerApp)();
+    application = (hooks.composeApp ?? (() => createServerApp()))(config);
   } catch (error) {
     if (internalDatabase) {
       try {
@@ -188,10 +206,12 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
           },
         };
       })
-    )(application, host, port);
+    )(application, config.server.host, config.server.port);
     const runtime: RuntimeContext = {
-      host,
-      port,
+      config,
+      configMetadata,
+      host: config.server.host,
+      port: config.server.port,
       dataDirectory,
       paths: paths ?? dataDirectoryPaths(dataDirectory),
       server,
@@ -226,7 +246,7 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
     };
     runtime.waitForShutdown = async () => {
       const removeHandlers = installSignalHandlers({ shutdown: runtime.shutdown });
-      presentServing(presenter, host, port, dataDirectory);
+      presentServing(presenter, config.server.host, config.server.port, dataDirectory);
       await stoppedPromise;
       removeHandlers();
     };

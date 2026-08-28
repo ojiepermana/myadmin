@@ -36,10 +36,8 @@ export function createServerApp(options: { assetSource?: AssetSource } = {}) {
     .all('*', async ({ request }) => serveStaticAsset(request, { source: await source() }));
 }
 
-export const host = process.env['MYADMIN_HOST'] || defaultHost;
-const configuredPort = Number(process.env['MYADMIN_PORT'] || defaultPort);
-export const port =
-  Number.isInteger(configuredPort) && configuredPort > 0 ? configuredPort : defaultPort;
+export const host = defaultHost;
+export const port = defaultPort;
 
 type User = { id: string; username: string; role: 'admin' | 'user' };
 type Credentials = { username: string; password: string };

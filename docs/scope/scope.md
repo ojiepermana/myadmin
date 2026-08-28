@@ -207,10 +207,11 @@ AES-256-GCM dengan AAD plus modul sensor tiga lapis. Done when: file db terbukti
 Loader konfigurasi tunggal tervalidasi. Done when: prioritas flag env file default bekerja dan config tak valid menggagalkan boot dengan pesan per kunci.
 
 - [x] Design it (spec): [0012](../specs/0012-config-package/index.md)
-- [ ] Build it: /develop config-package
-  - [ ] Schema TypeBox, default, flag sensitif (AC-1)
-  - [ ] Loader berprioritas dengan metadata sumber plus redaction dump (AC-2 sampai AC-5)
-  - [ ] Integrasi CLI dan doctor check plus unit test (AC-6, AC-7)
+- [x] Build it: /develop config-package
+  - [x] Schema TypeBox, default, flag sensitif (AC-1)
+  - [x] Loader berprioritas dengan metadata sumber plus redaction dump (AC-2 sampai AC-5)
+  - [x] Integrasi CLI dan doctor check plus unit test (AC-6, AC-7)
+  - code in `packages/config/`, `apps/cli/src/`, `apps/server/src/`, and `packages/config/test/config.test.ts`
 - [ ] [Verify it](../specs/0012-config-package/verify.md): /check verify config-package
 - [ ] [Test it](../specs/0012-config-package/test.md): /test config-package
 

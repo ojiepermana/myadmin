@@ -1,3 +1,4 @@
+import { parseConfigFlags } from '@myadmin/config';
 import { runServeCommand } from './commands/serve';
 import { runVersionCommand } from './commands/version';
 import { consoleTerminalPresenter } from './output/terminal-presenter';
@@ -13,39 +14,22 @@ export class CliArgumentError extends Error {}
 
 export function parseCliFlags(args: string[]): { command: string; flags: CliFlags } {
   const command = args[0] ?? 'help';
-  const flags: CliFlags = {};
-  for (let index = 1; index < args.length; index += 1) {
-    const argument = args[index] ?? '';
-    const [inlineName, inlineValue] = argument.split('=', 2);
-    const name = inlineName;
-    const next = () => {
-      const value = inlineValue ?? args[++index];
-      if (!value) throw new CliArgumentError(`${name} requires a value`);
-      return value;
-    };
-    switch (name) {
-      case '--host':
-        flags.host = next();
-        break;
-      case '--port': {
-        const value = Number(next());
-        if (!Number.isInteger(value) || value < 1 || value > 65535) {
-          throw new CliArgumentError('--port must be an integer from 1 to 65535');
-        }
-        flags.port = value;
-        break;
-      }
-      case '--data-dir':
-        flags.dataDirectory = next();
-        break;
-      case '--status':
-        flags.status = true;
-        break;
-      default:
-        throw new CliArgumentError(`Unknown option: ${argument}`);
-    }
+  let configFlags: ReturnType<typeof parseConfigFlags>;
+  try {
+    configFlags = parseConfigFlags(args.slice(1));
+  } catch (error) {
+    throw new CliArgumentError(
+      error instanceof Error ? error.message : 'Invalid configuration flag',
+    );
   }
-  return { command, flags };
+  return {
+    command,
+    flags: {
+      host: configFlags.server?.host,
+      port: configFlags.server?.port,
+      dataDirectory: configFlags.dataDir,
+    },
+  };
 }
 
 export async function runCli(args: string[] = process.argv.slice(2)): Promise<void> {
@@ -56,7 +40,11 @@ export async function runCli(args: string[] = process.argv.slice(2)): Promise<vo
         runVersionCommand(consoleTerminalPresenter);
         return;
       case 'serve':
-        await runServeCommand({ ...flags, presenter: consoleTerminalPresenter });
+        await runServeCommand({
+          ...flags,
+          argv: args.slice(1),
+          presenter: consoleTerminalPresenter,
+        });
         return;
       case 'migrate':
         {

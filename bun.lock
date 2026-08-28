@@ -12,6 +12,7 @@
         "@angular/platform-browser": "^22.1.0",
         "@angular/router": "^22.1.0",
         "@ojiepermana/angular": "22.1.7",
+        "@sinclair/typebox": "^0.34.52",
         "elysia": "^1.4.0",
         "rxjs": "~7.8.0",
         "tslib": "^2.3.0",
