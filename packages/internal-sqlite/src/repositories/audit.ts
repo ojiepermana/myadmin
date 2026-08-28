@@ -32,6 +32,39 @@ interface AuditRow {
 const AUDIT_COLUMNS =
   'id, occurred_at, actor_user_id, action, target_type, target_ref, connection_id, result, correlation_id, details' as const;
 
+export interface AuditStorageStats {
+  readonly rowCount: number;
+  readonly estimatedBytes: number;
+}
+
+interface AuditStorageRow {
+  row_count: number | bigint;
+  estimated_bytes: number | bigint;
+}
+
+/** Return informational audit storage size without exposing audit payloads. */
+export function inspectAuditStorage(database: Database): AuditStorageStats {
+  const row = database
+    .query<AuditStorageRow, []>(
+      `SELECT
+         COUNT(*) AS row_count,
+         COALESCE(SUM(
+           length(id) + length(occurred_at) +
+           COALESCE(length(actor_user_id), 0) + length(action) +
+           COALESCE(length(target_type), 0) + COALESCE(length(target_ref), 0) +
+           COALESCE(length(connection_id), 0) + length(result) +
+           COALESCE(length(correlation_id), 0) + COALESCE(length(details), 0)
+         ), 0) AS estimated_bytes
+       FROM audit_logs`,
+    )
+    .get();
+
+  return {
+    rowCount: Number(row?.row_count ?? 0),
+    estimatedBytes: Number(row?.estimated_bytes ?? 0),
+  };
+}
+
 function mapAudit(row: AuditRow): AuditEvent {
   return {
     id: row.id,

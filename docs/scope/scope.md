@@ -300,10 +300,10 @@ Ganti password sendiri plus kelola user oleh Admin dengan invariant Admin terakh
 Taksonomi event, writer tersensor, sukses menunggu audit. Done when: aksi wajib audit tidak pernah sukses tanpa baris audit dan payload selalu tersensor.
 
 - [x] Design it (spec): [0019](../specs/0019-audit-subsystem/index.md)
-- [ ] Build it: /develop audit-subsystem
-  - [ ] Taksonomi tertutup plus writer dengan redaction dan correlation (AC-1, AC-2, AC-4, AC-5)
-  - [ ] Helper withAudit dengan semantik urutan (AC-3)
-  - [ ] Migrasi penulisan audit fitur sebelumnya plus doctor check ukuran plus test (AC-6, AC-7, AC-8)
+- [x] Build it: /develop audit-subsystem
+  - [x] Taksonomi tertutup plus writer dengan redaction dan correlation (AC-1, AC-2, AC-4, AC-5)
+  - [x] Helper withAudit dengan semantik urutan (AC-3)
+  - [x] Migrasi penulisan audit fitur sebelumnya plus doctor check ukuran plus test (AC-6, AC-7, AC-8)
 - [ ] [Verify it](../specs/0019-audit-subsystem/verify.md): /check verify audit-subsystem
 - [ ] [Test it](../specs/0019-audit-subsystem/test.md): /test audit-subsystem
 

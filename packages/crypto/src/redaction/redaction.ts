@@ -94,6 +94,10 @@ class RedactionEngine {
       return REDACTED_VALUE;
     }
 
+    if (value instanceof Date) {
+      return new Date(value.getTime());
+    }
+
     if (seen.has(value)) {
       return '[circular]';
     }

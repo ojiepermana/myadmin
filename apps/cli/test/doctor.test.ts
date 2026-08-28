@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseCliFlags } from '../src/main';
-import { runDoctorCommand, runSqliteCheck } from '../src/commands/doctor';
+import { runAuditCheck, runDoctorCommand, runSqliteCheck } from '../src/commands/doctor';
 import { formatDoctorJson, formatDoctorText } from '../src/output/diagnostics';
 import { createDoctorRegistry, type DoctorCheck } from '../src/runtime/doctor';
 import { runMigrateCommand } from '../src/commands/migrate';
@@ -90,16 +90,34 @@ describe('IT-0007-AC1 and IT-0007-AC2 doctor checks', () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(result.summary).toEqual({ total: 5, ok: 5, warning: 0, fail: 0 });
+    expect(result.summary).toEqual({ total: 6, ok: 6, warning: 0, fail: 0 });
     expect(result.checks.map((check) => check.id)).toEqual([
       'data-directory',
       'data-subdirectories',
       'sqlite',
+      'audit',
       'web-assets',
       'config',
     ]);
     expect(output.messages[0]).toContain('[OK] Data directory');
     expect(output.messages[0]).not.toContain('Action');
+  });
+
+  test('reports audit row count and estimated size without a retention action', async () => {
+    const dataDirectory = await temporaryDataDirectory();
+    await runMigrateCommand({
+      dataDirectory,
+      env: {},
+      presenter: { info: () => undefined, error: () => undefined },
+    });
+
+    const result = await runAuditCheck(dataDirectory);
+
+    expect(result).toMatchObject({
+      status: 'ok',
+      message: expect.stringContaining('Retention is not automatic.'),
+      details: { rowCount: 0, estimatedBytes: 0 },
+    });
   });
 
   test('warns when SQLite is usable but has pending migrations', async () => {

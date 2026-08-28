@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { AuditEvents, AuditWriter } from '../../../packages/audit/src';
 import {
   REDACTED_VALUE,
   Redaction,
@@ -6,6 +7,7 @@ import {
   redactText,
   registerEphemeralSecret,
 } from '../../../packages/crypto/src';
+import { FakeAuditRepository } from '../../../packages/testkit/src';
 
 describe('redaction security', () => {
   it('UT-0011-AC5 redacts sensitive fields recursively without mutating the input', () => {
@@ -83,5 +85,35 @@ describe('redaction security', () => {
     } finally {
       release();
     }
+  });
+
+  it('SEC-0019-AC2 redacts the complete event before the AuditWriter appends it', async () => {
+    const repository = new FakeAuditRepository();
+    const writer = new AuditWriter(repository, {
+      now: () => new Date('2026-08-28T00:00:00.000Z'),
+      createId: () => 'audit-security-1',
+    });
+
+    await writer.record({
+      action: AuditEvents.connection.created.action,
+      result: 'success',
+      targetRef: 'db1',
+      details: {
+        username: 'synthetic-user',
+        password: 'synthetic-password',
+        message: 'token=synthetic-token',
+      },
+    });
+
+    const event = repository.query().items[0];
+    expect(event).toMatchObject({
+      details: {
+        username: 'synthetic-user',
+        password: REDACTED_VALUE,
+        message: `token=${REDACTED_VALUE}`,
+      },
+    });
+    expect(JSON.stringify(event)).not.toContain('synthetic-password');
+    expect(JSON.stringify(event)).not.toContain('synthetic-token');
   });
 });

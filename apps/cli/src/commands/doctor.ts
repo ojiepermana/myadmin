@@ -12,6 +12,7 @@ import {
   assertSqliteDatabaseHealthy,
   closeDatabase,
   getMigrationStatus,
+  inspectAuditStorage,
   inspectSqliteDatabase,
   openDatabase,
 } from '@myadmin/internal-sqlite';
@@ -165,6 +166,45 @@ export async function runSqliteCheck(dataDirectory: string): Promise<CheckResult
   }
 }
 
+export async function runAuditCheck(dataDirectory: string): Promise<CheckResult> {
+  let database: ReturnType<typeof openDatabase> | undefined;
+  try {
+    database = openDatabase(dataDirectory);
+    assertSqliteDatabaseHealthy(database);
+    const migrationStatus = getMigrationStatus(database);
+    if (migrationStatus.currentVersion < 1) {
+      return result(
+        'warning',
+        'Audit storage is waiting for the initial SQLite migration.',
+        'Run myadmin migrate, then run myadmin doctor again.',
+        { currentVersion: migrationStatus.currentVersion },
+      );
+    }
+
+    const stats = inspectAuditStorage(database);
+    return result(
+      'ok',
+      `Audit storage contains ${stats.rowCount} events, approximately ${stats.estimatedBytes} bytes. Retention is not automatic.`,
+      undefined,
+      { rowCount: stats.rowCount, estimatedBytes: stats.estimatedBytes },
+    );
+  } catch {
+    return result(
+      'fail',
+      'Audit storage could not be inspected.',
+      'Check the internal SQLite database, then run myadmin doctor again.',
+    );
+  } finally {
+    if (database) {
+      try {
+        closeDatabase(database);
+      } catch {
+        // The diagnostic result already describes the database operation.
+      }
+    }
+  }
+}
+
 export async function runWebAssetsCheck(assetSource?: AssetSource): Promise<CheckResult> {
   try {
     const source = assetSource ?? (await resolveAssetSource());
@@ -243,6 +283,7 @@ export function createDefaultDoctorChecks(
       run: () => runDataSubdirectoriesCheck(dataDirectory),
     },
     { id: 'sqlite', title: 'Internal SQLite', run: () => runSqliteCheck(dataDirectory) },
+    { id: 'audit', title: 'Audit storage', run: () => runAuditCheck(dataDirectory) },
     {
       id: 'web-assets',
       title: 'Web assets',
