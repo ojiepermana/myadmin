@@ -14,18 +14,14 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: {
-          name: 'apps',
-          environment: 'node',
-          include: ['apps/*/test/**/*.test.ts'],
-        },
+        test: { name: 'apps-web', environment: 'jsdom', include: ['apps/web/test/**/*.test.ts'] },
       },
       {
         extends: true,
         test: {
-          name: 'packages',
-          environment: 'node',
-          include: ['packages/*/test/**/*.test.ts'],
+          name: 'packages-sdk-angular',
+          environment: 'jsdom',
+          include: ['packages/sdk-angular/test/**/*.test.ts'],
         },
       },
       {
