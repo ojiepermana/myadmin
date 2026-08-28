@@ -1,6 +1,9 @@
 # Indeks Spec Myadmin V1
 
-Nomor spec sama dengan urutan build. Kerjakan berurutan; sebuah spec boleh dimulai bila seluruh prasyaratnya selesai. Status hidup di masing masing file spec. Indeks ini dimiliki oleh /architect.
+Nomor spec adalah identifier katalog; urutan build mengikuti dependency. Kerjakan
+berurutan; sebuah spec boleh dimulai bila seluruh prasyaratnya selesai. Bila
+nomor dan dependency berbeda, dependency menjadi sumber kebenaran. Status hidup
+di masing masing file spec. Indeks ini dimiliki oleh /architect.
 
 Sumber kebutuhan: [v1-feature-specification.md](../../plan/v1-feature-specification.md), [struktur.md](../../plan/struktur.md), [feature.md](../../plan/feature.md). Folder rencana hidup di `plan/` pada akar repo.
 
@@ -35,8 +38,8 @@ docs/specs/NNNN-nama-spec/
 | [0004](0004-codegen-pipeline-contract-tests/index.md) | Pipeline codegen dan contract test          | 0003       | [relation](0004-codegen-pipeline-contract-tests/relation.md) | [verify](0004-codegen-pipeline-contract-tests/verify.md) | [test](0004-codegen-pipeline-contract-tests/test.md) |
 | [0005](0005-sdk-angular-core/index.md)                | SDK Angular core                            | 0004       | [relation](0005-sdk-angular-core/relation.md)                | [verify](0005-sdk-angular-core/verify.md)                | [test](0005-sdk-angular-core/test.md)                |
 | [0006](0006-cli-runtime-data-directory/index.md)      | CLI runtime dan data directory              | 0001       | [relation](0006-cli-runtime-data-directory/relation.md)      | [verify](0006-cli-runtime-data-directory/verify.md)      | [test](0006-cli-runtime-data-directory/test.md)      |
-| [0007](0007-doctor-migrate-commands/index.md)         | Perintah doctor dan migrate                 | 0006, 0008 | [relation](0007-doctor-migrate-commands/relation.md)         | [verify](0007-doctor-migrate-commands/verify.md)         | [test](0007-doctor-migrate-commands/test.md)         |
 | [0008](0008-sqlite-core-migrations/index.md)          | SQLite core dan migration runner            | 0006       | [relation](0008-sqlite-core-migrations/relation.md)          | [verify](0008-sqlite-core-migrations/verify.md)          | [test](0008-sqlite-core-migrations/test.md)          |
+| [0007](0007-doctor-migrate-commands/index.md)         | Perintah doctor dan migrate                 | 0006, 0008 | [relation](0007-doctor-migrate-commands/relation.md)         | [verify](0007-doctor-migrate-commands/verify.md)         | [test](0007-doctor-migrate-commands/test.md)         |
 | [0009](0009-internal-repositories/index.md)           | Internal repositories                       | 0008       | [relation](0009-internal-repositories/relation.md)           | [verify](0009-internal-repositories/verify.md)           | [test](0009-internal-repositories/test.md)           |
 | [0010](0010-key-provider-password-hashing/index.md)   | Key provider dan password hashing           | 0006       | [relation](0010-key-provider-password-hashing/relation.md)   | [verify](0010-key-provider-password-hashing/verify.md)   | [test](0010-key-provider-password-hashing/test.md)   |
 | [0011](0011-credential-vault-redaction/index.md)      | Credential vault dan redaction              | 0010       | [relation](0011-credential-vault-redaction/relation.md)      | [verify](0011-credential-vault-redaction/verify.md)      | [test](0011-credential-vault-redaction/test.md)      |
