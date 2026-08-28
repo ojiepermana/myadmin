@@ -42,10 +42,18 @@ class MetadataClient implements MysqlSqlClient {
     }
     if (statement.includes('SUM(COALESCE(DATA_LENGTH')) return [{ size_bytes: '4096' }];
     if (statement.includes("'table' AS object_type")) {
-      return [
+      const objects = [
         { object_database: 'app', object_name: 'accounts', object_type: 'table' },
         { object_database: 'app', object_name: 'audit_log', object_type: 'table' },
       ];
+      if (statement.includes("'view' AS object_type")) {
+        objects.push(
+          { object_database: 'app', object_name: 'accounts_view', object_type: 'view' },
+          { object_database: 'app', object_name: 'find_account', object_type: 'routine' },
+          { object_database: 'app', object_name: 'accounts_audit', object_type: 'trigger' },
+        );
+      }
+      return objects;
     }
     if (statement.includes('ENGINE AS engine')) {
       return [
@@ -176,6 +184,9 @@ describe('MySQL metadata adapter', () => {
 
   test('[AC-6] quotes backticks in one identifier helper', () => {
     expect(quoteMysqlIdentifier('view`name')).toBe('`view``name`');
+    expect(() => quoteMysqlIdentifier('invalid\u0000name')).toThrowError(
+      'MySQL identifier contains an invalid character',
+    );
   });
 
   test('[AC-1] lists non system databases and defers size aggregation', async () => {
@@ -203,6 +214,11 @@ describe('MySQL metadata adapter', () => {
     ]);
     expect(page.cursor).toBe('1');
     expect(client?.calls.at(-1)?.parameters).toEqual(['app', 2, 0]);
+
+    const objects = await metadata.listObjects(handle!, 'app', { limit: 1 });
+    expect(objects.items).toHaveLength(1);
+    expect(objects.cursor).toBe('1');
+    expect(objects.items[0]).toMatchObject({ schema: null });
   });
 
   test('[AC-3, AC-7] describes columns, indexes, constraints, and table properties', async () => {
@@ -251,6 +267,36 @@ describe('MySQL metadata adapter', () => {
         onDelete: 'RESTRICT',
       },
     ]);
+
+    await metadata.listIndexes(
+      handle!,
+      {
+        database: 'app',
+        schema: null,
+        name: 'accounts',
+        type: 'table',
+      },
+      { limit: 1 },
+    );
+    await metadata.listConstraints(
+      handle!,
+      {
+        database: 'app',
+        schema: null,
+        name: 'accounts',
+        type: 'table',
+      },
+      { limit: 1 },
+    );
+    expect(
+      client?.calls.filter(({ statement }) => statement.includes('MIN(NON_UNIQUE)')).at(-1)
+        ?.parameters,
+    ).toEqual(['app', 'accounts', 2, 0]);
+    expect(
+      client?.calls
+        .filter(({ statement }) => statement.includes('GROUP_CONCAT(kcu.COLUMN_NAME'))
+        .at(-1)?.parameters,
+    ).toEqual(['app', 'accounts', 2, 0]);
   });
 
   test('[AC-4, AC-5, AC-6] discovers view definitions, routines, triggers, and parameterized search', async () => {
@@ -300,5 +346,18 @@ describe('MySQL metadata adapter', () => {
     const searchCall = client?.calls.find(({ statement }) => statement.includes('LIKE ?'));
     expect(searchCall?.statement).not.toContain('account');
     expect(searchCall?.parameters?.[0]).toBe('%account%');
+  });
+
+  test('[AC-8] keeps object expansion to one bounded catalog query per node', async () => {
+    const metadata = await openMetadata();
+    const database = { database: 'app', schema: null, name: 'app', type: 'database' as const };
+    const table = { database: 'app', schema: null, name: 'accounts', type: 'table' as const };
+
+    await metadata.listObjects(handle!, database, ['table'], { limit: 50 });
+    const callsAfterObjects = client?.calls.length ?? 0;
+    await metadata.listColumns(handle!, table, { limit: 50 });
+
+    expect((client?.calls.length ?? 0) - callsAfterObjects).toBe(1);
+    expect(client?.calls.at(-1)?.statement).toContain('FROM information_schema.columns');
   });
 });

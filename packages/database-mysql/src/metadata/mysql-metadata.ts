@@ -19,8 +19,8 @@ import type { MysqlRow } from '../driver/client';
 import type { MysqlConnectionAdapter } from '../driver/mysql-connection';
 import { quoteMysqlIdentifier } from './quoting';
 
-const MAX_PAGE_SIZE = 500;
-const DEFAULT_PAGE_SIZE = 100;
+export const MYSQL_METADATA_MAX_PAGE_SIZE = 500;
+export const MYSQL_METADATA_DEFAULT_PAGE_SIZE = 100;
 const SYSTEM_DATABASES = ['sys', 'mysql', 'information_schema', 'performance_schema'] as const;
 const ALL_OBJECT_TYPES = ['table', 'view', 'routine', 'trigger'] as const;
 
@@ -171,22 +171,23 @@ function nonEmpty(value: string | undefined): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
-function booleanZero(value: unknown): boolean {
-  return value === false || value === 0 || value === '0' ? false : Boolean(value);
-}
-
 function normalizePage(page: PageRequest | undefined, defaultPageSize: number): PageWindow {
   const limitValue = page?.limit ?? defaultPageSize;
   if (!Number.isInteger(limitValue) || limitValue < 1) {
     throw new DbError({ category: 'internal', message: 'MySQL metadata page size is invalid' });
   }
 
-  const offsetValue = page?.cursor === undefined ? 0 : Number(page.cursor);
-  if (!Number.isSafeInteger(offsetValue) || offsetValue < 0) {
+  const cursor = page?.cursor;
+  const offsetValue = cursor === undefined ? 0 : Number(cursor);
+  if (
+    (cursor !== undefined && !/^\d+$/.test(cursor)) ||
+    !Number.isSafeInteger(offsetValue) ||
+    offsetValue < 0
+  ) {
     throw new DbError({ category: 'internal', message: 'MySQL metadata cursor is invalid' });
   }
 
-  const limit = Math.min(limitValue, MAX_PAGE_SIZE);
+  const limit = Math.min(limitValue, MYSQL_METADATA_MAX_PAGE_SIZE);
   return { limit, offset: offsetValue, fetchLimit: limit + 1 };
 }
 
@@ -320,15 +321,14 @@ function mapIndexes(rows: readonly IndexRow[]): IndexDefinition[] {
       indexes.set(name, index);
     }
 
-    const groupedColumns = stringValue(row, 'columns', 'COLUMNS');
-    if (groupedColumns) {
-      for (const [sequence, column] of groupedColumns.split('\u001f').entries()) {
-        if (column) index.columns.push({ name: column, sequence });
-      }
-    }
-
-    const column = stringValue(row, 'column_name', 'COLUMN_NAME');
-    if (column) {
+    const groupedColumns = stringValue(row, 'columns', 'COLUMNS')
+      ?.split('\u001f')
+      .filter((column) => column.length > 0);
+    if (groupedColumns && groupedColumns.length > 0) {
+      index.columns.push(...groupedColumns.map((column, sequence) => ({ name: column, sequence })));
+    } else {
+      const column = stringValue(row, 'column_name', 'COLUMN_NAME');
+      if (!column) continue;
       index.columns.push({
         name: column,
         sequence: numberValue(row, 'sequence', 'SEQ_IN_INDEX') ?? index.columns.length,
@@ -345,13 +345,20 @@ function mapIndexes(rows: readonly IndexRow[]): IndexDefinition[] {
     return {
       name,
       columns,
-      unique: !booleanZero(value.row['non_unique'] ?? value.row['NON_UNIQUE']),
+      unique: !booleanValue(value.row, 'non_unique', 'NON_UNIQUE'),
       primary: name === 'PRIMARY',
       ...(nonEmpty(stringValue(value.row, 'index_type', 'INDEX_TYPE'))
         ? { method: stringValue(value.row, 'index_type', 'INDEX_TYPE') }
         : {}),
     };
   });
+}
+
+function booleanValue(row: MysqlRow, ...keys: string[]): boolean {
+  const value = rowValue(row, ...keys);
+  if (value === false || value === 0 || value === '0' || value === 'false') return false;
+  if (value === true || value === 1 || value === '1' || value === 'true') return true;
+  return Boolean(value);
 }
 
 function constraintType(value: string | undefined): ConstraintDefinition['type'] {
@@ -401,17 +408,38 @@ function mapConstraints(rows: readonly ConstraintRow[]): MysqlConstraintDefiniti
       };
       constraints.set(name, constraint);
     }
+    if (!constraint) continue;
+    const currentConstraint = constraint;
 
+    const groupedColumns = stringValue(row, 'columns', 'COLUMNS')
+      ?.split('\u001f')
+      .filter((column) => column.length > 0);
+    const groupedReferencedColumns = stringValue(row, 'referenced_columns', 'REFERENCED_COLUMNS')
+      ?.split('\u001f')
+      .filter((column) => column.length > 0);
     const column = stringValue(row, 'column_name', 'COLUMN_NAME');
-    if (column) {
-      const columns = constraint.columns ? [...constraint.columns, column] : [column];
-      constraint = { ...constraint, columns };
-      const referencedColumn = stringValue(row, 'referenced_column_name', 'REFERENCED_COLUMN_NAME');
-      if (referencedColumn) {
-        const referencedColumns = constraint.referencedColumns
-          ? [...constraint.referencedColumns, referencedColumn]
-          : [referencedColumn];
-        constraint = { ...constraint, referencedColumns };
+    const columns = groupedColumns ?? (column ? [column] : undefined);
+    const referencedColumn = stringValue(row, 'referenced_column_name', 'REFERENCED_COLUMN_NAME');
+    const referencedColumns =
+      groupedReferencedColumns ?? (referencedColumn ? [referencedColumn] : undefined);
+    if (columns && columns.length > 0) {
+      const nextColumns = groupedColumns
+        ? columns
+        : [
+            ...(currentConstraint.columns ?? []),
+            ...columns.filter((value) => !currentConstraint.columns?.includes(value)),
+          ];
+      constraint = { ...currentConstraint, columns: nextColumns };
+      if (referencedColumns && referencedColumns.length > 0) {
+        const nextReferencedColumns = groupedReferencedColumns
+          ? referencedColumns
+          : [
+              ...(currentConstraint.referencedColumns ?? []),
+              ...referencedColumns.filter(
+                (value) => !currentConstraint.referencedColumns?.includes(value),
+              ),
+            ];
+        constraint = { ...constraint, referencedColumns: nextReferencedColumns };
       }
       constraints.set(name, constraint);
     }
@@ -437,8 +465,8 @@ export class MysqlMetadataAdapter implements MetadataPort {
     options: MysqlMetadataOptions = {},
   ) {
     this.defaultPageSize = Math.min(
-      Math.max(options.defaultPageSize ?? DEFAULT_PAGE_SIZE, 1),
-      MAX_PAGE_SIZE,
+      Math.max(options.defaultPageSize ?? MYSQL_METADATA_DEFAULT_PAGE_SIZE, 1),
+      MYSQL_METADATA_MAX_PAGE_SIZE,
     );
     this.includeSystemDatabases = options.includeSystemDatabases ?? false;
   }
@@ -808,6 +836,9 @@ export class MysqlMetadataAdapter implements MetadataPort {
     parent: ObjectRef,
     window?: PageWindow,
   ): Promise<Page<IndexDefinition>> {
+    const pagination = window ? 'LIMIT ? OFFSET ?' : '';
+    const parameters: unknown[] = [parent.database, parent.name];
+    if (window) parameters.push(window.fetchLimit, window.offset);
     const rows = await this.execute<IndexRow>(
       handle,
       `
@@ -818,8 +849,9 @@ export class MysqlMetadataAdapter implements MetadataPort {
         FROM information_schema.statistics
         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
         GROUP BY INDEX_NAME, INDEX_TYPE
-        ORDER BY INDEX_NAME`,
-      [parent.database, parent.name],
+        ORDER BY INDEX_NAME
+        ${pagination}`,
+      parameters,
     );
     const indexes = mapIndexes(rows);
     return window ? pageRows(indexes, window) : { items: indexes };
@@ -830,22 +862,26 @@ export class MysqlMetadataAdapter implements MetadataPort {
     parent: ObjectRef,
     window?: PageWindow,
   ): Promise<Page<MysqlConstraintDefinition>> {
+    const pagination = window ? 'LIMIT ? OFFSET ?' : '';
+    const parameters: unknown[] = [parent.database, parent.name];
+    if (window) parameters.push(window.fetchLimit, window.offset);
     const rows = await this.execute<ConstraintRow>(
       handle,
       `
         SELECT tc.CONSTRAINT_NAME AS constraint_name,
                tc.CONSTRAINT_TYPE AS constraint_type,
-               kcu.COLUMN_NAME AS column_name,
+               GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR 0x1F) AS columns,
                kcu.REFERENCED_TABLE_SCHEMA AS referenced_table_schema,
                kcu.REFERENCED_TABLE_NAME AS referenced_table_name,
-               kcu.REFERENCED_COLUMN_NAME AS referenced_column_name,
+               GROUP_CONCAT(kcu.REFERENCED_COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR 0x1F) AS referenced_columns,
                rc.UPDATE_RULE AS update_rule,
                rc.DELETE_RULE AS delete_rule,
                cc.CHECK_CLAUSE AS check_clause,
-               kcu.ORDINAL_POSITION AS ordinal_position
+               MIN(kcu.ORDINAL_POSITION) AS ordinal_position
         FROM information_schema.table_constraints tc
         LEFT JOIN information_schema.key_column_usage kcu
           ON kcu.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
+         AND kcu.TABLE_SCHEMA = tc.TABLE_SCHEMA
          AND kcu.TABLE_NAME = tc.TABLE_NAME
          AND kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
         LEFT JOIN information_schema.referential_constraints rc
@@ -854,10 +890,14 @@ export class MysqlMetadataAdapter implements MetadataPort {
          AND rc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
         LEFT JOIN information_schema.check_constraints cc
           ON cc.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
-         AND cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+          AND cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
         WHERE tc.TABLE_SCHEMA = ? AND tc.TABLE_NAME = ?
-        ORDER BY tc.CONSTRAINT_NAME, kcu.ORDINAL_POSITION`,
-      [parent.database, parent.name],
+        GROUP BY tc.CONSTRAINT_NAME, tc.CONSTRAINT_TYPE,
+                 kcu.REFERENCED_TABLE_SCHEMA, kcu.REFERENCED_TABLE_NAME,
+                 rc.UPDATE_RULE, rc.DELETE_RULE, cc.CHECK_CLAUSE
+        ORDER BY tc.CONSTRAINT_NAME
+        ${pagination}`,
+      parameters,
     );
     const constraints = mapConstraints(rows);
     return window ? pageRows(constraints, window) : { items: constraints };

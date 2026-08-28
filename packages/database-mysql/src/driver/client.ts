@@ -30,7 +30,7 @@ function queryClient(
   const query =
     parameters && parameters.length > 0
       ? client.unsafe(statement, [...parameters])
-      : client(statement);
+      : client.unsafe(statement);
 
   return Promise.resolve(query as PromiseLike<readonly MysqlRow[]>);
 }
