@@ -37,6 +37,13 @@ export interface TabDescriptor {
   readonly context: Readonly<Record<string, unknown>>;
 }
 
+export interface WorkspaceTableRef {
+  readonly database: string;
+  readonly schema?: string | null;
+  readonly name: string;
+  readonly type?: 'table';
+}
+
 export interface WorkspacePanels {
   readonly sidebarWidth: number;
   readonly bottomHeight: number;
@@ -121,6 +128,61 @@ export class WorkspaceStore {
         }
       }),
     }));
+  }
+
+  markTableTabsStale(ref: WorkspaceTableRef): void {
+    const expected = normalizeTableRef(ref);
+    this.stateSignal.update((state) => ({
+      ...state,
+      tabs: state.tabs.map((tab) =>
+        isTableTab(tab) && sameTableRef(tableRefFromContext(tab.context), expected)
+          ? { ...tab, context: { ...tab.context, stale: true } }
+          : tab,
+      ),
+    }));
+  }
+
+  updateTableReferences(oldRef: WorkspaceTableRef, newRef: WorkspaceTableRef): void {
+    const expected = normalizeTableRef(oldRef);
+    const replacement = normalizeTableRef(newRef);
+    this.stateSignal.update((state) => ({
+      ...state,
+      tabs: state.tabs.map((tab) => {
+        if (!isTableTab(tab) || !sameTableRef(tableRefFromContext(tab.context), expected)) {
+          return tab;
+        }
+        const route = routeWithTableRef(tab.context['route'], replacement);
+        return {
+          ...tab,
+          title: replacement.name,
+          context: {
+            ...tab.context,
+            ref: JSON.stringify({ ...replacement, type: 'table' }),
+            ...(route === undefined ? {} : { route }),
+            stale: false,
+          },
+        };
+      }),
+    }));
+  }
+
+  closeTableTabs(ref: WorkspaceTableRef): TabDescriptor | null {
+    const expected = normalizeTableRef(ref);
+    const state = this.stateSignal();
+    const matching = state.tabs.filter(
+      (tab) => isTableTab(tab) && sameTableRef(tableRefFromContext(tab.context), expected),
+    );
+    if (matching.length === 0) return this.activeTab();
+    const remaining = state.tabs.filter(
+      (tab) => !isTableTab(tab) || !sameTableRef(tableRefFromContext(tab.context), expected),
+    );
+    if (remaining.length === 0) return this.activeTab();
+    const activeWasClosed = matching.some((tab) => tab.id === state.activeTabId);
+    const nextActiveId = activeWasClosed
+      ? (remaining[Math.max(0, state.tabs.indexOf(matching[0]!) - 1)] ?? remaining[0]!).id
+      : state.activeTabId;
+    this.stateSignal.set({ ...state, tabs: remaining, activeTabId: nextActiveId });
+    return remaining.find((tab) => tab.id === nextActiveId) ?? null;
   }
 
   closeTab(tabId: string): TabDescriptor | null {
@@ -249,4 +311,69 @@ function persistableContext(context: Readonly<Record<string, unknown>>) {
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, Math.round(value * 10) / 10));
+}
+
+function isTableTab(tab: TabDescriptor): boolean {
+  return tab.type === 'table-designer' || tab.type === 'data-browser';
+}
+
+function normalizeTableRef(ref: WorkspaceTableRef): WorkspaceTableRef {
+  return { database: ref.database, schema: ref.schema ?? null, name: ref.name };
+}
+
+function tableRefFromContext(context: Readonly<Record<string, unknown>>): WorkspaceTableRef | null {
+  const candidate = context['ref'];
+  if (typeof candidate === 'string') {
+    try {
+      return parseTableRef(JSON.parse(candidate));
+    } catch {
+      return null;
+    }
+  }
+  const route = context['route'];
+  if (typeof route !== 'string') return null;
+  try {
+    return parseTableRef(new URL(route, 'http://myadmin.local').searchParams.get('ref'));
+  } catch {
+    return null;
+  }
+}
+
+function parseTableRef(value: unknown): WorkspaceTableRef | null {
+  const candidate = typeof value === 'string' ? JSON.parse(value) : value;
+  if (
+    typeof candidate !== 'object' ||
+    candidate === null ||
+    Array.isArray(candidate) ||
+    typeof candidate['database'] !== 'string' ||
+    typeof candidate['name'] !== 'string'
+  ) {
+    return null;
+  }
+  const valueRecord = candidate as Record<string, unknown>;
+  return {
+    database: valueRecord['database'] as string,
+    schema: typeof valueRecord['schema'] === 'string' ? valueRecord['schema'] : null,
+    name: valueRecord['name'] as string,
+  };
+}
+
+function sameTableRef(left: WorkspaceTableRef | null, right: WorkspaceTableRef): boolean {
+  return (
+    left !== null &&
+    left.database === right.database &&
+    (left.schema ?? null) === (right.schema ?? null) &&
+    left.name === right.name
+  );
+}
+
+function routeWithTableRef(route: unknown, ref: WorkspaceTableRef): string | undefined {
+  if (typeof route !== 'string') return undefined;
+  try {
+    const url = new URL(route, 'http://myadmin.local');
+    url.searchParams.set('ref', JSON.stringify({ ...ref, type: 'table' }));
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return undefined;
+  }
 }

@@ -1,0 +1,49 @@
+post:
+  operationId: truncateTable
+  tags: [tables]
+  summary: Truncate a table after exact name confirmation
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/table-operations.yaml#/TableTruncateRequest
+  responses:
+    '204':
+      description: Table truncated and audit recorded.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The request failed CSRF or ownership checks.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Confirmation was wrong or the connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The table reference is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '501':
+      description: The requested restart identity option is not supported.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

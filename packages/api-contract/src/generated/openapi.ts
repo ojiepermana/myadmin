@@ -1312,6 +1312,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tables/drop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Drop a table after exact name confirmation without cascade */
+        delete: operations["dropTable"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tables/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inspect table destructive operation impact */
+        post: operations["getTableDestructiveImpact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tables/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rename a table after exact old name confirmation */
+        post: operations["renameTable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tables/truncate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Truncate a table after exact name confirmation */
+        post: operations["truncateTable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -2610,9 +2678,54 @@ export interface components {
             kind: "literal" | "expression";
             value: string;
         };
+        TableDependency: {
+            constraintName?: string;
+            ref: components["schemas"]["TableOperationRef"];
+        };
+        TableDestructiveImpact: {
+            estimatedRows?: number;
+            incomingForeignKeys: components["schemas"]["TableDependency"][];
+            ref: components["schemas"]["TableOperationRef"];
+            restartIdentityReason?: string;
+            restartIdentitySupported: boolean;
+            views: components["schemas"]["ExplorerObjectRef"][];
+        };
+        TableDropRequest: {
+            confirmName: string;
+            connectionId: string;
+            ref: components["schemas"]["TableOperationRef"];
+        };
         TableGenerated: {
             expression: string;
             stored?: boolean;
+        };
+        TableImpactRequest: {
+            connectionId: string;
+            ref: components["schemas"]["TableOperationRef"];
+        };
+        TableOperationBaseRequest: {
+            connectionId: string;
+            ref: components["schemas"]["TableOperationRef"];
+        };
+        TableOperationRef: {
+            database: string;
+            name: string;
+            schema: string | null;
+            /** @constant */
+            type: "table";
+        };
+        TableRenameRequest: {
+            confirmName: string;
+            connectionId: string;
+            newName: string;
+            ref: components["schemas"]["TableOperationRef"];
+        };
+        TableTruncateRequest: {
+            confirmName: string;
+            connectionId: string;
+            ref: components["schemas"]["TableOperationRef"];
+            /** @default false */
+            restartIdentity: boolean;
         };
         TableType: {
             label: string;
@@ -8164,6 +8277,296 @@ export interface operations {
             };
             /** @description The request body is invalid. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    dropTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableDropRequest"];
+            };
+        };
+        responses: {
+            /** @description Table dropped and audit recorded. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request failed CSRF or ownership checks. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Confirmation was wrong or the provider rejected dependencies. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The table reference is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Table operations are not supported by this provider. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getTableDestructiveImpact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableImpactRequest"];
+            };
+        };
+        responses: {
+            /** @description Provider metadata used by destructive action dialogs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableDestructiveImpact"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection belongs to another user. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The table reference is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    renameTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Table renamed and audit recorded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableOperationRef"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request failed CSRF or ownership checks. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Confirmation was wrong or the rename conflicted. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The table reference or identifier is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Table operations are not supported by this provider. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    truncateTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableTruncateRequest"];
+            };
+        };
+        responses: {
+            /** @description Table truncated and audit recorded. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request failed CSRF or ownership checks. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Confirmation was wrong or the connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The table reference is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The requested restart identity option is not supported. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider operation failed. */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

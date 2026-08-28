@@ -65,3 +65,37 @@ describe('explorer view actions', () => {
     expect(actions).toContainEqual({ id: 'create-view', label: 'Create view', disabled: false });
   });
 });
+
+describe('explorer table actions', () => {
+  test('offers all destructive table actions only for a connected table', () => {
+    const actions = new ExplorerActionRegistry(['table-designer']).actionsFor(
+      node({
+        label: 'accounts',
+        objectType: 'table',
+        ref: { database: 'app', schema: 'public', name: 'accounts', type: 'table' },
+      }),
+      status(true),
+    );
+    expect(actions).toEqual(
+      expect.arrayContaining([
+        { id: 'rename-table', label: 'Rename table', disabled: false },
+        { id: 'truncate-table', label: 'Truncate table', disabled: false },
+        { id: 'drop-table', label: 'Drop table', disabled: false },
+      ]),
+    );
+  });
+
+  test('disables destructive table actions with the connection reason when offline', () => {
+    const actions = new ExplorerActionRegistry(['table-designer']).actionsFor(
+      node({
+        objectType: 'table',
+        ref: { database: 'app', schema: 'public', name: 'accounts', type: 'table' },
+      }),
+      null,
+    );
+    expect(actions.find((action) => action.id === 'drop-table')).toMatchObject({
+      disabled: true,
+      reason: 'Connect this connection to browse metadata.',
+    });
+  });
+});

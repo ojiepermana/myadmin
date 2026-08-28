@@ -7,10 +7,17 @@ import {
   type TableChangeSet,
   type TableColumnInput,
   type TableDdlPreview,
+  type TableDestructiveImpact,
   type TableTypeCatalog,
 } from '@myadmin/sdk-angular';
 import { firstValueFrom } from 'rxjs';
+import { WorkspaceStore } from '../../core/state/workspace.store';
 import { ExplorerStore } from '../object-explorer/explorer.store';
+import {
+  TableOperationDialog,
+  type TableOperation,
+  type TableOperationConfirmation,
+} from '../../shared/database-components/table-operation-dialog/table-operation-dialog';
 
 interface TableRef {
   database: string;
@@ -56,7 +63,7 @@ function messageFor(error: unknown): string {
 @Component({
   selector: 'app-table-designer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TableOperationDialog],
   templateUrl: './table-designer.html',
   styleUrl: './table-designer.scss',
 })
@@ -65,6 +72,7 @@ export class TableDesigner {
   private readonly router = inject(Router);
   private readonly sdk = inject(MyadminSdk);
   private readonly explorer = inject(ExplorerStore);
+  private readonly workspace = inject(WorkspaceStore);
   private readonly connectionIdState = signal('');
   private readonly refState = signal<TableRef | null>(null);
   private readonly modeState = signal<'create' | 'alter'>('create');
@@ -78,6 +86,8 @@ export class TableDesigner {
   private readonly errorState = signal<string | null>(null);
   private readonly noticeState = signal<string | null>(null);
   private readonly confirmState = signal(false);
+  private readonly operationState = signal<TableOperation | null>(null);
+  private readonly impactState = signal<TableDestructiveImpact | null>(null);
 
   protected readonly connectionId = this.connectionIdState.asReadonly();
   protected readonly ref = this.refState.asReadonly();
@@ -91,6 +101,8 @@ export class TableDesigner {
   protected readonly error = this.errorState.asReadonly();
   protected readonly notice = this.noticeState.asReadonly();
   protected readonly confirm = this.confirmState.asReadonly();
+  protected readonly operation = this.operationState.asReadonly();
+  protected readonly impact = this.impactState.asReadonly();
 
   public constructor() {
     const params = this.route.snapshot.queryParamMap;
@@ -100,6 +112,10 @@ export class TableDesigner {
     this.refState.set(ref);
     this.modeState.set(mode);
     this.tableNameState.set(ref?.name ?? params.get('table') ?? '');
+    const action = params.get('action');
+    if (action === 'rename' || action === 'truncate' || action === 'drop') {
+      this.operationState.set(action);
+    }
     void this.load();
   }
 
@@ -131,6 +147,11 @@ export class TableDesigner {
         }));
         this.originalColumnsState.set(columns);
         this.columnsState.set(columns.map((column) => ({ ...column })));
+        if (this.operation()) {
+          this.impactState.set(
+            await firstValueFrom(this.sdk.tableOperations.impact(connectionId, this.ref()!)),
+          );
+        }
       }
     } catch (error) {
       this.errorState.set(messageFor(error));
@@ -257,6 +278,89 @@ export class TableDesigner {
   protected cancelConfirmation(): void {
     this.confirmState.set(false);
   }
+
+  protected async openOperation(operation: TableOperation): Promise<void> {
+    if (!this.ref() || !this.connectionId()) return;
+    this.errorState.set(null);
+    this.noticeState.set(null);
+    this.operationState.set(operation);
+    if (!this.impact()) {
+      try {
+        this.impactState.set(
+          await firstValueFrom(this.sdk.tableOperations.impact(this.connectionId(), this.ref()!)),
+        );
+      } catch (error) {
+        this.operationState.set(null);
+        this.errorState.set(messageFor(error));
+      }
+    }
+  }
+
+  protected cancelOperation(): void {
+    this.operationState.set(null);
+  }
+
+  protected async completeOperation(input: TableOperationConfirmation): Promise<void> {
+    const operation = this.operation();
+    const ref = this.ref();
+    const impact = this.impact();
+    if (!operation || !ref || !impact) return;
+    this.savingState.set(true);
+    this.errorState.set(null);
+    try {
+      if (operation === 'rename') {
+        const renamed = await firstValueFrom(
+          this.sdk.tableOperations.rename({
+            connectionId: this.connectionId(),
+            ref,
+            newName: input.newName ?? '',
+            confirmName: input.confirmName,
+          }),
+        );
+        this.workspace.updateTableReferences(ref, renamed);
+        this.refState.set({ ...ref, name: renamed.name });
+        this.tableNameState.set(renamed.name);
+        this.noticeState.set('Table renamed. Explorer and open table tabs were updated.');
+        this.operationState.set(null);
+        await this.explorer.refreshRoot();
+      } else if (operation === 'truncate') {
+        await firstValueFrom(
+          this.sdk.tableOperations.truncate({
+            connectionId: this.connectionId(),
+            ref,
+            restartIdentity: input.restartIdentity === true,
+            confirmName: input.confirmName,
+          }),
+        );
+        this.workspace.markTableTabsStale(ref);
+        this.noticeState.set('Table truncated. Open data tabs are marked for reload.');
+        this.operationState.set(null);
+        await this.explorer.refreshRoot();
+      } else {
+        await firstValueFrom(
+          this.sdk.tableOperations.drop({
+            connectionId: this.connectionId(),
+            ref,
+            confirmName: input.confirmName,
+          }),
+        );
+        this.workspace.closeTableTabs(ref);
+        await this.explorer.refreshRoot();
+        await this.router.navigate(['/explorer'], {
+          queryParams: { notice: `Table ${this.qualifiedName(ref)} was dropped.` },
+        });
+      }
+    } catch (error) {
+      this.errorState.set(messageFor(error));
+    } finally {
+      this.savingState.set(false);
+    }
+  }
+
+  protected qualifiedName(ref: TableRef = this.ref()!): string {
+    return ref.schema ? `${ref.schema}.${ref.name}` : `${ref.database}.${ref.name}`;
+  }
+
   protected goBack(): void {
     void this.router.navigate(['/explorer']);
   }

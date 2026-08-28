@@ -12,6 +12,7 @@ import type { SchemaPort } from './schema';
 import type { SecurityPort } from './security';
 import type { TablePort } from './table';
 import type { TableDesignerPort } from './table-designer';
+import type { TableOperationsPort } from './table-operations';
 import type { ViewPort } from './view';
 import type { DatabaseEngine } from '../models';
 
@@ -29,6 +30,7 @@ export interface DatabaseProvider {
   schema?: SchemaPort;
   table?: TablePort;
   tableDesigner?: TableDesignerPort;
+  tableOperations?: TableOperationsPort;
   view?: ViewPort;
   data?: DataPort;
   query?: QueryPort;

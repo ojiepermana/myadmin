@@ -295,13 +295,18 @@ export class AppShell {
     const definition = [DEV_ROUTE, ...V1_ROUTE_DEFINITIONS].find((item) => item.path === path);
     if (!definition) return;
     if (definition.type !== 'query-editor') {
-      const contextual = definition.type === 'view-editor' || definition.type === 'data-browser';
+      const contextual =
+        definition.type === 'view-editor' ||
+        definition.type === 'data-browser' ||
+        definition.type === 'table-designer';
       const tabId = contextual ? this.contextualTabId(parsed, definition.type) : definition.id;
       const route = contextual ? `${parsed.pathname}${parsed.search}` : undefined;
       this.workspace.openTab(
         definition.type === 'data-browser'
           ? this.toDataBrowserTab(definition, parsed)
-          : this.toTab(definition, tabId, route),
+          : definition.type === 'table-designer'
+            ? this.toTableDesignerTab(definition, parsed)
+            : this.toTab(definition, tabId, route),
       );
       return;
     }
@@ -344,9 +349,38 @@ export class AppShell {
     };
   }
 
-  private contextualTabId(url: URL, type: 'view-editor' | 'data-browser'): string {
+  private toTableDesignerTab(definition: AppRouteDefinition, url: URL): TabDescriptor {
+    const connectionId = url.searchParams.get('connection');
     const ref = url.searchParams.get('ref');
-    if (!ref) return type === 'view-editor' ? 'view-editor-create' : 'data-browser';
+    if (!connectionId || !ref) return this.toTab(definition);
+    let title = definition.title;
+    try {
+      const parsed = JSON.parse(ref) as { name?: unknown };
+      if (typeof parsed.name === 'string' && parsed.name.length > 0) title = parsed.name;
+    } catch {
+      // The table designer validates the reference and presents its empty state.
+    }
+    const id = `table-designer-${connectionId}-${ref}`
+      .replace(/[^a-zA-Z0-9_-]/g, '-')
+      .slice(0, 128);
+    return {
+      id,
+      type: definition.type,
+      title,
+      context: {
+        route: `${url.pathname}${url.search}`,
+        connectionId,
+        ref,
+      },
+    };
+  }
+
+  private contextualTabId(
+    url: URL,
+    type: 'view-editor' | 'data-browser' | 'table-designer',
+  ): string {
+    const ref = url.searchParams.get('ref');
+    if (!ref) return type === 'view-editor' ? 'view-editor-create' : type;
     return `${type}-${url.searchParams.get('connection') ?? 'connection'}-${ref}`
       .replace(/[^a-zA-Z0-9_-]/g, '-')
       .slice(0, 120);

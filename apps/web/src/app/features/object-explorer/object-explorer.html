@@ -152,6 +152,14 @@
       {{ error }}
     </p>
   }
+  @if (notice(); as message) {
+    <p
+      class="rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground"
+      role="status"
+    >
+      {{ message }}
+    </p>
+  }
 
   <section
     class="explorer-panel min-h-0 flex-1 rounded-xl border border-border bg-card/70 shadow-sm"

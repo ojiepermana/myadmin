@@ -46,6 +46,9 @@ export interface ExplorerAction {
     | 'export-data'
     | 'create-view'
     | 'design-table'
+    | 'rename-table'
+    | 'truncate-table'
+    | 'drop-table'
     | 'open-definition'
     | 'refresh';
   readonly label: string;
@@ -58,6 +61,7 @@ const DEFAULT_INSTALLED_FEATURES: readonly ExplorerFeatureId[] = [
   'database',
   'data-browser',
   'view-editor',
+  'table-designer',
 ];
 
 function connected(status: ConnectionStatus | null): boolean {
@@ -117,6 +121,11 @@ export class ExplorerActionRegistry {
       add('export-data', 'Export data', 'data-browser', state);
     if (node.kind === 'object' && node.ref?.type === 'table')
       add('design-table', 'Design table', 'table-designer', state);
+    if (node.kind === 'object' && node.ref?.type === 'table') {
+      add('rename-table', 'Rename table', 'table-designer', state);
+      add('truncate-table', 'Truncate table', 'table-designer', state);
+      add('drop-table', 'Drop table', 'table-designer', state);
+    }
     if (node.kind === 'object' && node.ref?.type === 'view') {
       const capability = status?.capability;
       const supported = capability?.capabilities['viewEditor'] === true;

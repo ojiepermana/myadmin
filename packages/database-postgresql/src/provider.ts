@@ -12,6 +12,7 @@ import { PostgresqlViewPort } from './view';
 import { PostgresqlSchemaPort } from './schema';
 import { PostgresqlImportExportAdapter } from './import-export';
 import { PostgresqlTableDesigner } from './table-designer';
+import { PostgresqlTablePort } from './table';
 
 export class PostgresqlProvider implements DatabaseProvider {
   public readonly engine = 'postgresql' as const;
@@ -28,6 +29,7 @@ export class PostgresqlProvider implements DatabaseProvider {
   public readonly schema: PostgresqlSchemaPort;
   public readonly importExport: PostgresqlImportExportAdapter;
   public readonly tableDesigner: PostgresqlTableDesigner;
+  public readonly tableOperations: PostgresqlTablePort;
 
   public constructor(options: PostgresqlConnectionOptions & PostgresqlBackupToolPaths = {}) {
     this.connection = new PostgresqlConnectionAdapter(options);
@@ -47,6 +49,7 @@ export class PostgresqlProvider implements DatabaseProvider {
       this.metadata,
     );
     this.tableDesigner = new PostgresqlTableDesigner(this.connection, this.metadata);
+    this.tableOperations = new PostgresqlTablePort(this.connection, this.metadata);
   }
 }
 

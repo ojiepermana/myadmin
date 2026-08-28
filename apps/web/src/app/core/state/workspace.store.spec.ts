@@ -53,4 +53,47 @@ describe('WorkspaceStore', () => {
     expect(store.sidebarCollapsed()).toBe(true);
     expect(store.bottomCollapsed()).toBe(true);
   });
+
+  it('updates table references in open designer and data tabs after rename', () => {
+    const store = new WorkspaceStore();
+    const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+    store.openTab({
+      id: 'table-designer-accounts',
+      type: 'table-designer',
+      title: 'accounts',
+      context: {
+        route: `/table-designer?connection=c1&ref=${encodeURIComponent(JSON.stringify(ref))}`,
+        ref: JSON.stringify(ref),
+      },
+    });
+    store.openTab({
+      id: 'data-browser-accounts',
+      type: 'data-browser',
+      title: 'accounts',
+      context: {
+        route: `/data-browser?connection=c1&ref=${encodeURIComponent(JSON.stringify(ref))}`,
+      },
+    });
+
+    store.updateTableReferences(ref, { ...ref, name: 'accounts_archive' });
+
+    expect(store.tabs().filter((tab) => tab.title === 'accounts_archive')).toHaveLength(2);
+    expect(store.tabs().every((tab) => tab.context['stale'] !== true)).toBe(true);
+  });
+
+  it('closes all open table tabs after a drop while preserving the workspace tab', () => {
+    const store = new WorkspaceStore();
+    const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+    store.openTab({
+      id: 'data-browser-accounts',
+      type: 'data-browser',
+      title: 'accounts',
+      context: { ref: JSON.stringify(ref), route: '/data-browser' },
+    });
+
+    const next = store.closeTableTabs(ref);
+
+    expect(next?.id).toBe('workspace');
+    expect(store.tabs().map((tab) => tab.id)).toEqual(['workspace']);
+  });
 });

@@ -129,6 +129,14 @@ paths:
     $ref: ./paths/table-ddl-preview.yaml
   /tables/ddl/apply:
     $ref: ./paths/table-ddl-apply.yaml
+  /tables/impact:
+    $ref: ./paths/table-impact.yaml
+  /tables/rename:
+    $ref: ./paths/table-rename.yaml
+  /tables/truncate:
+    $ref: ./paths/table-truncate.yaml
+  /tables/drop:
+    $ref: ./paths/table-drop.yaml
   /connections/{id}/schemas/{schema}/objects:
     $ref: ./paths/explorer-schema-objects.yaml
   /connections/{id}/databases/{db}/schemas:
@@ -521,6 +529,22 @@ components:
       $ref: ./components/schemas/table-designer.yaml#/TableDdlStatementResult
     TableDdlApplyResult:
       $ref: ./components/schemas/table-designer.yaml#/TableDdlApplyResult
+    TableOperationRef:
+      $ref: ./components/schemas/table-operations.yaml#/TableOperationRef
+    TableOperationBaseRequest:
+      $ref: ./components/schemas/table-operations.yaml#/TableOperationBaseRequest
+    TableImpactRequest:
+      $ref: ./components/schemas/table-operations.yaml#/TableImpactRequest
+    TableRenameRequest:
+      $ref: ./components/schemas/table-operations.yaml#/TableRenameRequest
+    TableTruncateRequest:
+      $ref: ./components/schemas/table-operations.yaml#/TableTruncateRequest
+    TableDropRequest:
+      $ref: ./components/schemas/table-operations.yaml#/TableDropRequest
+    TableDependency:
+      $ref: ./components/schemas/table-operations.yaml#/TableDependency
+    TableDestructiveImpact:
+      $ref: ./components/schemas/table-operations.yaml#/TableDestructiveImpact
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

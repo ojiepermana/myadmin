@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import {
   ConnectionsClient,
@@ -39,9 +39,11 @@ export class ObjectExplorer {
   private readonly connections = inject(ConnectionsClient);
   private readonly router = inject(Router);
   private readonly actionRegistry = new ExplorerActionRegistry();
+  private readonly route = inject(ActivatedRoute);
   protected readonly focusedId = signal<string | null>(null);
   protected readonly menuNode = signal<ExplorerNode | null>(null);
   protected readonly actionError = signal<string | null>(null);
+  protected readonly notice = signal<string | null>(null);
   protected readonly activeConnectionId = computed(() => {
     const focusedId = this.focusedId();
     return focusedId ? (this.store.nodeFor(focusedId)?.connectionId ?? null) : null;
@@ -65,6 +67,7 @@ export class ObjectExplorer {
   });
 
   constructor() {
+    this.notice.set(this.route.snapshot.queryParamMap.get('notice'));
     void this.store.load();
   }
 
@@ -228,8 +231,15 @@ export class ObjectExplorer {
           });
           break;
         case 'design-table':
+        case 'rename-table':
+        case 'truncate-table':
+        case 'drop-table':
           await this.router.navigate(['/table-designer'], {
-            queryParams: { connection: node.connectionId, ref: JSON.stringify(node.ref) },
+            queryParams: {
+              connection: node.connectionId,
+              ref: JSON.stringify(node.ref),
+              ...(action.id === 'design-table' ? {} : { action: action.id.replace('-table', '') }),
+            },
           });
           break;
         case 'open-definition':

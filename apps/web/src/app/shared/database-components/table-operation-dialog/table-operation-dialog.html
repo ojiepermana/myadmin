@@ -1,0 +1,115 @@
+<section
+  class="confirm-card table-operation-dialog"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="table-operation-title"
+  aria-describedby="table-operation-description"
+>
+  <p class="eyebrow">Irreversible database action</p>
+  <h2 id="table-operation-title">{{ operationTitle() }}</h2>
+  <p id="table-operation-description">
+    This action targets <strong>{{ qualifiedName() }}</strong> on {{ engine() }}.
+  </p>
+
+  @if (operation() === 'rename') {
+    <label>
+      New table name
+      <input
+        type="text"
+        [value]="newName()"
+        (input)="onNewName($event)"
+        autocomplete="off"
+        spellcheck="false"
+        [disabled]="busy()"
+      />
+    </label>
+    <p class="warning-box">
+      Views, incoming foreign keys, and saved queries that use the old name may be affected. The
+      database engine determines which foreign keys follow this rename.
+    </p>
+  }
+
+  @if (operation() === 'truncate') {
+    <div class="warning-box">
+      <strong>Estimated data loss</strong>
+      <p>
+        About {{ impact().estimatedRows ?? 0 | number }} rows will be removed. This is an estimate
+        from database metadata.
+      </p>
+      @if (impact().restartIdentitySupported) {
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            [checked]="restartIdentity()"
+            (change)="onRestartIdentity($event)"
+            [disabled]="busy()"
+          />
+          Restart identity values
+        </label>
+        <p>CASCADE is unavailable in this GUI and remains disabled.</p>
+      } @else {
+        <p>{{ impact().restartIdentityReason }}</p>
+      }
+    </div>
+  }
+
+  @if (operation() === 'drop') {
+    <div class="warning-box">
+      <strong>Known dependencies</strong>
+      @if (impact().views.length === 0 && impact().incomingForeignKeys.length === 0) {
+        <p>No dependent views or incoming foreign keys were found in metadata.</p>
+      } @else {
+        @if (impact().views.length > 0) {
+          <p>Views that reference this table:</p>
+          <ul>
+            @for (view of impact().views; track view.database + ':' + view.name) {
+              <li>{{ view.schema ? view.schema + '.' : '' }}{{ view.name }}</li>
+            }
+          </ul>
+        }
+        @if (impact().incomingForeignKeys.length > 0) {
+          <p>Tables with incoming foreign keys:</p>
+          <ul>
+            @for (
+              dependency of impact().incomingForeignKeys;
+              track dependency.ref.database +
+                ':' +
+                dependency.ref.name +
+                ':' +
+                (dependency.constraintName ?? '')
+            ) {
+              <li>
+                {{ dependency.ref.schema ? dependency.ref.schema + '.' : ''
+                }}{{ dependency.ref.name }}
+                @if (dependency.constraintName) {
+                  ({{ dependency.constraintName }})
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+      <p>CASCADE is not offered. The provider will reject a drop that violates a foreign key.</p>
+    </div>
+  }
+
+  <label class="confirmation-field">
+    Type <strong>{{ targetName() }}</strong> exactly to confirm
+    <input
+      type="text"
+      [value]="typedName()"
+      (input)="onTypedName($event)"
+      autocomplete="off"
+      spellcheck="false"
+      [disabled]="busy()"
+    />
+  </label>
+  <div class="modal-actions">
+    <button type="button" class="button secondary" (click)="cancelled.emit()" [disabled]="busy()">
+      Cancel
+    </button>
+    <button type="button" class="button danger" (click)="confirm()" [disabled]="!canConfirm()">
+      {{ busy() ? 'Working…' : operationTitle() }}
+    </button>
+  </div>
+</section>

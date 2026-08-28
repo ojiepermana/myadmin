@@ -7,7 +7,18 @@
         Model columns with provider validation, then review the exact DDL before it runs.
       </p>
     </div>
-    <button type="button" class="button secondary" (click)="goBack()">Back to explorer</button>
+    <div class="designer-actions">
+      @if (mode() === 'alter' && ref()) {
+        <button type="button" class="button secondary" (click)="openOperation('rename')">
+          Rename
+        </button>
+        <button type="button" class="button secondary" (click)="openOperation('truncate')">
+          Truncate
+        </button>
+        <button type="button" class="button danger" (click)="openOperation('drop')">Drop</button>
+      }
+      <button type="button" class="button secondary" (click)="goBack()">Back to explorer</button>
+    </div>
   </header>
 
   @if (loading()) {
@@ -232,4 +243,21 @@
       </div>
     </section>
   </div>
+}
+
+@if (operation(); as currentOperation) {
+  @if (impact(); as currentImpact) {
+    <div class="modal-backdrop">
+      <app-table-operation-dialog
+        [operation]="currentOperation"
+        [targetName]="ref()?.name ?? tableName()"
+        [qualifiedName]="qualifiedName()"
+        [engine]="types()?.engine ?? 'database'"
+        [impact]="currentImpact"
+        [busy]="saving()"
+        (confirmed)="completeOperation($event)"
+        (cancelled)="cancelOperation()"
+      />
+    </div>
+  }
 }

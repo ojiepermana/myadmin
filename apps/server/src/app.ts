@@ -84,6 +84,8 @@ import { registerExportRoutes } from './export/routes';
 import { TableDesignerService } from './table-designer/table-designer';
 import { registerTableDesignerRoutes } from './table-designer/routes';
 import { registerImportRoutes } from './import/routes';
+import { TableOperationsService } from './table-operations/table-operations';
+import { registerTableOperationsRoutes } from './table-operations/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -121,6 +123,7 @@ export interface ServerStartOptions {
   databaseManagementService?: DatabaseManagementService;
   schemaManagementService?: SchemaManagementService;
   tableDesignerService?: TableDesignerService;
+  tableOperationsService?: TableOperationsService;
   observability?: ObservabilityOptions;
 }
 
@@ -159,6 +162,7 @@ export interface ServerAppOptions {
   databaseManagementService?: DatabaseManagementService;
   schemaManagementService?: SchemaManagementService;
   tableDesignerService?: TableDesignerService;
+  tableOperationsService?: TableOperationsService;
   observability?: ObservabilityOptions;
 }
 
@@ -1455,6 +1459,11 @@ export function createServerApp(options: ServerAppOptions = {}) {
     (runtimeStore && connectionManager
       ? new TableDesignerService({ store: runtimeStore, connectionManager })
       : undefined);
+  const tableOperationsService =
+    options.tableOperationsService ??
+    (runtimeStore && connectionManager
+      ? new TableOperationsService({ store: runtimeStore, connectionManager })
+      : undefined);
 
   let application: AnyElysia = installObservability(
     new Elysia({
@@ -1621,6 +1630,14 @@ export function createServerApp(options: ServerAppOptions = {}) {
         secureCookies,
       });
     }
+    if (tableOperationsService) {
+      application = registerTableOperationsRoutes(application, '/api/v1', {
+        authService,
+        setupService,
+        service: tableOperationsService,
+        secureCookies,
+      });
+    }
   }
   if (queryExecutionService && authService) {
     application = registerQueryRoutes(application, '/api/v1', {
@@ -1746,6 +1763,10 @@ export function createApp(
     connectionManager,
   });
   const tableDesignerService = new TableDesignerService({
+    store,
+    connectionManager,
+  });
+  const tableOperationsService = new TableOperationsService({
     store,
     connectionManager,
   });
@@ -1875,6 +1896,12 @@ export function createApp(
     authService,
     setupService,
     service: tableDesignerService,
+    secureCookies: false,
+  });
+  application = registerTableOperationsRoutes(application, '', {
+    authService,
+    setupService,
+    service: tableOperationsService,
     secureCookies: false,
   });
   const backupService =

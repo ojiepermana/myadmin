@@ -1,0 +1,53 @@
+post:
+  operationId: renameTable
+  tags: [tables]
+  summary: Rename a table after exact old name confirmation
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/table-operations.yaml#/TableRenameRequest
+  responses:
+    '200':
+      description: Table renamed and audit recorded.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/table-operations.yaml#/TableOperationRef
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The request failed CSRF or ownership checks.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Confirmation was wrong or the rename conflicted.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The table reference or identifier is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '501':
+      description: Table operations are not supported by this provider.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

@@ -1,7 +1,7 @@
 # 0043. Operasi destructive table
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-TBL-03: drop, rename, truncate memerlukan confirmation eksplisit yang menampi
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin menghapus, mengosongkan, atau mengganti nama table dengan pengaman yang membuat saya sadar persis apa yang akan terjadi.
 
 **Acceptance criteria**:
@@ -35,17 +36,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Alur khusus per operasi dengan informasi dampak (dipilih)
 
 **Pros**:
+
 - Tiap dialog memuat informasi dampak spesifik (baris, dependensi) sehingga konfirmasi bermakna, bukan ritual.
 
 **Cons**:
+
 - Query dampak tambahan sebelum dialog; murah (metadata) dan sepadan.
 
 ### Option 2: Konfirmasi generik satu komponen tanpa dampak
 
 **Pros**:
+
 - Paling cepat dibangun.
 
 **Cons**:
+
 - FR-TBL-03 menuntut dampak ditampilkan; konfirmasi tanpa informasi melatih klik otomatis.
 
 ## Decision
@@ -61,21 +66,24 @@ Nilai keselamatan datang dari informasi pada momen keputusan: jumlah baris yang 
 **Data model sketch**: tidak ada tabel internal.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /tables/rename | POST | connectionId, ref, newName, confirmName | ref baru | pemilik, tersambung | 409 confirm, 409 nama dipakai, DbError |
-| /tables/truncate | POST | connectionId, ref, restartIdentity?, confirmName | kosong | pemilik | 409 confirm, DbError |
-| /tables/drop | POST | connectionId, ref, confirmName | kosong | pemilik | 409 confirm, DbError (FK) |
+
+| Endpoint         | Method | Key inputs                                       | Key outputs | Auth                | Key errors                             |
+| ---------------- | ------ | ------------------------------------------------ | ----------- | ------------------- | -------------------------------------- |
+| /tables/rename   | POST   | connectionId, ref, newName, confirmName          | ref baru    | pemilik, tersambung | 409 confirm, 409 nama dipakai, DbError |
+| /tables/truncate | POST   | connectionId, ref, restartIdentity?, confirmName | kosong      | pemilik             | 409 confirm, DbError                   |
+| /tables/drop     | DELETE | connectionId, ref, confirmName                   | kosong      | pemilik             | 409 confirm, DbError (FK)              |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| dampak truncate | perkiraan baris | describeTable (reltuples / information_schema) |
-| dampak drop | view dan FK perujuk | metadata dependensi provider |
-| opsi restart identity | ketersediaan | capability/engine lewat provider (data driven) |
-| konfirmasi | confirmName | input pengguna, diverifikasi server |
+
+| Action                | Value produced / displayed | Source                                         |
+| --------------------- | -------------------------- | ---------------------------------------------- |
+| dampak truncate       | perkiraan baris            | describeTable (reltuples / information_schema) |
+| dampak drop           | view dan FK perujuk        | metadata dependensi provider                   |
+| opsi restart identity | ketersediaan               | capability/engine lewat provider (data driven) |
+| konfirmasi            | confirmName                | input pengguna, diverifikasi server            |
 
 **Key invariants**:
+
 - Tidak ada operasi tanpa confirmName cocok di server; audit sebelum sukses; tanpa cascade di GUI.
 - Tab dan node yang menunjuk object yang hilang atau berganti nama tidak dibiarkan diam diam basi (ditandai atau ditutup dengan pemberitahuan).
 
@@ -89,21 +97,24 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Implementasikan rename, truncate (dengan opsi), drop di provider `table/` kedua engine plus query dampak dependensi, test integrasi, memenuhi **AC-1**, **AC-2**, **AC-3**.
-2. Tambah tiga operasi ke kontrak dengan confirmName, regenerasi, contract test, memenuhi **AC-4**.
-3. Endpoint server dengan verifikasi confirm dan audit `withAudit`, memenuhi **AC-4**.
-4. UI: tiga dialog di atas komponen konfirmasi baku dengan bagian dampak, registrasi menu, penanganan tab basi, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-5**.
+1. [x] Implementasikan rename, truncate (dengan opsi), drop di provider `table/` kedua engine plus query dampak dependensi, test integrasi, memenuhi **AC-1**, **AC-2**, **AC-3**.
+2. [x] Tambah tiga operasi ke kontrak dengan confirmName, regenerasi, contract test, memenuhi **AC-4**.
+3. [x] Endpoint server dengan verifikasi confirm dan audit `withAudit`, memenuhi **AC-4**.
+4. [x] UI: tiga dialog di atas komponen konfirmasi baku dengan bagian dampak, registrasi menu, penanganan tab basi, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-5**.
 5. E2e dua engine, memenuhi **AC-6**.
 
 ## Consequences
 
 **Positive**:
+
 - Tiga operasi paling sering menyebabkan insiden kini berpagar informasi dan audit; FR-TBL-03 selesai.
 
 **Negative / tradeoffs**:
+
 - Query dampak menambah sedikit latensi sebelum dialog; sepadan.
 
 **Neutral**:
+
 - Duplicate/copy table adalah V2 (feature.md).
 
 ## Follow-up
@@ -113,9 +124,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-TBL-03, FR-SAFE-01, FR-SAFE-02; feature.md; spec 0039 (pola), 0041.
 
 **Practices & standards**:
+
 - Konfirmasi berinformasi dampak; verifikasi server; tanpa cascade di GUI.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

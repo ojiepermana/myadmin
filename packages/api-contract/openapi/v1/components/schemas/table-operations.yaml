@@ -1,0 +1,118 @@
+TableOperationRef:
+  type: object
+  additionalProperties: false
+  required: [database, schema, name, type]
+  properties:
+    database:
+      type: string
+      minLength: 1
+    schema:
+      type: [string, 'null']
+    name:
+      type: string
+      minLength: 1
+    type:
+      const: table
+
+TableOperationBaseRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/TableOperationRef'
+
+TableImpactRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/TableOperationRef'
+
+TableRenameRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref, newName, confirmName]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/TableOperationRef'
+    newName:
+      type: string
+      minLength: 1
+    confirmName:
+      type: string
+      minLength: 1
+
+TableTruncateRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref, confirmName]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/TableOperationRef'
+    restartIdentity:
+      type: boolean
+      default: false
+    confirmName:
+      type: string
+      minLength: 1
+
+TableDropRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref, confirmName]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/TableOperationRef'
+    confirmName:
+      type: string
+      minLength: 1
+
+TableDependency:
+  type: object
+  additionalProperties: false
+  required: [ref]
+  properties:
+    ref:
+      $ref: '#/TableOperationRef'
+    constraintName:
+      type: string
+
+TableDestructiveImpact:
+  type: object
+  additionalProperties: false
+  required: [ref, restartIdentitySupported, views, incomingForeignKeys]
+  properties:
+    ref:
+      $ref: '#/TableOperationRef'
+    estimatedRows:
+      type: number
+      minimum: 0
+    restartIdentitySupported:
+      type: boolean
+    restartIdentityReason:
+      type: string
+    views:
+      type: array
+      items:
+        $ref: ./explorer.yaml#/ExplorerObjectRef
+    incomingForeignKeys:
+      type: array
+      items:
+        $ref: '#/TableDependency'

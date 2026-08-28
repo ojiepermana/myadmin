@@ -7,6 +7,7 @@
   color: hsl(var(--foreground));
 }
 .designer-header,
+.designer-actions,
 .section-heading,
 .context-card,
 .column-card-header,
@@ -19,6 +20,10 @@
 .designer-header {
   border-bottom: 1px solid hsl(var(--border));
   padding-bottom: 1.5rem;
+}
+.designer-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 h1,
 h2,
@@ -276,6 +281,16 @@ pre {
   padding: 1.5rem;
   box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.25);
 }
+.table-operation-dialog {
+  max-height: min(90vh, 48rem);
+  overflow: auto;
+}
+.table-operation-dialog .warning-box {
+  color: hsl(var(--foreground));
+}
+.confirmation-field {
+  margin-top: 1rem;
+}
 .confirm-card h2 {
   margin: 0.5rem 0;
   font-size: 1.2rem;
@@ -305,6 +320,7 @@ pre {
 }
 @media (max-width: 560px) {
   .designer-header,
+  .designer-actions,
   .context-card {
     align-items: flex-start;
     flex-direction: column;

@@ -601,9 +601,10 @@ Rename, truncate, drop dengan dialog berinformasi dampak. Done when: ketiganya b
 
 - [x] Design it (spec): [0043](../specs/0043-table-destructive-operations/index.md)
 - [ ] Build it: /develop table-destructive-operations
-  - [ ] Operasi provider plus query dampak dependensi (AC-1, AC-2, AC-3)
-  - [ ] Endpoint dengan confirmName plus audit (AC-4)
+  - [x] Operasi provider plus query dampak dependensi (AC-1, AC-2, AC-3)
+  - [x] Endpoint dengan confirmName plus audit (AC-4)
   - [ ] Tiga dialog berinformasi plus penanganan tab basi plus e2e (AC-1, AC-5, AC-6)
+  - code in `packages/database-postgresql/src/table.ts`, `packages/database-mysql/src/table.ts`, `apps/server/src/table-operations/`, and `apps/web/src/app/shared/database-components/table-operation-dialog/`
 - [ ] [Verify it](../specs/0043-table-destructive-operations/verify.md): /check verify table-destructive-operations
 - [ ] [Test it](../specs/0043-table-destructive-operations/test.md): /test table-destructive-operations
 
