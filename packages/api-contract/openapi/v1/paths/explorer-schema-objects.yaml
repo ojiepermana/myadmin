@@ -1,0 +1,69 @@
+get:
+  operationId: listExplorerSchemaObjects
+  tags: [object-explorer]
+  summary: List object folders or objects below a schema
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+    - name: schema
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: database
+      in: query
+      required: false
+      description: Database containing the schema. Defaults to the saved connection database.
+      schema:
+        type: string
+    - $ref: ../components/parameters/explorer-page.yaml
+    - $ref: ../components/parameters/explorer-page-size.yaml
+    - $ref: ../components/parameters/explorer-refresh.yaml
+    - name: type
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [table, view, routine, sequence, trigger]
+  responses:
+    '200':
+      description: Provider object folders or one page of objects.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/explorer.yaml#/ExplorerChildPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The connection belongs to another user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The connection does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The query is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider metadata operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

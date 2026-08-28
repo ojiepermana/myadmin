@@ -491,4 +491,50 @@ describe('MyAdmin Angular SDK', () => {
     await expect(logout).resolves.toBeUndefined();
     expect(FakeRealtimeSocket.instances[0]?.readyState).toBe(3);
   });
+
+  it('AC-0031-AC1 serializes provider-neutral explorer pages and object references', async () => {
+    const sdk = TestBed.inject(MyadminSdk);
+    const databases = firstValueFrom(
+      sdk.explorer.listDatabases('connection/1', { cursor: '20', pageSize: 50, refresh: true }),
+    );
+    const databaseRequest = http.expectOne(
+      '/api/v1/connections/connection%2F1/databases?page=20&pageSize=50&refresh=true',
+    );
+    expect(databaseRequest.request.method).toBe('GET');
+    databaseRequest.flush({ items: [{ name: 'app' }], cursor: null });
+    await expect(databases).resolves.toEqual({ items: [{ name: 'app' }], cursor: null });
+
+    const objects = firstValueFrom(
+      sdk.explorer.listSchemaObjects('connection-1', 'public', {
+        database: 'app',
+        objectType: 'table',
+        cursor: '100',
+      }),
+    );
+    const objectRequest = http.expectOne(
+      '/api/v1/connections/connection-1/schemas/public/objects?database=app&page=100&type=table',
+    );
+    objectRequest.flush({ items: [], cursor: null });
+    await expect(objects).resolves.toMatchObject({ items: [], cursor: null });
+
+    const description = firstValueFrom(
+      sdk.explorer.describeObject('connection-1', {
+        database: 'app',
+        schema: 'public',
+        name: 'users',
+        type: 'table',
+      }),
+    );
+    const describeRequest = http.expectOne(
+      (request) =>
+        request.url === '/api/v1/connections/connection-1/objects/describe' &&
+        request.params.get('ref') ===
+          JSON.stringify({ database: 'app', schema: 'public', name: 'users', type: 'table' }),
+    );
+    describeRequest.flush({
+      ref: { database: 'app', schema: 'public', name: 'users', type: 'table' },
+      columns: [],
+    });
+    await expect(description).resolves.toMatchObject({ columns: [] });
+  });
 });

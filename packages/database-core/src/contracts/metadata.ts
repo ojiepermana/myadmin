@@ -4,10 +4,13 @@ import type {
   ConstraintDefinition,
   DatabaseDefinition,
   IndexDefinition,
+  MetadataObjectPageRequest,
+  MetadataObjectType,
   ObjectRef,
   Page,
   PageRequest,
   SchemaDefinition,
+  TableDescription,
 } from '../models';
 import type { ConnectionHandle } from './connection';
 
@@ -15,6 +18,8 @@ export type ProviderContext = ConnectionContext | ConnectionHandle;
 
 /** Lazy, paginated catalog access, one explorer node per method call. */
 export interface MetadataPort {
+  /** Object folders the provider can expose below a database or schema. */
+  readonly objectTypes?: readonly MetadataObjectType[];
   listDatabases(context: ProviderContext, page?: PageRequest): Promise<Page<DatabaseDefinition>>;
   listSchemas(
     context: ProviderContext,
@@ -24,7 +29,7 @@ export interface MetadataPort {
   listObjects(
     context: ProviderContext,
     parent: ObjectRef,
-    page?: PageRequest,
+    page?: MetadataObjectPageRequest,
   ): Promise<Page<ObjectRef>>;
   listColumns(
     context: ProviderContext,
@@ -41,4 +46,6 @@ export interface MetadataPort {
     parent: ObjectRef,
     page?: PageRequest,
   ): Promise<Page<ConstraintDefinition>>;
+  describeTable?(context: ProviderContext, ref: ObjectRef): Promise<TableDescription>;
+  invalidateCache?(context?: ProviderContext): void;
 }

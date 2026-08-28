@@ -68,6 +68,7 @@ import { registerConnectionRoutes } from './connections/routes';
 import { registerBackupRoutes } from './backup/routes';
 import { QueryExecutionService } from './query/query-execution';
 import { registerQueryRoutes } from './query/routes';
+import { registerObjectExplorerRoutes } from './object-explorer/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -1467,6 +1468,12 @@ export function createServerApp(options: ServerAppOptions = {}) {
       connectionManager,
       secureCookies,
     });
+    application = registerObjectExplorerRoutes(application, '/api/v1', {
+      authService,
+      setupService,
+      connectionManager,
+      secureCookies,
+    });
   }
   if (queryExecutionService && authService) {
     application = registerQueryRoutes(application, '/api/v1', {
@@ -1525,6 +1532,7 @@ export function createApp(
     observability?: ObservabilityOptions;
     jobManager?: JobManager;
     backupService?: BackupService;
+    providerRegistry?: ProviderRegistry;
   } = {},
 ) {
   const database = new Database(':memory:', { create: true, readwrite: true, strict: true });
@@ -1537,7 +1545,7 @@ export function createApp(
   const credentialVault = new CredentialVault({
     keyProvider: { load: async () => ({ key: contractKey, keyId: 'contract-key' }) },
   });
-  const providers = providerRegistryForServer();
+  const providers = options.providerRegistry ?? providerRegistryForServer();
   const connectionManager = new ConnectionManagerService({
     store,
     providers,
@@ -1599,6 +1607,12 @@ export function createApp(
     authService,
     setupService,
     queryService: queryExecutionService,
+    secureCookies: false,
+  });
+  application = registerObjectExplorerRoutes(application, '', {
+    authService,
+    setupService,
+    connectionManager,
     secureCookies: false,
   });
   const backupService =

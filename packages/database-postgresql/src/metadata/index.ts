@@ -6,6 +6,7 @@ import type {
   DatabaseObjectType,
   DatabaseDefinition,
   IndexDefinition,
+  MetadataObjectType,
   MetadataPort,
   ObjectRef,
   Page,
@@ -70,7 +71,12 @@ interface PageWindow {
 
 type CatalogRow = Record<string, unknown>;
 
-const ALL_OBJECT_TYPES = ['table', 'view', 'sequence', 'routine'] as const;
+const ALL_OBJECT_TYPES = [
+  'table',
+  'view',
+  'sequence',
+  'routine',
+] as const satisfies readonly MetadataObjectType[];
 type SupportedObjectType = (typeof ALL_OBJECT_TYPES)[number];
 
 function normalizePage(page: PageRequest | undefined, defaultPageSize: number): PageWindow {
@@ -375,6 +381,7 @@ function mapConstraint(row: CatalogRow, database: string): PostgresqlConstraintD
 }
 
 export class PostgresqlMetadataAdapter implements MetadataPort {
+  public readonly objectTypes = ALL_OBJECT_TYPES;
   private readonly defaultPageSize: number;
   private readonly cacheTtlMs: number;
   private readonly now: () => number;

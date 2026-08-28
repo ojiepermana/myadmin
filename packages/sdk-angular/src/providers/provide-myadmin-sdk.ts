@@ -3,6 +3,7 @@ import { AuthClient } from '../facades/auth-client';
 import { AuditClient } from '../facades/audit-client';
 import { BackupClient } from '../facades/backup-client';
 import { ConnectionsClient } from '../facades/connections-client';
+import { ExplorerClient } from '../facades/explorer-client';
 import { HealthClient } from '../facades/health-client';
 import { JobsClient } from '../facades/jobs-client';
 import { MYADMIN_REALTIME_CLIENT, RealtimeClientService } from '../realtime/realtime-client';
@@ -36,6 +37,7 @@ export function provideMyadminSdk(
     UserClient,
     ConnectionsClient,
     QueryClient,
+    ExplorerClient,
     MyadminSdk,
   ];
 }
@@ -50,6 +52,7 @@ export class MyadminSdk {
   public readonly audit = inject(AuditClient);
   public readonly backup = inject(BackupClient);
   public readonly connections = inject(ConnectionsClient);
+  public readonly explorer = inject(ExplorerClient);
   public readonly health = inject(HealthClient);
   public readonly jobs = inject(JobsClient);
   public readonly setup = inject(SetupClient);

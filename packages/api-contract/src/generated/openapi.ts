@@ -244,6 +244,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/connections/{id}/databases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List databases for a connected saved connection */
+        get: operations["listExplorerDatabases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connections/{id}/databases/{db}/children": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the next explorer layer below a database */
+        get: operations["listExplorerDatabaseChildren"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/connections/{id}/disconnect": {
         parameters: {
             query?: never;
@@ -278,6 +312,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/connections/{id}/objects/describe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Describe a table object for explorer details */
+        get: operations["describeExplorerObject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/connections/{id}/reconnect": {
         parameters: {
             query?: never;
@@ -289,6 +340,23 @@ export interface paths {
         put?: never;
         /** Reopen a provider session */
         post: operations["reconnectConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connections/{id}/schemas/{schema}/objects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List object folders or objects below a schema */
+        get: operations["listExplorerSchemaObjects"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -946,6 +1014,73 @@ export interface components {
             role: "admin" | "user";
             username: string;
         };
+        ExplorerChildPage: {
+            cursor: string | null;
+            items: (components["schemas"]["ExplorerSchemaChild"] | components["schemas"]["ExplorerObjectGroupChild"] | components["schemas"]["ExplorerObjectChild"])[];
+        };
+        ExplorerColumn: {
+            comment?: string;
+            dataType: string;
+            defaultExpression?: string;
+            generatedExpression?: string;
+            isGenerated?: boolean;
+            isIdentity?: boolean;
+            name: string;
+            nullable: boolean;
+            position?: number;
+        };
+        ExplorerDatabase: {
+            charset?: string;
+            collation?: string;
+            encoding?: string;
+            name: string;
+            owner?: string;
+            sizeBytes?: number;
+        };
+        ExplorerDatabasePage: {
+            cursor: string | null;
+            items: components["schemas"]["ExplorerDatabase"][];
+        };
+        ExplorerObjectChild: {
+            hasChildren: boolean;
+            /** @constant */
+            kind: "object";
+            ref: components["schemas"]["ExplorerObjectRef"];
+        };
+        ExplorerObjectDescription: {
+            columns: components["schemas"]["ExplorerColumn"][];
+            comment?: string;
+            estimatedRows?: number;
+            ref: components["schemas"]["ExplorerObjectRef"];
+        };
+        ExplorerObjectGroupChild: {
+            database: string;
+            /** @constant */
+            hasChildren: true;
+            /** @constant */
+            kind: "object-group";
+            name: string;
+            /** @enum {string} */
+            objectType: "table" | "view" | "routine" | "sequence" | "trigger";
+            schema: string | null;
+        };
+        ExplorerObjectRef: {
+            database: string;
+            name: string;
+            schema: string | null;
+            /** @enum {string} */
+            type: "database" | "schema" | "table" | "view" | "routine" | "sequence" | "trigger" | "other";
+        };
+        ExplorerSchemaChild: {
+            database: string;
+            /** @constant */
+            hasChildren: true;
+            isSystem: boolean;
+            /** @constant */
+            kind: "schema";
+            name: string;
+            schema: string;
+        };
         health: {
             /** @enum {string} */
             status: "ok" | "degraded";
@@ -1238,6 +1373,11 @@ export interface components {
     };
     responses: never;
     parameters: {
+        "connection-id": string;
+        /** @description Opaque provider cursor. Omit to request the first page. */
+        "explorer-page": string;
+        "explorer-page-size": number;
+        "explorer-refresh": boolean;
         /** @description One based page number. */
         page: number;
         Page: string;
@@ -2183,6 +2323,171 @@ export interface operations {
             };
         };
     };
+    listExplorerDatabases: {
+        parameters: {
+            query?: {
+                /** @description Opaque provider cursor. Omit to request the first page. */
+                page?: components["parameters"]["explorer-page"];
+                pageSize?: components["parameters"]["explorer-page-size"];
+                refresh?: components["parameters"]["explorer-refresh"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["connection-id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of provider metadata databases. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExplorerDatabasePage"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection belongs to another user. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Pagination values are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider metadata operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    listExplorerDatabaseChildren: {
+        parameters: {
+            query?: {
+                /** @description Opaque provider cursor. Omit to request the first page. */
+                page?: components["parameters"]["explorer-page"];
+                pageSize?: components["parameters"]["explorer-page-size"];
+                refresh?: components["parameters"]["explorer-refresh"];
+                schema?: string;
+                type?: "table" | "view" | "routine" | "sequence" | "trigger";
+            };
+            header?: never;
+            path: {
+                db: string;
+                id: components["parameters"]["connection-id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Schemas for schema-capable providers, or provider object folders. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExplorerChildPage"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection belongs to another user. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Pagination values are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider metadata operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
     disconnectConnection: {
         parameters: {
             query?: never;
@@ -2303,6 +2608,86 @@ export interface operations {
             };
         };
     };
+    describeExplorerObject: {
+        parameters: {
+            query: {
+                /** @description JSON encoded provider-neutral object reference. */
+                ref: string;
+                refresh?: components["parameters"]["explorer-refresh"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["connection-id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Table columns and lightweight details. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExplorerObjectDescription"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection belongs to another user. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection or object does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The object reference is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider metadata operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
     reconnectConnection: {
         parameters: {
             query?: never;
@@ -2364,6 +2749,91 @@ export interface operations {
                 };
             };
             /** @description The provider returned a normalized connection error. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    listExplorerSchemaObjects: {
+        parameters: {
+            query?: {
+                /** @description Database containing the schema. Defaults to the saved connection database. */
+                database?: string;
+                /** @description Opaque provider cursor. Omit to request the first page. */
+                page?: components["parameters"]["explorer-page"];
+                pageSize?: components["parameters"]["explorer-page-size"];
+                refresh?: components["parameters"]["explorer-refresh"];
+                type?: "table" | "view" | "routine" | "sequence" | "trigger";
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["connection-id"];
+                schema: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider object folders or one page of objects. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExplorerChildPage"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection belongs to another user. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The query is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider metadata operation failed. */
             502: {
                 headers: {
                     [name: string]: unknown;

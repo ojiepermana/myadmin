@@ -53,6 +53,10 @@ const initialPaths = {
   '/query/executions/{id}': 'paths/query-execution-by-id.yaml',
   '/query/metadata': 'paths/query-metadata.yaml',
   '/query/sessions/{id}/close': 'paths/query-session-close.yaml',
+  '/connections/{id}/databases': 'paths/explorer-databases.yaml',
+  '/connections/{id}/databases/{db}/children': 'paths/explorer-database-children.yaml',
+  '/connections/{id}/schemas/{schema}/objects': 'paths/explorer-schema-objects.yaml',
+  '/connections/{id}/objects/describe': 'paths/explorer-describe.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);

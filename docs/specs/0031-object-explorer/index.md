@@ -1,7 +1,7 @@
 # 0031. Object explorer
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-EXP-01 (lazy per node), FR-EXP-02 (hierarki provider dan common object), FR-P
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin menelusuri server besar dengan cepat dan membuka aksi yang relevan dari klik kanan.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Endpoint metadata generik berbentuk node (dipilih)
 
 **Pros**:
+
 - UI satu untuk semua engine; bentuk node dari model umum; pagination bawaan.
 
 **Cons**:
+
 - Endpoint agak abstrak; ditutup dokumentasi kontrak yang jelas.
 
 ### Option 2: Endpoint per jenis object per engine
 
 **Pros**:
+
 - Response paling spesifik.
 
 **Cons**:
+
 - Meledakkan permukaan API dan menggoda UI bercabang engine; bertentangan dengan FR-PROV-04.
 
 ## Decision
@@ -67,14 +72,16 @@ Explorer adalah tempat godaan terbesar menulis "if postgresql"; desain node driv
 **API surface**: seperti AC-1; semua GET, auth pemilik koneksi, error `NOT_CONNECTED`, `DbError` diteruskan berkategori.
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| anak node koneksi | daftar database | MetadataPort.listDatabases |
-| bentuk hierarki | ada tidaknya lapisan schema | `capabilities.schemas` koneksi itu |
-| aksi context menu | daftar aksi aktif | capability koneksi plus registry aksi fitur yang terpasang |
-| indikator status | status koneksi | store status (spec 0027, push 0029) |
+
+| Action            | Value produced / displayed  | Source                                                     |
+| ----------------- | --------------------------- | ---------------------------------------------------------- |
+| anak node koneksi | daftar database             | MetadataPort.listDatabases                                 |
+| bentuk hierarki   | ada tidaknya lapisan schema | `capabilities.schemas` koneksi itu                         |
+| aksi context menu | daftar aksi aktif           | capability koneksi plus registry aksi fitur yang terpasang |
+| indikator status  | status koneksi              | store status (spec 0027, push 0029)                        |
 
 **Key invariants**:
+
 - Tidak ada pemuatan rekursif; setiap request metadata dipicu interaksi.
 - UI tidak memuat string nama engine untuk logika (hanya untuk tampilan label engine).
 - Node yang gagal dimuat bisa dicoba ulang tanpa mereset pohon.
@@ -98,12 +105,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Pintu masuk semua fitur database berdiri; fitur berikutnya tinggal mendaftarkan aksi context menu.
 
 **Negative / tradeoffs**:
+
 - Registry aksi menambah tipuan kecil; imbalannya menu yang tumbuh tanpa mengedit explorer.
 
 **Neutral**:
+
 - Object search dipisah ke spec 0032 agar pohon ini fokus.
 
 ## Follow-up
@@ -113,9 +123,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-EXP-01, FR-EXP-02, FR-PROV-04, FR-PROV-05, NFR-01; spec 0023, 0025, 0027.
 
 **Practices & standards**:
+
 - UI data driven dari capability; virtualisasi untuk pohon besar; kegagalan terlokalisasi per node.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

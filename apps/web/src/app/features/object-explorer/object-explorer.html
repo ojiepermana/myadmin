@@ -1,0 +1,160 @@
+<main
+  class="explorer-page mx-auto flex h-full w-full max-w-[96rem] flex-col gap-6 px-5 py-7 sm:px-8"
+  aria-labelledby="explorer-title"
+>
+  <header class="flex flex-wrap items-end justify-between gap-4 border-b border-border/70 pb-5">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+        Database workspace
+      </p>
+      <h1 id="explorer-title" class="mt-2 text-3xl font-semibold tracking-tight">
+        Object explorer
+      </h1>
+      <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+        Expand one connection node at a time. Metadata is loaded on demand and stays scoped to the
+        connected session.
+      </p>
+    </div>
+    <button
+      type="button"
+      class="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted/50"
+      (click)="store.refreshRoot()"
+    >
+      Refresh connections
+    </button>
+  </header>
+
+  @if (store.error(); as error) {
+    <div
+      class="flex items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      role="alert"
+    >
+      <span>{{ error }}</span>
+      <button
+        type="button"
+        class="rounded-md border border-destructive/30 px-3 py-1.5"
+        (click)="store.refreshRoot()"
+      >
+        Try again
+      </button>
+    </div>
+  }
+  @if (actionError(); as error) {
+    <p
+      class="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      role="alert"
+    >
+      {{ error }}
+    </p>
+  }
+
+  <section
+    class="explorer-panel min-h-0 flex-1 rounded-xl border border-border bg-card/70 shadow-sm"
+    aria-label="Database objects"
+  >
+    @if (store.loading() && store.visibleNodes().length === 0) {
+      <p class="p-6 text-sm text-muted-foreground" role="status">Loading connections…</p>
+    } @else if (!store.loading() && store.visibleNodes().length === 0 && !store.error()) {
+      <p class="p-6 text-sm text-muted-foreground">No saved connections yet.</p>
+    } @else {
+      <cdk-virtual-scroll-viewport
+        class="explorer-viewport"
+        itemSize="44"
+        role="tree"
+        aria-label="Database object tree"
+      >
+        <div
+          *cdkVirtualFor="let node of store.visibleNodes(); let index = index; trackBy: trackNode"
+          class="explorer-row"
+          [class.explorer-row-error]="node.error"
+          [class.explorer-row-selected]="focusedId() === node.id"
+          [id]="domId(node.id)"
+          role="treeitem"
+          [attr.aria-level]="node.depth + 1"
+          [attr.aria-expanded]="node.hasChildren ? node.expanded : null"
+          [attr.aria-label]="displayName(node)"
+          [attr.tabindex]="focusedId() === node.id || (!focusedId() && index === 0) ? 0 : -1"
+          appContextMenu
+          [ContextMenuTrigger]="nodeMenu"
+          (focus)="select(node)"
+          (click)="select(node)"
+          (contextmenu)="select(node)"
+          (keydown)="onKeydown($event, node)"
+        >
+          <button
+            type="button"
+            class="explorer-chevron"
+            [disabled]="!node.hasChildren"
+            [attr.aria-label]="
+              node.expanded ? 'Collapse ' + displayName(node) : 'Expand ' + displayName(node)
+            "
+            (click)="$event.stopPropagation(); toggle(node)"
+          >
+            <span aria-hidden="true" [class.rotate-90]="node.expanded">›</span>
+          </button>
+          <span
+            class="explorer-indent"
+            [style.width.rem]="node.depth * 1.1"
+            aria-hidden="true"
+          ></span>
+          <span class="explorer-icon" [attr.data-kind]="iconFor(node)" aria-hidden="true">{{
+            iconFor(node).slice(0, 1).toUpperCase()
+          }}</span>
+          <span class="min-w-0 flex-1 truncate">
+            <span class="block truncate text-sm font-medium">{{ displayName(node) }}</span>
+            @if (node.detail) {
+              <span class="block truncate text-xs text-muted-foreground">{{ node.detail }}</span>
+            }
+            @if (node.error) {
+              <span class="block truncate text-xs text-destructive">{{ node.error }}</span>
+            }
+          </span>
+          @if (node.loading) {
+            <span class="text-xs text-muted-foreground" role="status">Loading…</span>
+          }
+          @if (node.error && !node.loading) {
+            <button
+              type="button"
+              class="explorer-inline-action"
+              (click)="$event.stopPropagation(); retry(node)"
+            >
+              Try again
+            </button>
+          }
+          @if (node.kind !== 'group' && node.kind !== 'load-more') {
+            <button
+              type="button"
+              class="explorer-inline-action"
+              (click)="$event.stopPropagation(); refresh(node)"
+              aria-label="Refresh node"
+            >
+              ↻
+            </button>
+          }
+        </div>
+      </cdk-virtual-scroll-viewport>
+    }
+  </section>
+</main>
+
+<ng-template MenuContent #nodeMenu="MenuContent">
+  <MenuSurface class="w-64">
+    <MenuGroup>
+      <MenuLabel>{{ menuNode() ? displayName(menuNode()!) : 'Explorer actions' }}</MenuLabel>
+      @for (action of menuActions(); track action.id) {
+        <button
+          MenuItem
+          type="button"
+          [disabled]="action.disabled"
+          [attr.title]="action.reason ?? null"
+          (click)="runAction(action, menuNode()!)"
+        >
+          {{ action.label }}
+          @if (action.disabled && action.reason) {
+            <span class="ml-2 text-xs text-muted-foreground">ⓘ</span>
+          }
+        </button>
+      }
+    </MenuGroup>
+  </MenuSurface>
+</ng-template>

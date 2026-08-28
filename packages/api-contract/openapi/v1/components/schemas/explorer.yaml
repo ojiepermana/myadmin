@@ -1,0 +1,148 @@
+ExplorerObjectRef:
+  type: object
+  additionalProperties: false
+  required: [database, schema, name, type]
+  properties:
+    database:
+      type: string
+    schema:
+      type: [string, 'null']
+    name:
+      type: string
+    type:
+      type: string
+      enum: [database, schema, table, view, routine, sequence, trigger, other]
+
+ExplorerDatabasePage:
+  type: object
+  additionalProperties: false
+  required: [items, cursor]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/ExplorerDatabase'
+    cursor:
+      type: [string, 'null']
+
+ExplorerDatabase:
+  type: object
+  additionalProperties: false
+  required: [name]
+  properties:
+    name:
+      type: string
+    owner:
+      type: string
+    sizeBytes:
+      type: number
+    encoding:
+      type: string
+    charset:
+      type: string
+    collation:
+      type: string
+
+ExplorerChildPage:
+  type: object
+  additionalProperties: false
+  required: [items, cursor]
+  properties:
+    items:
+      type: array
+      items:
+        oneOf:
+          - $ref: '#/ExplorerSchemaChild'
+          - $ref: '#/ExplorerObjectGroupChild'
+          - $ref: '#/ExplorerObjectChild'
+    cursor:
+      type: [string, 'null']
+
+ExplorerSchemaChild:
+  type: object
+  additionalProperties: false
+  required: [kind, database, schema, name, hasChildren, isSystem]
+  properties:
+    kind:
+      const: schema
+    database:
+      type: string
+    schema:
+      type: string
+    name:
+      type: string
+    hasChildren:
+      const: true
+    isSystem:
+      type: boolean
+
+ExplorerObjectGroupChild:
+  type: object
+  additionalProperties: false
+  required: [kind, database, schema, objectType, name, hasChildren]
+  properties:
+    kind:
+      const: object-group
+    database:
+      type: string
+    schema:
+      type: [string, 'null']
+    objectType:
+      type: string
+      enum: [table, view, routine, sequence, trigger]
+    name:
+      type: string
+    hasChildren:
+      const: true
+
+ExplorerObjectChild:
+  type: object
+  additionalProperties: false
+  required: [kind, ref, hasChildren]
+  properties:
+    kind:
+      const: object
+    ref:
+      $ref: '#/ExplorerObjectRef'
+    hasChildren:
+      type: boolean
+
+ExplorerColumn:
+  type: object
+  additionalProperties: false
+  required: [name, dataType, nullable]
+  properties:
+    name:
+      type: string
+    dataType:
+      type: string
+    nullable:
+      type: boolean
+    position:
+      type: integer
+    defaultExpression:
+      type: string
+    comment:
+      type: string
+    isIdentity:
+      type: boolean
+    isGenerated:
+      type: boolean
+    generatedExpression:
+      type: string
+
+ExplorerObjectDescription:
+  type: object
+  additionalProperties: false
+  required: [ref, columns]
+  properties:
+    ref:
+      $ref: '#/ExplorerObjectRef'
+    columns:
+      type: array
+      items:
+        $ref: '#/ExplorerColumn'
+    estimatedRows:
+      type: number
+    comment:
+      type: string

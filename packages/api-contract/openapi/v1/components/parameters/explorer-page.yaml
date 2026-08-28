@@ -1,0 +1,7 @@
+name: page
+in: query
+required: false
+description: Opaque provider cursor. Omit to request the first page.
+schema:
+  type: string
+  default: '0'

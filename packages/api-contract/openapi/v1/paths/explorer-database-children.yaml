@@ -1,0 +1,68 @@
+get:
+  operationId: listExplorerDatabaseChildren
+  tags: [object-explorer]
+  summary: List the next explorer layer below a database
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+    - name: db
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: ../components/parameters/explorer-page.yaml
+    - $ref: ../components/parameters/explorer-page-size.yaml
+    - $ref: ../components/parameters/explorer-refresh.yaml
+    - name: schema
+      in: query
+      required: false
+      schema:
+        type: string
+    - name: type
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [table, view, routine, sequence, trigger]
+  responses:
+    '200':
+      description: Schemas for schema-capable providers, or provider object folders.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/explorer.yaml#/ExplorerChildPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The connection belongs to another user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The connection does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Pagination values are invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider metadata operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

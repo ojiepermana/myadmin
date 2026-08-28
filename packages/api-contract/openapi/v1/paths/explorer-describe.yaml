@@ -1,0 +1,57 @@
+get:
+  operationId: describeExplorerObject
+  tags: [object-explorer]
+  summary: Describe a table object for explorer details
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+    - name: ref
+      in: query
+      required: true
+      description: JSON encoded provider-neutral object reference.
+      schema:
+        type: string
+        minLength: 1
+    - $ref: ../components/parameters/explorer-refresh.yaml
+  responses:
+    '200':
+      description: Table columns and lightweight details.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/explorer.yaml#/ExplorerObjectDescription
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The connection belongs to another user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The connection or object does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The object reference is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider metadata operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

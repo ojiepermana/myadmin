@@ -22,6 +22,12 @@ export interface PageRequest {
   limit?: number;
 }
 
+export type MetadataObjectType = Exclude<DatabaseObjectType, 'database' | 'schema' | 'other'>;
+
+export interface MetadataObjectPageRequest extends PageRequest {
+  types?: readonly MetadataObjectType[];
+}
+
 export interface ColumnDefinition {
   name: string;
   dataType: string;
@@ -93,6 +99,14 @@ export interface TableDefinition {
   ref: ObjectRef;
   columns?: ColumnDefinition[];
   comment?: string;
+}
+
+export interface TableDescription extends TableDefinition {
+  columns: ColumnDefinition[];
+  indexes: IndexDefinition[];
+  constraints: ConstraintDefinition[];
+  estimatedRows?: number;
+  sizeBytes?: number;
 }
 
 export interface ViewDefinition {

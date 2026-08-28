@@ -89,6 +89,14 @@ paths:
     $ref: ./paths/query-metadata.yaml
   /query/sessions/{id}/close:
     $ref: ./paths/query-session-close.yaml
+  /connections/{id}/databases:
+    $ref: ./paths/explorer-databases.yaml
+  /connections/{id}/databases/{db}/children:
+    $ref: ./paths/explorer-database-children.yaml
+  /connections/{id}/schemas/{schema}/objects:
+    $ref: ./paths/explorer-schema-objects.yaml
+  /connections/{id}/objects/describe:
+    $ref: ./paths/explorer-describe.yaml
 components:
   schemas:
     ApiError:
@@ -227,6 +235,24 @@ components:
       $ref: ./components/schemas/query.yaml#/QueryAutocompleteResponse
     QuerySessionCloseResponse:
       $ref: ./components/schemas/query.yaml#/QuerySessionCloseResponse
+    ExplorerObjectRef:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerObjectRef
+    ExplorerDatabase:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerDatabase
+    ExplorerDatabasePage:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerDatabasePage
+    ExplorerChildPage:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerChildPage
+    ExplorerSchemaChild:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerSchemaChild
+    ExplorerObjectGroupChild:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerObjectGroupChild
+    ExplorerObjectChild:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerObjectChild
+    ExplorerColumn:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerColumn
+    ExplorerObjectDescription:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerObjectDescription
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

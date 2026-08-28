@@ -135,6 +135,12 @@ export interface ActiveConnectionSession {
   readonly handle: ConnectionHandle;
 }
 
+export interface ConnectedProviderSession {
+  readonly connection: Connection;
+  readonly provider: DatabaseProvider;
+  readonly handle: ConnectionHandle;
+}
+
 export interface ActiveConnectionSessionRegistry {
   closeForConnection(connectionId: string): Promise<void>;
 }
@@ -1070,6 +1076,30 @@ export class ConnectionManagerService {
     } catch (error) {
       await this.lifecycleSessions.markError(actor.id, connection.id, this.dbErrorCategory(error));
       throw error;
+    }
+  }
+
+  /** Runs a metadata operation only against an owned, currently connected session. */
+  public async withConnectedProvider<T>(
+    actor: ConnectionActor,
+    id: string,
+    operation: (session: ConnectedProviderSession) => Promise<T> | T,
+  ): Promise<T> {
+    const connection = this.requireConnection(id);
+    this.assertConnectionOwner(actor, connection);
+    const lifecycle = this.lifecycleSessions.stateFor(actor.id, id);
+    const active = this.lifecycleSessions.sessionFor(actor.id, id);
+    if (lifecycle.status !== 'connected' || !active) {
+      throw new ConnectionManagerError(
+        'NOT_CONNECTED',
+        'Connect this connection before browsing its metadata.',
+        409,
+      );
+    }
+    try {
+      return await operation({ connection, provider: active.provider, handle: active.handle });
+    } finally {
+      this.lifecycleSessions.touch(actor.id, id);
     }
   }
 

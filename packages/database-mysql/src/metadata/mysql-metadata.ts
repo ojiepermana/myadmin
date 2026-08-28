@@ -6,6 +6,7 @@ import {
   type DatabaseDefinition,
   type DatabaseObjectType,
   type IndexDefinition,
+  type MetadataObjectPageRequest,
   type MetadataPort,
   type ObjectRef,
   type Page,
@@ -457,6 +458,7 @@ function isConnectionHandle(value: ProviderContext): value is ConnectionHandle {
 
 /** MySQL information_schema metadata provider with lazy, bounded catalog reads. */
 export class MysqlMetadataAdapter implements MetadataPort {
+  public readonly objectTypes = ALL_OBJECT_TYPES;
   private readonly defaultPageSize: number;
   private readonly includeSystemDatabases: boolean;
 
@@ -527,7 +529,7 @@ export class MysqlMetadataAdapter implements MetadataPort {
   public listObjects(
     context: ProviderContext,
     parent: ObjectRef,
-    page?: PageRequest,
+    page?: MetadataObjectPageRequest,
   ): Promise<Page<ObjectRef>>;
   public listObjects(
     context: ProviderContext,
@@ -549,14 +551,15 @@ export class MysqlMetadataAdapter implements MetadataPort {
   public async listObjects(
     context: ProviderContext,
     parentOrDatabase: ObjectRef | string,
-    pageOrTypes?: PageRequest | readonly DatabaseObjectType[],
+    pageOrTypes?: MetadataObjectPageRequest | readonly DatabaseObjectType[],
     maybePage?: PageRequest,
   ): Promise<Page<ObjectRef>> {
     const hasTypes = Array.isArray(pageOrTypes);
-    const types = normalizeObjectTypes(
-      hasTypes ? (pageOrTypes as readonly DatabaseObjectType[]) : undefined,
-    );
-    const page = hasTypes ? maybePage : (pageOrTypes as PageRequest | undefined);
+    const requestedTypes = hasTypes
+      ? (pageOrTypes as readonly DatabaseObjectType[])
+      : (pageOrTypes as MetadataObjectPageRequest | undefined)?.types;
+    const types = normalizeObjectTypes(requestedTypes);
+    const page = hasTypes ? maybePage : (pageOrTypes as MetadataObjectPageRequest | undefined);
     const parent =
       typeof parentOrDatabase === 'string' ? parentOrDatabase : parentOrDatabase.database;
     const window = normalizePage(page, this.defaultPageSize);
