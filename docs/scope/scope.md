@@ -286,10 +286,10 @@ Port kecil per domain, capability model, registry, error ternormalisasi, context
 ### 22. PostgreSQL koneksi dan capability `in-progress`
 Bun.sql, TLS tegas, capability, mapping SQLSTATE, infrastruktur cancel. Done when: suite kontrak lulus di dua versi PostgreSQL nyata dan TLS gagal tertutup.
 - [x] Design it (spec): [0022](../specs/0022-postgresql-connection-capability/index.md)
-- [ ] Build it: /develop postgresql-connection-capability
-  - [ ] Driver adaptor, registry sesi, timeout, lingkungan test dua versi (AC-1, AC-3, AC-8)
-  - [ ] Mode TLS lengkap plus mapper SQLSTATE plus capability per versi (AC-2, AC-5, AC-6)
-  - [ ] test() dan cancel ganda plus boundary antar provider (AC-4, AC-7, AC-9)
+- [x] Build it: /develop postgresql-connection-capability
+  - [x] Driver adaptor, registry sesi, timeout, lingkungan test dua versi (AC-1, AC-3, AC-8)
+  - [x] Mode TLS lengkap plus mapper SQLSTATE plus capability per versi (AC-2, AC-5, AC-6)
+  - [x] test() dan cancel ganda plus boundary antar provider (AC-4, AC-7, AC-9)
 - [ ] [Verify it](../specs/0022-postgresql-connection-capability/verify.md): /check verify postgresql-connection-capability
 - [ ] [Test it](../specs/0022-postgresql-connection-capability/test.md): /test postgresql-connection-capability
 

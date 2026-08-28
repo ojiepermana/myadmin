@@ -1,0 +1,28 @@
+services:
+  postgresql-previous:
+    image: postgres:17.7-alpine
+    environment:
+      POSTGRES_USER: myadmin_test
+      POSTGRES_PASSWORD: myadmin_test_password
+      POSTGRES_DB: myadmin_test
+    ports:
+      - '55432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U myadmin_test -d myadmin_test']
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  postgresql-current:
+    image: postgres:18.1-alpine
+    environment:
+      POSTGRES_USER: myadmin_test
+      POSTGRES_PASSWORD: myadmin_test_password
+      POSTGRES_DB: myadmin_test
+    ports:
+      - '55433:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U myadmin_test -d myadmin_test']
+      interval: 2s
+      timeout: 2s
+      retries: 15
