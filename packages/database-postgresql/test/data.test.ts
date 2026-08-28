@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import type { DataColumnMetadata, DataPageRequest } from '@myadmin/database-core';
-import { buildPostgresqlDataQuery } from '../src/data';
+import type { DataColumnMetadata, DataPageRequest, DataRowIdentity } from '@myadmin/database-core';
+import {
+  buildPostgresqlDataQuery,
+  buildPostgresqlInsertQuery,
+  buildPostgresqlUpdateQuery,
+} from '../src/data';
 
 const columns: readonly DataColumnMetadata[] = [
   { name: 'id', dataType: 'integer', nullable: false, primary: true },
@@ -9,6 +13,8 @@ const columns: readonly DataColumnMetadata[] = [
 const table = { database: 'app', schema: 'public', name: 'users', type: 'table' } as const;
 
 describe('PostgreSQL data query builder', () => {
+  const identity: DataRowIdentity = { columns: ['id'], kind: 'primary', editable: true };
+
   test('[UT-0037-AC2, SEC-0037-AC8] keeps values out of SQL and quotes identifiers', () => {
     const request: DataPageRequest = {
       table,
@@ -50,5 +56,54 @@ describe('PostgreSQL data query builder', () => {
         ['id'],
       ),
     ).toThrow('Filter operator is not valid for id');
+  });
+
+  test('[UT-0038-AC2, UT-0038-AC3, UT-0038-AC5, UT-0038-AC6] builds typed parameterized mutations', () => {
+    const insert = buildPostgresqlInsertQuery(
+      {
+        table,
+        values: {
+          display_name: { type: 'string', value: 'Ada' },
+          profile: { type: 'json', value: '{"active":true}' },
+        },
+      },
+      [...columns, { name: 'profile', dataType: 'jsonb', nullable: true, primary: false }],
+    );
+    expect(insert.sql).toContain('INSERT INTO "public"."users"');
+    expect(insert.sql).toContain('RETURNING *');
+    expect(insert.parameters[1]).toEqual({ active: true });
+
+    const update = buildPostgresqlUpdateQuery(
+      {
+        table,
+        key: { id: { type: 'number', value: '7' } },
+        values: { display_name: { type: 'null', value: null } },
+      },
+      columns,
+      identity,
+    );
+    expect(update.sql).toContain('SET "display_name" = ? WHERE "id" = ?');
+    expect(update.parameters).toEqual([null, 7]);
+  });
+
+  test('[UT-0038-AC6] rejects invalid numbers and binary values with a column specific error', () => {
+    expect(() =>
+      buildPostgresqlInsertQuery(
+        { table, values: { id: { type: 'number', value: 'not-a-number' } } },
+        columns,
+      ),
+    ).toThrow('Column id contains an invalid number');
+    expect(() =>
+      buildPostgresqlInsertQuery(
+        { table, values: { id: { type: 'bytes', value: 'AA==', encoding: 'base64' } } },
+        columns,
+      ),
+    ).toThrow('Column id is binary and read only in V1');
+  });
+
+  test('[UT-0038-AC2] supports an insert that uses only database defaults', () => {
+    const query = buildPostgresqlInsertQuery({ table, values: {} }, columns);
+    expect(query.sql).toBe('INSERT INTO "public"."users" DEFAULT VALUES RETURNING *');
+    expect(query.parameters).toEqual([]);
   });
 });

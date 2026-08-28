@@ -252,6 +252,25 @@ export class MysqlConnectionAdapter implements ConnectionPort {
     return this.run<T>(handle, statement, parameters);
   }
 
+  public async withTransaction<T>(
+    handle: ConnectionHandle,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    await this.execute(handle, 'START TRANSACTION');
+    try {
+      const value = await operation();
+      await this.execute(handle, 'COMMIT');
+      return value;
+    } catch (error) {
+      try {
+        await this.execute(handle, 'ROLLBACK');
+      } catch {
+        // Preserve the mutation error when rollback itself is unavailable.
+      }
+      throw error;
+    }
+  }
+
   public connectionIdFor(handle: ConnectionHandle): number {
     return this.getSession(handle).connectionId;
   }

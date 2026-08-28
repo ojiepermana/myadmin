@@ -149,6 +149,10 @@ paths:
     $ref: ./paths/query-saved-by-id.yaml
   /data/read:
     $ref: ./paths/data-read.yaml
+  /data/rows:
+    $ref: ./paths/data-rows.yaml
+  /data/rows/delete:
+    $ref: ./paths/data-rows-delete.yaml
   /views:
     $ref: ./paths/views.yaml
   /views/ddl/preview:

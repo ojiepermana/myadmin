@@ -233,6 +233,25 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
     );
   }
 
+  public async withTransaction<T>(
+    handle: ConnectionHandle,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    await this.execute(handle, 'BEGIN');
+    try {
+      const value = await operation();
+      await this.execute(handle, 'COMMIT');
+      return value;
+    } catch (error) {
+      try {
+        await this.execute(handle, 'ROLLBACK');
+      } catch {
+        // Preserve the mutation error when rollback itself is unavailable.
+      }
+      throw error;
+    }
+  }
+
   private async executeWithQuery<T>(
     handle: ConnectionHandle,
     createQuery: () => SqlQuery<T>,

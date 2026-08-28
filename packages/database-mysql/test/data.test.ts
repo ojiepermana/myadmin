@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { DataColumnMetadata, DataPageRequest } from '@myadmin/database-core';
-import { buildMysqlDataQuery } from '../src/data';
+import { buildMysqlDataQuery, buildMysqlInsertQuery, buildMysqlUpdateQuery } from '../src/data';
+import type { DataRowIdentity } from '@myadmin/database-core';
 
 const columns: readonly DataColumnMetadata[] = [
   { name: 'id', dataType: 'int', nullable: false, primary: true },
@@ -9,6 +10,7 @@ const columns: readonly DataColumnMetadata[] = [
 const table = { database: 'app`unsafe', schema: null, name: 'users', type: 'view' } as const;
 
 describe('MySQL data query builder', () => {
+  const identity: DataRowIdentity = { columns: ['id'], kind: 'primary', editable: true };
   test('[UT-0037-AC2, SEC-0037-AC8] quotes identifiers and binds an IN filter', () => {
     const request: DataPageRequest = {
       table,
@@ -45,5 +47,40 @@ describe('MySQL data query builder', () => {
     expect(() => buildMysqlDataQuery({ table, limit: 501 }, columns, ['id'])).toThrow(
       'Data page limit must be between 1 and 500',
     );
+  });
+
+  test('[UT-0038-AC2, UT-0038-AC3, UT-0038-AC5] quotes typed insert and update values', () => {
+    const mutationTable = { ...table, type: 'table' as const };
+    const insert = buildMysqlInsertQuery(
+      {
+        table: mutationTable,
+        values: { id: { type: 'number', value: '3' }, display_name: { type: 'string', value: '' } },
+      },
+      columns,
+    );
+    expect(insert.sql).toBe(
+      'INSERT INTO `app``unsafe`.`users` (`id`, `display_name`) VALUES (?, ?)',
+    );
+    expect(insert.parameters).toEqual([3, '']);
+    const update = buildMysqlUpdateQuery(
+      {
+        table: mutationTable,
+        key: { id: { type: 'number', value: '3' } },
+        values: { display_name: { type: 'null', value: null } },
+      },
+      columns,
+      identity,
+    );
+    expect(update.sql).toContain('SET `display_name` = ? WHERE `id` = ?');
+    expect(update.parameters).toEqual([null, 3]);
+  });
+
+  test('[UT-0038-AC2] supports an insert that uses only database defaults', () => {
+    const query = buildMysqlInsertQuery(
+      { table: { ...table, type: 'table' }, values: {} },
+      columns,
+    );
+    expect(query.sql).toBe('INSERT INTO `app``unsafe`.`users` () VALUES ()');
+    expect(query.parameters).toEqual([]);
   });
 });

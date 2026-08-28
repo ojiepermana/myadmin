@@ -253,6 +253,14 @@ export interface DataPage {
   readonly columns: DataColumnMetadata[];
   readonly total: DataTotal;
   readonly hasMore: boolean;
+  readonly rowIdentity: DataRowIdentity;
+}
+
+export interface DataRowIdentity {
+  readonly columns: readonly string[];
+  readonly kind: 'primary' | 'unique' | null;
+  readonly editable: boolean;
+  readonly reason?: string;
 }
 
 export type ViewChangeStrategy = 'create' | 'replace' | 'drop_create' | 'drop';

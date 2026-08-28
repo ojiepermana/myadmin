@@ -2,13 +2,20 @@ import {
   DbError,
   type ColumnDefinition,
   type ConnectionHandle,
-  type DataColumnMetadata,
   type DataFilter,
   type DataPage,
   type DataPageRequest,
+  type DataInsertRequest,
+  type DataUpdateRequest,
+  type DataDeleteRequest,
+  type DataBulkDeleteRequest,
+  type DataRowIdentity,
   type DataSort,
+  type MutationResult,
   type MetadataPort,
+  type ObjectRef,
   type ProviderContext,
+  type QueryCell,
 } from '@myadmin/database-core';
 import type { MysqlConnectionAdapter } from './driver/mysql-connection';
 import { quoteMysqlIdentifier } from './metadata/quoting';
@@ -21,10 +28,215 @@ interface BoundQuery {
   readonly sql: string;
   readonly parameters: unknown[];
 }
-type DataColumn = DataColumnMetadata;
+type DataColumn = ColumnDefinition;
 
 function invalid(message: string): never {
   throw new DbError({ category: 'syntax_error', message });
+}
+
+function tableOnly(ref: ObjectRef): void {
+  if (ref.type !== 'table' || !ref.database || !ref.name)
+    invalid('Data mutations are only supported for tables');
+}
+
+function rowIdentity(
+  ref: ObjectRef,
+  columns: readonly DataColumn[],
+  indexes: readonly { columns: string[]; primary: boolean; unique: boolean }[],
+): DataRowIdentity {
+  if (ref.type !== 'table')
+    return { columns: [], kind: null, editable: false, reason: 'Views are read only.' };
+  const byName = new Map(columns.map((column) => [column.name, column]));
+  const primary = indexes.find((index) => index.primary && index.columns.length > 0);
+  if (primary && primary.columns.every((name) => byName.get(name)?.nullable === false))
+    return { columns: primary.columns, kind: 'primary', editable: true };
+  const unique = indexes.find(
+    (index) =>
+      index.unique &&
+      !index.primary &&
+      index.columns.length > 0 &&
+      index.columns.every((name) => byName.get(name)?.nullable === false),
+  );
+  if (unique) return { columns: unique.columns, kind: 'unique', editable: true };
+  return {
+    columns: [],
+    kind: null,
+    editable: false,
+    reason: 'This table has no primary key or non nullable unique index.',
+  };
+}
+
+function writeValue(cell: QueryCell, column: ColumnDefinition): unknown {
+  if (cell.type === 'null') {
+    if (!column.nullable) invalid(`Column ${column.name} does not allow NULL`);
+    return null;
+  }
+  const type = column.dataType.toLowerCase();
+  if (cell.type === 'bytes') invalid(`Column ${column.name} is binary and read only in V1`);
+  if (/json/.test(type)) {
+    if (cell.type !== 'json') invalid(`Column ${column.name} expects JSON`);
+    try {
+      return JSON.parse(cell.value) as unknown;
+    } catch {
+      invalid(`Column ${column.name} contains invalid JSON`);
+    }
+  }
+  if (/bool/.test(type)) {
+    if (cell.type !== 'boolean') invalid(`Column ${column.name} expects a boolean`);
+    return cell.value;
+  }
+  if (/int|numeric|decimal|real|double|float|serial|money|year/.test(type)) {
+    if (cell.type !== 'number') invalid(`Column ${column.name} expects a number`);
+    const value = Number(cell.value);
+    if (!Number.isFinite(value)) invalid(`Column ${column.name} contains an invalid number`);
+    return value;
+  }
+  if (/date|time|timestamp/.test(type)) {
+    if (cell.type !== 'date') invalid(`Column ${column.name} expects a date or time`);
+    const value = new Date(cell.value);
+    if (Number.isNaN(value.getTime())) invalid(`Column ${column.name} contains an invalid date`);
+    return value;
+  }
+  if (cell.type !== 'string') invalid(`Column ${column.name} expects text`);
+  return cell.value;
+}
+
+interface MutationQuery extends BoundQuery {
+  readonly operation: 'insert' | 'update' | 'delete';
+}
+
+function mutationValues(
+  values: Record<string, QueryCell>,
+  columns: readonly DataColumn[],
+  allowed: (column: DataColumn) => boolean = () => true,
+): { columns: DataColumn[]; parameters: unknown[] } {
+  const byName = new Map(columns.map((column) => [column.name, column]));
+  const selected = Object.keys(values).map((name) => {
+    const column = byName.get(name);
+    if (!column || !allowed(column)) invalid(`Column ${name} cannot be changed`);
+    return column;
+  });
+  return {
+    columns: selected,
+    parameters: selected.map((column) => writeValue(values[column.name]!, column)),
+  };
+}
+
+function identityWhere(
+  key: Record<string, QueryCell>,
+  identity: DataRowIdentity,
+  columns: readonly DataColumn[],
+  parameters: unknown[],
+): string {
+  if (!identity.editable || identity.columns.length === 0)
+    invalid(identity.reason ?? 'This table is read only');
+  const byName = new Map(columns.map((column) => [column.name, column]));
+  if (
+    Object.keys(key).length !== identity.columns.length ||
+    identity.columns.some((name) => !(name in key))
+  )
+    invalid('The complete row identity is required');
+  return identity.columns
+    .map((name) => {
+      const value = writeValue(key[name]!, byName.get(name)!);
+      if (value === null) invalid(`Identity column ${name} cannot be NULL`);
+      parameters.push(value);
+      return `${quoteMysqlIdentifier(name)} = ?`;
+    })
+    .join(' AND ');
+}
+
+export function buildMysqlInsertQuery(
+  request: DataInsertRequest,
+  columns: readonly DataColumn[],
+): MutationQuery {
+  tableOnly(request.table);
+  const values = mutationValues(request.values, columns, (column) => !column.isGenerated);
+  const table = `${quoteMysqlIdentifier(request.table.database)}.${quoteMysqlIdentifier(request.table.name)}`;
+  if (values.columns.length === 0)
+    return {
+      operation: 'insert',
+      sql: `INSERT INTO ${table} () VALUES ()`,
+      parameters: [],
+    };
+  return {
+    operation: 'insert',
+    sql: `INSERT INTO ${table} (${values.columns.map((column) => quoteMysqlIdentifier(column.name)).join(', ')}) VALUES (${values.columns.map(() => '?').join(', ')})`,
+    parameters: values.parameters,
+  };
+}
+
+export function buildMysqlUpdateQuery(
+  request: DataUpdateRequest,
+  columns: readonly DataColumn[],
+  identity: DataRowIdentity,
+): MutationQuery {
+  tableOnly(request.table);
+  const values = mutationValues(
+    request.values,
+    columns,
+    (column) => !identity.columns.includes(column.name) && !column.isGenerated,
+  );
+  if (values.columns.length === 0) invalid('At least one changed value is required');
+  const parameters = [...values.parameters];
+  const where = identityWhere(request.key, identity, columns, parameters);
+  const table = `${quoteMysqlIdentifier(request.table.database)}.${quoteMysqlIdentifier(request.table.name)}`;
+  return {
+    operation: 'update',
+    sql: `UPDATE ${table} SET ${values.columns.map((column) => `${quoteMysqlIdentifier(column.name)} = ?`).join(', ')} WHERE ${where}`,
+    parameters,
+  };
+}
+
+export function buildMysqlDeleteQuery(
+  request: DataDeleteRequest,
+  columns: readonly DataColumn[],
+  identity: DataRowIdentity,
+): MutationQuery {
+  tableOnly(request.table);
+  const parameters: unknown[] = [];
+  const where = identityWhere(request.key, identity, columns, parameters);
+  const table = `${quoteMysqlIdentifier(request.table.database)}.${quoteMysqlIdentifier(request.table.name)}`;
+  return { operation: 'delete', sql: `DELETE FROM ${table} WHERE ${where}`, parameters };
+}
+
+interface LookupQuery {
+  readonly statement: string;
+  readonly parameters: readonly unknown[];
+}
+
+function identityLookupQuery(
+  request: DataUpdateRequest,
+  columns: readonly DataColumn[],
+  identity: DataRowIdentity,
+): LookupQuery {
+  const parameters: unknown[] = [];
+  const where = identityWhere(request.key, identity, columns, parameters);
+  const table = `${quoteMysqlIdentifier(request.table.database)}.${quoteMysqlIdentifier(request.table.name)}`;
+  return { statement: `SELECT * FROM ${table} WHERE ${where}`, parameters };
+}
+
+function insertedRowQuery(
+  request: DataInsertRequest,
+  columns: readonly DataColumn[],
+  indexes: readonly { columns: string[]; primary: boolean; unique: boolean }[],
+): LookupQuery {
+  const table = `${quoteMysqlIdentifier(request.table.database)}.${quoteMysqlIdentifier(request.table.name)}`;
+  const primary = indexes.find((index) => index.primary && index.columns.length === 1);
+  const primaryColumn = primary?.columns[0];
+  const primaryDefinition = columns.find((column) => column.name === primaryColumn);
+  if (primaryColumn && primaryDefinition?.isIdentity && !(primaryColumn in request.values)) {
+    return {
+      statement: `SELECT * FROM ${table} WHERE ${quoteMysqlIdentifier(primaryColumn)} = LAST_INSERT_ID()`,
+      parameters: [],
+    };
+  }
+  const values = mutationValues(request.values, columns, (column) => !column.isGenerated);
+  const parameters = [...values.parameters];
+  const where = values.columns
+    .map((column) => `${quoteMysqlIdentifier(column.name)} = ?`)
+    .join(' AND ');
+  return { statement: `SELECT * FROM ${table} WHERE ${where}`, parameters };
 }
 function rowsOf(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) return [];
@@ -179,7 +391,144 @@ export class MysqlDataAdapter {
         columns: selectedColumns,
         total,
         hasMore: rows.length > limit,
+        rowIdentity: rowIdentity(request.table, columns, description.indexes),
       };
+    });
+  }
+
+  public async insert(
+    context: ProviderContext,
+    request: DataInsertRequest,
+  ): Promise<MutationResult> {
+    return this.withHandle(context, async (handle) => {
+      const description = await this.metadata.describeTable!(handle, request.table);
+      const query = buildMysqlInsertQuery(request, description.columns);
+      return this.connection.withTransaction(handle, async () => {
+        await this.connection.execute(handle, query.sql, query.parameters);
+        const count = await this.connection.execute<{ affected_rows?: unknown }>(
+          handle,
+          'SELECT ROW_COUNT() AS affected_rows',
+        );
+        const affectedRows = Number(count[0]?.affected_rows);
+        if (affectedRows !== 1)
+          throw new DbError({
+            category: 'internal',
+            message: 'Insert did not affect exactly one row',
+          });
+        const lookup = insertedRowQuery(request, description.columns, description.indexes);
+        const returned = await this.connection.execute(handle, lookup.statement, lookup.parameters);
+        return { affectedRows, ...(returned.length === 1 ? { returning: [...returned] } : {}) };
+      });
+    });
+  }
+
+  public async update(
+    context: ProviderContext,
+    request: DataUpdateRequest,
+  ): Promise<MutationResult> {
+    return this.withHandle(context, async (handle) => {
+      const description = await this.metadata.describeTable!(handle, request.table);
+      const identity = rowIdentity(
+        request.table,
+        description.columns as DataColumn[],
+        description.indexes,
+      );
+      const query = buildMysqlUpdateQuery(request, description.columns as DataColumn[], identity);
+      return this.connection.withTransaction(handle, async () => {
+        await this.connection.execute(handle, query.sql, query.parameters);
+        const count = await this.connection.execute<{ affected_rows?: unknown }>(
+          handle,
+          'SELECT ROW_COUNT() AS affected_rows',
+        );
+        let affectedRows = Number(count[0]?.affected_rows);
+        if (affectedRows === 0) {
+          const lookup = identityLookupQuery(
+            request,
+            description.columns as DataColumn[],
+            identity,
+          );
+          const exists = await this.connection.execute(handle, lookup.statement, lookup.parameters);
+          if (exists.length === 0)
+            throw new DbError({
+              category: 'conflict',
+              message: 'The row changed or no longer exists. Reload the data and try again.',
+            });
+          affectedRows = 1;
+        }
+        if (affectedRows !== 1)
+          throw new DbError({
+            category: 'internal',
+            message: 'Row identity matched more than one row',
+          });
+        const lookup = identityLookupQuery(request, description.columns as DataColumn[], identity);
+        const returned = await this.connection.execute(handle, lookup.statement, lookup.parameters);
+        return { affectedRows, ...(returned.length === 1 ? { returning: [...returned] } : {}) };
+      });
+    });
+  }
+
+  public async delete(
+    context: ProviderContext,
+    request: DataDeleteRequest,
+  ): Promise<MutationResult> {
+    return this.withHandle(context, async (handle) => {
+      const description = await this.metadata.describeTable!(handle, request.table);
+      const identity = rowIdentity(
+        request.table,
+        description.columns as DataColumn[],
+        description.indexes,
+      );
+      const query = buildMysqlDeleteQuery(request, description.columns as DataColumn[], identity);
+      return this.connection.withTransaction(handle, async () => {
+        await this.connection.execute(handle, query.sql, query.parameters);
+        const count = await this.connection.execute<{ affected_rows?: unknown }>(
+          handle,
+          'SELECT ROW_COUNT() AS affected_rows',
+        );
+        if (Number(count[0]?.affected_rows) !== 1)
+          throw new DbError({
+            category: 'conflict',
+            message: 'The row changed or no longer exists. Reload the data and try again.',
+          });
+        return { affectedRows: 1 };
+      });
+    });
+  }
+
+  public async bulkDelete(
+    context: ProviderContext,
+    request: DataBulkDeleteRequest,
+  ): Promise<MutationResult> {
+    return this.withHandle(context, async (handle) => {
+      const description = await this.metadata.describeTable!(handle, request.table);
+      const identity = rowIdentity(
+        request.table,
+        description.columns as DataColumn[],
+        description.indexes,
+      );
+      return this.connection.withTransaction(handle, async () => {
+        let affectedRows = 0;
+        for (const key of request.identities) {
+          const query = buildMysqlDeleteQuery(
+            { table: request.table, key },
+            description.columns as DataColumn[],
+            identity,
+          );
+          await this.connection.execute(handle, query.sql, query.parameters);
+          const count = await this.connection.execute<{ affected_rows?: unknown }>(
+            handle,
+            'SELECT ROW_COUNT() AS affected_rows',
+          );
+          if (Number(count[0]?.affected_rows) !== 1)
+            throw new DbError({
+              category: 'conflict',
+              message:
+                'One or more selected rows changed or no longer exist. Reload the data and try again.',
+            });
+          affectedRows += 1;
+        }
+        return { affectedRows };
+      });
     });
   }
 

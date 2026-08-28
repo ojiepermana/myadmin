@@ -25,6 +25,7 @@ describe('data browser contract', () => {
       rows: [{ id: { type: 'number', value: '1' } }],
       total: { value: 1, kind: 'exact' },
       page: { limit: 100, offset: 0, hasMore: false },
+      rowIdentity: { columns: ['id'], kind: 'primary', editable: true },
     });
   });
 });

@@ -58,6 +58,11 @@ export interface DataBrowserSortChange {
   readonly additive: boolean;
 }
 
+export interface DataBrowserEditRequest {
+  readonly rowIndex: number;
+  readonly column: string;
+}
+
 interface FullCellValue {
   readonly column: string;
   readonly cell: QueryCell | undefined;
@@ -88,6 +93,10 @@ export class ResultGrid {
   readonly fullExportRequested = output<FullExportRequest>();
   readonly dataBrowserFilterChange = output<DataBrowserFilterChange>();
   readonly dataBrowserSortChange = output<DataBrowserSortChange>();
+  readonly editable = input(false);
+  readonly rowIdentityColumns = input<readonly string[]>([]);
+  readonly dataBrowserEditRequested = output<DataBrowserEditRequest>();
+  readonly dataBrowserDeleteRequested = output<readonly number[]>();
 
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
@@ -234,6 +243,21 @@ export class ResultGrid {
       return;
     }
     await this.writeClipboard(cellText(cell), `Copied ${column}.`);
+  }
+
+  protected editCell(rowIndex: number, column: string, event: MouseEvent): void {
+    if (!this.editable() || event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.dataBrowserEditRequested.emit({ rowIndex, column });
+  }
+
+  protected deleteSelectedRows(): void {
+    if (!this.editable()) return;
+    const selected = [...this.selectedRows()].filter(
+      (index) => this.result().rows[index] !== undefined,
+    );
+    if (selected.length > 0) this.dataBrowserDeleteRequested.emit(selected);
   }
 
   protected async copySelected(): Promise<void> {

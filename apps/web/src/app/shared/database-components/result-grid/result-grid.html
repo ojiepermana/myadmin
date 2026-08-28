@@ -48,6 +48,18 @@
       <button Button type="button" variant="outline" size="sm" (click)="copyLoaded()">
         Copy loaded
       </button>
+      @if (editable()) {
+        <button
+          Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          [disabled]="selectedCount() === 0"
+          (click)="deleteSelectedRows()"
+        >
+          Delete selected
+        </button>
+      }
       <details class="result-export-menu">
         <summary class="result-export-trigger">Export</summary>
         <div class="result-export-options">
@@ -174,6 +186,7 @@
                 [attr.aria-colindex]="columnIndex + 2"
                 [attr.aria-label]="column.name + ': ' + cellPreview(entry.row[column.name])"
                 (click)="activateCell(entry.row[column.name], column.name)"
+                (dblclick)="editCell(entry.originalIndex, column.name, $event)"
                 (keydown)="onCellKeydown($event, entry.row[column.name], column.name)"
               >
                 @if (isNull(entry.row[column.name])) {

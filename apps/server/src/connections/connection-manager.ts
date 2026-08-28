@@ -1103,6 +1103,36 @@ export class ConnectionManagerService {
     }
   }
 
+  /** Runs a short lived owned provider session for data mutations, separate from tab sessions. */
+  public async withMutationProvider<T>(
+    actor: ConnectionActor,
+    id: string,
+    operation: (session: ConnectedProviderSession) => Promise<T> | T,
+  ): Promise<T> {
+    const connection = this.requireConnection(id);
+    this.assertConnectionOwner(actor, connection);
+    const encrypted = this.options.store.credentials.get(connection.id);
+    if (!encrypted) {
+      throw new ConnectionManagerError(
+        'SECRET_REQUIRED',
+        'Save a password for this connection before changing data.',
+        422,
+      );
+    }
+    return this.options.vault.decryptAndUse(
+      connection.id,
+      this.vaultCredential(encrypted),
+      async (payload) => {
+        const opened = await this.openProvider(connection, this.passwordFromPayload(payload));
+        try {
+          return await operation({ connection, provider: opened.provider, handle: opened.handle });
+        } finally {
+          await opened.provider.connection.close(opened.handle);
+        }
+      },
+    );
+  }
+
   public async closeForUser(userId: string): Promise<void> {
     await this.lifecycleSessions.closeForUser(userId);
   }

@@ -115,6 +115,85 @@ DataColumnMetadata:
       type: integer
     comment:
       type: string
+    defaultExpression:
+      type: string
+    isIdentity:
+      type: boolean
+    isGenerated:
+      type: boolean
+
+DataRowIdentity:
+  type: object
+  additionalProperties: false
+  required: [columns, kind, editable]
+  properties:
+    columns:
+      type: array
+      items:
+        type: string
+    kind:
+      type: [string, 'null']
+      enum: [primary, unique, null]
+    editable:
+      type: boolean
+    reason:
+      type: string
+
+DataInsertRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref, values]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/DataObjectRef'
+    values:
+      $ref: ../schemas/query.yaml#/SerializedDataRow
+
+DataUpdateRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref, identity, changes]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/DataObjectRef'
+    identity:
+      $ref: ../schemas/query.yaml#/SerializedDataRow
+    changes:
+      $ref: ../schemas/query.yaml#/SerializedDataRow
+
+DataDeleteRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref, identities]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    ref:
+      $ref: '#/DataObjectRef'
+    identities:
+      type: array
+      minItems: 1
+      maxItems: 500
+      items:
+        $ref: ../schemas/query.yaml#/SerializedDataRow
+
+DataMutationResponse:
+  type: object
+  additionalProperties: false
+  required: [affectedRows]
+  properties:
+    affectedRows:
+      type: integer
+      minimum: 0
+    row:
+      $ref: ../schemas/query.yaml#/SerializedDataRow
 
 DataReadRequest:
   type: object
@@ -154,7 +233,7 @@ DataReadRequest:
 DataReadResponse:
   type: object
   additionalProperties: false
-  required: [ref, columns, columnsMeta, rows, total, page]
+  required: [ref, columns, columnsMeta, rows, total, page, rowIdentity]
   properties:
     ref:
       $ref: '#/DataObjectRef'
@@ -174,3 +253,5 @@ DataReadResponse:
       $ref: '#/DataTotal'
     page:
       $ref: '#/DataPage'
+    rowIdentity:
+      $ref: '#/DataRowIdentity'

@@ -1,7 +1,7 @@
 # 0038. Data browser: jalur tulis
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-DATA-03: type conversion, NULL, JSON, perilaku binary safe, dan identitas bar
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin memperbaiki beberapa baris data langsung dari browser dengan aman, dan tahu persis berapa baris yang berubah.
 
 **Acceptance criteria**:
@@ -38,17 +39,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Optimistic concurrency lewat identitas plus affected count (dipilih)
 
 **Pros**:
+
 - Tanpa kolom versi yang tidak kita miliki di table orang; konflik terdeteksi lewat affected 0 dan WHERE identitas.
 
 **Cons**:
+
 - Perubahan kolom non identitas oleh pihak lain di antara baca dan tulis tidak terdeteksi (last write wins pada kolom yang diubah); dinyatakan di UI lewat saran muat ulang saat konflik identitas.
 
 ### Option 2: WHERE atas seluruh nilai lama baris
 
 **Pros**:
+
 - Mendeteksi semua perubahan pihak lain.
 
 **Cons**:
+
 - Rapuh pada tipe pembanding (float, JSON, timezone) lintas engine; kegagalan palsu membingungkan; kompleksitas tinggi.
 
 ## Decision
@@ -64,21 +69,24 @@ Kita menyunting table milik pengguna yang bentuknya tidak kita kendalikan; ident
 **Data model sketch**: tidak ada tabel internal baru.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /data/rows | POST | connectionId, ref, values | row | pemilik, tersambung | 422 konversi/constraint, DbError |
-| /data/rows | PATCH | connectionId, ref, identity, changes | row, affected | pemilik | 409 konflik (affected 0), 422 |
-| /data/rows/delete | POST | connectionId, ref, identities[] | affected | pemilik | 409 sebagian tidak ditemukan (transaksi dibatalkan), 422 |
+
+| Endpoint          | Method | Key inputs                           | Key outputs   | Auth                | Key errors                                               |
+| ----------------- | ------ | ------------------------------------ | ------------- | ------------------- | -------------------------------------------------------- |
+| /data/rows        | POST   | connectionId, ref, values            | row           | pemilik, tersambung | 422 konversi/constraint, DbError                         |
+| /data/rows        | PATCH  | connectionId, ref, identity, changes | row, affected | pemilik             | 409 konflik (affected 0), 422                            |
+| /data/rows/delete | POST   | connectionId, ref, identities[]      | affected      | pemilik             | 409 sebagian tidak ditemukan (transaksi dibatalkan), 422 |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| kelayakan edit | rowIdentity | describeTable (PK/unique NOT NULL) di server |
-| update WHERE | nilai identitas | nilai baris saat dibaca (dibawa klien apa adanya) |
-| affected | jumlah | hasil eksekusi provider |
-| editor enum | pilihan | metadata tipe kolom bila tersedia |
+
+| Action         | Value produced / displayed | Source                                            |
+| -------------- | -------------------------- | ------------------------------------------------- |
+| kelayakan edit | rowIdentity                | describeTable (PK/unique NOT NULL) di server      |
+| update WHERE   | nilai identitas            | nilai baris saat dibaca (dibawa klien apa adanya) |
+| affected       | jumlah                     | hasil eksekusi provider                           |
+| editor enum    | pilihan                    | metadata tipe kolom bila tersedia                 |
 
 **Key invariants**:
+
 - Tidak ada mutasi tanpa identitas baris aman (AC-1).
 - Update selalu affected tepat 1 atau dibatalkan (AC-3); bulk delete atomik (AC-8).
 - Semua nilai lewat parameter bind; konstruksi SQL milik provider.
@@ -102,12 +110,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Perbaikan data harian tanpa menulis SQL; pola mutasi aman terbentuk untuk fitur destructive lain.
 
 **Negative / tradeoffs**:
+
 - Last write wins pada kolom saat identitas tetap; jujur dan sepadan dibanding kegagalan palsu Option 2.
 
 **Neutral**:
+
 - Penyuntingan view dan BLOB ditunda (V2) sesuai scope.
 
 ## Follow-up
@@ -117,9 +128,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-DATA-03, FR-SAFE-01, bagian 2 (definisi destructive), 8.2 butir 8; spec 0019, 0037.
 
 **Practices & standards**:
+
 - Mutasi hanya lewat identitas kuat; affected count sebagai deteksi konflik; konfirmasi menyebut jumlah dan target.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

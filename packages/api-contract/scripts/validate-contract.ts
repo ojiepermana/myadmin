@@ -83,6 +83,8 @@ const initialPaths = {
   '/query/saved': 'paths/query-saved.yaml',
   '/query/saved/{id}': 'paths/query-saved-by-id.yaml',
   '/data/read': 'paths/data-read.yaml',
+  '/data/rows': 'paths/data-rows.yaml',
+  '/data/rows/delete': 'paths/data-rows-delete.yaml',
   '/views': 'paths/views.yaml',
   '/views/ddl/preview': 'paths/view-preview.yaml',
   '/views/ddl/validate': 'paths/view-validate.yaml',

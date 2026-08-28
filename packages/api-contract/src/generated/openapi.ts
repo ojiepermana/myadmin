@@ -535,6 +535,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/data/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Insert one typed row into a table */
+        post: operations["insertDataRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update one typed row using its identity */
+        patch: operations["updateDataRow"];
+        trace?: never;
+    };
+    "/data/rows/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete selected rows from a table atomically */
+        post: operations["deleteDataRows"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/export": {
         parameters: {
             query?: never;
@@ -1598,10 +1633,18 @@ export interface components {
         DataColumnMetadata: {
             comment?: string;
             dataType: string;
+            defaultExpression?: string;
+            isGenerated?: boolean;
+            isIdentity?: boolean;
             name: string;
             nullable: boolean;
             position?: number;
             primary: boolean;
+        };
+        DataDeleteRequest: {
+            connectionId: string;
+            identities: components["schemas"]["SerializedDataRow"][];
+            ref: components["schemas"]["DataObjectRef"];
         };
         DataFilter: {
             column: string;
@@ -1609,6 +1652,15 @@ export interface components {
             operator: "=" | "!=" | ">" | ">=" | "<" | "<=" | "contains" | "startsWith" | "endsWith" | "is null" | "is not null" | "in";
             value?: unknown;
             values?: unknown[];
+        };
+        DataInsertRequest: {
+            connectionId: string;
+            ref: components["schemas"]["DataObjectRef"];
+            values: components["schemas"]["SerializedDataRow"];
+        };
+        DataMutationResponse: {
+            affectedRows: number;
+            row?: components["schemas"]["SerializedDataRow"];
         };
         DataObjectRef: {
             database: string;
@@ -1642,8 +1694,16 @@ export interface components {
             columnsMeta: components["schemas"]["DataColumnMetadata"][];
             page: components["schemas"]["DataPage"];
             ref: components["schemas"]["DataObjectRef"];
+            rowIdentity: components["schemas"]["DataRowIdentity"];
             rows: components["schemas"]["SerializedDataRow"][];
             total: components["schemas"]["DataTotal"];
+        };
+        DataRowIdentity: {
+            columns: string[];
+            editable: boolean;
+            /** @enum {string|null} */
+            kind: "primary" | "unique" | null;
+            reason?: string;
         };
         DataSort: {
             column: string;
@@ -1654,6 +1714,12 @@ export interface components {
             /** @enum {string} */
             kind: "exact" | "estimate";
             value: number;
+        };
+        DataUpdateRequest: {
+            changes: components["schemas"]["SerializedDataRow"];
+            connectionId: string;
+            identity: components["schemas"]["SerializedDataRow"];
+            ref: components["schemas"]["DataObjectRef"];
         };
         ExplorerChildPage: {
             cursor: string | null;
@@ -4709,6 +4775,210 @@ export interface operations {
                 };
             };
             /** @description The provider failed to read the data. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    insertDataRow: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataInsertRequest"];
+            };
+        };
+        responses: {
+            /** @description The inserted row */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataMutationResponse"];
+                };
+            };
+            /** @description The session is invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request failed CSRF validation. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The row is invalid or cannot be inserted. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider failed to insert the row. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    updateDataRow: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated row */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataMutationResponse"];
+                };
+            };
+            /** @description The session is invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request failed CSRF validation. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The row changed or no longer exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The row is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider failed to update the row. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    deleteDataRows: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description The affected row count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataMutationResponse"];
+                };
+            };
+            /** @description The session is invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request failed CSRF validation. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description A selected row changed or no longer exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider failed to delete the rows. */
             502: {
                 headers: {
                     [name: string]: unknown;

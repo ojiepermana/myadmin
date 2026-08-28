@@ -1,25 +1,25 @@
 import type { ProviderContext } from './metadata';
-import type { DataPage, DataPageRequest, DataRow, MutationResult, ObjectRef } from '../models';
+import type { DataPage, DataPageRequest, MutationResult, ObjectRef, QueryCell } from '../models';
 
 export interface DataInsertRequest {
   table: ObjectRef;
-  values: DataRow;
+  values: Record<string, QueryCell>;
 }
 
 export interface DataUpdateRequest {
   table: ObjectRef;
-  key: DataRow;
-  values: DataRow;
+  key: Record<string, QueryCell>;
+  values: Record<string, QueryCell>;
 }
 
 export interface DataDeleteRequest {
   table: ObjectRef;
-  key: DataRow;
+  key: Record<string, QueryCell>;
 }
 
 export interface DataBulkDeleteRequest {
   table: ObjectRef;
-  filter: Record<string, unknown>;
+  identities: readonly Record<string, QueryCell>[];
 }
 
 /** Server side data access and mutations. Unsupported writes fail closed. */

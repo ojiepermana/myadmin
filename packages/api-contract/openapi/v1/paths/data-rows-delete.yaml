@@ -1,0 +1,35 @@
+post:
+  operationId: deleteDataRows
+  tags: [data]
+  summary: Delete selected rows from a table atomically
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema: { type: string, enum: ['1'] }
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/data.yaml#/DataDeleteRequest }
+  responses:
+    '200':
+      description: The affected row count
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/data.yaml#/DataMutationResponse }
+    '401':
+      description: The session is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '403':
+      description: The request failed CSRF validation.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '409':
+      description: A selected row changed or no longer exists.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The request is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider failed to delete the rows.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }

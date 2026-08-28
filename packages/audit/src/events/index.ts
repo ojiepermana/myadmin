@@ -42,6 +42,9 @@ export const AuditEvents = {
     truncated: required('table.truncated', 'table'),
     dropped: required('table.dropped', 'table'),
   },
+  data: {
+    rows_deleted: required('data.rows_deleted', 'table'),
+  },
   schema: {
     created: required('schema.created', 'schema'),
     renamed: required('schema.renamed', 'schema'),

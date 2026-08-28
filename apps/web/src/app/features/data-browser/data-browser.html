@@ -23,10 +23,20 @@
             Export
           </button>
         }
+        @if (editable()) {
+          <button Button type="button" (click)="openInsert()">Add row</button>
+        }
         @if (isView()) {
           <span
             class="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-violet-700 dark:text-violet-300"
             >Read only</span
+          >
+        }
+        @if (!isView() && response() && !editable()) {
+          <span
+            class="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-amber-700 dark:text-amber-300"
+            [attr.title]="response()?.rowIdentity?.reason"
+            >Read only: {{ response()?.rowIdentity?.reason }}</span
           >
         }
         @if (response()) {
@@ -173,8 +183,12 @@
       <app-result-grid
         [result]="result"
         mode="data-browser"
+        [editable]="editable()"
+        [rowIdentityColumns]="response()?.rowIdentity?.columns ?? []"
         (dataBrowserFilterChange)="updateFilter($event)"
         (dataBrowserSortChange)="updateSort($event)"
+        (dataBrowserEditRequested)="beginEdit($event)"
+        (dataBrowserDeleteRequested)="deleteRows.set($event)"
       />
       <footer
         class="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 bg-card/80 px-5 py-3 text-sm sm:px-7"
@@ -239,5 +253,167 @@
     <button Button type="button" [disabled]="exporting()" (click)="startExport()">
       {{ exporting() ? 'Starting…' : 'Start export' }}
     </button>
+  </DialogFooter>
+</Dialog>
+<Dialog [open]="editState() !== null" (openChange)="$event || cancelEdit()">
+  <DialogHeader>
+    <DialogTitle>Edit {{ editState()?.column }}</DialogTitle>
+    <DialogDescription>
+      Type: {{ editColumn()?.dataType }}. Double click a cell to edit it. NULL is distinct from an
+      empty string.
+    </DialogDescription>
+  </DialogHeader>
+  <DialogContent>
+    <div class="grid gap-3">
+      @if (editColumn()?.dataType?.toLowerCase()?.includes('json')) {
+        <textarea
+          class="min-h-36 rounded-md border border-input bg-background p-3 font-mono text-sm"
+          [value]="editText()"
+          (input)="editText.set($any($event.target).value)"
+          aria-label="JSON value"
+        ></textarea>
+      } @else if (editEnumOptions().length > 0) {
+        <select
+          class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          [value]="editText()"
+          (change)="editText.set($any($event.target).value)"
+          aria-label="Enum value"
+        >
+          @for (option of editEnumOptions(); track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      } @else if (editColumn()?.dataType?.toLowerCase()?.includes('bool')) {
+        <select
+          class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          [value]="editText()"
+          (change)="editText.set($any($event.target).value)"
+          aria-label="Boolean value"
+        >
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+      } @else {
+        <input
+          class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          [type]="editInputType()"
+          [value]="editText()"
+          (input)="editText.set($any($event.target).value)"
+          aria-label="Cell value"
+        />
+      }
+      @if (editColumn()?.nullable) {
+        <label class="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            [checked]="editNull()"
+            (change)="editNull.set($any($event.target).checked)"
+          />
+          Set NULL explicitly
+        </label>
+      }
+      @if (editError(); as message) {
+        <p class="text-sm text-destructive" role="alert">{{ message }}</p>
+      }
+    </div>
+  </DialogContent>
+  <DialogFooter>
+    <button Button type="button" variant="outline" (click)="cancelEdit()">Cancel</button>
+    <button Button type="button" (click)="saveEdit()">Save cell</button>
+  </DialogFooter>
+</Dialog>
+
+<Dialog [open]="deleteRows() !== null" (openChange)="$event || cancelDelete()">
+  <DialogHeader>
+    <DialogTitle>Delete selected rows?</DialogTitle>
+    <DialogDescription>
+      This permanently deletes {{ deleteTarget() }}. The operation is atomic and will be audited.
+    </DialogDescription>
+  </DialogHeader>
+  <DialogFooter>
+    <button Button type="button" variant="outline" (click)="cancelDelete()">Cancel</button>
+    <button Button type="button" variant="destructive" (click)="confirmDelete()">
+      Delete rows
+    </button>
+  </DialogFooter>
+</Dialog>
+
+<Dialog [open]="insertOpen()" (openChange)="$event || cancelInsert()">
+  <DialogHeader>
+    <DialogTitle>Insert row</DialogTitle>
+    <DialogDescription>
+      Identity and generated columns use their database defaults. Values are validated by the
+      provider before insertion. Leave every field blank to insert a row using database defaults.
+    </DialogDescription>
+  </DialogHeader>
+  <DialogContent>
+    <div class="grid max-h-[55vh] gap-4 overflow-y-auto">
+      @for (column of insertableColumns(); track column.name) {
+        <label class="grid gap-1.5 text-sm">
+          <span class="font-medium"
+            >{{ column.name }}
+            <span class="text-muted-foreground">({{ column.dataType }})</span></span
+          >
+          @if (column.dataType.toLowerCase().includes('json')) {
+            <textarea
+              class="min-h-24 rounded-md border border-input bg-background p-3 font-mono text-sm"
+              [value]="insertValues()[column.name] ?? ''"
+              (input)="updateInsertValue(column.name, $any($event.target).value)"
+            ></textarea>
+          } @else if (enumOptions(column.dataType).length > 0) {
+            <select
+              class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              [value]="insertValues()[column.name] ?? enumOptions(column.dataType)[0]"
+              (change)="updateInsertValue(column.name, $any($event.target).value)"
+            >
+              @for (option of enumOptions(column.dataType); track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          } @else if (column.dataType.toLowerCase().includes('bool')) {
+            <select
+              class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              [value]="insertValues()[column.name] ?? 'false'"
+              (change)="updateInsertValue(column.name, $any($event.target).value)"
+            >
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          } @else {
+            <input
+              class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              [type]="
+                column.dataType
+                  .toLowerCase()
+                  .match('int|numeric|decimal|real|double|float|serial|money|year')
+                  ? 'number'
+                  : column.dataType.toLowerCase().match('date|time|timestamp')
+                    ? 'datetime-local'
+                    : 'text'
+              "
+              [value]="insertValues()[column.name] ?? ''"
+              (input)="updateInsertValue(column.name, $any($event.target).value)"
+            />
+          }
+          @if (column.nullable) {
+            <span class="flex items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                [checked]="insertNulls().has(column.name)"
+                (change)="toggleInsertNull(column.name, $any($event.target).checked)"
+              />
+              Set NULL
+            </span>
+          }
+        </label>
+      }
+      @if (insertError(); as message) {
+        <p class="text-sm text-destructive" role="alert">{{ message }}</p>
+      }
+    </div>
+  </DialogContent>
+  <DialogFooter>
+    <button Button type="button" variant="outline" (click)="cancelInsert()">Cancel</button>
+    <button Button type="button" (click)="saveInsert()">Insert row</button>
   </DialogFooter>
 </Dialog>

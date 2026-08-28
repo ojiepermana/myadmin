@@ -1567,6 +1567,7 @@ export function createServerApp(options: ServerAppOptions = {}) {
       setupService,
       connectionManager,
       secureCookies,
+      ...(auditRepository ? { auditWriter: new AuditWriter(auditRepository) } : {}),
     });
     application = registerViewRoutes(application, '/api/v1', {
       ...(auditRepository ? { auditWriter: new AuditWriter(auditRepository) } : {}),
@@ -1772,6 +1773,7 @@ export function createApp(
     setupService,
     connectionManager,
     secureCookies: false,
+    auditWriter: new AuditWriter(store.audit),
   });
   const exportService =
     options.exportService ??

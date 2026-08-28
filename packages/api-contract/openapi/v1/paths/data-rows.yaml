@@ -1,0 +1,67 @@
+post:
+  operationId: insertDataRow
+  tags: [data]
+  summary: Insert one typed row into a table
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema: { type: string, enum: ['1'] }
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/data.yaml#/DataInsertRequest }
+  responses:
+    '200':
+      description: The inserted row
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/data.yaml#/DataMutationResponse }
+    '401':
+      description: The session is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '403':
+      description: The request failed CSRF validation.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The row is invalid or cannot be inserted.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider failed to insert the row.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+patch:
+  operationId: updateDataRow
+  tags: [data]
+  summary: Update one typed row using its identity
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema: { type: string, enum: ['1'] }
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/data.yaml#/DataUpdateRequest }
+  responses:
+    '200':
+      description: The updated row
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/data.yaml#/DataMutationResponse }
+    '401':
+      description: The session is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '403':
+      description: The request failed CSRF validation.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '409':
+      description: The row changed or no longer exists.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '422':
+      description: The row is invalid.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
+    '502':
+      description: The provider failed to update the row.
+      content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } }
