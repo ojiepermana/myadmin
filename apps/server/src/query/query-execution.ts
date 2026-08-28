@@ -2,6 +2,7 @@ import {
   DbError,
   type ConnectionHandle,
   type DatabaseProvider,
+  type DatabaseEngine,
   type QueryStatement,
   type ServerInfo,
   type CapabilityDescription,
@@ -18,7 +19,8 @@ export const DEFAULT_QUERY_SESSION_IDLE_TIMEOUT_MINUTES = 30;
 export const DEFAULT_QUERY_RESULT_MAX_ROWS = 1_000;
 
 export type QueryExecutionMode = 'selection' | 'full' | 'statementAtCursor';
-export type QueryExecutionState = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type QueryExecutionState =
+  'queued' | 'running' | 'cancelling' | 'completed' | 'failed' | 'cancelled';
 export type QueryStatementState = 'pending' | 'running' | 'done' | 'error' | 'skipped';
 
 export interface StartQueryExecutionInput {
@@ -49,6 +51,20 @@ export interface QueryAutocompleteItem {
 
 export interface QueryAutocompleteResponse {
   readonly items: QueryAutocompleteItem[];
+}
+
+export interface QueryExplainInput {
+  readonly connectionId: string;
+  readonly database: string;
+  readonly schema?: string;
+  readonly sql: string;
+  readonly tabSessionId?: string;
+}
+
+export interface QueryExplainResponse {
+  readonly planText: string;
+  readonly engine: DatabaseEngine;
+  readonly durationMs: number;
 }
 
 export interface QueryErrorSnapshot {
@@ -136,6 +152,9 @@ interface MutableExecution {
   statements: MutableStatement[];
   currentIndex: number;
   transactionActive: boolean;
+  cancelRequested: boolean;
+  cancelPromise?: Promise<void>;
+  session?: QueryTabSession;
   durationMs?: number;
   error?: QueryErrorSnapshot;
 }
@@ -150,7 +169,13 @@ interface QueryTabSession extends QuerySessionHandle {
 }
 
 export type QueryExecutionErrorCode =
-  'QUERY_NOT_FOUND' | 'NOT_CONNECTED' | 'QUERY_VALIDATION_FAILED' | 'QUERY_UNAVAILABLE';
+  | 'QUERY_NOT_FOUND'
+  | 'NOT_CONNECTED'
+  | 'QUERY_VALIDATION_FAILED'
+  | 'QUERY_UNAVAILABLE'
+  | 'QUERY_CANCEL_FAILED'
+  | 'QUERY_UNSUPPORTED'
+  | 'QUERY_BUSY';
 
 export class QueryExecutionServiceError extends Error {
   public readonly code: QueryExecutionErrorCode;
@@ -234,6 +259,9 @@ function queryError(error: unknown, sql: string, statementStart = 0): QueryError
   if (error instanceof ConnectionManagerError) {
     return { code: error.code, category: 'connection', message: error.message };
   }
+  if (error instanceof QueryExecutionServiceError) {
+    return { code: error.code, category: 'query', message: error.message };
+  }
   return {
     code: 'QUERY_EXECUTION_FAILED',
     category: 'internal',
@@ -279,6 +307,51 @@ function statementMessage(result: SerializedQueryResult): string {
   }
   if (result.truncated) return `Result truncated, first ${result.rows.length} rows shown.`;
   return `${result.totalRows} row${result.totalRows === 1 ? '' : 's'} returned.`;
+}
+
+function isTerminalState(state: QueryExecutionState): boolean {
+  return state === 'completed' || state === 'failed' || state === 'cancelled';
+}
+
+function explainPlanText(plan: unknown): string {
+  if (typeof plan === 'string') return plan;
+  if (Array.isArray(plan)) {
+    return plan
+      .map((row) => {
+        if (typeof row === 'string' || typeof row === 'number' || typeof row === 'boolean') {
+          return String(row);
+        }
+        if (row && typeof row === 'object') {
+          const values = Object.values(row as Record<string, unknown>);
+          if (values.length === 1) return String(values[0] ?? '');
+          return values.map((value) => String(value ?? '')).join('\t');
+        }
+        return String(row ?? '');
+      })
+      .join('\n');
+  }
+  try {
+    return JSON.stringify(plan, null, 2) ?? String(plan);
+  } catch {
+    return String(plan);
+  }
+}
+
+function validateExplainInput(input: QueryExplainInput): QueryExplainInput {
+  return {
+    ...input,
+    connectionId: normalizedText(input.connectionId, 'Connection id'),
+    database: normalizedText(input.database, 'Database'),
+    sql: normalizedText(input.sql, 'SQL'),
+    ...(input.schema === undefined ? {} : { schema: normalizedText(input.schema, 'Schema') }),
+    ...(input.tabSessionId === undefined
+      ? {}
+      : { tabSessionId: normalizedText(input.tabSessionId, 'Tab session id') }),
+  };
+}
+
+function isExplainAnalyze(sql: string): boolean {
+  return /^explain\s*(?:analyze\b|\([^)]*\banalyze\b[^)]*\))/i.test(sql.trim());
 }
 
 function autocompleteParent(
@@ -355,6 +428,7 @@ export class QueryExecutionService {
       statements: [],
       currentIndex: -1,
       transactionActive: false,
+      cancelRequested: false,
       createdAt: new Date(this.now().getTime()),
     };
     this.executions.set(execution.executionId, execution);
@@ -371,6 +445,135 @@ export class QueryExecutionService {
 
   public canSubscribe(userId: string, executionId: string): boolean {
     return this.executions.get(executionId)?.ownerUserId === userId;
+  }
+
+  /** Requests cancellation for one owned execution without closing its tab session. */
+  public async cancel(executionId: string, ownerUserId: string): Promise<QueryExecutionSnapshot> {
+    const execution = this.executions.get(executionId);
+    if (!execution || execution.ownerUserId !== ownerUserId) {
+      throw new QueryExecutionServiceError('QUERY_NOT_FOUND', 'Query not found.', 404);
+    }
+    if (isTerminalState(execution.state)) return this.snapshot(execution);
+    if (execution.cancelPromise) {
+      await execution.cancelPromise;
+      return this.snapshot(execution);
+    }
+
+    execution.cancelRequested = true;
+    execution.state = 'cancelling';
+    this.emit(execution);
+
+    const current = execution.statements[execution.currentIndex];
+    const session = execution.session;
+    const query = session?.provider.query;
+    if (!session || !query || current?.state !== 'running') {
+      this.finishQueuedCancellation(execution);
+      return this.snapshot(execution);
+    }
+    if (!session.capability.capabilities.cancelQuery) {
+      execution.cancelRequested = false;
+      execution.state = 'running';
+      this.emit(execution);
+      throw new QueryExecutionServiceError(
+        'QUERY_UNSUPPORTED',
+        session.capability.reasons?.cancelQuery ?? 'Query cancellation is unavailable.',
+        501,
+      );
+    }
+
+    const cancellation = query.cancel(session.handle).catch((error: unknown) => {
+      if (isTerminalState(execution.state) && execution.state !== 'cancelling') return;
+      execution.cancelRequested = false;
+      execution.state = 'running';
+      this.emit(execution);
+      throw new QueryExecutionServiceError(
+        'QUERY_CANCEL_FAILED',
+        error instanceof Error ? error.message : 'The provider could not cancel the query.',
+        502,
+      );
+    });
+    execution.cancelPromise = cancellation;
+    await cancellation;
+    return this.snapshot(execution);
+  }
+
+  /** Runs a provider explain operation in the requested tab session. */
+  public async explain(
+    actor: ConnectionActor,
+    rawInput: QueryExplainInput,
+  ): Promise<QueryExplainResponse> {
+    if (this.disposed) {
+      throw new QueryExecutionServiceError(
+        'QUERY_UNAVAILABLE',
+        'Query execution is unavailable.',
+        503,
+      );
+    }
+    const input = validateExplainInput(rawInput);
+    if (isExplainAnalyze(input.sql)) {
+      throw new QueryExecutionServiceError(
+        'QUERY_UNSUPPORTED',
+        'EXPLAIN ANALYZE is not available in V1 because it executes the statement.',
+        501,
+      );
+    }
+    if (!this.options.connectionManager.isConnected(actor.id, input.connectionId)) {
+      throw new QueryExecutionServiceError(
+        'NOT_CONNECTED',
+        'Connect the database before explaining a query.',
+        409,
+      );
+    }
+    const tabSessionId = input.tabSessionId ?? `explain:${input.connectionId}:${input.database}`;
+    const tabKey = this.sessionKey(actor.id, tabSessionId);
+    const busy = [...this.executions.values()].some(
+      (execution) =>
+        this.sessionKey(execution.ownerUserId, execution.tabSessionId) === tabKey &&
+        (execution.state === 'queued' ||
+          execution.state === 'running' ||
+          execution.state === 'cancelling'),
+    );
+    if (busy) {
+      throw new QueryExecutionServiceError(
+        'QUERY_BUSY',
+        'Wait for the active query in this tab to finish before explaining it.',
+        409,
+      );
+    }
+
+    const session = await this.sessionFor(actor, {
+      tabSessionId,
+      connectionId: input.connectionId,
+      database: input.database,
+      schema: input.schema,
+    });
+    const query = session.provider.query;
+    if (!query) {
+      throw new QueryExecutionServiceError(
+        'QUERY_UNAVAILABLE',
+        'Query execution is unavailable.',
+        503,
+      );
+    }
+    if (!session.capability.capabilities.explain) {
+      throw new QueryExecutionServiceError(
+        'QUERY_UNSUPPORTED',
+        session.capability.reasons?.explain ?? 'Explain is unavailable for this provider.',
+        501,
+      );
+    }
+
+    const startedAt = performance.now();
+    try {
+      const result = await query.explain(session.handle, { sql: input.sql });
+      return {
+        planText: explainPlanText(result.plan),
+        engine: session.serverInfo.engine,
+        durationMs: Math.max(0, Math.round(performance.now() - startedAt)),
+      };
+    } finally {
+      session.lastActivityAt = new Date(this.now().getTime());
+    }
   }
 
   public async autocomplete(
@@ -433,10 +636,22 @@ export class QueryExecutionService {
     return { items };
   }
 
-  public async closeSession(ownerUserId: string, tabSessionId: string): Promise<boolean> {
+  public async closeSession(
+    ownerUserId: string,
+    tabSessionId: string,
+    force = false,
+  ): Promise<boolean> {
     const key = this.sessionKey(ownerUserId, tabSessionId);
     const session = this.sessions.get(key);
     if (!session) return false;
+    const active = [...this.executions.values()].some(
+      (execution) =>
+        this.sessionKey(execution.ownerUserId, execution.tabSessionId) === key &&
+        (execution.state === 'queued' ||
+          execution.state === 'running' ||
+          execution.state === 'cancelling'),
+    );
+    if (active && !force) return false;
     this.sessions.delete(key);
     await this.options.connectionManager.closeQuerySession(session);
     return true;
@@ -445,7 +660,12 @@ export class QueryExecutionService {
   public async sweepIdle(at = this.now()): Promise<number> {
     const activeTabs = new Set(
       [...this.executions.values()]
-        .filter((execution) => execution.state === 'queued' || execution.state === 'running')
+        .filter(
+          (execution) =>
+            execution.state === 'queued' ||
+            execution.state === 'running' ||
+            execution.state === 'cancelling',
+        )
         .map((execution) => this.sessionKey(execution.ownerUserId, execution.tabSessionId)),
     );
     const idle = [...this.sessions.entries()].filter(
@@ -499,9 +719,12 @@ export class QueryExecutionService {
     const startedAt = performance.now();
     let session: QueryTabSession | undefined;
     try {
+      if (execution.state === 'cancelled') return;
       execution.state = 'running';
       this.emit(execution);
       session = await this.sessionFor(owner, input);
+      execution.session = session;
+      if (execution.cancelRequested) return;
       const query = session.provider.query;
       if (!query)
         throw new QueryExecutionServiceError(
@@ -535,6 +758,10 @@ export class QueryExecutionService {
         execution.currentIndex = index;
         current.state = 'running';
         this.emit(execution);
+        if (execution.cancelRequested) {
+          this.finishQueuedCancellation(execution);
+          return;
+        }
         const statementStartedAt = performance.now();
         try {
           const result = await query.execute(session.handle, { sql: statement.sql });
@@ -555,7 +782,10 @@ export class QueryExecutionService {
           current.error = queryError(error, statement.sql, current.startOffset);
           for (const skipped of execution.statements.slice(index + 1)) skipped.state = 'skipped';
           execution.error = current.error;
-          execution.state = 'failed';
+          execution.state =
+            execution.cancelRequested && current.error.category === 'cancelled'
+              ? 'cancelled'
+              : 'failed';
           execution.transactionActive = session.transactionActive;
           this.emit(execution);
           break;
@@ -668,6 +898,16 @@ export class QueryExecutionService {
 
   private sessionKey(userId: string, tabSessionId: string): string {
     return `${userId}\u0000${tabSessionId}`;
+  }
+
+  private finishQueuedCancellation(execution: MutableExecution): void {
+    for (const statement of execution.statements) {
+      if (statement.state === 'pending' || statement.state === 'running') {
+        statement.state = 'skipped';
+      }
+    }
+    execution.state = 'cancelled';
+    this.emit(execution);
   }
 }
 

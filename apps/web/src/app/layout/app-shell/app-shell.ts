@@ -230,7 +230,7 @@ export class AppShell {
     event.preventDefault();
     event.stopPropagation();
     const nextTab = this.workspace.closeTab(tab.id);
-    if (nextTab && tab.type === 'query-editor') {
+    if (tab.type === 'query-editor') {
       void firstValueFrom(this.sdk.query.closeSession(tab.id)).catch(() => undefined);
     }
     if (nextTab) {

@@ -1,14 +1,20 @@
 import { describe, expect, test } from 'bun:test';
+import { DbError } from '@myadmin/database-core';
 import type {
   CapabilityDescription,
   ConnectionHandle,
   DatabaseProvider,
+  ExplainResult,
   QueryRequest,
   QueryResult,
   ServerInfo,
 } from '@myadmin/database-core';
 import type { QueryHistoryEntry, QueryHistoryRepository } from '@myadmin/internal-domain';
-import { QueryExecutionService, type QuerySessionGateway } from '../src/query/query-execution';
+import {
+  QueryExecutionService,
+  type QueryExplainInput,
+  type QuerySessionGateway,
+} from '../src/query/query-execution';
 
 const handle: ConnectionHandle = { id: 'query-session', openedAt: new Date(0) };
 const serverInfo: ServerInfo = { engine: 'postgresql', version: '16.4' };
@@ -56,7 +62,13 @@ class HistoryFake implements QueryHistoryRepository {
   }
 }
 
-function providerFor(execute: (request: QueryRequest) => Promise<QueryResult>): DatabaseProvider {
+function providerFor(
+  execute: (request: QueryRequest) => Promise<QueryResult>,
+  options: {
+    cancel?: (handle: ConnectionHandle) => Promise<void>;
+    explain?: (handle: ConnectionHandle, request: QueryRequest) => Promise<ExplainResult>;
+  } = {},
+): DatabaseProvider {
   return {
     engine: 'postgresql',
     connection: {
@@ -84,8 +96,8 @@ function providerFor(execute: (request: QueryRequest) => Promise<QueryResult>): 
         return statements;
       },
       execute: (_context, request) => execute(request),
-      cancel: async () => undefined,
-      explain: async () => ({ plan: [] }),
+      cancel: options.cancel ?? (async () => undefined),
+      explain: options.explain ?? (async () => ({ plan: [] })),
     },
   };
 }
@@ -96,8 +108,14 @@ class GatewayFake implements QuerySessionGateway {
   public closeCalls = 0;
   public connected = true;
 
-  public constructor(execute: (request: QueryRequest) => Promise<QueryResult>) {
-    this.provider = providerFor(execute);
+  public constructor(
+    execute: (request: QueryRequest) => Promise<QueryResult>,
+    options: {
+      cancel?: (handle: ConnectionHandle) => Promise<void>;
+      explain?: (handle: ConnectionHandle, request: QueryRequest) => Promise<ExplainResult>;
+    } = {},
+  ) {
+    this.provider = providerFor(execute, options);
   }
 
   isConnected(): boolean {
@@ -121,7 +139,12 @@ async function waitForTerminal(
 ): Promise<NonNullable<ReturnType<QueryExecutionService['getForOwner']>>> {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const execution = service.getForOwner(executionId, 'user-1');
-    if (execution?.state === 'completed' || execution?.state === 'failed') return execution;
+    if (
+      execution?.state === 'completed' ||
+      execution?.state === 'failed' ||
+      execution?.state === 'cancelled'
+    )
+      return execution;
     await new Promise((resolve) => setTimeout(resolve, 1));
   }
   throw new Error('execution did not finish');
@@ -211,6 +234,156 @@ describe('QueryExecutionService', () => {
     expect(second.transactionActive).toBe(false);
     expect(gateway.opened).toEqual(['connection-1']);
     expect(history.entries.map((entry) => entry.status)).toEqual(['completed', 'completed']);
+    await service.dispose();
+  });
+
+  test('cancels the exact running execution and preserves completed statements', async () => {
+    const history = new HistoryFake();
+    let rejectQuery!: (error: unknown) => void;
+    const queryResult = new Promise<QueryResult>((_resolve, reject) => {
+      rejectQuery = reject;
+    });
+    const cancelHandles: ConnectionHandle[] = [];
+    const gateway = new GatewayFake(
+      async ({ sql }) => {
+        if (sql.includes('pg_sleep')) return queryResult;
+        return { columns: ['value'], rows: [{ value: 1 }] };
+      },
+      {
+        cancel: async (sessionHandle) => {
+          cancelHandles.push(sessionHandle);
+        },
+      },
+    );
+    const service = new QueryExecutionService({
+      connectionManager: gateway,
+      historyRepository: history,
+    });
+    const executionId = service.start(
+      { id: 'user-1', username: 'user-1', role: 'user' },
+      {
+        connectionId: 'connection-1',
+        database: 'app',
+        sql: 'SELECT 1; SELECT pg_sleep(10); SELECT 3;',
+        mode: 'full',
+        tabSessionId: 'tab-1',
+      },
+    );
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const current = service.getForOwner(executionId, 'user-1');
+      if (current?.state === 'running' && current.currentIndex === 1) break;
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    }
+
+    const cancelling = service.cancel(executionId, 'user-1');
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (service.getForOwner(executionId, 'user-1')?.state === 'cancelling') break;
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    }
+    expect(service.getForOwner(executionId, 'user-1')?.state).toBe('cancelling');
+    expect(cancelHandles).toEqual([handle]);
+    expect(await service.closeSession('user-1', 'tab-1')).toBe(false);
+    expect(gateway.closeCalls).toBe(0);
+    rejectQuery(new DbError({ category: 'cancelled', message: 'cancelled by user' }));
+    await cancelling;
+    const execution = await waitForTerminal(service, executionId);
+
+    expect(execution.state).toBe('cancelled');
+    expect(execution.statements.map((statement) => statement.state)).toEqual([
+      'done',
+      'error',
+      'skipped',
+    ]);
+    expect(execution.statements[0]?.result?.rows[0]?.['value']).toEqual({
+      type: 'number',
+      value: '1',
+    });
+    expect(execution.statements[1]?.error?.category).toBe('cancelled');
+    expect(history.entries[0]?.status).toBe('cancelled');
+    expect(await service.closeSession('user-1', 'tab-1')).toBe(true);
+    expect(gateway.closeCalls).toBe(1);
+    await service.dispose();
+  });
+
+  test('treats late cancellation as an idempotent final-state read', async () => {
+    const history = new HistoryFake();
+    let cancelCalls = 0;
+    const gateway = new GatewayFake(async () => ({ columns: [], rows: [] }), {
+      cancel: async () => {
+        cancelCalls += 1;
+      },
+    });
+    const service = new QueryExecutionService({
+      connectionManager: gateway,
+      historyRepository: history,
+    });
+    const executionId = service.start(
+      { id: 'user-1', username: 'user-1', role: 'user' },
+      {
+        connectionId: 'connection-1',
+        database: 'app',
+        sql: 'SELECT 1;',
+        mode: 'full',
+        tabSessionId: 'tab-1',
+      },
+    );
+    const completed = await waitForTerminal(service, executionId);
+    const first = await service.cancel(executionId, 'user-1');
+    const second = await service.cancel(executionId, 'user-1');
+
+    expect(completed.state).toBe('completed');
+    expect(first).toMatchObject({ executionId, state: 'completed' });
+    expect(second).toMatchObject({ executionId, state: 'completed' });
+    expect(cancelCalls).toBe(0);
+    await service.dispose();
+  });
+
+  test('explains through the same tab session without changing transaction state', async () => {
+    const history = new HistoryFake();
+    const explained: Array<{ handle: ConnectionHandle; request: QueryRequest }> = [];
+    const gateway = new GatewayFake(async () => ({ columns: [], rows: [] }), {
+      explain: async (sessionHandle, request) => {
+        explained.push({ handle: sessionHandle, request });
+        return { plan: [{ 'QUERY PLAN': 'Seq Scan on users' }, { 'QUERY PLAN': 'actual: no' }] };
+      },
+    });
+    const service = new QueryExecutionService({
+      connectionManager: gateway,
+      historyRepository: history,
+    });
+    const actor = { id: 'user-1', username: 'user-1', role: 'user' } as const;
+    const beginId = service.start(actor, {
+      connectionId: 'connection-1',
+      database: 'app',
+      sql: 'BEGIN;',
+      mode: 'full',
+      tabSessionId: 'tab-1',
+    });
+    const begin = await waitForTerminal(service, beginId);
+    const input: QueryExplainInput = {
+      connectionId: 'connection-1',
+      database: 'app',
+      sql: 'SELECT * FROM users;',
+      tabSessionId: 'tab-1',
+    };
+    const response = await service.explain(actor, input);
+
+    expect(response).toEqual({
+      planText: 'Seq Scan on users\nactual: no',
+      engine: 'postgresql',
+      durationMs: expect.any(Number),
+    });
+    expect(begin.transactionActive).toBe(true);
+    expect(explained).toEqual([{ handle, request: { sql: 'SELECT * FROM users;' } }]);
+    expect(gateway.opened).toEqual(['connection-1']);
+    await expect(
+      service.explain(actor, {
+        connectionId: 'connection-1',
+        database: 'app',
+        sql: 'EXPLAIN ANALYZE SELECT * FROM users;',
+        tabSessionId: 'tab-1',
+      }),
+    ).rejects.toMatchObject({ code: 'QUERY_UNSUPPORTED', status: 501 });
     await service.dispose();
   });
 });

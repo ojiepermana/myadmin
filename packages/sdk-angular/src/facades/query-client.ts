@@ -10,6 +10,8 @@ import { MYADMIN_SDK_TRANSPORT, type SdkTransport } from '../transport/transport
 
 export type QueryExecutionRequest = components['schemas']['QueryExecutionRequest'];
 export type QueryExecution = components['schemas']['QueryExecution'];
+export type QueryExplainRequest = components['schemas']['QueryExplainRequest'];
+export type QueryExplainResponse = components['schemas']['QueryExplainResponse'];
 export type QueryResult = components['schemas']['QueryResult'];
 export type QueryCell = components['schemas']['QueryCell'];
 export type QueryAutocompleteItem = components['schemas']['QueryAutocompleteItem'];
@@ -56,6 +58,27 @@ export class QueryClient {
     });
   }
 
+  public cancel(
+    executionId: string,
+  ): Observable<
+    operations['cancelQueryExecution']['responses'][200]['content']['application/json']
+  > {
+    return this.transport.request({
+      method: 'POST',
+      path: `/query/executions/${encodeURIComponent(executionId)}/cancel`,
+      requiresSession: true,
+    });
+  }
+
+  public explain(request: QueryExplainRequest): Observable<QueryExplainResponse> {
+    return this.transport.request({
+      method: 'POST',
+      path: '/query/explain',
+      body: request,
+      requiresSession: true,
+    });
+  }
+
   public metadata(input: {
     connectionId: string;
     database: string;
@@ -72,10 +95,11 @@ export class QueryClient {
     });
   }
 
-  public closeSession(tabSessionId: string): Observable<QuerySessionCloseResponse> {
+  public closeSession(tabSessionId: string, force = false): Observable<QuerySessionCloseResponse> {
     return this.transport.request<QuerySessionCloseResponse>({
       method: 'POST',
       path: `/query/sessions/${encodeURIComponent(tabSessionId)}/close`,
+      ...(force ? { body: { force: true } } : {}),
       requiresSession: true,
     });
   }

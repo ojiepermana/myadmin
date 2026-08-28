@@ -1,0 +1,60 @@
+post:
+  operationId: explainQuery
+  tags: [query]
+  summary: Explain an owned query without executing its data operation
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/query.yaml#/QueryExplainRequest
+  responses:
+    '200':
+      description: Text execution plan.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/QueryExplainResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or origin validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected or the query tab is busy.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The explain request is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '501':
+      description: Explain is unavailable for this provider.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider returned a normalized explain error.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

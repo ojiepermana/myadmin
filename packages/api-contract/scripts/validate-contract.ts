@@ -54,6 +54,8 @@ const initialPaths = {
   '/server-groups/{id}': 'paths/server-group-by-id.yaml',
   '/query/executions': 'paths/query-executions.yaml',
   '/query/executions/{id}': 'paths/query-execution-by-id.yaml',
+  '/query/executions/{id}/cancel': 'paths/query-execution-cancel.yaml',
+  '/query/explain': 'paths/query-explain.yaml',
   '/query/metadata': 'paths/query-metadata.yaml',
   '/query/sessions/{id}/close': 'paths/query-session-close.yaml',
   '/connections/{id}/databases': 'paths/explorer-databases.yaml',

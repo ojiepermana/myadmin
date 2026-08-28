@@ -1,0 +1,64 @@
+@for (statement of statements(); track $index) {
+  @if (statement.error) {
+    <div
+      class="mx-5 mb-3 rounded-md border border-destructive/20 bg-destructive/5 px-4 py-2 text-sm text-destructive sm:mx-7"
+      role="alert"
+    >
+      Statement {{ $index + 1 }}: {{ statement.error.message }}
+    </div>
+  }
+  @if (statement.state === 'skipped') {
+    <div
+      class="mx-5 mb-3 rounded-md border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-300 sm:mx-7"
+      role="status"
+    >
+      Statement {{ $index + 1 }} was not run.
+    </div>
+  }
+  @if (statement.result) {
+    <div class="query-result-table mx-5 mb-4 overflow-auto rounded-md border border-border sm:mx-7">
+      <div class="border-b border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        Statement {{ $index + 1 }} · {{ statement.message }} · {{ statement.durationMs ?? 0 }} ms
+      </div>
+      <table class="w-full min-w-max text-left text-xs">
+        <caption class="sr-only">
+          Results for statement
+          {{
+            $index + 1
+          }}
+        </caption>
+        <thead class="bg-muted/20 text-muted-foreground">
+          <tr>
+            @for (column of statement.result.columns; track column) {
+              <th class="whitespace-nowrap border-b border-border px-3 py-2 font-semibold">
+                {{ column }}
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of statement.result.rows; track $index) {
+            <tr class="border-b border-border/60 last:border-0">
+              @for (column of statement.result.columns; track column) {
+                <td
+                  class="whitespace-pre-wrap px-3 py-2 align-top"
+                  [class]="cellClass(row[column])"
+                >
+                  {{ cellValue(row[column]) }}
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (statement.result.truncated) {
+        <p
+          class="border-t border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"
+        >
+          Only the configured row limit is shown. Total rows:
+          {{ statement.result.totalRows }}.
+        </p>
+      }
+    </div>
+  }
+}

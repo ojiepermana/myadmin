@@ -9,7 +9,11 @@ describe('query execution contract', () => {
     const operations = contractOperations(document);
     const acceptedOperation = operations.find((item) => item.operationId === 'startQueryExecution');
     const executionOperation = operations.find((item) => item.operationId === 'getQueryExecution');
-    if (!acceptedOperation || !executionOperation) throw new Error('Query operations are missing');
+    const cancelOperation = operations.find((item) => item.operationId === 'cancelQueryExecution');
+    const explainOperation = operations.find((item) => item.operationId === 'explainQuery');
+    if (!acceptedOperation || !executionOperation || !cancelOperation || !explainOperation) {
+      throw new Error('Query operations are missing');
+    }
 
     assertResponseMatchesContract(document, acceptedOperation, 202, {
       executionId: 'query-1',
@@ -50,5 +54,24 @@ describe('query execution contract', () => {
         state: 'completed',
       }),
     ).toThrow();
+
+    assertResponseMatchesContract(document, cancelOperation, 200, {
+      executionId: 'query-1',
+      tabSessionId: 'tab-1',
+      connectionId: 'connection-1',
+      database: 'app',
+      sql: 'SELECT 1;',
+      mode: 'full',
+      state: 'cancelled',
+      statements: [],
+      currentIndex: 0,
+      transactionActive: false,
+      createdAt: '2026-08-28T00:00:00.000Z',
+    });
+    assertResponseMatchesContract(document, explainOperation, 200, {
+      planText: 'Seq Scan on users',
+      engine: 'postgresql',
+      durationMs: 3,
+    });
   });
 });

@@ -10,6 +10,12 @@ post:
   operationId: closeQuerySession
   tags: [query]
   summary: Close a query tab provider session
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/query.yaml#/QuerySessionCloseRequest
   parameters:
     - in: header
       name: X-Myadmin-Csrf

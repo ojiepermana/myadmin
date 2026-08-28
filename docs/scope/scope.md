@@ -504,8 +504,8 @@ Membatalkan eksekusi berjalan dan rencana eksekusi teks. Done when: query tidur 
 
 - [x] Design it (spec): [0035](../specs/0035-query-cancel-explain/index.md)
 - [ ] Build it: /develop query-cancel-explain
-  - [ ] Cancel di use case query dengan konfirmasi provider dan idempotensi (AC-1, AC-2, AC-4)
-  - [ ] EXPLAIN per engine plus endpoint (AC-5, AC-6, AC-7)
+  - [x] Cancel di use case query dengan konfirmasi provider dan idempotensi (AC-1, AC-2, AC-4)
+  - [x] EXPLAIN per engine plus endpoint (AC-5, AC-6, AC-7)
   - [ ] UI tombol cancel bergerbang, aksi darurat, panel explain plus test (AC-3, AC-8)
 - [ ] [Verify it](../specs/0035-query-cancel-explain/verify.md): /check verify query-cancel-explain
 - [ ] [Test it](../specs/0035-query-cancel-explain/test.md): /test query-cancel-explain

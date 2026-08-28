@@ -19,10 +19,21 @@ import {
   placeholder,
 } from '@codemirror/view';
 import {
+  AlertDialogActionComponent,
+  AlertDialogCancelComponent,
+  AlertDialogComponent,
+  AlertDialogContentComponent,
+  AlertDialogDescriptionComponent,
+  AlertDialogFooterComponent,
+  AlertDialogHeaderComponent,
+  AlertDialogTitleComponent,
+} from '@ojiepermana/angular/component/alert-dialog';
+import {
   MyadminSdk,
   type Connection,
   type QueryExecution,
   type QueryExecutionRequest,
+  type QueryExplainResponse,
 } from '@myadmin/sdk-angular';
 import {
   TabsComponent,
@@ -31,6 +42,7 @@ import {
   TabsTriggerComponent,
 } from '@ojiepermana/angular/component/tabs';
 import { firstValueFrom } from 'rxjs';
+import { ConnectionStatusStore } from '../../core/connections/connection-status.store';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { WorkspaceStore } from '../../core/state/workspace.store';
 import { ResultGrid } from '../../shared/database-components/result-grid';
@@ -45,6 +57,14 @@ type MetadataKind = 'schemas' | 'objects' | 'columns';
     TabsContentComponent,
     TabsListComponent,
     TabsTriggerComponent,
+    AlertDialogActionComponent,
+    AlertDialogCancelComponent,
+    AlertDialogComponent,
+    AlertDialogContentComponent,
+    AlertDialogDescriptionComponent,
+    AlertDialogFooterComponent,
+    AlertDialogHeaderComponent,
+    AlertDialogTitleComponent,
   ],
   templateUrl: './query-editor.html',
   styleUrl: './query-editor.scss',
@@ -56,6 +76,7 @@ export class QueryEditor implements AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly workspace = inject(WorkspaceStore);
   private readonly sdk = inject(MyadminSdk);
+  private readonly connectionStatuses = inject(ConnectionStatusStore);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly errorPresenter = inject(ErrorPresenterService);
   private readonly language = new Compartment();
@@ -75,15 +96,39 @@ export class QueryEditor implements AfterViewInit {
   protected readonly loadingMetadata = signal(false);
   protected readonly metadataMessage = signal<string | null>(null);
   protected readonly message = signal<string | null>(null);
+  protected readonly explainLoading = signal(false);
+  protected readonly explainResult = signal<QueryExplainResponse | null>(null);
+  protected readonly explainMessage = signal<string | null>(null);
+  protected readonly disconnectOpen = signal(false);
+  protected readonly disconnecting = signal(false);
   protected readonly busy = computed(() => {
     const state = this.execution()?.state;
-    return state === 'queued' || state === 'running';
+    return state === 'queued' || state === 'running' || state === 'cancelling';
   });
   protected readonly selectedConnection = computed(
     () => this.connections().find((connection) => connection.id === this.connectionId()) ?? null,
   );
   protected readonly engine = computed(() => this.selectedConnection()?.engine ?? 'postgresql');
   protected readonly statements = computed(() => this.execution()?.statements ?? []);
+  protected readonly connectionStatus = computed(() =>
+    this.connectionStatuses.statusFor(this.connectionId()),
+  );
+  protected readonly canCancel = computed(() => {
+    const state = this.execution()?.state;
+    return (
+      state === 'running' &&
+      this.connectionStatus()?.capability?.capabilities?.['cancelQuery'] === true
+    );
+  });
+  protected readonly canExplain = computed(
+    () =>
+      !this.busy() &&
+      this.connectionStatus()?.status === 'connected' &&
+      this.connectionStatus()?.capability?.capabilities?.['explain'] === true,
+  );
+  protected readonly results = computed(
+    () => this.execution()?.statements.filter((statement) => statement.result !== undefined) ?? [],
+  );
   protected readonly errorPosition = computed(() => {
     const execution = this.execution();
     if (!execution) return null;
@@ -168,6 +213,8 @@ export class QueryEditor implements AfterViewInit {
       ...(mode === 'statementAtCursor' ? { cursorOffset: selection.head } : {}),
     };
     this.message.set(null);
+    this.explainResult.set(null);
+    this.explainMessage.set(null);
     this.stopWatching?.();
     try {
       const accepted = await firstValueFrom(this.sdk.query.execute(request));
@@ -205,6 +252,8 @@ export class QueryEditor implements AfterViewInit {
 
   protected onConnectionChange(id: string): void {
     this.connectionId.set(id);
+    this.explainResult.set(null);
+    this.explainMessage.set(null);
     const connection = this.connections().find((item) => item.id === id);
     if (!this.database() && connection?.database) this.database.set(connection.database);
     this.persistContext();
@@ -261,6 +310,93 @@ export class QueryEditor implements AfterViewInit {
     return 'schemas';
   }
 
+  protected statusLabel(): string {
+    const execution = this.execution();
+    if (!execution) return '';
+    if (execution.state === 'cancelling') return 'Cancelling…';
+    if (execution.state === 'cancelled') {
+      const index =
+        execution.currentIndex >= 0 ? ` at statement ${execution.currentIndex + 1}` : '';
+      return `Cancelled${index}`;
+    }
+    if (execution.state === 'failed') {
+      const index =
+        execution.currentIndex >= 0 ? ` at statement ${execution.currentIndex + 1}` : '';
+      return `Failed${index}`;
+    }
+    if (execution.state === 'completed') return 'Completed';
+    if (execution.state === 'running') return 'Executing';
+    return 'Queued';
+  }
+
+  protected explainDisabled(): boolean {
+    return !this.canExplain() || this.explainSql().length === 0;
+  }
+
+  protected async cancelExecution(): Promise<void> {
+    const execution = this.execution();
+    if (!execution || !this.canCancel()) return;
+    this.message.set(null);
+    try {
+      const current = await firstValueFrom(this.sdk.query.cancel(execution.executionId));
+      this.execution.set(current);
+    } catch (error) {
+      this.message.set(
+        error instanceof Error ? error.message : 'The query could not be cancelled.',
+      );
+    }
+  }
+
+  protected async explain(): Promise<void> {
+    if (this.explainDisabled()) return;
+    const sql = this.explainSql();
+    this.explainLoading.set(true);
+    this.explainResult.set(null);
+    this.explainMessage.set(null);
+    try {
+      const result = await firstValueFrom(
+        this.sdk.query.explain({
+          connectionId: this.connectionId(),
+          database: this.database().trim(),
+          sql,
+          tabSessionId: this.tabId,
+          ...(this.schema().trim() ? { schema: this.schema().trim() } : {}),
+        }),
+      );
+      this.explainResult.set(result);
+    } catch (error) {
+      this.explainMessage.set(
+        error instanceof Error ? error.message : 'The query plan is unavailable.',
+      );
+    } finally {
+      this.explainLoading.set(false);
+    }
+  }
+
+  protected openDisconnectDialog(): void {
+    this.disconnectOpen.set(true);
+  }
+
+  protected async confirmDisconnect(): Promise<void> {
+    if (this.disconnecting()) return;
+    this.disconnecting.set(true);
+    try {
+      const result = await firstValueFrom(this.sdk.query.closeSession(this.tabId, true));
+      this.message.set(
+        result.closed
+          ? 'The tab provider session was disconnected.'
+          : 'There is no provider session to disconnect.',
+      );
+      this.disconnectOpen.set(false);
+    } catch (error) {
+      this.message.set(
+        error instanceof Error ? error.message : 'The tab session could not be disconnected.',
+      );
+    } finally {
+      this.disconnecting.set(false);
+    }
+  }
+
   private async complete(context: CompletionContext): Promise<CompletionResult | null> {
     const word = context.matchBefore(/[\w$-]*/);
     if (!word || (word.from === word.to && !context.explicit)) return null;
@@ -299,6 +435,56 @@ export class QueryEditor implements AfterViewInit {
   private tableBeforeCursor(): string | undefined {
     const text = this.editor?.state.sliceDoc(0, this.editor.state.selection.main.head) ?? '';
     return text.match(/\b(?:from|join)\s+([\w$]+)(?:\.[\w$]*)?\s*\.?[\w$]*$/i)?.[1];
+  }
+
+  private explainSql(): string {
+    const view = this.editor;
+    if (!view) return '';
+    const selection = view.state.selection.main;
+    if (!selection.empty) return view.state.sliceDoc(selection.from, selection.to).trim();
+    const text = view.state.doc.toString();
+    const cursor = selection.head;
+    let start = 0;
+    let quote: string | undefined;
+    let lineComment = false;
+    let blockComment = false;
+    for (let index = 0; index < text.length; index += 1) {
+      const character = text[index]!;
+      const next = text[index + 1];
+      if (lineComment) {
+        if (character === '\n') lineComment = false;
+        continue;
+      }
+      if (blockComment) {
+        if (character === '*' && next === '/') {
+          blockComment = false;
+          index += 1;
+        }
+        continue;
+      }
+      if (quote) {
+        if (character === quote && text[index - 1] !== '\\') quote = undefined;
+        continue;
+      }
+      if ((character === '-' && next === '-') || character === '#') {
+        lineComment = true;
+        if (character === '-' && next === '-') index += 1;
+        continue;
+      }
+      if (character === '/' && next === '*') {
+        blockComment = true;
+        index += 1;
+        continue;
+      }
+      if (character === "'" || character === '"' || character === '`') {
+        quote = character;
+        continue;
+      }
+      if (character !== ';') continue;
+      if (cursor <= index) return text.slice(start, index).trim();
+      start = index + 1;
+    }
+    return text.slice(start).trim() || text.trim();
   }
 
   private async loadConnections(): Promise<void> {

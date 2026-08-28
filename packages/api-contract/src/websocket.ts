@@ -42,7 +42,7 @@ export interface ConnectionStatusPayload {
 
 export interface QueryExecutionPayload {
   readonly executionId: string;
-  readonly state: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+  readonly state: 'queued' | 'running' | 'cancelling' | 'completed' | 'failed' | 'cancelled';
   readonly durationMs?: number;
   readonly transactionActive: boolean;
   readonly execution: {
@@ -53,7 +53,7 @@ export interface QueryExecutionPayload {
     readonly schema?: string;
     readonly sql: string;
     readonly mode: 'selection' | 'full' | 'statementAtCursor';
-    readonly state: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+    readonly state: 'queued' | 'running' | 'cancelling' | 'completed' | 'failed' | 'cancelled';
     readonly statements: readonly unknown[];
     readonly currentIndex: number;
     readonly transactionActive: boolean;

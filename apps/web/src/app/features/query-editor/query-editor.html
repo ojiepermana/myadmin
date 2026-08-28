@@ -17,7 +17,7 @@
           <span
             class="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-amber-700 dark:text-amber-300"
             role="status"
-            >Executing</span
+            >{{ statusLabel() }}</span
           >
         }
         @if (execution()?.transactionActive) {
@@ -94,6 +94,40 @@
       >
         Run statement
       </button>
+      <button
+        type="button"
+        class="query-action query-action-danger"
+        [disabled]="!canCancel()"
+        [attr.title]="
+          canCancel()
+            ? 'Cancel the active statement in this tab'
+            : 'Cancellation is unavailable for this execution or provider'
+        "
+        (click)="cancelExecution()"
+      >
+        Cancel query
+      </button>
+      <button
+        type="button"
+        class="query-action"
+        [disabled]="explainDisabled()"
+        [attr.title]="
+          canExplain()
+            ? 'Show the text execution plan for the statement at the cursor'
+            : 'EXPLAIN is unavailable until this provider is connected'
+        "
+        (click)="explain()"
+      >
+        {{ explainLoading() ? 'Explaining…' : 'Explain' }}
+      </button>
+      <button
+        type="button"
+        class="query-action query-action-danger"
+        [disabled]="disconnecting()"
+        (click)="openDisconnectDialog()"
+      >
+        Disconnect tab session
+      </button>
       @if (execution()?.transactionActive) {
         <span class="mx-1 h-5 w-px bg-border" aria-hidden="true"></span>
         <button
@@ -138,18 +172,23 @@
     }
   </div>
 
-  @if (execution()) {
+  @if (execution() || explainLoading() || explainMessage() || explainResult()) {
     <section
       class="query-results border-t border-border bg-card/70"
       aria-labelledby="query-results-title"
     >
       <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-7">
         <div>
-          <h2 id="query-results-title" class="text-sm font-semibold">Results</h2>
-          <p class="text-xs text-muted-foreground">
-            {{ execution()?.state }} · {{ execution()?.durationMs ?? 0 }} ms ·
-            {{ statements().length }} statement(s)
-          </p>
+          @if (execution()) {
+            <h2 id="query-results-title" class="text-sm font-semibold">Results</h2>
+            <p class="text-xs text-muted-foreground">
+              {{ statusLabel() }} · {{ execution()?.durationMs ?? 0 }} ms ·
+              {{ results().length }} result set(s)
+            </p>
+          } @else {
+            <h2 id="query-results-title" class="text-sm font-semibold">Explain</h2>
+            <p class="text-xs text-muted-foreground">Text execution plan</p>
+          }
         </div>
         @if (errorPosition() !== null) {
           <button type="button" class="query-action query-action-danger" (click)="jumpToError()">
@@ -218,6 +257,59 @@
       } @else {
         <p class="query-result-empty" role="status">Statements are being prepared.</p>
       }
+      @if (explainLoading()) {
+        <div
+          class="mx-5 mb-3 rounded-md border border-border bg-muted/20 px-4 py-3 text-sm sm:mx-7"
+          role="status"
+        >
+          Building the text execution plan…
+        </div>
+      }
+      @if (explainMessage()) {
+        <div
+          class="mx-5 mb-3 rounded-md border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive sm:mx-7"
+          role="alert"
+        >
+          {{ explainMessage() }}
+        </div>
+      }
+      @if (explainResult(); as explain) {
+        <article class="mx-5 mb-4 rounded-md border border-border bg-muted/10 sm:mx-7">
+          <div class="border-b border-border px-4 py-3">
+            <h3 class="text-sm font-semibold">Text execution plan</h3>
+            <p class="mt-1 text-xs text-muted-foreground">
+              {{ explain.engine }} · {{ explain.durationMs }} ms · EXPLAIN only; ANALYZE is disabled
+              because it executes the statement.
+            </p>
+          </div>
+          <pre class="query-explain-plan overflow-auto px-4 py-3 text-xs" tabindex="0">{{
+            explain.planText
+          }}</pre>
+        </article>
+      }
     </section>
   }
 </main>
+
+<AlertDialog [(open)]="disconnectOpen">
+  <AlertDialogContent size="sm">
+    <AlertDialogHeader>
+      <AlertDialogTitle>Disconnect this tab session?</AlertDialogTitle>
+      <AlertDialogDescription>
+        This closes the provider session for this tab. If a query is active, it may be interrupted.
+        Use this only as an emergency action when cancellation is unavailable.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <button type="button" AlertDialogCancel [disabled]="disconnecting()">Keep session</button>
+      <button
+        type="button"
+        AlertDialogAction
+        [disabled]="disconnecting()"
+        (click)="confirmDisconnect()"
+      >
+        {{ disconnecting() ? 'Disconnecting…' : 'Disconnect session' }}
+      </button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>

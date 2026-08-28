@@ -89,6 +89,10 @@ paths:
     $ref: ./paths/query-executions.yaml
   /query/executions/{id}:
     $ref: ./paths/query-execution-by-id.yaml
+  /query/executions/{id}/cancel:
+    $ref: ./paths/query-execution-cancel.yaml
+  /query/explain:
+    $ref: ./paths/query-explain.yaml
   /query/metadata:
     $ref: ./paths/query-metadata.yaml
   /query/sessions/{id}/close:
@@ -269,6 +273,12 @@ components:
       $ref: ./components/schemas/explorer.yaml#/ExplorerObjectDescription
     ExplorerSearchPage:
       $ref: ./components/schemas/explorer.yaml#/ExplorerSearchPage
+    QueryExplainRequest:
+      $ref: ./components/schemas/query.yaml#/QueryExplainRequest
+    QueryExplainResponse:
+      $ref: ./components/schemas/query.yaml#/QueryExplainResponse
+    QuerySessionCloseRequest:
+      $ref: ./components/schemas/query.yaml#/QuerySessionCloseRequest
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

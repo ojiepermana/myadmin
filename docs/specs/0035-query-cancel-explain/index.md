@@ -1,7 +1,7 @@
 # 0035. Query cancel dan EXPLAIN
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-QRY-04: cancel diarahkan ke provider dan koneksi yang tepat; UI menyatakan ca
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin menghentikan query yang terlanjur berat tanpa menutup aplikasi.
 - Sebagai pengguna, saya ingin melihat rencana eksekusi query sebelum menjalankannya pada data besar.
 
@@ -38,17 +39,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Cancel lewat perintah server dari koneksi kontrol (dipilih)
 
 **Pros**:
+
 - Sudah dibangun dan terbukti di provider (spec 0022, 0024); tidak bergantung API driver.
 
 **Cons**:
+
 - Butuh koneksi kontrol singkat; biaya kecil dan hanya saat cancel.
 
 ### Option 2: Menutup paksa sesi tab
 
 **Pros**:
+
 - Selalu menghentikan.
 
 **Cons**:
+
 - Membunuh session state (transaksi, temp table) padahal pengguna hanya ingin menghentikan satu statement; jadi jalur darurat saja bila cancel gagal (ditawarkan UI sebagai "putuskan sesi" terpisah dengan konfirmasi).
 
 ## Decision
@@ -66,20 +71,23 @@ Cancel yang mempertahankan sesi adalah perilaku yang diharapkan dari alat kelas 
 **Data model sketch**: tidak ada tabel baru; menambah state `cancelling` pada model eksekusi (spec 0033).
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /query/executions/:id/cancel | POST | tidak ada | state | pemilik | 404 |
-| /query/explain | POST | connectionId, database, schema?, sql | planText, engine, durasi | pemilik, tersambung | 409 NOT_CONNECTED, unsupported |
+
+| Endpoint                     | Method | Key inputs                           | Key outputs              | Auth                | Key errors                     |
+| ---------------------------- | ------ | ------------------------------------ | ------------------------ | ------------------- | ------------------------------ |
+| /query/executions/:id/cancel | POST   | tidak ada                            | state                    | pemilik             | 404                            |
+| /query/explain               | POST   | connectionId, database, schema?, sql | planText, engine, durasi | pemilik, tersambung | 409 NOT_CONNECTED, unsupported |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| cancel | target backend | backendPid / connectionId sesi tab (spec 0022, 0024) |
-| state akhir | cancelled/failed/completed | hasil nyata statement dari provider |
-| explain | planText | provider menjalankan bentuk EXPLAIN engine nya |
-| gerbang UI | cancelQuery, explain | capability koneksi |
+
+| Action      | Value produced / displayed | Source                                               |
+| ----------- | -------------------------- | ---------------------------------------------------- |
+| cancel      | target backend             | backendPid / connectionId sesi tab (spec 0022, 0024) |
+| state akhir | cancelled/failed/completed | hasil nyata statement dari provider                  |
+| explain     | planText                   | provider menjalankan bentuk EXPLAIN engine nya       |
+| gerbang UI  | cancelQuery, explain       | capability koneksi                                   |
 
 **Key invariants**:
+
 - Cancel tidak pernah menutup sesi tab (kecuali aksi darurat eksplisit); transaksi aktif tetap milik pengguna.
 - State yang dilaporkan selalu hasil konfirmasi provider, bukan asumsi optimis klien.
 - EXPLAIN tidak pernah menjalankan varian ANALYZE di V1.
@@ -103,12 +111,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Dua FR query tersisa (04, 07) selesai; pengguna aman bereksperimen pada data besar.
 
 **Negative / tradeoffs**:
+
 - Cancel kooperatif tidak instan pada operasi tertentu; jalur darurat menutup celah dengan biaya sesi.
 
 **Neutral**:
+
 - EXPLAIN ANALYZE dan visual plan tercatat V2.
 
 ## Follow-up
@@ -118,9 +129,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-QRY-04, FR-QRY-07, bagian 10 (cancelQuery), bagian 11; spec 0022, 0024, 0033.
 
 **Practices & standards**:
+
 - Cancel berbasis protokol server; pelaporan state berbasis konfirmasi.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

@@ -123,3 +123,9 @@ kbd {
 .query-result-empty {
   color: hsl(var(--muted-foreground));
 }
+
+.query-explain-plan {
+  max-height: 20rem;
+  font-family: var(--font-mono, monospace);
+  white-space: pre;
+}

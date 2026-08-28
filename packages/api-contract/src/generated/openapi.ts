@@ -576,6 +576,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/query/executions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Query execution identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an owned query execution */
+        post: operations["cancelQueryExecution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/query/explain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Explain an owned query without executing its data operation */
+        post: operations["explainQuery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/query/metadata": {
         parameters: {
             query?: never;
@@ -1278,7 +1315,7 @@ export interface components {
             schema?: string;
             sql: string;
             /** @enum {string} */
-            state: "queued" | "running" | "completed" | "failed" | "cancelled";
+            state: "queued" | "running" | "cancelling" | "completed" | "failed" | "cancelled";
             statements: components["schemas"]["QueryStatement"][];
             tabSessionId: string;
             transactionActive: boolean;
@@ -1297,6 +1334,19 @@ export interface components {
             sql: string;
             tabSessionId: string;
         };
+        QueryExplainRequest: {
+            connectionId: string;
+            database: string;
+            schema?: string;
+            sql: string;
+            tabSessionId?: string;
+        };
+        QueryExplainResponse: {
+            durationMs: number;
+            /** @enum {string} */
+            engine: "postgresql" | "mysql";
+            planText: string;
+        };
         QueryResult: {
             affectedRows?: number;
             columns: string[];
@@ -1304,6 +1354,9 @@ export interface components {
             rows: components["schemas"]["SerializedDataRow"][];
             totalRows: number;
             truncated: boolean;
+        };
+        QuerySessionCloseRequest: {
+            force?: boolean;
         };
         QuerySessionCloseResponse: {
             closed: boolean;
@@ -3597,6 +3650,165 @@ export interface operations {
             };
         };
     };
+    cancelQueryExecution: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path: {
+                /** @description Query execution identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current execution state after the cancellation request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryExecution"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or origin validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The execution does not exist or is not owned by the user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The query cannot be cancelled in its current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Query cancellation is unavailable for this provider. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider could not accept the cancellation request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    explainQuery: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueryExplainRequest"];
+            };
+        };
+        responses: {
+            /** @description Text execution plan. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryExplainResponse"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or origin validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected or the query tab is busy. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The explain request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Explain is unavailable for this provider. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider returned a normalized explain error. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
     getQueryMetadata: {
         parameters: {
             query: {
@@ -3663,7 +3875,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["QuerySessionCloseRequest"];
+            };
+        };
         responses: {
             /** @description Session close result. */
             200: {

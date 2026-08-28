@@ -48,7 +48,7 @@ export class MysqlQueryAdapter implements QueryPort {
   ): Promise<ExplainResult> {
     const sql = request.sql.trim().replace(/;+$/, '');
     const result = await this.withHandle(context, (handle) =>
-      this.connection.execute(handle, `EXPLAIN ${sql}`, request.parameters),
+      this.connection.execute(handle, `EXPLAIN FORMAT=TRADITIONAL ${sql}`, request.parameters),
     );
     return { plan: result };
   }

@@ -243,6 +243,56 @@ describe('MyAdmin Angular SDK', () => {
     await expect(cancellation).resolves.toMatchObject({ id: 'job-1', state: 'cancelling' });
   });
 
+  it('AC-0035 exposes query cancellation and text explain calls with CSRF', async () => {
+    const sdk = TestBed.inject(MyadminSdk);
+    const cancelled = firstValueFrom(sdk.query.cancel('execution/1'));
+    const cancelRequest = http.expectOne('/api/v1/query/executions/execution%2F1/cancel');
+    expect(cancelRequest.request.method).toBe('POST');
+    expect(cancelRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    cancelRequest.flush({
+      executionId: 'execution-1',
+      tabSessionId: 'tab-1',
+      connectionId: 'connection-1',
+      database: 'app',
+      sql: 'select pg_sleep(10)',
+      mode: 'full',
+      state: 'cancelling',
+      statements: [],
+      currentIndex: 0,
+      transactionActive: false,
+      createdAt: '2026-08-28T00:00:00.000Z',
+    });
+    await expect(cancelled).resolves.toMatchObject({ state: 'cancelling' });
+
+    const explained = firstValueFrom(
+      sdk.query.explain({
+        connectionId: 'connection-1',
+        database: 'app',
+        sql: 'select 1',
+        tabSessionId: 'tab-1',
+      }),
+    );
+    const explainRequest = http.expectOne('/api/v1/query/explain');
+    expect(explainRequest.request.method).toBe('POST');
+    expect(explainRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    expect(explainRequest.request.body).toEqual({
+      connectionId: 'connection-1',
+      database: 'app',
+      sql: 'select 1',
+      tabSessionId: 'tab-1',
+    });
+    explainRequest.flush({
+      planText: 'Result  (cost=0.00..0.01)',
+      engine: 'postgresql',
+      durationMs: 2,
+    });
+    await expect(explained).resolves.toEqual({
+      planText: 'Result  (cost=0.00..0.01)',
+      engine: 'postgresql',
+      durationMs: 2,
+    });
+  });
+
   it('CT-0030-AC1 loads workspace response metadata and saves with CSRF', async () => {
     const sdk = TestBed.inject(MyadminSdk);
     const state: WorkspaceState = {

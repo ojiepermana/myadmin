@@ -1,0 +1,62 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Query execution identifier.
+    schema:
+      type: string
+      minLength: 1
+post:
+  operationId: cancelQueryExecution
+  tags: [query]
+  summary: Cancel an owned query execution
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  responses:
+    '200':
+      description: Current execution state after the cancellation request.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/QueryExecution
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or origin validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The execution does not exist or is not owned by the user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The query cannot be cancelled in its current state.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '501':
+      description: Query cancellation is unavailable for this provider.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider could not accept the cancellation request.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

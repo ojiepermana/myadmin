@@ -64,7 +64,10 @@ export class PostgresqlQueryAdapter implements QueryPort {
     request: QueryRequest,
   ): Promise<ExplainResult> {
     const sql = request.sql.trim().replace(/;+$/, '');
-    const result = await this.execute(context, { ...request, sql: `EXPLAIN ${sql}` });
+    const result = await this.execute(context, {
+      ...request,
+      sql: `EXPLAIN (FORMAT TEXT) ${sql}`,
+    });
     return { plan: result.rows };
   }
 

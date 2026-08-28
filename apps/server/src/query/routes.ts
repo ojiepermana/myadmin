@@ -4,6 +4,7 @@ import type { AnyElysia } from 'elysia';
 import {
   QueryExecutionServiceError,
   type QueryAutocompleteInput,
+  type QueryExplainInput,
   type QueryExecutionService,
   type StartQueryExecutionInput,
 } from './query-execution';
@@ -124,6 +125,29 @@ function startInput(value: unknown): StartQueryExecutionInput | null {
   };
 }
 
+function explainInput(value: unknown): QueryExplainInput | null {
+  const keys = ['connectionId', 'database', 'schema', 'sql', 'tabSessionId'] as const;
+  if (!isRecord(value) || !hasOnlyKeys(value, keys)) return null;
+  if (
+    typeof value['connectionId'] !== 'string' ||
+    typeof value['database'] !== 'string' ||
+    typeof value['sql'] !== 'string'
+  ) {
+    return null;
+  }
+  if (value['schema'] !== undefined && typeof value['schema'] !== 'string') return null;
+  if (value['tabSessionId'] !== undefined && typeof value['tabSessionId'] !== 'string') {
+    return null;
+  }
+  return {
+    connectionId: value['connectionId'],
+    database: value['database'],
+    ...(value['schema'] === undefined ? {} : { schema: value['schema'] }),
+    sql: value['sql'],
+    ...(value['tabSessionId'] === undefined ? {} : { tabSessionId: value['tabSessionId'] }),
+  };
+}
+
 function metadataInput(request: Request): QueryAutocompleteInput | null {
   const url = new URL(request.url);
   const connectionId = url.searchParams.get('connectionId');
@@ -189,6 +213,32 @@ export function registerQueryRoutes(
         ? apiError(request, 404, 'QUERY_NOT_FOUND', 'Query not found.')
         : jsonResponse(execution);
     })
+    .post(path('/query/executions/:id/cancel'), async ({ request, params }) => {
+      const actor = actorForRequest(request, options);
+      if (actor instanceof Response) return actor;
+      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      const id = (params as { id?: unknown }).id;
+      if (typeof id !== 'string')
+        return apiError(request, 404, 'QUERY_NOT_FOUND', 'Query not found.');
+      try {
+        return jsonResponse(await options.queryService.cancel(id, actor.value.user.id));
+      } catch (error) {
+        return queryErrorResponse(request, error);
+      }
+    })
+    .post(path('/query/explain'), async ({ request }) => {
+      const actor = actorForRequest(request, options);
+      if (actor instanceof Response) return actor;
+      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      const body = explainInput(await readJson(request));
+      if (!body)
+        return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
+      try {
+        return jsonResponse(await options.queryService.explain(actor.value.user, body));
+      } catch (error) {
+        return queryErrorResponse(request, error);
+      }
+    })
     .get(path('/query/metadata'), async ({ request }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
@@ -201,16 +251,29 @@ export function registerQueryRoutes(
         return queryErrorResponse(request, error);
       }
     })
-    .post(path('/query/sessions/:id/close'), ({ request, params }) => {
+    .post(path('/query/sessions/:id/close'), async ({ request, params }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
       if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
       const id = (params as { id?: unknown }).id;
       if (typeof id !== 'string')
         return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
-      return options.queryService
-        .closeSession(actor.value.user.id, id)
-        .then((closed) => jsonResponse({ tabSessionId: id, closed }))
-        .catch((error: unknown) => queryErrorResponse(request, error));
+      const value = await readJson(request);
+      if (value !== undefined && (!isRecord(value) || !hasOnlyKeys(value, ['force']))) {
+        return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
+      }
+      if (isRecord(value) && value['force'] !== undefined && typeof value['force'] !== 'boolean') {
+        return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
+      }
+      try {
+        const closed = await options.queryService.closeSession(
+          actor.value.user.id,
+          id,
+          isRecord(value) && value['force'] === true,
+        );
+        return jsonResponse({ tabSessionId: id, closed });
+      } catch (error) {
+        return queryErrorResponse(request, error);
+      }
     });
 }

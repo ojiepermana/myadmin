@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test';
+import type { ConnectionHandle, QueryRequest } from '@myadmin/database-core';
+import { MysqlQueryAdapter } from '../src/driver/mysql-query';
+import type { MysqlConnectionAdapter } from '../src/driver/mysql-connection';
 import { splitMysqlStatements } from '../src';
+
+const handle: ConnectionHandle = { id: 'session-1', openedAt: new Date(0) };
 
 describe('MySQL query statement splitting', () => {
   test('supports quoted semicolons and DELIMITER routines', () => {
@@ -16,5 +21,24 @@ describe('MySQL query statement splitting', () => {
       'SELECT 1 /* ; */',
       '# ;\nSELECT 2',
     ]);
+  });
+
+  test('uses MySQL traditional text explain without executing the original statement', async () => {
+    const calls: Array<{ handle: ConnectionHandle; sql: string }> = [];
+    const connection = {
+      execute: async (sessionHandle: ConnectionHandle, sql: string) => {
+        calls.push({ handle: sessionHandle, sql });
+        return [{ id: 1, select_type: 'SIMPLE', table: 'users' }];
+      },
+    } as unknown as MysqlConnectionAdapter;
+    const adapter = new MysqlQueryAdapter(connection);
+    const request: QueryRequest = { sql: 'SELECT * FROM users;' };
+
+    const result = await adapter.explain(handle, request);
+
+    expect(result).toEqual({
+      plan: [{ id: 1, select_type: 'SIMPLE', table: 'users' }],
+    });
+    expect(calls).toEqual([{ handle, sql: 'EXPLAIN FORMAT=TRADITIONAL SELECT * FROM users' }]);
   });
 });

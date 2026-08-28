@@ -213,7 +213,7 @@ QueryExecution:
       enum: [selection, full, statementAtCursor]
     state:
       type: string
-      enum: [queued, running, completed, failed, cancelled]
+      enum: [queued, running, cancelling, completed, failed, cancelled]
     statements:
       type: array
       items:
@@ -266,3 +266,45 @@ QuerySessionCloseResponse:
       minLength: 1
     closed:
       type: boolean
+
+QuerySessionCloseRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    force:
+      type: boolean
+
+QueryExplainRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, database, sql]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    database:
+      type: string
+      minLength: 1
+    schema:
+      type: string
+      minLength: 1
+    sql:
+      type: string
+      minLength: 1
+    tabSessionId:
+      type: string
+      minLength: 1
+
+QueryExplainResponse:
+  type: object
+  additionalProperties: false
+  required: [planText, engine, durationMs]
+  properties:
+    planText:
+      type: string
+    engine:
+      type: string
+      enum: [postgresql, mysql]
+    durationMs:
+      type: integer
+      minimum: 0
