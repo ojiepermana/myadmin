@@ -15,3 +15,4 @@ export * from './query';
 export * from './query-adapter';
 export * from './security';
 export * from './view';
+export * from './schema';

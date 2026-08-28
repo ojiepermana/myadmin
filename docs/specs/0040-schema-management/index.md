@@ -1,7 +1,7 @@
 # 0040. Manajemen schema
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-SCH-01: schema management tersedia bila capability `schemas` true; browse/cre
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna PostgreSQL, saya ingin mengatur schema sebagai ruang kerja object tanpa menulis DDL manual.
 
 **Acceptance criteria**:
@@ -35,17 +36,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Drop restrict saja di V1 (dipilih)
 
 **Pros**:
+
 - Menghapus schema berisi lewat GUI adalah operasi bencana; restrict memaksa kesadaran isi; konsisten semangat safety V1.
 
 **Cons**:
+
 - Pengguna yang sungguh ingin cascade harus lewat query editor (tersedia, sadar, dan tetap diaudit sebagai DDL destructive lewat konfirmasi editor? eksekusi SQL bebas tidak berkonfirmasi; keputusan sadar: cascade manual adalah wilayah SQL pengguna).
 
 ### Option 2: Opsi cascade di GUI
 
 **Pros**:
+
 - Lengkap.
 
 **Cons**:
+
 - Satu klik bisa menghapus ratusan object; kombinasi checkbox cascade dan kebiasaan mengetik nama menurunkan kewaspadaan justru pada kasus terbahaya.
 
 ## Decision
@@ -61,20 +66,23 @@ GUI bertanggung jawab atas blast radius yang bisa diprediksi; drop schema cascad
 **Data model sketch**: tidak ada tabel internal; operasi `SchemaPort` PostgreSQL.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /connections/:id/databases/:db/schemas | POST | name, owner? | schema | pemilik, tersambung, capability | 409, 422, unsupported |
-| .../schemas/:name | PATCH | newName | schema | sama | 409, unsupported |
-| .../schemas/:name | DELETE | confirmName | kosong | sama | 409 confirm/berisi, unsupported |
+
+| Endpoint                               | Method | Key inputs   | Key outputs | Auth                            | Key errors                      |
+| -------------------------------------- | ------ | ------------ | ----------- | ------------------------------- | ------------------------------- |
+| /connections/:id/databases/:db/schemas | POST   | name, owner? | schema      | pemilik, tersambung, capability | 409, 422, unsupported           |
+| .../schemas/:name                      | PATCH  | newName      | schema      | sama                            | 409, unsupported                |
+| .../schemas/:name                      | DELETE | confirmName  | kosong      | sama                            | 409 confirm/berisi, unsupported |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| daftar owner | role tersedia | metadata principal provider (ringan) |
-| drop ditolak | daftar isi ringkas | hitungan object schema dari metadata |
-| gerbang | schemas capability | describe koneksi |
+
+| Action       | Value produced / displayed | Source                               |
+| ------------ | -------------------------- | ------------------------------------ |
+| daftar owner | role tersedia              | metadata principal provider (ringan) |
+| drop ditolak | daftar isi ringkas         | hitungan object schema dari metadata |
+| gerbang      | schemas capability         | describe koneksi                     |
 
 **Key invariants**:
+
 - Server menolak operasi schema pada koneksi tanpa capability, apa pun yang UI kirim (AC-3).
 - Drop hanya schema kosong (restrict); audit sebelum sukses.
 
@@ -97,12 +105,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Pola capability yang absen total di satu engine terbukti bekerja; manajemen schema PostgreSQL lengkap untuk V1.
 
 **Negative / tradeoffs**:
+
 - Tanpa cascade di GUI; pengguna tingkat lanjut memakai SQL.
 
 **Neutral**:
+
 - Schema privileges adalah V2 (feature.md).
 
 ## Follow-up
@@ -112,9 +123,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-SCH-01, FR-PROV-04, bagian 10; feature.md baris schema; spec 0031, 0039.
 
 **Practices & standards**:
+
 - Blast radius GUI yang bisa diprediksi; gerbang capability di server, bukan hanya UI.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

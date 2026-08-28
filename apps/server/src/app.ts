@@ -76,6 +76,8 @@ import { DatabaseManagementService } from './database-management/database-manage
 import { registerDatabaseManagementRoutes } from './database-management/routes';
 import { registerDataBrowserRoutes } from './data-browser/routes';
 import { registerViewRoutes } from './view-management/routes';
+import { SchemaManagementService } from './schema-management/schema-management';
+import { registerSchemaManagementRoutes } from './schema-management/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -109,6 +111,7 @@ export interface ServerStartOptions {
   queryExecutionService?: QueryExecutionService;
   queryHistoryService?: QueryHistoryService;
   databaseManagementService?: DatabaseManagementService;
+  schemaManagementService?: SchemaManagementService;
   observability?: ObservabilityOptions;
 }
 
@@ -143,6 +146,7 @@ export interface ServerAppOptions {
   queryExecutionService?: QueryExecutionService;
   queryHistoryService?: QueryHistoryService;
   databaseManagementService?: DatabaseManagementService;
+  schemaManagementService?: SchemaManagementService;
   observability?: ObservabilityOptions;
 }
 
@@ -1419,6 +1423,11 @@ export function createServerApp(options: ServerAppOptions = {}) {
           activeTabs: queryExecutionService,
         })
       : undefined);
+  const schemaManagementService =
+    options.schemaManagementService ??
+    (runtimeStore && connectionManager
+      ? new SchemaManagementService({ store: runtimeStore, connectionManager })
+      : undefined);
 
   let application: AnyElysia = installObservability(
     new Elysia({
@@ -1546,6 +1555,14 @@ export function createServerApp(options: ServerAppOptions = {}) {
       connectionManager,
       secureCookies,
     });
+    if (schemaManagementService) {
+      application = registerSchemaManagementRoutes(application, '/api/v1', {
+        authService,
+        setupService,
+        service: schemaManagementService,
+        secureCookies,
+      });
+    }
   }
   if (queryExecutionService && authService) {
     application = registerQueryRoutes(application, '/api/v1', {
@@ -1642,6 +1659,10 @@ export function createApp(
     connectionManager,
     activeTabs: queryExecutionService,
   });
+  const schemaManagementService = new SchemaManagementService({
+    store,
+    connectionManager,
+  });
 
   let application: AnyElysia = installObservability(
     new Elysia(),
@@ -1725,6 +1746,12 @@ export function createApp(
     authService,
     setupService,
     connectionManager,
+    secureCookies: false,
+  });
+  application = registerSchemaManagementRoutes(application, '', {
+    authService,
+    setupService,
+    service: schemaManagementService,
     secureCookies: false,
   });
   const backupService =

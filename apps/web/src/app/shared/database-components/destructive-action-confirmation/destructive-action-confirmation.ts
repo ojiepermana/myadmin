@@ -9,6 +9,7 @@ import { ButtonComponent } from '@ojiepermana/angular/component/button';
 })
 export class DestructiveActionConfirmation {
   readonly actionLabel = input('Delete');
+  readonly targetKind = input('database');
   readonly targetName = input.required<string>();
   readonly connectionLabel = input.required<string>();
   readonly engine = input.required<string>();

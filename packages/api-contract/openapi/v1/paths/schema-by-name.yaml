@@ -1,0 +1,127 @@
+patch:
+  operationId: renameSchema
+  tags: [schemas]
+  summary: Rename a schema
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+    - name: db
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/schema.yaml#/SchemaRenameRequest
+  responses:
+    '200':
+      description: Schema renamed and audit recorded.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/schema.yaml#/Schema
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The request failed CSRF or ownership checks.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The schema rename conflicts with an existing schema or the connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The request body or identifier is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '501':
+      description: The provider does not support schema management.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+
+delete:
+  operationId: dropSchema
+  tags: [schemas]
+  summary: Drop an empty schema after exact name confirmation
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+    - name: db
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/schema.yaml#/SchemaDropRequest
+  responses:
+    '204':
+      description: Schema dropped and audit recorded.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The request failed CSRF or ownership checks.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Confirmation was wrong, or the schema contains objects.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The request body or identifier is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '501':
+      description: The provider does not support schema management.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

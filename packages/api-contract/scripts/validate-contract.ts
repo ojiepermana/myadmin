@@ -64,6 +64,8 @@ const initialPaths = {
   '/connections/{id}/databases/{db}': 'paths/database-by-name.yaml',
   '/connections/{id}/databases/{db}/children': 'paths/explorer-database-children.yaml',
   '/connections/{id}/schemas/{schema}/objects': 'paths/explorer-schema-objects.yaml',
+  '/connections/{id}/databases/{db}/schemas': 'paths/schema-management.yaml',
+  '/connections/{id}/databases/{db}/schemas/{name}': 'paths/schema-by-name.yaml',
   '/connections/{id}/objects/describe': 'paths/explorer-describe.yaml',
   '/security/principals': 'paths/security-principals.yaml',
   '/security/principals/form': 'paths/security-principal-form.yaml',
@@ -253,6 +255,10 @@ async function assertContractRules(): Promise<void> {
     'SavedQueryPatch',
     'SavedQuery',
     'SavedQueryPage',
+    'Schema',
+    'SchemaCreateRequest',
+    'SchemaRenameRequest',
+    'SchemaDropRequest',
   ]) {
     if (!(schemaName in schemas)) {
       throw new Error(`components.schemas.${schemaName} is missing`);

@@ -158,7 +158,12 @@ export class AppShell {
     this.workspace.bottomCollapsed() ? 100 : 100 - this.workspace.bottomHeight(),
   );
   protected readonly navigationItems = computed(() =>
-    this.createNavigationItems(this.authSession.currentUser()?.role === 'admin'),
+    this.createNavigationItems(
+      this.authSession.currentUser()?.role === 'admin',
+      this.connectionStatuses
+        .statuses()
+        .some((status) => status.capability?.capabilities['schemas'] === true),
+    ),
   );
 
   constructor() {
@@ -357,7 +362,7 @@ export class AppShell {
     return typeof route === 'string' ? route : '/workspace';
   }
 
-  private createNavigationItems(isAdmin: boolean) {
+  private createNavigationItems(isAdmin: boolean, schemasSupported: boolean) {
     const find = (id: string): AppRouteDefinition => {
       const definition = V1_ROUTE_DEFINITIONS.find((item) => item.id === id);
       if (!definition) {
@@ -379,6 +384,10 @@ export class AppShell {
     const reviewItems = [item('query-history'), item('monitoring')];
     if (isAdmin) reviewItems.push(item('audit'));
 
+    const buildItems = [item('database')];
+    if (schemasSupported) buildItems.push(item('schema'));
+    buildItems.push(item('table-designer'), item('data-browser'));
+
     const groups = [
       {
         id: 'operate',
@@ -390,7 +399,7 @@ export class AppShell {
         id: 'build',
         type: 'group' as const,
         title: 'Build',
-        children: [item('database'), item('schema'), item('table-designer'), item('data-browser')],
+        children: buildItems,
       },
       {
         id: 'review',

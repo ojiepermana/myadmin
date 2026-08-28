@@ -565,8 +565,8 @@ Schema PostgreSQL bergerbang capability, absen total di MySQL. Done when: gerban
 
 - [x] Design it (spec): [0040](../specs/0040-schema-management/index.md)
 - [ ] Build it: /develop schema-management
-  - [ ] SchemaPort PostgreSQL create rename drop restrict (AC-1)
-  - [ ] Endpoint bergerbang tegas plus audit (AC-2, AC-3, AC-5)
+  - [x] SchemaPort PostgreSQL create rename drop restrict (AC-1)
+  - [x] Endpoint bergerbang tegas plus audit (AC-2, AC-3, AC-5)
   - [ ] UI form dan peringatan rename plus e2e dua arah (AC-4, AC-6)
 - [ ] [Verify it](../specs/0040-schema-management/verify.md): /check verify schema-management
 - [ ] [Test it](../specs/0040-schema-management/test.md): /test schema-management

@@ -10,6 +10,7 @@ export interface SchemaPort {
   ): Promise<Page<SchemaDefinition>>;
   get(context: ProviderContext, database: string, name: string): Promise<SchemaDefinition>;
   create(context: ProviderContext, schema: SchemaDefinition): Promise<void>;
+  rename(context: ProviderContext, database: string, name: string, newName: string): Promise<void>;
   alter(context: ProviderContext, schema: SchemaDefinition): Promise<void>;
   drop(context: ProviderContext, database: string, name: string): Promise<void>;
 }

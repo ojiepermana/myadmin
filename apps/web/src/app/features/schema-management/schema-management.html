@@ -1,0 +1,267 @@
+<main
+  class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:px-8"
+  aria-labelledby="schema-title"
+>
+  <section class="flex flex-wrap items-end justify-between gap-6">
+    <div class="max-w-3xl space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <Badge>Schema workspace</Badge>
+        <span class="font-mono text-sm text-muted-foreground">/schema</span>
+      </div>
+      <h1 id="schema-title" class="text-4xl font-semibold tracking-tight">Schema management</h1>
+      <p class="text-lg leading-relaxed text-muted-foreground">
+        Create, rename, and safely remove PostgreSQL schemas in the selected database.
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button Button type="button" variant="outline" (click)="refresh()">Refresh</button>
+      @if (supported()) {
+        <button Button type="button" (click)="openCreate()">Create schema</button>
+      }
+    </div>
+  </section>
+
+  @if (loading()) {
+    <Card role="status"
+      ><CardContent class="flex items-center gap-3 p-6"
+        ><Spinner aria-label="Loading schemas" />Loading schemas…</CardContent
+      ></Card
+    >
+  } @else if (error(); as message) {
+    <Alert variant="destructive"
+      ><AlertTitle>Schema workspace could not be loaded</AlertTitle
+      ><AlertDescription>{{ message }}</AlertDescription></Alert
+    >
+  } @else {
+    <section class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+      <Card>
+        <CardHeader
+          ><CardTitle>Target</CardTitle
+          ><CardDescription
+            >Choose a connected saved connection and database.</CardDescription
+          ></CardHeader
+        >
+        <CardContent class="space-y-4">
+          <label class="grid gap-2 text-sm font-medium" for="schema-connection"
+            >Connection
+            <select
+              id="schema-connection"
+              class="h-10 rounded-md border border-input bg-background px-3 font-normal"
+              [value]="selectedConnectionId()"
+              (change)="onConnectionChange($event)"
+            >
+              @for (connection of connections(); track connection.id) {
+                <option [value]="connection.id">
+                  {{ connection.label }} ({{ connection.engine }})
+                </option>
+              }
+            </select>
+          </label>
+          <div class="rounded-md border border-border bg-muted/20 p-4 text-sm">
+            <p class="font-medium">{{ databaseName() || 'No database selected' }}</p>
+            @if (selectedConnection(); as connection) {
+              <p class="mt-1 text-muted-foreground">
+                {{ connection.label }} · {{ connection.engine }}
+              </p>
+            }
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader
+          ><CardTitle>Schemas</CardTitle
+          ><CardDescription
+            >Schema listing comes from the provider metadata explorer.</CardDescription
+          ></CardHeader
+        >
+        <CardContent>
+          @if (!selectedConnection() || !databaseName()) {
+            <p class="text-sm text-muted-foreground">
+              Connect a connection and choose a database in the explorer first.
+            </p>
+          } @else if (!supported()) {
+            <Alert
+              ><AlertTitle>Schema management unavailable</AlertTitle
+              ><AlertDescription>{{
+                selectedStatus()?.capability?.reasons?.['schemas'] ||
+                  'This provider does not expose schemas.'
+              }}</AlertDescription></Alert
+            >
+          } @else if (schemas().length === 0) {
+            <p class="text-sm text-muted-foreground">No user schemas were found.</p>
+          } @else {
+            <div class="overflow-hidden rounded-md border border-border/70">
+              @for (schema of schemas(); track schema.name) {
+                <div
+                  class="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 p-4 last:border-b-0"
+                >
+                  <div>
+                    <p class="font-mono text-sm font-medium">{{ schema.name }}</p>
+                    <p class="text-xs text-muted-foreground">
+                      {{ schema.isSystem ? 'System schema' : 'User schema' }}
+                    </p>
+                  </div>
+                  @if (!schema.isSystem) {
+                    <div class="flex gap-2">
+                      <button
+                        Button
+                        type="button"
+                        variant="outline"
+                        (click)="openRename(schema.name)"
+                      >
+                        Rename</button
+                      ><button
+                        Button
+                        type="button"
+                        variant="destructive"
+                        (click)="openDrop(schema.name)"
+                      >
+                        Drop
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+          @if (mutationError(); as message) {
+            <p
+              class="mt-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+              role="alert"
+            >
+              {{ message }}
+            </p>
+          }
+        </CardContent>
+      </Card>
+    </section>
+  }
+</main>
+
+@if (createOpen()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    role="presentation"
+    (click)="closeCreate()"
+  >
+    <section
+      class="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-schema-title"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="create-schema-title" class="text-xl font-semibold">Create schema</h2>
+      <p class="mt-2 text-sm text-muted-foreground">
+        The optional owner is checked by the provider.
+      </p>
+      <div class="mt-6 grid gap-4">
+        <label class="grid gap-2 text-sm font-medium" for="create-schema-name"
+          >Name<input
+            id="create-schema-name"
+            class="h-10 rounded-md border border-input bg-background px-3 font-mono font-normal"
+            [value]="createName()"
+            (input)="createName.set($any($event.target).value)"
+            autocomplete="off" /></label
+        ><label class="grid gap-2 text-sm font-medium" for="create-schema-owner"
+          >Owner <span class="font-normal text-muted-foreground">optional</span
+          ><input
+            id="create-schema-owner"
+            class="h-10 rounded-md border border-input bg-background px-3 font-normal"
+            [value]="createOwner()"
+            (input)="createOwner.set($any($event.target).value)"
+            autocomplete="off"
+        /></label>
+      </div>
+      <div class="mt-6 flex justify-end gap-2">
+        <button
+          Button
+          type="button"
+          variant="outline"
+          (click)="closeCreate()"
+          [disabled]="creating()"
+        >
+          Cancel</button
+        ><button Button type="button" (click)="createSchema()" [disabled]="!canCreate()">
+          {{ creating() ? 'Creating…' : 'Create schema' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (renameTarget(); as target) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    role="presentation"
+    (click)="closeRename()"
+  >
+    <section
+      class="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rename-schema-title"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="rename-schema-title" class="text-xl font-semibold">Rename schema</h2>
+      <p class="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+        Objects that refer to this schema through a qualified name may break after the rename.
+        Review dependent queries and definitions before confirming.
+      </p>
+      <label class="mt-5 grid gap-2 text-sm font-medium" for="rename-schema-name"
+        >New name<input
+          id="rename-schema-name"
+          class="h-10 rounded-md border border-input bg-background px-3 font-mono font-normal"
+          [value]="renameName()"
+          (input)="renameName.set($any($event.target).value)"
+      /></label>
+      <div class="mt-6 flex justify-end gap-2">
+        <button
+          Button
+          type="button"
+          variant="outline"
+          (click)="closeRename()"
+          [disabled]="renaming()"
+        >
+          Cancel</button
+        ><button
+          Button
+          type="button"
+          (click)="renameSchema()"
+          [disabled]="renaming() || !renameName().trim()"
+        >
+          {{ renaming() ? 'Renaming…' : 'Rename schema' }}
+        </button>
+      </div>
+      <p class="mt-3 text-xs text-muted-foreground">
+        Current schema: <span class="font-mono">{{ target }}</span>
+      </p>
+    </section>
+  </div>
+}
+
+@if (dropTarget(); as target) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    role="presentation"
+    (click)="closeDrop()"
+  >
+    <section
+      class="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="drop-schema-title"
+      (click)="$event.stopPropagation()"
+    >
+      <app-destructive-action-confirmation
+        [targetKind]="'schema'"
+        [targetName]="target"
+        [connectionLabel]="selectedConnection()!.label"
+        [engine]="selectedConnection()!.engine"
+        [busy]="dropping()"
+        (confirmed)="dropSchema($event)"
+        (cancelled)="closeDrop()"
+      />
+    </section>
+  </div>
+}

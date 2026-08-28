@@ -4,7 +4,7 @@
       Irreversible action
     </p>
     <h2 id="destructive-action-title" class="text-xl font-semibold">
-      {{ actionLabel() }} database
+      {{ actionLabel() }} {{ targetKind() }}
     </h2>
     <p class="text-sm text-muted-foreground">
       This permanently removes <strong class="text-foreground">{{ targetName() }}</strong> from
@@ -13,7 +13,9 @@
   </div>
   <div class="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm">
     <p>Type the database name exactly to continue.</p>
-    <label for="destructive-database-name" class="sr-only">Database name confirmation</label>
+    <label for="destructive-database-name" class="sr-only"
+      >{{ targetKind() }} name confirmation</label
+    >
     <input
       id="destructive-database-name"
       class="mt-3 h-10 w-full rounded-md border border-input bg-background px-3 font-mono text-sm"
@@ -35,7 +37,7 @@
       (click)="confirm()"
       [disabled]="!canConfirm()"
     >
-      {{ busy() ? 'Deleting…' : actionLabel() }} database
+      {{ busy() ? 'Deleting…' : actionLabel() }} {{ targetKind() }}
     </button>
   </div>
 </section>

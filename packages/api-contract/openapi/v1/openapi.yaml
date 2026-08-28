@@ -111,6 +111,10 @@ paths:
     $ref: ./paths/explorer-database-children.yaml
   /connections/{id}/schemas/{schema}/objects:
     $ref: ./paths/explorer-schema-objects.yaml
+  /connections/{id}/databases/{db}/schemas:
+    $ref: ./paths/schema-management.yaml
+  /connections/{id}/databases/{db}/schemas/{name}:
+    $ref: ./paths/schema-by-name.yaml
   /connections/{id}/objects/describe:
     $ref: ./paths/explorer-describe.yaml
   /security/principals:
@@ -357,6 +361,14 @@ components:
       $ref: ./components/schemas/explorer.yaml#/ExplorerObjectDescription
     ExplorerSearchPage:
       $ref: ./components/schemas/explorer.yaml#/ExplorerSearchPage
+    Schema:
+      $ref: ./components/schemas/schema.yaml#/Schema
+    SchemaCreateRequest:
+      $ref: ./components/schemas/schema.yaml#/SchemaCreateRequest
+    SchemaRenameRequest:
+      $ref: ./components/schemas/schema.yaml#/SchemaRenameRequest
+    SchemaDropRequest:
+      $ref: ./components/schemas/schema.yaml#/SchemaDropRequest
     QueryExplainRequest:
       $ref: ./components/schemas/query.yaml#/QueryExplainRequest
     QueryExplainResponse:

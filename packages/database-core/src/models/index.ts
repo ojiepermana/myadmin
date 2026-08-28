@@ -180,6 +180,7 @@ export interface SchemaDefinition {
   database: string;
   owner?: string;
   isSystem?: boolean;
+  objectCount?: number;
 }
 
 export interface TableDefinition {
