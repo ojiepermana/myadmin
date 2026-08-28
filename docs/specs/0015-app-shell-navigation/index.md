@@ -1,7 +1,7 @@
 # 0015. App shell dan navigation
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -95,12 +95,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Bangun komponen layout (top-bar, sidebar, workspace-host, tab-host, panel-layout, status-bar) di atas primitive foundation, memenuhi **AC-1**, **AC-2**.
-2. Bangun `workspace.store.ts` dengan `TabDescriptor` dan operasi tab, sambungkan ke tab host, memenuhi **AC-3**.
-3. Bangun infrastruktur context menu (directive plus service) dengan dukungan keyboard, memenuhi **AC-4**.
-4. Definisikan `app.routes.ts` lazy untuk semua fitur dengan placeholder, memenuhi **AC-5**.
-5. Bangun `core/errors/` (presenter plus boundary) terhubung `SdkError`, memenuhi **AC-6**.
-6. Baseline aksesibilitas dan responsivitas (landmark, fokus, breakpoint 1024), plus e2e keyboard dasar di Playwright, memenuhi **AC-7**, **AC-8**.
+1. [x] Bangun komponen layout (top-bar, sidebar, workspace-host, tab-host, panel-layout, status-bar) di atas primitive foundation, memenuhi **AC-1**, **AC-2**.
+2. [x] Bangun `workspace.store.ts` dengan `TabDescriptor` dan operasi tab, sambungkan ke tab host, memenuhi **AC-3**.
+3. [x] Bangun infrastruktur context menu (directive plus service) dengan dukungan keyboard, memenuhi **AC-4**.
+4. [x] Definisikan `app.routes.ts` lazy untuk semua fitur dengan placeholder, memenuhi **AC-5**.
+5. [x] Bangun `core/errors/` (presenter plus boundary) terhubung `SdkError`, memenuhi **AC-6**.
+6. [x] Baseline aksesibilitas dan responsivitas (landmark, fokus, breakpoint 1024), plus e2e keyboard dasar di Playwright, memenuhi **AC-7**, **AC-8**.
 
 ## Consequences
 

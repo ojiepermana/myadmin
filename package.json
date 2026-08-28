@@ -40,6 +40,7 @@
     "ng": "ng"
   },
   "dependencies": {
+    "@angular/cdk": "^22.1.0",
     "@sinclair/typebox": "^0.34.52",
     "@angular/common": "^22.1.0",
     "@angular/compiler": "^22.1.0",

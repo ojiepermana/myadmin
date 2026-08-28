@@ -246,10 +246,11 @@ Log JSON terstruktur, correlation ID, error handler tunggal. Done when: setiap e
 Shell aplikasi: top bar, sidebar, tab host, panel, status bar, context menu, error presenter, routing lazy. Done when: kerangka bisa dinavigasi penuh keyboard dan tab berbentuk data.
 
 - [x] Design it (spec): [0015](../specs/0015-app-shell-navigation/index.md)
-- [ ] Build it: /develop app-shell-navigation
-  - [ ] Komponen layout plus panel resizable (AC-1, AC-2)
-  - [ ] Tab host berbasis TabDescriptor plus context menu plus routing lazy semua fitur (AC-3, AC-4, AC-5)
-  - [ ] Error presenter dan boundary plus baseline aksesibilitas (AC-6, AC-7, AC-8)
+- [x] Build it: /develop app-shell-navigation
+  - [x] Komponen layout plus panel resizable (AC-1, AC-2)
+  - [x] Tab host berbasis TabDescriptor plus context menu plus routing lazy semua fitur (AC-3, AC-4, AC-5)
+  - [x] Error presenter dan boundary plus baseline aksesibilitas (AC-6, AC-7, AC-8)
+  - code in `apps/web/src/app/layout/app-shell/`, `apps/web/src/app/core/state/`, `apps/web/src/app/core/context-menu/`, `apps/web/src/app/core/errors/`, and `apps/web/src/app/app.routes.shared.ts`
 - [ ] [Verify it](../specs/0015-app-shell-navigation/verify.md): /check verify app-shell-navigation
 - [ ] [Test it](../specs/0015-app-shell-navigation/test.md): /test app-shell-navigation
 

@@ -1,0 +1,566 @@
+<div class="app-shell" [class.mobile-sidebar-open]="mobileSidebarOpen()">
+  <header class="app-topbar border-b border-border bg-card/90 px-4 shadow-sm backdrop-blur sm:px-6">
+    <div class="flex min-w-0 items-center gap-3">
+      <button
+        Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="shrink-0"
+        aria-label="Toggle primary navigation"
+        [attr.aria-expanded]="
+          mobileSidebarOpen() || (!isMobileViewport() && !workspace.sidebarCollapsed())
+        "
+        (click)="toggleSidebar()"
+      >
+        <svg
+          aria-hidden="true"
+          class="size-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+        >
+          <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"></path>
+        </svg>
+      </button>
+      <a
+        routerLink="/workspace"
+        class="flex min-w-0 items-center gap-3 text-foreground no-underline"
+      >
+        <span
+          class="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground"
+          >M</span
+        >
+        <span class="min-w-0">
+          <span class="block truncate text-sm font-semibold tracking-tight">MyAdmin</span>
+          <span class="block truncate text-xs text-muted-foreground">Database workspace</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span
+        class="hidden text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground lg:inline"
+      >
+        Local shell
+      </span>
+      <button
+        Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label="Toggle color theme"
+        [attr.aria-pressed]="themePreference.mode() !== 'system'"
+        (click)="toggleTheme()"
+      >
+        @if (themePreference.resolvedMode() === 'dark') {
+          <svg
+            aria-hidden="true"
+            class="size-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <circle cx="12" cy="12" r="4"></circle>
+            <path
+              d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
+              stroke-linecap="round"
+            ></path>
+          </svg>
+        } @else {
+          <svg
+            aria-hidden="true"
+            class="size-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <path d="M20.5 15.1A8.5 8.5 0 0 1 8.9 3.5 8.5 8.5 0 1 0 20.5 15.1Z"></path>
+          </svg>
+        }
+      </button>
+
+      <button
+        Button
+        type="button"
+        variant="outline"
+        class="hidden sm:inline-flex"
+        [MenuTrigger]="accountMenu"
+        align="end"
+      >
+        <span
+          class="flex size-6 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary"
+          >AL</span
+        >
+        <span>Admin preview</span>
+        <svg
+          aria-hidden="true"
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+        >
+          <path d="m6 9 6 6 6-6" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
+      <button
+        Button
+        type="button"
+        variant="outline"
+        size="icon"
+        class="sm:hidden"
+        aria-label="Open user menu"
+        [MenuTrigger]="accountMenu"
+        align="end"
+      >
+        <span class="text-xs font-semibold">AL</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="app-shell-body">
+    <button
+      type="button"
+      class="mobile-sidebar-backdrop"
+      aria-label="Close primary navigation"
+      [attr.aria-hidden]="mobileSidebarOpen() ? null : 'true'"
+      [tabindex]="mobileSidebarOpen() ? 0 : -1"
+      (click)="closeMobileSidebar()"
+    ></button>
+
+    <ResizablePanelGroup
+      data-split="sidebar"
+      orientation="horizontal"
+      class="app-shell-split"
+      (keyup)="captureSidebarWidth()"
+    >
+      <ResizablePanel
+        data-panel-id="sidebar-panel"
+        [defaultSize]="workspace.sidebarWidth()"
+        minSize="16%"
+        maxSize="32%"
+        class="sidebar-panel border-e border-border bg-card/60"
+      >
+        <Navigation
+          id="main"
+          [data]="navigationItems"
+          ariaLabel="Primary navigation"
+          class="h-full min-h-0"
+        >
+          <NavigationSidebar [collapsed]="workspace.sidebarCollapsed()" class="h-full min-h-0">
+            <NavigationHeader class="border-b border-border/60">
+              <NavigationHeaderInitial name="MyAdmin" initials="M" [compact]="true" />
+              <NavigationHeaderTitle title="MyAdmin" subtitle="Database workspace" />
+            </NavigationHeader>
+            <NavigationContent class="py-3" />
+            <NavigationFooter class="border-t border-border/60">
+              <NavigationFooterInitial name="Ada Lovelace" initials="AL" />
+              <NavigationFooterTitle title="Ada Lovelace" subtitle="Admin placeholder" />
+            </NavigationFooter>
+          </NavigationSidebar>
+
+          <ng-template NavigationIcon let-icon>
+            @switch (icon) {
+              @case ('workspace') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <rect x="4" y="4" width="6" height="6" rx="1"></rect>
+                  <rect x="14" y="4" width="6" height="6" rx="1"></rect>
+                  <rect x="4" y="14" width="6" height="6" rx="1"></rect>
+                  <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+                </svg>
+              }
+              @case ('connections') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <circle cx="7" cy="12" r="3"></circle>
+                  <circle cx="17" cy="7" r="3"></circle>
+                  <circle cx="17" cy="17" r="3"></circle>
+                  <path d="m9.5 10.5 5-2M9.5 13.5l5 2" stroke-linecap="round"></path>
+                </svg>
+              }
+              @case ('explorer') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path d="M4 6h16v13H4zM4 10h16M8 6V4h8v2" stroke-linejoin="round"></path>
+                  <path d="M8 14h3m-3 3h6" stroke-linecap="round"></path>
+                </svg>
+              }
+              @case ('query-editor') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path
+                    d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+              }
+              @case ('database') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <ellipse cx="12" cy="6" rx="7" ry="3"></ellipse>
+                  <path
+                    d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+              }
+              @case ('schema') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path
+                    d="M5 5h6v6H5zM13 13h6v6h-6zM13 5h6v6h-6zM5 13h6v6H5z"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+              }
+              @case ('table-designer') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <rect x="4" y="5" width="16" height="14" rx="1"></rect>
+                  <path d="M4 10h16M10 10v9M15 10v9" stroke-linecap="round"></path>
+                </svg>
+              }
+              @case ('data-browser') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path d="M4 5h16v14H4zM4 9h16M8 5v4M12 5v4M16 5v4" stroke-linejoin="round"></path>
+                </svg>
+              }
+              @case ('query-history') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6" stroke-linecap="round"></path>
+                  <path
+                    d="M4 4v4.6h4.6M12 8v4l2.5 1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+              }
+              @case ('monitoring') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path d="M4 19V5m0 14h16M8 16v-4m4 4V8m4 8v-7" stroke-linecap="round"></path>
+                </svg>
+              }
+              @case ('audit') {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path
+                    d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+              }
+              @default {
+                <svg
+                  aria-hidden="true"
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <circle cx="12" cy="12" r="7"></circle>
+                </svg>
+              }
+            }
+          </ng-template>
+        </Navigation>
+      </ResizablePanel>
+      <ResizableHandle
+        withHandle
+        aria-label="Resize primary navigation"
+        class="sidebar-resize-handle"
+      />
+
+      <ResizablePanel
+        data-panel-id="workspace-panel"
+        [defaultSize]="100 - workspace.sidebarWidth()"
+        minSize="68%"
+        maxSize="84%"
+        class="workspace-panel"
+      >
+        <ResizablePanelGroup
+          data-split="workspace"
+          orientation="vertical"
+          class="workspace-vertical-split"
+          [class.bottom-panel-visible]="!workspace.bottomCollapsed()"
+          (keyup)="captureBottomHeight()"
+        >
+          <ResizablePanel
+            data-panel-id="main-panel"
+            [defaultSize]="mainPanelHeight()"
+            minSize="52%"
+            maxSize="88%"
+            class="workspace-main-panel"
+          >
+            <section class="workspace-surface" aria-labelledby="workspace-tabs-title">
+              <div
+                appContextMenu
+                [ContextMenuTrigger]="workspaceMenu"
+                class="workspace-context flex items-center justify-between gap-4 border-b border-border/70 px-5 py-3 sm:px-7"
+                tabindex="0"
+                aria-label="Open workspace actions"
+              >
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                    Active workspace
+                  </p>
+                  <p id="workspace-tabs-title" class="truncate text-sm text-muted-foreground">
+                    Keep each database context in its own tab.
+                  </p>
+                </div>
+                <span
+                  class="hidden rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground md:inline"
+                >
+                  In memory
+                </span>
+              </div>
+
+              <Tabs
+                [value]="activeTabId()"
+                (valueChange)="onTabValueChange($event)"
+                class="workspace-tabs"
+              >
+                <TabsList variant="line" class="workspace-tab-list px-5 sm:px-7">
+                  @for (tab of workspace.tabs(); track tab.id) {
+                    <div class="workspace-tab-item" [class.active]="tab.id === activeTabId()">
+                      <button TabsTrigger [value]="tab.id">{{ tab.title }}</button>
+                      @if (workspace.tabs().length > 1) {
+                        <button
+                          Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          class="workspace-tab-close"
+                          [attr.aria-label]="'Close ' + tab.title"
+                          (click)="closeTab($event, tab)"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="size-3.5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path d="m7 7 10 10M17 7 7 17" stroke-linecap="round"></path>
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  }
+                </TabsList>
+                <TabsContent [value]="activeTabId()" class="workspace-tab-content">
+                  <app-feature-error-boundary>
+                    <router-outlet />
+                  </app-feature-error-boundary>
+                </TabsContent>
+              </Tabs>
+            </section>
+          </ResizablePanel>
+
+          @if (!workspace.bottomCollapsed()) {
+            <ResizableHandle withHandle aria-label="Resize bottom panel" />
+            <ResizablePanel
+              data-panel-id="bottom-panel"
+              [defaultSize]="workspace.bottomHeight()"
+              minSize="12%"
+              maxSize="48%"
+              class="bottom-panel border-t border-border bg-card/50"
+            >
+              <div class="flex h-full min-h-0 flex-col">
+                <div
+                  class="flex items-center justify-between gap-4 border-b border-border/70 px-5 py-3 sm:px-7"
+                >
+                  <div>
+                    <p class="text-sm font-semibold text-foreground">Activity panel</p>
+                    <p class="text-xs text-muted-foreground">
+                      Optional space for status, jobs, and messages.
+                    </p>
+                  </div>
+                  <button
+                    Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    (click)="onBottomPanelToggle()"
+                  >
+                    Hide panel
+                  </button>
+                </div>
+                <div
+                  class="flex min-h-0 flex-1 items-center justify-between gap-5 px-5 py-4 sm:px-7"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="size-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                    <span class="text-sm text-muted-foreground">Shell services are ready.</span>
+                  </div>
+                  <span class="hidden text-xs text-muted-foreground sm:inline"
+                    >No active connection</span
+                  >
+                </div>
+              </div>
+            </ResizablePanel>
+          } @else {
+            <div class="bottom-panel-collapsed border-t border-border bg-card/50 px-5 py-2 sm:px-7">
+              <button
+                Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                (click)="onBottomPanelToggle()"
+              >
+                Show activity panel
+              </button>
+            </div>
+          }
+        </ResizablePanelGroup>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  </div>
+
+  <footer
+    class="app-statusbar flex items-center justify-between gap-4 border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground sm:px-6"
+    role="status"
+    aria-label="Workspace status"
+  >
+    <span class="flex items-center gap-2"
+      ><span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>Ready</span
+    >
+    <span class="hidden sm:inline"
+      >Workspace state is kept in memory until persistence is connected.</span
+    >
+    <span>{{ workspace.tabs().length }} {{ workspace.tabs().length === 1 ? 'tab' : 'tabs' }}</span>
+  </footer>
+</div>
+
+<ng-template MenuContent #accountMenu="MenuContent">
+  <MenuSurface class="w-64">
+    <MenuGroup>
+      <MenuLabel>Admin preview</MenuLabel>
+      <button MenuItem type="button" (click)="shortcutsOpen.set(true)">Keyboard shortcuts</button>
+      <button MenuItem type="button" (click)="errorPresenter.presentUnknown(null)">
+        Preview error boundary
+      </button>
+    </MenuGroup>
+    <MenuSeparator />
+    <MenuGroup>
+      <button MenuItem type="button" [disabled]="true">Sign in arrives with the auth slice</button>
+    </MenuGroup>
+  </MenuSurface>
+</ng-template>
+
+<ng-template MenuContent #workspaceMenu="MenuContent">
+  <MenuSurface class="w-56">
+    <MenuGroup>
+      <MenuLabel>Workspace actions</MenuLabel>
+      <button MenuItem type="button" (click)="shortcutsOpen.set(true)">Keyboard shortcuts</button>
+      <button MenuItem type="button" (click)="onBottomPanelToggle()">Toggle activity panel</button>
+    </MenuGroup>
+  </MenuSurface>
+</ng-template>
+
+<Dialog [(open)]="shortcutsOpen">
+  <DialogHeader>
+    <DialogTitle>Keyboard shortcuts</DialogTitle>
+    <DialogDescription>Move through the shell without reaching for a mouse.</DialogDescription>
+  </DialogHeader>
+  <DialogContent class="space-y-3">
+    <div
+      class="flex items-center justify-between gap-5 rounded-md border border-border bg-muted/30 px-4 py-3 text-sm"
+    >
+      <span>Open primary navigation</span>
+      <kbd class="rounded border border-border bg-background px-2 py-1 font-mono text-xs">Tab</kbd>
+    </div>
+    <div
+      class="flex items-center justify-between gap-5 rounded-md border border-border bg-muted/30 px-4 py-3 text-sm"
+    >
+      <span>Move between tabs</span>
+      <kbd class="rounded border border-border bg-background px-2 py-1 font-mono text-xs">← →</kbd>
+    </div>
+    <div
+      class="flex items-center justify-between gap-5 rounded-md border border-border bg-muted/30 px-4 py-3 text-sm"
+    >
+      <span>Close this dialog or a menu</span>
+      <kbd class="rounded border border-border bg-background px-2 py-1 font-mono text-xs">Esc</kbd>
+    </div>
+  </DialogContent>
+  <DialogFooter>
+    <button Button type="button" variant="outline" DialogClose>Done</button>
+  </DialogFooter>
+</Dialog>

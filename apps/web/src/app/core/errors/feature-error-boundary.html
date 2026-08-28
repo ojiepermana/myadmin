@@ -1,0 +1,35 @@
+@if (errorPresenter.current(); as error) {
+  <section
+    class="m-6 rounded-lg border border-destructive/40 bg-destructive/10 p-6 text-destructive-foreground shadow-sm"
+    role="alert"
+    aria-labelledby="feature-error-title"
+  >
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+      <div class="space-y-2">
+        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-destructive">
+          Feature boundary
+        </p>
+        <h2 id="feature-error-title" class="text-lg font-semibold">{{ error.message }}</h2>
+        <p class="text-sm text-muted-foreground">
+          The shell is still available. Correlation ID:
+          <code class="font-mono text-xs">{{ error.correlationId }}</code>
+        </p>
+      </div>
+      <div class="flex shrink-0 gap-2">
+        <button
+          Button
+          type="button"
+          variant="outline"
+          (click)="errorPresenter.copyCorrelationId(error)"
+        >
+          Copy ID
+        </button>
+        <button Button type="button" variant="ghost" (click)="errorPresenter.dismiss()">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </section>
+} @else {
+  <ng-content />
+}

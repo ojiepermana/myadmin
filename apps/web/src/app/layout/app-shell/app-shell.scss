@@ -1,0 +1,182 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.app-shell {
+  min-height: 100dvh;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.app-topbar {
+  min-height: var(--layout-topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+}
+
+.app-shell-body {
+  position: relative;
+  min-height: 0;
+  height: calc(100dvh - var(--layout-topbar-height) - var(--control-height-sm));
+  overflow: hidden;
+}
+
+.app-shell-split,
+.workspace-vertical-split {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.app-shell-split {
+  flex-direction: row;
+  padding-inline-end: 0.5rem;
+}
+
+.workspace-vertical-split.bottom-panel-visible {
+  padding-block-end: 0.5rem;
+}
+
+.sidebar-panel,
+.workspace-panel,
+.workspace-main-panel,
+.bottom-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar-panel {
+  position: relative;
+  z-index: var(--z-base);
+}
+
+.workspace-panel {
+  background: hsl(var(--background));
+}
+
+.workspace-surface,
+.workspace-tabs,
+.workspace-tab-content,
+.workspace-tab-content app-feature-error-boundary {
+  display: block;
+  min-height: 0;
+  height: 100%;
+}
+
+.workspace-surface {
+  overflow: auto;
+}
+
+.workspace-tab-list {
+  min-height: var(--control-height-lg);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.workspace-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex: 0 0 auto;
+}
+
+.workspace-tab-item button[TabsTrigger] {
+  min-width: 0;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-tab-close {
+  width: var(--control-height-sm);
+  min-width: var(--control-height-sm);
+  height: var(--control-height-sm);
+}
+
+.workspace-tab-content {
+  overflow: auto;
+}
+
+.bottom-panel-collapsed {
+  min-height: var(--control-height-lg);
+}
+
+.mobile-sidebar-backdrop {
+  display: none;
+}
+
+.app-statusbar {
+  min-height: var(--control-height-sm);
+}
+
+@media (max-width: 1023px) {
+  .app-shell-body {
+    height: calc(100dvh - var(--layout-topbar-height) - var(--control-height-sm));
+  }
+
+  .app-shell-split {
+    padding-inline-end: 0;
+  }
+
+  .sidebar-panel {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: var(--z-overlay);
+    width: min(var(--layout-sidebar-width), calc(100vw - var(--spacing-2xl)));
+    max-width: calc(100vw - var(--spacing-2xl));
+    transform: translateX(-100%);
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      transform var(--duration-normal) var(--ease-standard),
+      visibility var(--duration-normal) var(--ease-standard);
+  }
+
+  .mobile-sidebar-open .sidebar-panel {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .workspace-panel {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+  }
+
+  .sidebar-resize-handle {
+    display: none;
+  }
+
+  .mobile-sidebar-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: calc(var(--z-overlay) - 1);
+    display: block;
+    width: 100%;
+    border: 0;
+    background: hsl(var(--foreground) / var(--opacity-30));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-normal) var(--ease-standard);
+  }
+
+  .mobile-sidebar-open .mobile-sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-panel,
+  .mobile-sidebar-backdrop {
+    transition: none;
+  }
+}

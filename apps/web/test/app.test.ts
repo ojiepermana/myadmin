@@ -1,3 +1,4 @@
+import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { App } from '../src/app/app';
 
