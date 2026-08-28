@@ -1,0 +1,38 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Query tab session identifier.
+    schema:
+      type: string
+      minLength: 1
+post:
+  operationId: closeQuerySession
+  tags: [query]
+  summary: Close a query tab provider session
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  responses:
+    '200':
+      description: Session close result.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/QuerySessionCloseResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or origin validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

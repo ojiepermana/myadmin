@@ -1,0 +1,225 @@
+<main class="query-editor-page flex h-full min-h-0 flex-col" aria-labelledby="query-editor-title">
+  <header class="flex flex-col gap-4 border-b border-border/70 bg-card/80 px-5 py-4 sm:px-7">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+          Query workspace
+        </p>
+        <h1 id="query-editor-title" class="mt-1 text-2xl font-semibold tracking-tight">
+          SQL editor
+        </h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+          Tab {{ tabId }} keeps its own provider session and transaction state.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        @if (busy()) {
+          <span
+            class="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-amber-700 dark:text-amber-300"
+            role="status"
+            >Executing</span
+          >
+        }
+        @if (execution()?.transactionActive) {
+          <span
+            class="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-violet-700 dark:text-violet-300"
+            role="status"
+            >Transaction open</span
+          >
+        }
+        <span
+          class="rounded-full border border-border bg-muted/30 px-3 py-1.5 text-muted-foreground"
+          >{{ engine() }}</span
+        >
+      </div>
+    </div>
+
+    <div class="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr]" aria-label="Query context">
+      <label class="grid gap-1.5 text-xs font-medium text-muted-foreground">
+        Connection
+        <select
+          class="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          [value]="connectionId()"
+          (change)="onConnectionChange($any($event.target).value)"
+        >
+          <option value="">Choose a connection</option>
+          @for (connection of connections(); track connection.id) {
+            <option [value]="connection.id">
+              {{ connection.label }} · {{ connection.engine }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="grid gap-1.5 text-xs font-medium text-muted-foreground">
+        Database
+        <input
+          class="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          [value]="database()"
+          (input)="onDatabaseChange($any($event.target).value)"
+          placeholder="Database name"
+        />
+      </label>
+      <label class="grid gap-1.5 text-xs font-medium text-muted-foreground">
+        Schema <span class="font-normal">optional</span>
+        <input
+          class="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          [value]="schema()"
+          (input)="onSchemaChange($any($event.target).value)"
+          placeholder="public"
+        />
+      </label>
+    </div>
+  </header>
+
+  <div class="flex min-h-0 flex-1 flex-col">
+    <div
+      class="flex flex-wrap items-center gap-2 border-b border-border/70 bg-muted/15 px-5 py-2.5 sm:px-7"
+    >
+      <button
+        type="button"
+        class="query-action query-action-primary"
+        [disabled]="busy()"
+        (click)="execute('full')"
+      >
+        Run all <kbd>⌘↵</kbd>
+      </button>
+      <button type="button" class="query-action" [disabled]="busy()" (click)="execute('selection')">
+        Run selection
+      </button>
+      <button
+        type="button"
+        class="query-action"
+        [disabled]="busy()"
+        (click)="execute('statementAtCursor')"
+      >
+        Run statement
+      </button>
+      @if (execution()?.transactionActive) {
+        <span class="mx-1 h-5 w-px bg-border" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="query-action"
+          [disabled]="busy()"
+          (click)="transactionCommand('COMMIT')"
+        >
+          Commit
+        </button>
+        <button
+          type="button"
+          class="query-action query-action-danger"
+          [disabled]="busy()"
+          (click)="transactionCommand('ROLLBACK')"
+        >
+          Rollback
+        </button>
+      }
+      <span class="ms-auto text-xs text-muted-foreground">{{
+        loadingMetadata() ? 'Loading metadata…' : 'Autocomplete loads on demand'
+      }}</span>
+    </div>
+
+    <div #editorHost class="query-editor-host min-h-[18rem] flex-1" aria-label="SQL editor"></div>
+
+    @if (message()) {
+      <div
+        class="border-t border-destructive/20 bg-destructive/10 px-5 py-3 text-sm text-destructive"
+        role="alert"
+      >
+        {{ message() }}
+      </div>
+    }
+    @if (metadataMessage()) {
+      <div
+        class="border-t border-amber-500/20 bg-amber-500/10 px-5 py-2 text-xs text-amber-700 dark:text-amber-300"
+        role="status"
+      >
+        {{ metadataMessage() }}
+      </div>
+    }
+  </div>
+
+  @if (execution()) {
+    <section
+      class="query-results border-t border-border bg-card/70"
+      aria-labelledby="query-results-title"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-7">
+        <div>
+          <h2 id="query-results-title" class="text-sm font-semibold">Results</h2>
+          <p class="text-xs text-muted-foreground">
+            {{ execution()?.state }} · {{ execution()?.durationMs ?? 0 }} ms ·
+            {{ results().length }} result set(s)
+          </p>
+        </div>
+        @if (errorPosition() !== null) {
+          <button type="button" class="query-action query-action-danger" (click)="jumpToError()">
+            Jump to error
+          </button>
+        }
+      </div>
+      @if (execution()?.error) {
+        <div
+          class="mx-5 mb-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive sm:mx-7"
+          role="alert"
+        >
+          <strong>{{ execution()?.error?.code }}</strong> {{ execution()?.error?.message }}
+        </div>
+      }
+      @for (statement of execution()?.statements ?? []; track $index) {
+        @if (statement.error) {
+          <div
+            class="mx-5 mb-3 rounded-md border border-destructive/20 bg-destructive/5 px-4 py-2 text-sm text-destructive sm:mx-7"
+          >
+            Statement {{ $index + 1 }}: {{ statement.error.message }}
+            @if (statement.state === 'skipped') {
+              <span>Not run.</span>
+            }
+          </div>
+        }
+        @if (statement.result) {
+          <div
+            class="query-result-table mx-5 mb-4 overflow-auto rounded-md border border-border sm:mx-7"
+          >
+            <div class="border-b border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              Statement {{ $index + 1 }} · {{ statement.message }} ·
+              {{ statement.durationMs ?? 0 }} ms
+            </div>
+            <table class="w-full min-w-max text-left text-xs">
+              <thead class="bg-muted/20 text-muted-foreground">
+                <tr>
+                  @for (column of statement.result.columns; track column) {
+                    <th class="whitespace-nowrap border-b border-border px-3 py-2 font-semibold">
+                      {{ column }}
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of statement.result.rows; track $index) {
+                  <tr class="border-b border-border/60 last:border-0">
+                    @for (column of statement.result.columns; track column) {
+                      <td
+                        class="whitespace-pre-wrap px-3 py-2 align-top"
+                        [class]="cellClass(row[column])"
+                      >
+                        {{ cellValue(row[column]) }}
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+            @if (statement.result.truncated) {
+              <p
+                class="border-t border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"
+              >
+                Only the configured row limit is shown. Total rows:
+                {{ statement.result.totalRows }}.
+              </p>
+            }
+          </div>
+        }
+      }
+    </section>
+  }
+</main>

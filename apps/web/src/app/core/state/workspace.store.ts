@@ -92,6 +92,15 @@ export class WorkspaceStore {
     return tab;
   }
 
+  updateTabContext(tabId: string, patch: Readonly<Record<string, unknown>>): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      tabs: state.tabs.map((tab) =>
+        tab.id === tabId ? { ...tab, context: { ...tab.context, ...patch } } : tab,
+      ),
+    }));
+  }
+
   closeTab(tabId: string): TabDescriptor | null {
     const state = this.stateSignal();
     const index = state.tabs.findIndex((tab) => tab.id === tabId);

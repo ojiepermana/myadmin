@@ -102,6 +102,18 @@ export interface ViewDefinition {
 
 export type DataRow = Record<string, unknown>;
 
+/** A JSON safe cell that keeps values such as bigint and bytes lossless. */
+export type QueryCell =
+  | { type: 'null'; value: null }
+  | { type: 'string'; value: string }
+  | { type: 'number'; value: string }
+  | { type: 'boolean'; value: boolean }
+  | { type: 'date'; value: string }
+  | { type: 'bytes'; value: string; encoding: 'base64' }
+  | { type: 'json'; value: string };
+
+export type SerializedDataRow = Record<string, QueryCell>;
+
 export interface DataPageRequest extends PageRequest {
   table: ObjectRef;
   columns?: string[];
@@ -119,6 +131,15 @@ export interface QueryResult {
   rows: DataRow[];
   affectedRows?: number;
   durationMs?: number;
+}
+
+export interface SerializedQueryResult {
+  columns: string[];
+  rows: SerializedDataRow[];
+  affectedRows?: number;
+  durationMs?: number;
+  totalRows: number;
+  truncated: boolean;
 }
 
 export interface QueryRequest {

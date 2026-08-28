@@ -700,14 +700,21 @@ function pageParameters(page: number, pageSize: number): { page: number; pageSiz
   return { page, pageSize };
 }
 
-function connectionDescriptor(connection: Connection): ProviderConnectionDescriptor {
+function connectionDescriptor(
+  connection: Connection,
+  databaseOverride?: string,
+): ProviderConnectionDescriptor {
   const tls = tlsOptionsFromConnection(connection);
   return {
     engine: connection.engine,
     host: connection.host,
     port: connection.port,
     user: connection.username,
-    ...(connection.initialDatabase === null ? {} : { database: connection.initialDatabase }),
+    ...(databaseOverride === undefined
+      ? connection.initialDatabase === null
+        ? {}
+        : { database: connection.initialDatabase }
+      : { database: databaseOverride }),
     tls: {
       mode: connection.sslMode as TlsMode,
       ...(tls?.ca === undefined ? {} : { ca: tls.ca }),
@@ -1068,6 +1075,46 @@ export class ConnectionManagerService {
 
   public async closeForUser(userId: string): Promise<void> {
     await this.lifecycleSessions.closeForUser(userId);
+  }
+
+  public isConnected(userId: string, connectionId: string): boolean {
+    return this.lifecycleSessions.sessionFor(userId, connectionId) !== undefined;
+  }
+
+  /** Opens a query owned session without adding it to the status lifecycle registry. */
+  public async openQuerySession(
+    actor: ConnectionActor,
+    id: string,
+    database: string,
+  ): Promise<{
+    provider: DatabaseProvider;
+    handle: ConnectionHandle;
+    serverInfo: ServerInfo;
+    capability: CapabilityDescription;
+    latencyMs: number;
+  }> {
+    const connection = this.requireConnection(id);
+    this.assertConnectionOwner(actor, connection);
+    const encrypted = this.options.store.credentials.get(connection.id);
+    if (!encrypted) {
+      throw new ConnectionManagerError(
+        'SECRET_REQUIRED',
+        'Save a password for this connection before running a query.',
+        422,
+      );
+    }
+    return this.options.vault.decryptAndUse(
+      connection.id,
+      this.vaultCredential(encrypted),
+      (payload) => this.openProvider(connection, this.passwordFromPayload(payload), database),
+    );
+  }
+
+  public async closeQuerySession(session: {
+    provider: DatabaseProvider;
+    handle: ConnectionHandle;
+  }): Promise<void> {
+    await session.provider.connection.close(session.handle);
   }
 
   public async sweepIdle(at = this.now()): Promise<number> {
@@ -1594,6 +1641,7 @@ export class ConnectionManagerService {
   private async openProvider(
     connection: Connection,
     password: string | undefined,
+    databaseOverride?: string,
   ): Promise<{
     provider: DatabaseProvider;
     handle: ConnectionHandle;
@@ -1618,7 +1666,7 @@ export class ConnectionManagerService {
     let handle: ConnectionHandle | undefined;
     try {
       handle = await provider.connection.open(
-        new ConnectionContext(connectionDescriptor(connection), password),
+        new ConnectionContext(connectionDescriptor(connection, databaseOverride), password),
       );
       const serverInfo = await provider.connection.serverInfo(handle);
       const capability = await provider.capability.describe(handle);

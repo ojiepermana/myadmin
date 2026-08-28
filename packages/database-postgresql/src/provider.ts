@@ -4,12 +4,14 @@ import { PostgresqlConnectionAdapter, type PostgresqlConnectionOptions } from '.
 import { PostgresqlMetadataAdapter } from './metadata';
 import { PostgresqlBackupPort, type PostgresqlBackupToolPaths } from './backup';
 import { PostgresqlMonitoringAdapter } from './monitoring';
+import { PostgresqlQueryAdapter } from './query-adapter';
 
 export class PostgresqlProvider implements DatabaseProvider {
   public readonly engine = 'postgresql' as const;
   public readonly connection: PostgresqlConnectionAdapter;
   public readonly capability: PostgresqlCapabilityAdapter;
   public readonly metadata: PostgresqlMetadataAdapter;
+  public readonly query: PostgresqlQueryAdapter;
   public readonly backup: PostgresqlBackupPort;
   public readonly monitoring: PostgresqlMonitoringAdapter;
 
@@ -19,6 +21,7 @@ export class PostgresqlProvider implements DatabaseProvider {
     this.capability = new PostgresqlCapabilityAdapter(this.connection, this.backup);
     this.metadata = new PostgresqlMetadataAdapter(this.connection);
     this.monitoring = new PostgresqlMonitoringAdapter(this.connection, { now: options.now });
+    this.query = new PostgresqlQueryAdapter(this.connection);
   }
 }
 

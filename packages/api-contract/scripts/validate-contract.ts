@@ -49,6 +49,10 @@ const initialPaths = {
   '/connections/{id}/duplicate': 'paths/connection-duplicate.yaml',
   '/server-groups': 'paths/server-groups.yaml',
   '/server-groups/{id}': 'paths/server-group-by-id.yaml',
+  '/query/executions': 'paths/query-executions.yaml',
+  '/query/executions/{id}': 'paths/query-execution-by-id.yaml',
+  '/query/metadata': 'paths/query-metadata.yaml',
+  '/query/sessions/{id}/close': 'paths/query-session-close.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);

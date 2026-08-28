@@ -209,9 +209,11 @@ export class AppShell {
   }
 
   protected openTab(definition: AppRouteDefinition): void {
-    this.workspace.openTab(this.toTab(definition));
+    const tabId = definition.type === 'query-editor' ? this.newQueryTabId() : definition.id;
+    const tab = this.toTab(definition, tabId);
+    this.workspace.openTab(tab);
     this.closeMobileSidebar();
-    void this.router.navigateByUrl(`/${definition.path}`);
+    void this.router.navigateByUrl(this.routeForTab(tab));
   }
 
   protected onTabValueChange(tabId: string | null): void {
@@ -228,6 +230,9 @@ export class AppShell {
     event.preventDefault();
     event.stopPropagation();
     const nextTab = this.workspace.closeTab(tab.id);
+    if (nextTab && tab.type === 'query-editor') {
+      void firstValueFrom(this.sdk.query.closeSession(tab.id)).catch(() => undefined);
+    }
     if (nextTab) {
       void this.router.navigateByUrl(this.routeForTab(nextTab));
     }
@@ -280,24 +285,36 @@ export class AppShell {
   };
 
   private syncRouteTab(url: string): void {
-    const path = (url.split(/[?#]/, 1)[0] ?? '').replace(/^\/+/, '');
+    const parsed = new URL(url, 'http://myadmin.local');
+    const path = parsed.pathname.replace(/^\/+/, '');
     const definition = [DEV_ROUTE, ...V1_ROUTE_DEFINITIONS].find((item) => item.path === path);
-    if (definition) {
+    if (!definition) return;
+    if (definition.type !== 'query-editor') {
       this.workspace.openTab(this.toTab(definition));
+      return;
     }
+    const tabId = parsed.searchParams.get('tab') || this.newQueryTabId();
+    const tab = this.toTab(definition, tabId);
+    this.workspace.openTab(tab);
+    if (!parsed.searchParams.get('tab')) void this.router.navigateByUrl(this.routeForTab(tab));
   }
 
-  private toTab(definition: AppRouteDefinition): TabDescriptor {
+  private toTab(definition: AppRouteDefinition, id = definition.id): TabDescriptor {
     return {
-      id: definition.id,
+      id,
       type: definition.type,
       title: definition.title,
       context: { route: `/${definition.path}` },
     };
   }
 
+  private newQueryTabId(): string {
+    return `query-editor-${crypto.randomUUID()}`;
+  }
+
   private routeForTab(tab: TabDescriptor): string {
     const route = tab.context['route'];
+    if (tab.type === 'query-editor') return `/query-editor?tab=${encodeURIComponent(tab.id)}`;
     return typeof route === 'string' ? route : '/workspace';
   }
 

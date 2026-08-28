@@ -66,6 +66,8 @@ import {
 } from './connections/connection-manager';
 import { registerConnectionRoutes } from './connections/routes';
 import { registerBackupRoutes } from './backup/routes';
+import { QueryExecutionService } from './query/query-execution';
+import { registerQueryRoutes } from './query/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -95,6 +97,7 @@ export interface ServerStartOptions {
   websocketHeartbeatIntervalMs?: number;
   realtimeHub?: RealtimeHub;
   canSubscribeQuery?: (userId: string, executionId: string) => boolean;
+  queryExecutionService?: QueryExecutionService;
   observability?: ObservabilityOptions;
 }
 
@@ -125,6 +128,7 @@ export interface ServerAppOptions {
   websocketHeartbeatIntervalMs?: number;
   realtimeHub?: RealtimeHub;
   canSubscribeQuery?: (userId: string, executionId: string) => boolean;
+  queryExecutionService?: QueryExecutionService;
   observability?: ObservabilityOptions;
 }
 
@@ -176,6 +180,7 @@ const sessionCleanupStops = new WeakMap<object, () => void>();
 const realtimeCleanupStops = new WeakMap<object, () => void>();
 const jobManagerCleanupStops = new WeakMap<object, () => void>();
 const connectionManagerCleanupStops = new WeakMap<object, () => Promise<void>>();
+const queryExecutionCleanupStops = new WeakMap<object, () => Promise<void>>();
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
   return new Response(JSON.stringify(value), {
@@ -1253,6 +1258,9 @@ export function disposeServerApp(application: AnyElysia): void {
   sessionCleanupStops.delete(application);
   realtimeCleanupStops.get(application)?.();
   realtimeCleanupStops.delete(application);
+  const disposeQueries = queryExecutionCleanupStops.get(application);
+  queryExecutionCleanupStops.delete(application);
+  if (disposeQueries) void disposeQueries();
   jobManagerCleanupStops.get(application)?.();
   jobManagerCleanupStops.delete(application);
   const disposeConnections = connectionManagerCleanupStops.get(application);
@@ -1265,6 +1273,9 @@ export async function disposeServerAppAsync(application: AnyElysia): Promise<voi
   sessionCleanupStops.delete(application);
   realtimeCleanupStops.get(application)?.();
   realtimeCleanupStops.delete(application);
+  const disposeQueries = queryExecutionCleanupStops.get(application);
+  queryExecutionCleanupStops.delete(application);
+  if (disposeQueries) await disposeQueries();
   jobManagerCleanupStops.get(application)?.();
   jobManagerCleanupStops.delete(application);
   const disposeConnections = connectionManagerCleanupStops.get(application);
@@ -1349,17 +1360,31 @@ export function createServerApp(options: ServerAppOptions = {}) {
     throw new RangeError('WebSocket heartbeat interval must be between 1 and 30000 ms');
   }
 
+  let queryExecutionService = options.queryExecutionService;
   const realtimeHub =
     options.realtimeHub ??
     new RealtimeHub({
       heartbeatIntervalMs: websocketHeartbeatIntervalMs,
       sessionCheckIntervalMs: websocketCheckIntervalMs,
       canSubscribeJob: (userId, jobId) => jobManager.getForOwner(jobId, userId) !== undefined,
-      canSubscribeQuery: options.canSubscribeQuery,
+      canSubscribeQuery: (userId, executionId) =>
+        options.canSubscribeQuery?.(userId, executionId) ??
+        queryExecutionService?.canSubscribe(userId, executionId) ??
+        false,
     });
   connectionManager?.setStatusPublisher((userId, state) => {
     realtimeHub.publish(realtimeConnectionStatusEvent({ userId, state }));
   });
+  queryExecutionService ??=
+    runtimeStore && connectionManager
+      ? new QueryExecutionService({
+          connectionManager,
+          historyRepository: runtimeStore.queryHistory,
+          resultMaxRows: options.config?.limits.resultMaxRows,
+          idleTimeoutMinutes: options.config?.provider.idleTimeoutMinutes,
+          publish: (event) => realtimeHub.publish(event),
+        })
+      : undefined;
 
   let application: AnyElysia = installObservability(
     new Elysia({
@@ -1443,6 +1468,14 @@ export function createServerApp(options: ServerAppOptions = {}) {
       secureCookies,
     });
   }
+  if (queryExecutionService && authService) {
+    application = registerQueryRoutes(application, '/api/v1', {
+      authService,
+      setupService,
+      queryService: queryExecutionService,
+      secureCookies,
+    });
+  }
   if (backupService && authService) {
     application = registerBackupRoutes(application, '/api/v1', {
       authService,
@@ -1480,6 +1513,9 @@ export function createServerApp(options: ServerAppOptions = {}) {
   if (connectionManager) {
     connectionManagerCleanupStops.set(application, () => connectionManager!.dispose());
   }
+  if (queryExecutionService) {
+    queryExecutionCleanupStops.set(application, () => queryExecutionService.dispose());
+  }
   return application;
 }
 
@@ -1508,6 +1544,10 @@ export function createApp(
     vault: credentialVault,
   });
   const setupRateLimiter = new InMemoryRateLimiter();
+  const queryExecutionService = new QueryExecutionService({
+    connectionManager,
+    historyRepository: store.queryHistory,
+  });
 
   let application: AnyElysia = installObservability(
     new Elysia(),
@@ -1553,6 +1593,12 @@ export function createApp(
     authService,
     setupService,
     connectionManager,
+    secureCookies: false,
+  });
+  application = registerQueryRoutes(application, '', {
+    authService,
+    setupService,
+    queryService: queryExecutionService,
     secureCookies: false,
   });
   const backupService =
@@ -1610,6 +1656,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       websocketHeartbeatIntervalMs: options.websocketHeartbeatIntervalMs,
       realtimeHub: options.realtimeHub,
       canSubscribeQuery: options.canSubscribeQuery,
+      queryExecutionService: options.queryExecutionService,
       observability: options.observability,
     });
     serverApp.listen({ hostname: options.host ?? host, port: options.port ?? port });

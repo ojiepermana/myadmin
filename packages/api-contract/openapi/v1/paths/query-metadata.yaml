@@ -1,0 +1,66 @@
+get:
+  operationId: getQueryMetadata
+  tags: [query]
+  summary: Load metadata for query editor autocomplete
+  parameters:
+    - name: connectionId
+      in: query
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    - name: database
+      in: query
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    - name: schema
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+    - name: table
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+    - name: tabSessionId
+      in: query
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    - name: kind
+      in: query
+      required: true
+      schema:
+        type: string
+        enum: [schemas, objects, columns]
+  responses:
+    '200':
+      description: Metadata completion items.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/QueryAutocompleteResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The metadata request is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

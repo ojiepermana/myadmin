@@ -1,0 +1,31 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Query execution identifier.
+    schema:
+      type: string
+      minLength: 1
+get:
+  operationId: getQueryExecution
+  tags: [query]
+  summary: Get an owned query execution snapshot
+  responses:
+    '200':
+      description: Current query execution state and statement results.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/QueryExecution
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The execution does not exist or is not owned by the user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

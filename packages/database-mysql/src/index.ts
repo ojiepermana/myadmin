@@ -20,6 +20,7 @@ export * from './mappers/mysql-errors';
 export * from './metadata/mysql-metadata';
 export * from './monitoring';
 export * from './metadata/quoting';
+export * from './query';
 
 /** Composition of the connection and capability ports for MySQL V1. */
 export class MysqlProvider implements DatabaseProvider {

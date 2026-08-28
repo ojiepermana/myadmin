@@ -97,6 +97,8 @@ components:
       required:
         - executionId
         - state
+        - transactionActive
+        - execution
       properties:
         executionId:
           type: string
@@ -112,6 +114,10 @@ components:
         durationMs:
           type: integer
           minimum: 0
+        transactionActive:
+          type: boolean
+        execution:
+          $ref: ../components/schemas/query.yaml#/QueryExecution
     JobProgressEvent:
       allOf:
         - $ref: ./websocket-protocol.yaml#/components/schemas/WebSocketMessage

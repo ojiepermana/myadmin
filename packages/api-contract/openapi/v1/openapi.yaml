@@ -81,6 +81,14 @@ paths:
     $ref: ./paths/server-groups.yaml
   /server-groups/{id}:
     $ref: ./paths/server-group-by-id.yaml
+  /query/executions:
+    $ref: ./paths/query-executions.yaml
+  /query/executions/{id}:
+    $ref: ./paths/query-execution-by-id.yaml
+  /query/metadata:
+    $ref: ./paths/query-metadata.yaml
+  /query/sessions/{id}/close:
+    $ref: ./paths/query-session-close.yaml
 components:
   schemas:
     ApiError:
@@ -199,6 +207,26 @@ components:
       $ref: ./components/schemas/server-group.yaml#/ServerGroup
     ServerGroupPage:
       $ref: ./components/schemas/server-group.yaml#/ServerGroupPage
+    QueryCell:
+      $ref: ./components/schemas/query.yaml#/QueryCell
+    QueryResult:
+      $ref: ./components/schemas/query.yaml#/QueryResult
+    QueryError:
+      $ref: ./components/schemas/query.yaml#/QueryError
+    QueryStatement:
+      $ref: ./components/schemas/query.yaml#/QueryStatement
+    QueryExecutionRequest:
+      $ref: ./components/schemas/query.yaml#/QueryExecutionRequest
+    QueryExecutionAccepted:
+      $ref: ./components/schemas/query.yaml#/QueryExecutionAccepted
+    QueryExecution:
+      $ref: ./components/schemas/query.yaml#/QueryExecution
+    QueryAutocompleteItem:
+      $ref: ./components/schemas/query.yaml#/QueryAutocompleteItem
+    QueryAutocompleteResponse:
+      $ref: ./components/schemas/query.yaml#/QueryAutocompleteResponse
+    QuerySessionCloseResponse:
+      $ref: ./components/schemas/query.yaml#/QuerySessionCloseResponse
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

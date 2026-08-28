@@ -1,0 +1,268 @@
+QueryCell:
+  oneOf:
+    - type: object
+      additionalProperties: false
+      required: [type, value]
+      properties:
+        type:
+          const: 'null'
+        value:
+          type: 'null'
+    - type: object
+      additionalProperties: false
+      required: [type, value]
+      properties:
+        type:
+          const: string
+        value:
+          type: string
+    - type: object
+      additionalProperties: false
+      required: [type, value]
+      properties:
+        type:
+          const: number
+        value:
+          type: string
+    - type: object
+      additionalProperties: false
+      required: [type, value]
+      properties:
+        type:
+          const: boolean
+        value:
+          type: boolean
+    - type: object
+      additionalProperties: false
+      required: [type, value]
+      properties:
+        type:
+          const: date
+        value:
+          type: string
+          format: date-time
+    - type: object
+      additionalProperties: false
+      required: [type, value, encoding]
+      properties:
+        type:
+          const: bytes
+        value:
+          type: string
+        encoding:
+          const: base64
+    - type: object
+      additionalProperties: false
+      required: [type, value]
+      properties:
+        type:
+          const: json
+        value:
+          type: string
+
+SerializedDataRow:
+  type: object
+  additionalProperties:
+    $ref: '#/QueryCell'
+
+QueryResult:
+  type: object
+  additionalProperties: false
+  required: [columns, rows, totalRows, truncated]
+  properties:
+    columns:
+      type: array
+      items:
+        type: string
+    rows:
+      type: array
+      items:
+        $ref: '#/SerializedDataRow'
+    affectedRows:
+      type: integer
+      minimum: 0
+    durationMs:
+      type: integer
+      minimum: 0
+    totalRows:
+      type: integer
+      minimum: 0
+    truncated:
+      type: boolean
+
+QueryError:
+  type: object
+  additionalProperties: false
+  required: [code, category, message]
+  properties:
+    code:
+      type: string
+      minLength: 1
+    category:
+      type: string
+      minLength: 1
+    message:
+      type: string
+      minLength: 1
+    position:
+      type: integer
+      minimum: 0
+
+QueryStatement:
+  type: object
+  additionalProperties: false
+  required: [sql, startOffset, endOffset, state]
+  properties:
+    sql:
+      type: string
+      minLength: 1
+    startOffset:
+      type: integer
+      minimum: 0
+    endOffset:
+      type: integer
+      minimum: 0
+    state:
+      type: string
+      enum: [pending, running, done, error, skipped]
+    durationMs:
+      type: integer
+      minimum: 0
+    message:
+      type: string
+    result:
+      $ref: '#/QueryResult'
+    error:
+      $ref: '#/QueryError'
+
+QueryExecutionRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, database, sql, mode, tabSessionId]
+  properties:
+    connectionId:
+      type: string
+      minLength: 1
+    database:
+      type: string
+      minLength: 1
+    schema:
+      type: string
+      minLength: 1
+    sql:
+      type: string
+      minLength: 1
+    mode:
+      type: string
+      enum: [selection, full, statementAtCursor]
+    tabSessionId:
+      type: string
+      minLength: 1
+    sourceOffset:
+      type: integer
+      minimum: 0
+    cursorOffset:
+      type: integer
+      minimum: 0
+
+QueryExecutionAccepted:
+  type: object
+  additionalProperties: false
+  required: [executionId]
+  properties:
+    executionId:
+      type: string
+      minLength: 1
+
+QueryExecution:
+  type: object
+  additionalProperties: false
+  required:
+    - executionId
+    - tabSessionId
+    - connectionId
+    - database
+    - sql
+    - mode
+    - state
+    - statements
+    - currentIndex
+    - transactionActive
+    - createdAt
+  properties:
+    executionId:
+      type: string
+      minLength: 1
+    tabSessionId:
+      type: string
+      minLength: 1
+    connectionId:
+      type: string
+      minLength: 1
+    database:
+      type: string
+      minLength: 1
+    schema:
+      type: string
+      minLength: 1
+    sql:
+      type: string
+      minLength: 1
+    mode:
+      type: string
+      enum: [selection, full, statementAtCursor]
+    state:
+      type: string
+      enum: [queued, running, completed, failed, cancelled]
+    statements:
+      type: array
+      items:
+        $ref: '#/QueryStatement'
+    currentIndex:
+      type: integer
+      minimum: -1
+    transactionActive:
+      type: boolean
+    createdAt:
+      type: string
+      format: date-time
+    durationMs:
+      type: integer
+      minimum: 0
+    error:
+      $ref: '#/QueryError'
+
+QueryAutocompleteItem:
+  type: object
+  additionalProperties: false
+  required: [label, kind]
+  properties:
+    label:
+      type: string
+      minLength: 1
+    kind:
+      type: string
+      enum: [schema, table, view, column, routine, sequence, keyword]
+    detail:
+      type: string
+
+QueryAutocompleteResponse:
+  type: object
+  additionalProperties: false
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/QueryAutocompleteItem'
+
+QuerySessionCloseResponse:
+  type: object
+  additionalProperties: false
+  required: [tabSessionId, closed]
+  properties:
+    tabSessionId:
+      type: string
+      minLength: 1
+    closed:
+      type: boolean

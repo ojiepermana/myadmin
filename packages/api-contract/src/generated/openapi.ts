@@ -454,6 +454,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/query/executions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start an asynchronous query execution */
+        post: operations["startQueryExecution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/query/executions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Query execution identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Get an owned query execution snapshot */
+        get: operations["getQueryExecution"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/query/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Load metadata for query editor autocomplete */
+        get: operations["getQueryMetadata"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/query/sessions/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Query tab session identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a query tab provider session */
+        post: operations["closeQuerySession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/server-groups": {
         parameters: {
             query?: never;
@@ -949,9 +1023,115 @@ export interface components {
         PreferenceUpdate: {
             value: ("system" | "light" | "dark") | number | boolean;
         };
+        QueryAutocompleteItem: {
+            detail?: string;
+            /** @enum {string} */
+            kind: "schema" | "table" | "view" | "column" | "routine" | "sequence" | "keyword";
+            label: string;
+        };
+        QueryAutocompleteResponse: {
+            items: components["schemas"]["QueryAutocompleteItem"][];
+        };
+        QueryCell: {
+            /** @constant */
+            type: "null";
+            value: null;
+        } | {
+            /** @constant */
+            type: "string";
+            value: string;
+        } | {
+            /** @constant */
+            type: "number";
+            value: string;
+        } | {
+            /** @constant */
+            type: "boolean";
+            value: boolean;
+        } | {
+            /** @constant */
+            type: "date";
+            /** Format: date-time */
+            value: string;
+        } | {
+            /** @constant */
+            encoding: "base64";
+            /** @constant */
+            type: "bytes";
+            value: string;
+        } | {
+            /** @constant */
+            type: "json";
+            value: string;
+        };
+        QueryError: {
+            category: string;
+            code: string;
+            message: string;
+            position?: number;
+        };
+        QueryExecution: {
+            connectionId: string;
+            /** Format: date-time */
+            createdAt: string;
+            currentIndex: number;
+            database: string;
+            durationMs?: number;
+            error?: components["schemas"]["QueryError"];
+            executionId: string;
+            /** @enum {string} */
+            mode: "selection" | "full" | "statementAtCursor";
+            schema?: string;
+            sql: string;
+            /** @enum {string} */
+            state: "queued" | "running" | "completed" | "failed" | "cancelled";
+            statements: components["schemas"]["QueryStatement"][];
+            tabSessionId: string;
+            transactionActive: boolean;
+        };
+        QueryExecutionAccepted: {
+            executionId: string;
+        };
+        QueryExecutionRequest: {
+            connectionId: string;
+            cursorOffset?: number;
+            database: string;
+            /** @enum {string} */
+            mode: "selection" | "full" | "statementAtCursor";
+            schema?: string;
+            sourceOffset?: number;
+            sql: string;
+            tabSessionId: string;
+        };
+        QueryResult: {
+            affectedRows?: number;
+            columns: string[];
+            durationMs?: number;
+            rows: components["schemas"]["SerializedDataRow"][];
+            totalRows: number;
+            truncated: boolean;
+        };
+        QuerySessionCloseResponse: {
+            closed: boolean;
+            tabSessionId: string;
+        };
+        QueryStatement: {
+            durationMs?: number;
+            endOffset: number;
+            error?: components["schemas"]["QueryError"];
+            message?: string;
+            result?: components["schemas"]["QueryResult"];
+            sql: string;
+            startOffset: number;
+            /** @enum {string} */
+            state: "pending" | "running" | "done" | "error" | "skipped";
+        };
         ResetPasswordRequest: {
             /** Format: password */
             newPassword: string;
+        };
+        SerializedDataRow: {
+            [key: string]: components["schemas"]["QueryCell"];
         };
         ServerGroup: {
             color?: string | null;
@@ -2661,6 +2841,206 @@ export interface operations {
             };
             /** @description Preference could not be updated. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    startQueryExecution: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueryExecutionRequest"];
+            };
+        };
+        responses: {
+            /** @description Query execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryExecutionAccepted"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or origin validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The query request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getQueryExecution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Query execution identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current query execution state and statement results. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryExecution"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The execution does not exist or is not owned by the user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getQueryMetadata: {
+        parameters: {
+            query: {
+                connectionId: string;
+                database: string;
+                kind: "schemas" | "objects" | "columns";
+                schema?: string;
+                table?: string;
+                tabSessionId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Metadata completion items. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryAutocompleteResponse"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The metadata request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    closeQuerySession: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Myadmin-Csrf": "1";
+            };
+            path: {
+                /** @description Query tab session identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session close result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuerySessionCloseResponse"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or origin validation failed. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

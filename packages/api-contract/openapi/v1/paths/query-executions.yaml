@@ -1,0 +1,48 @@
+post:
+  operationId: startQueryExecution
+  tags: [query]
+  summary: Start an asynchronous query execution
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/query.yaml#/QueryExecutionRequest
+  responses:
+    '202':
+      description: Query execution accepted.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/query.yaml#/QueryExecutionAccepted
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or origin validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The query request is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
