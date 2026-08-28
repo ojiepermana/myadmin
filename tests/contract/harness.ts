@@ -1,10 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { parse } from 'yaml';
 import Ajv2020, { type ErrorObject } from 'ajv/dist/2020';
-import type { Elysia } from 'elysia';
-
 type RecordValue = Record<string, unknown>;
 type HttpMethod = 'get' | 'put' | 'post' | 'delete' | 'options' | 'head' | 'patch' | 'trace';
+type RouteContainer = { routes: Array<{ method: string; path: string }> };
 
 export type ContractOperation = {
   method: HttpMethod;
@@ -41,12 +40,12 @@ function dereference(value: unknown, document: RecordValue, stack = new Set<stri
     return value;
   }
   const object = value as RecordValue;
-  if (typeof object.$ref === 'string') {
-    if (stack.has(object.$ref)) {
+  if (typeof object['$ref'] === 'string') {
+    if (stack.has(object['$ref'])) {
       return {};
     }
-    const nextStack = new Set(stack).add(object.$ref);
-    return dereference(pointer(document, object.$ref), document, nextStack);
+    const nextStack = new Set(stack).add(object['$ref']);
+    return dereference(pointer(document, object['$ref']), document, nextStack);
   }
   return Object.fromEntries(
     Object.entries(object).map(([key, item]) => [key, dereference(item, document, stack)]),
@@ -58,7 +57,7 @@ export async function loadContract(path: string): Promise<RecordValue> {
 }
 
 export function contractOperations(document: RecordValue): ContractOperation[] {
-  const paths = record(document.paths, 'contract.paths');
+  const paths = record(document['paths'], 'contract.paths');
   const operations: ContractOperation[] = [];
   for (const [path, pathValue] of Object.entries(paths).sort(([a], [b]) => a.localeCompare(b))) {
     const pathItem = record(pathValue, `contract.paths.${path}`);
@@ -77,7 +76,7 @@ export function contractOperations(document: RecordValue): ContractOperation[] {
         continue;
       }
       const operation = record(operationValue, `${method.toUpperCase()} ${path}`);
-      const operationId = operation.operationId;
+      const operationId = operation['operationId'];
       if (typeof operationId !== 'string' || operationId.length === 0) {
         throw new Error(`${method.toUpperCase()} ${path} must define operationId`);
       }
@@ -85,7 +84,7 @@ export function contractOperations(document: RecordValue): ContractOperation[] {
         method,
         path,
         operationId,
-        responses: record(operation.responses, `${operationId}.responses`),
+        responses: record(operation['responses'], `${operationId}.responses`),
       });
     }
   }
@@ -97,7 +96,7 @@ function normalizeServerPath(path: string): string {
   return withoutPrefix.length > 1 ? withoutPrefix.replace(/\/$/, '') : withoutPrefix || '/';
 }
 
-export function serverOperations(app: Elysia): ServerOperation[] {
+export function serverOperations(app: RouteContainer): ServerOperation[] {
   return app.routes
     .map((route) => ({ method: route.method.toLowerCase(), path: normalizeServerPath(route.path) }))
     .sort((a, b) => `${a.method} ${a.path}`.localeCompare(`${b.method} ${b.path}`));
@@ -142,12 +141,12 @@ function responseSchema(
   operation: ContractOperation,
   status: number,
 ): unknown {
-  const response = operation.responses[String(status)] ?? operation.responses.default;
+  const response = operation.responses[String(status)] ?? operation.responses['default'];
   if (response === undefined) {
     throw new Error(`${operation.operationId} does not define response status ${status}`);
   }
   const responseRecord = record(response, `${operation.operationId} response ${status}`);
-  const content = responseRecord.content;
+  const content = responseRecord['content'];
   if (content === undefined) {
     return undefined;
   }
@@ -155,7 +154,7 @@ function responseSchema(
     record(content, 'response.content')['application/json'],
     `${operation.operationId} response ${status}.application/json`,
   );
-  return dereference(record(json, 'response JSON').schema, document);
+  return dereference(record(json, 'response JSON')['schema'], document);
 }
 
 function formatValidationErrors(errors: ErrorObject[] | null | undefined): string {
@@ -182,6 +181,9 @@ export function assertResponseMatchesContract(
   }
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
+  if (typeof schema !== 'object' || schema === null) {
+    throw new Error(`${operation.operationId} ${status} response schema must be an object`);
+  }
   const validate = ajv.compile(schema);
   if (!validate(payload)) {
     throw new Error(

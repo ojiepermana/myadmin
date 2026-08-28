@@ -84,15 +84,16 @@ describe('API contract', () => {
     if (!loginCookie) {
       throw new Error('Login did not set a session cookie for contract validation');
     }
+    const sessionCookieValue = loginCookie.split(';')[0] ?? '';
     responses.push([
       'getCurrentUser',
-      await request('/auth/me', { headers: { cookie: loginCookie.split(';')[0] } }),
+      await request('/auth/me', { headers: { cookie: sessionCookieValue } }),
     ]);
     responses.push([
       'logout',
       await request('/auth/logout', {
         method: 'POST',
-        headers: { cookie: loginCookie.split(';')[0] },
+        headers: { cookie: sessionCookieValue },
       }),
     ]);
 
