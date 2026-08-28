@@ -1,7 +1,7 @@
 # 0005. SDK Angular core
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ Aturan yang dikunci: component → facade/store → SDK adalah satu satunya jalu
 ## Requirements
 
 **User stories**:
+
 - Sebagai developer feature Angular, saya ingin memanggil `sdk.auth.login(...)` yang bertipe penuh supaya salah bentuk request tertangkap compile time.
 - Sebagai developer, saya ingin semua kegagalan API tiba sebagai satu bentuk error supaya penanganan di UI seragam.
 
@@ -38,17 +39,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: SDK tipis tulisan tangan di atas tipe generated (dipilih)
 
 **Pros**:
+
 - Bentuk facade, penamaan, dan integrasi @ojiepermana/angular sepenuhnya dikendalikan; permukaan kecil dan mudah diaudit.
 
 **Cons**:
+
 - Setiap domain endpoint baru butuh beberapa baris client tulisan tangan (bertipe, jadi murah).
 
 ### Option 2: Client digenerate penuh dari kontrak
 
 **Pros**:
+
 - Nol tulisan tangan per endpoint.
 
 **Cons**:
+
 - Sudah ditolak di sesi desain: bentuk client mengikuti generator, adaptasi transport dan realtime custom jadi kaku.
 
 ## Decision
@@ -70,14 +75,16 @@ SDK adalah titik cekik (choke point) yang membuat aturan "tidak ada raw fetch" b
 **API surface**: tidak menambah endpoint; membungkus endpoint spec 0003.
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| setiap panggilan | correlationId pada error | field `ApiError.correlationId` dari server |
-| kegagalan jaringan | kode `NETWORK_ERROR` | konstanta SDK, bukan dari server |
-| sessionExpired | pemicu | status 401 dari endpoint non publik |
-| baseUrl | nilai | `provideMyadminSdk` config, default `/api/v1` |
+
+| Action             | Value produced / displayed | Source                                        |
+| ------------------ | -------------------------- | --------------------------------------------- |
+| setiap panggilan   | correlationId pada error   | field `ApiError.correlationId` dari server    |
+| kegagalan jaringan | kode `NETWORK_ERROR`       | konstanta SDK, bukan dari server              |
+| sessionExpired     | pemicu                     | status 401 dari endpoint non publik           |
+| baseUrl            | nilai                      | `provideMyadminSdk` config, default `/api/v1` |
 
 **Key invariants**:
+
 - Tipe di SDK selalu berasal dari generated; regenerasi kontrak yang mengubah bentuk membuat SDK gagal compile, bukan salah diam diam.
 - SDK tidak menyimpan token apa pun; sesi hidup di cookie HttpOnly yang dikelola browser.
 
@@ -102,12 +109,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - FR-UI-04 punya penegakan nyata sejak fitur pertama; penanganan error UI seragam.
 
 **Negative / tradeoffs**:
+
 - Setiap domain baru menambah sedikit kode facade tulisan tangan; harga kendali atas bentuk SDK.
 
 **Neutral**:
+
 - Detail integrasi infrastruktur @ojiepermana/angular baru bisa dikunci saat paketnya dipasang (spec 0014); transport dibuat dengan lapisan fallback yang eksplisit.
 
 ## Follow-up
@@ -117,10 +127,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - struktur.md bagian packages/sdk-angular dan aturan 4.2; v1-feature-specification.md FR-UI-04.
 - Spec 0003, 0004 (bentuk kontrak dan tipe generated).
 
 **Practices & standards**:
+
 - Satu titik cekik untuk network; error dinormalisasi di boundary, bukan di setiap pemakai.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

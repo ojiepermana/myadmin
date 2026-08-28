@@ -121,12 +121,13 @@ Tipe dari kontrak, drift check, harness kesesuaian server. Done when: drift kont
 Satu satunya jalur network Angular: transport, provider, SdkError. Done when: fitur web bisa memanggil API bertipe tanpa HttpClient telanjang dan boundary menegakkannya.
 
 - [x] Design it (spec): [0005](../specs/0005-sdk-angular-core/index.md)
-- [ ] Build it: /develop sdk-angular-core
-  - [ ] Transport adapter, provider config, pemetaan SdkError (AC-2, AC-3, AC-5)
-  - [ ] Facade health, setup, auth di atas tipe generated plus event sessionExpired (AC-1, AC-4, AC-7)
-  - [ ] Aturan boundary anti raw fetch dan unit test (AC-6, AC-8)
+- [x] Build it: /develop sdk-angular-core
+  - [x] Transport adapter, provider config, pemetaan SdkError (AC-2, AC-3, AC-5)
+  - [x] Facade health, setup, auth di atas tipe generated plus event sessionExpired (AC-1, AC-4, AC-7)
+  - [x] Aturan boundary anti raw fetch dan unit test (AC-6, AC-8)
+  - code in `packages/sdk-angular/src`, `scripts/verify/check-boundaries.ts`, and `packages/sdk-angular/test/sdk.test.ts`
 - [ ] [Verify it](../specs/0005-sdk-angular-core/verify.md): /check verify sdk-angular-core
-- [ ] [Test it](../specs/0005-sdk-angular-core/test.md): /test sdk-angular-core
+- [x] [Test it](../specs/0005-sdk-angular-core/test.md): /test sdk-angular-core
 
 ### 06. CLI runtime dan data directory `in-progress`
 
