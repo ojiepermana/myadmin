@@ -91,7 +91,7 @@
     "ajv-formats": "3",
     "openapi-typescript": "7",
     "prettier": "^3.8.1",
-    "tailwindcss": "4.3.0",
+    "tailwindcss": "4.3.3",
     "typescript": "~6.0.2",
     "yaml": "2.9.0",
     "typescript-eslint": "8.68.0"
