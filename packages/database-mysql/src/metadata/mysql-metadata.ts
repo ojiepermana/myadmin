@@ -8,6 +8,7 @@ import {
   type IndexDefinition,
   type MetadataObjectPageRequest,
   type MetadataPort,
+  type MetadataSearchScope,
   type ObjectRef,
   type Page,
   type PageRequest,
@@ -26,6 +27,7 @@ const SYSTEM_DATABASES = ['sys', 'mysql', 'information_schema', 'performance_sch
 const ALL_OBJECT_TYPES = ['table', 'view', 'routine', 'trigger'] as const;
 
 export type MysqlMetadataObjectType = (typeof ALL_OBJECT_TYPES)[number];
+type MysqlSearchObjectType = 'database' | 'schema' | MysqlMetadataObjectType;
 
 export interface MysqlMetadataOptions {
   readonly defaultPageSize?: number;
@@ -66,7 +68,7 @@ export interface MysqlTriggerDefinition {
   readonly statement?: string;
 }
 
-export type MysqlMetadataScope = string | ObjectRef | { readonly database?: string } | undefined;
+export type MysqlMetadataScope = MetadataSearchScope;
 
 interface PageWindow {
   readonly limit: number;
@@ -200,7 +202,7 @@ function pageRows<T>(rows: readonly T[], page: PageWindow): Page<T> {
   };
 }
 
-function objectRef(database: string, name: string, type: MysqlMetadataObjectType): ObjectRef {
+function objectRef(database: string, name: string, type: MysqlSearchObjectType): ObjectRef {
   return { database, schema: null, name, type };
 }
 
@@ -250,6 +252,45 @@ function catalogSelect(type: MysqlMetadataObjectType): string {
   }
 }
 
+function normalizeSearchObjectTypes(
+  requested: readonly DatabaseObjectType[] | undefined,
+): MysqlSearchObjectType[] {
+  const allowed: readonly MysqlSearchObjectType[] = ['database', 'schema', ...ALL_OBJECT_TYPES];
+  if (!requested || requested.length === 0) return [...allowed];
+  const selected = requested.filter((type): type is MysqlSearchObjectType =>
+    allowed.includes(type as MysqlSearchObjectType),
+  );
+  if (selected.length === 0) {
+    throw new DbError({
+      category: 'unsupported',
+      message: 'MySQL metadata search object type is invalid',
+    });
+  }
+  return [...new Set(selected)];
+}
+
+function searchCatalogSelect(type: MysqlSearchObjectType): string {
+  if (type === 'database') {
+    return `
+      SELECT SCHEMA_NAME AS object_database,
+             SCHEMA_NAME AS object_name,
+             'database' AS object_type
+        FROM information_schema.schemata
+       WHERE SCHEMA_NAME NOT IN ('sys', 'mysql', 'information_schema', 'performance_schema')`;
+  }
+  if (type === 'schema') {
+    // MySQL exposes databases as the schema level, so there are no separate
+    // schema objects to return for this provider.
+    return `
+      SELECT SCHEMA_NAME AS object_database,
+             SCHEMA_NAME AS object_name,
+             'schema' AS object_type
+        FROM information_schema.schemata
+       WHERE 1 = 0`;
+  }
+  return catalogSelect(type);
+}
+
 function tableRef(ref: ObjectRef): void {
   if (ref.type !== 'table') {
     throw new DbError({
@@ -279,7 +320,7 @@ function mapObject(row: ObjectRow): ObjectRef {
   const database =
     stringValue(row, 'object_database', 'TABLE_SCHEMA', 'ROUTINE_SCHEMA', 'TRIGGER_SCHEMA') ?? '';
   const name = stringValue(row, 'object_name', 'TABLE_NAME', 'ROUTINE_NAME', 'TRIGGER_NAME') ?? '';
-  const type = stringValue(row, 'object_type') as MysqlMetadataObjectType;
+  const type = stringValue(row, 'object_type') as MysqlSearchObjectType;
   return objectRef(database, name, type);
 }
 
@@ -784,7 +825,7 @@ export class MysqlMetadataAdapter implements MetadataPort {
   ): Promise<Page<ObjectRef>> {
     const window = normalizePage(page, this.defaultPageSize);
     const database = databaseFromScope(scope);
-    const selects = normalizeObjectTypes(types).map(catalogSelect).join('\nUNION ALL');
+    const selects = normalizeSearchObjectTypes(types).map(searchCatalogSelect).join('\nUNION ALL');
     const databaseFilter = database === undefined ? '' : ' AND catalog.object_database = ?';
     const parameters: unknown[] = [escapedLikePattern(query)];
     if (database !== undefined) parameters.push(database);

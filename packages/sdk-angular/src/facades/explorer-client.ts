@@ -13,11 +13,21 @@ export type ExplorerChildPage =
   operations['listExplorerDatabaseChildren']['responses'][200]['content']['application/json'];
 export type ExplorerObjectDescription =
   operations['describeExplorerObject']['responses'][200]['content']['application/json'];
+export type ExplorerSearchPage =
+  operations['searchExplorerObjects']['responses'][200]['content']['application/json'];
+export type ExplorerSearchResult = ExplorerSearchPage['items'][number];
+export type ExplorerSearchType = 'database' | 'schema' | 'table' | 'view' | 'routine';
 
 export interface ExplorerPageOptions {
   readonly cursor?: string | null;
   readonly pageSize?: number;
   readonly refresh?: boolean;
+}
+
+export interface ExplorerSearchOptions {
+  readonly cursor?: string | null;
+  readonly types?: readonly ExplorerSearchType[];
+  readonly database?: string;
 }
 
 export function explorerQuery(
@@ -42,6 +52,19 @@ export function explorerRequestPath(
   extras: Record<string, string | undefined> = {},
 ): string {
   return `/connections/${encodeURIComponent(connectionId)}${suffix}${explorerQuery(options, extras)}`;
+}
+
+export function explorerSearchRequestPath(
+  connectionId: string,
+  query: string,
+  options: ExplorerSearchOptions = {},
+): string {
+  const params = new URLSearchParams();
+  params.set('q', query);
+  if (options.types && options.types.length > 0) params.set('types', options.types.join(','));
+  if (options.database !== undefined) params.set('database', options.database);
+  if (options.cursor) params.set('page', options.cursor);
+  return `/connections/${encodeURIComponent(connectionId)}/search?${params.toString()}`;
 }
 
 /** Typed, lazy explorer facade. It never recursively prefetches descendants. */
@@ -105,6 +128,18 @@ export class ExplorerClient {
     return this.transport.request<ExplorerObjectDescription>({
       method: 'GET',
       path: explorerRequestPath(id, '/objects/describe', { refresh }, { ref: JSON.stringify(ref) }),
+      requiresSession: true,
+    });
+  }
+
+  public searchObjects(
+    id: string,
+    query: string,
+    options: ExplorerSearchOptions = {},
+  ): Observable<ExplorerSearchPage> {
+    return this.transport.request<ExplorerSearchPage>({
+      method: 'GET',
+      path: explorerSearchRequestPath(id, query, options),
       requiresSession: true,
     });
   }

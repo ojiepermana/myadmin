@@ -6,11 +6,13 @@ import {
   type ExplorerChild,
   type ExplorerDatabase,
   type ExplorerObjectType,
+  type ExplorerSearchResult,
 } from '@myadmin/sdk-angular';
 import { firstValueFrom } from 'rxjs';
 import { ConnectionStatusStore } from '../../core/connections/connection-status.store';
 import type { ExplorerNode } from './explorer-actions';
 import { ExplorerTreeState } from './explorer-tree-state';
+import { ExplorerSearchController } from './explorer-search-state';
 
 function emptyNodeState(
   id: string,
@@ -54,6 +56,10 @@ function messageFor(reason: unknown, fallback: string): string {
   return reason instanceof Error && reason.message ? reason.message : fallback;
 }
 
+function idSegment(value: string): string {
+  return encodeURIComponent(value);
+}
+
 /** Owns only explorer presentation state; provider metadata remains on the server. */
 @Injectable({ providedIn: 'root' })
 export class ExplorerStore {
@@ -61,12 +67,38 @@ export class ExplorerStore {
   private readonly explorerClient = inject(ExplorerClient);
   private readonly connectionStatuses = inject(ConnectionStatusStore);
   private readonly tree = new ExplorerTreeState();
+  private readonly searchController = new ExplorerSearchController<ExplorerSearchResult>(
+    (request) =>
+      this.explorerClient.searchObjects(request.connectionId, request.query, {
+        cursor: request.cursor,
+      }),
+  );
   private readonly loadingState = signal(false);
   private readonly loadError = signal<string | null>(null);
+  private readonly searchQueryState = signal('');
+  private readonly searchLoadingState = signal(false);
+  private readonly searchErrorState = signal<string | null>(null);
+  private readonly searchResultsState = signal<readonly ExplorerSearchResult[]>([]);
+  private readonly searchCursorState = signal<string | null>(null);
 
   public readonly visibleNodes = this.tree.visibleNodes;
   public readonly loading = this.loadingState.asReadonly();
   public readonly error = this.loadError.asReadonly();
+  public readonly searchQuery = this.searchQueryState.asReadonly();
+  public readonly searchLoading = this.searchLoadingState.asReadonly();
+  public readonly searchError = this.searchErrorState.asReadonly();
+  public readonly searchResults = this.searchResultsState.asReadonly();
+  public readonly searchCursor = this.searchCursorState.asReadonly();
+
+  public constructor() {
+    this.searchController.subscribe((state) => {
+      this.searchQueryState.set(state.query);
+      this.searchLoadingState.set(state.loading);
+      this.searchErrorState.set(state.error);
+      this.searchResultsState.set(state.items);
+      this.searchCursorState.set(state.cursor);
+    });
+  }
 
   public nodeFor(id: string): ExplorerNode | null {
     return this.tree.nodeFor(id);
@@ -166,6 +198,61 @@ export class ExplorerStore {
     await this.load();
   }
 
+  public search(query: string, connectionId: string | null): void {
+    this.searchController.setQuery(connectionId, query);
+  }
+
+  public loadMoreSearch(): void {
+    this.searchController.loadMore();
+  }
+
+  public async revealSearchResult(
+    connectionId: string,
+    result: ExplorerSearchResult,
+  ): Promise<ExplorerNode | null> {
+    if (!result) return null;
+    let parent = await this.ensureNodeLoaded(this.nodeFor(`connection:${connectionId}`));
+    if (!parent) return null;
+    const database = await this.findChild(
+      parent,
+      (child) => child.kind === 'database' && child.database === result.database,
+    );
+    if (!database) return null;
+    if (result.type === 'database') return database;
+    parent = database;
+
+    if (result.type === 'schema') {
+      return result.schema === null
+        ? null
+        : this.findChild(
+            parent,
+            (child) => child.kind === 'schema' && child.schema === result.schema,
+          );
+    }
+
+    if (result.schema !== null) {
+      const schema = await this.findChild(
+        parent,
+        (child) => child.kind === 'schema' && child.schema === result.schema,
+      );
+      if (!schema) return null;
+      parent = schema;
+    }
+    const group = await this.findChild(
+      parent,
+      (child) => child.kind === 'object-group' && child.objectType === result.type,
+    );
+    if (!group) return null;
+    return this.findChild(
+      group,
+      (child) =>
+        child.kind === 'object' &&
+        child.ref?.name === result.name &&
+        child.ref?.type === result.type &&
+        child.ref?.schema === result.schema,
+    );
+  }
+
   private connectionNode(
     connection: Connection,
     parentId: string | null,
@@ -190,8 +277,12 @@ export class ExplorerStore {
     await this.fetchChildren(node, true);
   }
 
-  private async fetchChildren(node: ExplorerNode, append: boolean, refresh = false): Promise<void> {
-    if (node.loading) return;
+  private async fetchChildren(
+    node: ExplorerNode,
+    append: boolean,
+    refresh = false,
+  ): Promise<boolean> {
+    if (node.loading) return false;
     this.updateNode(node.id, (current) => ({
       ...current,
       expanded: true,
@@ -203,7 +294,7 @@ export class ExplorerStore {
     try {
       if (current.kind === 'object') {
         await this.describeTable(current, refresh);
-        return;
+        return true;
       }
       const response = await this.fetchPage(current, cursor, refresh);
       const newNodes = response.items.map((child) => this.childNode(current, child));
@@ -244,6 +335,7 @@ export class ExplorerStore {
         };
         return next;
       });
+      return true;
     } catch (reason) {
       this.updateNode(current.id, (value) => ({
         ...value,
@@ -251,7 +343,35 @@ export class ExplorerStore {
         loading: false,
         error: messageFor(reason, 'This node could not be loaded.'),
       }));
+      return false;
     }
+  }
+
+  private async ensureNodeLoaded(node: ExplorerNode | null): Promise<ExplorerNode | null> {
+    if (!node) return null;
+    if (!node.loaded || !node.expanded || node.error) {
+      const loaded = await this.fetchChildren(node, false);
+      if (!loaded) return null;
+    }
+    return this.nodeFor(node.id);
+  }
+
+  private async findChild(
+    parent: ExplorerNode,
+    predicate: (child: ExplorerNode) => boolean,
+  ): Promise<ExplorerNode | null> {
+    let current = await this.ensureNodeLoaded(parent);
+    while (current) {
+      const child = current.childIds
+        .map((id) => this.nodeFor(id))
+        .find((candidate): candidate is ExplorerNode => candidate !== null && predicate(candidate));
+      if (child) return child;
+      if (!current.cursor) return null;
+      const loaded = await this.fetchChildren(current, true);
+      if (!loaded) return null;
+      current = this.nodeFor(current.id);
+    }
+    return null;
   }
 
   private fetchPage(node: ExplorerNode, cursor: string | null, refresh: boolean) {
@@ -291,7 +411,7 @@ export class ExplorerStore {
 
   private childNode(parent: ExplorerNode, child: ExplorerChild | ExplorerDatabase): ExplorerNode {
     if (!('kind' in child)) {
-      const id = `${parent.id}/database/${child.name}`;
+      const id = `${parent.id}/database/${idSegment(child.name)}`;
       return emptyNodeState(
         id,
         parent.id,
@@ -306,7 +426,7 @@ export class ExplorerStore {
       );
     }
     if (child.kind === 'schema') {
-      const id = `${parent.id}/schema/${child.schema}`;
+      const id = `${parent.id}/schema/${idSegment(child.schema)}`;
       return emptyNodeState(
         id,
         parent.id,
@@ -322,7 +442,7 @@ export class ExplorerStore {
       );
     }
     if (child.kind === 'object-group') {
-      const id = `${parent.id}/objects/${child.objectType}`;
+      const id = `${parent.id}/objects/${idSegment(child.objectType)}`;
       return emptyNodeState(
         id,
         parent.id,
@@ -338,7 +458,7 @@ export class ExplorerStore {
         },
       );
     }
-    const id = `${parent.id}/object/${child.ref.type}/${child.ref.schema ?? ''}/${child.ref.name}`;
+    const id = `${parent.id}/object/${idSegment(child.ref.type)}/${idSegment(child.ref.schema ?? '')}/${idSegment(child.ref.name)}`;
     return emptyNodeState(
       id,
       parent.id,
@@ -363,7 +483,7 @@ export class ExplorerStore {
     );
     const children = description.columns.map((column) =>
       emptyNodeState(
-        `${node.id}/column/${column.name}`,
+        `${node.id}/column/${idSegment(column.name)}`,
         node.id,
         node.connectionId,
         'column',

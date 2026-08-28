@@ -1,0 +1,73 @@
+get:
+  operationId: searchExplorerObjects
+  tags: [object-explorer]
+  summary: Search objects on a connected provider
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+    - name: q
+      in: query
+      required: true
+      description: At least two characters to search for in object names.
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 256
+    - name: types
+      in: query
+      required: false
+      description: Comma separated object types to include.
+      schema:
+        type: string
+        pattern: '^(database|schema|table|view|routine)(,(database|schema|table|view|routine))*$'
+    - name: database
+      in: query
+      required: false
+      description: Limit results to one database.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 256
+    - $ref: ../components/parameters/explorer-page.yaml
+  responses:
+    '200':
+      description: One ranked page of provider object references.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/explorer.yaml#/ExplorerSearchPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The connection belongs to another user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The connection does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The search query is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider search operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

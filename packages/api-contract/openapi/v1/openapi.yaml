@@ -95,6 +95,8 @@ paths:
     $ref: ./paths/query-session-close.yaml
   /connections/{id}/databases:
     $ref: ./paths/explorer-databases.yaml
+  /connections/{id}/search:
+    $ref: ./paths/explorer-search.yaml
   /connections/{id}/databases/{db}/children:
     $ref: ./paths/explorer-database-children.yaml
   /connections/{id}/schemas/{schema}/objects:
@@ -265,6 +267,8 @@ components:
       $ref: ./components/schemas/explorer.yaml#/ExplorerColumn
     ExplorerObjectDescription:
       $ref: ./components/schemas/explorer.yaml#/ExplorerObjectDescription
+    ExplorerSearchPage:
+      $ref: ./components/schemas/explorer.yaml#/ExplorerSearchPage
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

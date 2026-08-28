@@ -6,7 +6,13 @@ import {
   type ConnectionActor,
   type ConnectionManagerService,
 } from '../connections/connection-manager';
-import { ObjectExplorerService, parseObjectRef, type ExplorerPageInput } from './object-explorer';
+import {
+  ObjectExplorerService,
+  parseObjectRef,
+  type ExplorerPageInput,
+  type ExplorerSearchInput,
+  type SearchObjectType,
+} from './object-explorer';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -121,6 +127,53 @@ function objectType(value: string | null): MetadataObjectType | undefined {
     : undefined;
 }
 
+const SEARCH_TYPES: readonly SearchObjectType[] = [
+  'database',
+  'schema',
+  'table',
+  'view',
+  'routine',
+];
+
+function searchTypes(request: Request): readonly SearchObjectType[] | undefined | null {
+  const url = new URL(request.url);
+  if (!url.searchParams.has('types')) return undefined;
+  const values = url.searchParams
+    .getAll('types')
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+  if (values.length === 0) return null;
+  if (values.some((value) => !SEARCH_TYPES.includes(value as SearchObjectType))) return null;
+  return [...new Set(values)] as SearchObjectType[];
+}
+
+function searchInput(request: Request): ExplorerSearchInput | null {
+  const url = new URL(request.url);
+  const query = url.searchParams.get('q')?.trim();
+  const database = url.searchParams.get('database');
+  const types = searchTypes(request);
+  const cursor = url.searchParams.get('page');
+  if (
+    query === undefined ||
+    query.length < 2 ||
+    query.length > 256 ||
+    query.includes('\0') ||
+    (database !== null &&
+      (database.length === 0 || database.length > 256 || database.includes('\0'))) ||
+    types === null ||
+    (cursor !== null && (cursor.length === 0 || cursor.length > 2048)) ||
+    url.searchParams.has('pageSize')
+  )
+    return null;
+  return {
+    query,
+    ...(types === undefined ? {} : { types }),
+    ...(database === null ? {} : { database }),
+    ...(cursor === null ? {} : { cursor }),
+  };
+}
+
 function withPage(
   request: Request,
   operation: (actor: ConnectionActor, input: ExplorerPageInput) => Promise<unknown>,
@@ -147,6 +200,23 @@ export function registerObjectExplorerRoutes(
   const explorer = options.explorerService ?? new ObjectExplorerService(options.connectionManager);
   const path = (suffix: string) => `${prefix}${suffix}`;
   return application
+    .get(path('/connections/:id/search'), async ({ request, params }) => {
+      const actor = actorForRequest(request, options);
+      if (actor instanceof Response) return actor;
+      const input = searchInput(request);
+      if (!input)
+        return apiError(
+          request,
+          422,
+          'EXPLORER_SEARCH_VALIDATION_FAILED',
+          'The object search query is invalid.',
+        );
+      try {
+        return jsonResponse(await explorer.searchObjects(actor, params.id, input));
+      } catch (error) {
+        return explorerError(request, error);
+      }
+    })
     .get(path('/connections/:id/databases'), ({ request, params }) =>
       withPage(request, (actor, input) => explorer.listDatabases(actor, params.id, input), options),
     )

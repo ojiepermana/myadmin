@@ -1,6 +1,6 @@
 import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
-import { explorerRequestPath } from '@myadmin/sdk-angular';
+import { explorerRequestPath, explorerSearchRequestPath } from '@myadmin/sdk-angular';
 import type { ConnectionStatus } from '@myadmin/sdk-angular';
 import {
   ExplorerActionRegistry,
@@ -82,6 +82,15 @@ describe('object explorer policy, client paths, and tree state', () => {
       ),
     ).toBe(
       '/connections/connection%2Fone/databases/app/children?page=100&pageSize=50&refresh=true&type=table',
+    );
+    expect(
+      explorerSearchRequestPath('connection/one', 'user/table', {
+        cursor: '50',
+        database: 'db/one',
+        types: ['table', 'view'],
+      }),
+    ).toBe(
+      '/connections/connection%2Fone/search?q=user%2Ftable&types=table%2Cview&database=db%2Fone&page=50',
     );
   });
 

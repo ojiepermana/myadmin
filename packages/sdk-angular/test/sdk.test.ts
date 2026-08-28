@@ -536,5 +536,22 @@ describe('MyAdmin Angular SDK', () => {
       columns: [],
     });
     await expect(description).resolves.toMatchObject({ columns: [] });
+
+    const search = firstValueFrom(
+      sdk.explorer.searchObjects('connection/1', 'users', {
+        cursor: '50',
+        database: 'app',
+        types: ['table', 'view'],
+      }),
+    );
+    const searchRequest = http.expectOne(
+      '/api/v1/connections/connection%2F1/search?q=users&types=table%2Cview&database=app&page=50',
+    );
+    expect(searchRequest.request.method).toBe('GET');
+    searchRequest.flush({
+      items: [{ database: 'app', schema: 'public', name: 'users', type: 'table' }],
+      cursor: null,
+    });
+    await expect(search).resolves.toMatchObject({ items: [{ name: 'users', type: 'table' }] });
   });
 });

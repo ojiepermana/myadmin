@@ -146,3 +146,18 @@ ExplorerObjectDescription:
       type: number
     comment:
       type: string
+
+ExplorerSearchPage:
+  type: object
+  additionalProperties: false
+  required: [items, cursor]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/ExplorerObjectRef'
+    cursor:
+      type: [string, 'null']
+    total:
+      type: integer
+      minimum: 0

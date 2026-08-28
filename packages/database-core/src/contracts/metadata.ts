@@ -6,6 +6,7 @@ import type {
   IndexDefinition,
   MetadataObjectPageRequest,
   MetadataObjectType,
+  DatabaseObjectType,
   ObjectRef,
   Page,
   PageRequest,
@@ -15,6 +16,10 @@ import type {
 import type { ConnectionHandle } from './connection';
 
 export type ProviderContext = ConnectionContext | ConnectionHandle;
+
+/** Optional database or schema scope for provider backed object search. */
+export type MetadataSearchScope =
+  string | ObjectRef | { readonly database?: string; readonly schema?: string } | undefined;
 
 /** Lazy, paginated catalog access, one explorer node per method call. */
 export interface MetadataPort {
@@ -30,6 +35,13 @@ export interface MetadataPort {
     context: ProviderContext,
     parent: ObjectRef,
     page?: MetadataObjectPageRequest,
+  ): Promise<Page<ObjectRef>>;
+  searchObjects(
+    context: ProviderContext,
+    scope: MetadataSearchScope,
+    query: string,
+    types?: readonly DatabaseObjectType[],
+    page?: PageRequest,
   ): Promise<Page<ObjectRef>>;
   listColumns(
     context: ProviderContext,

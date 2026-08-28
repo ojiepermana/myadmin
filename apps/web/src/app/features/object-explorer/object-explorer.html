@@ -24,6 +24,111 @@
     </button>
   </header>
 
+  <section
+    class="search-panel rounded-xl border border-border bg-card/70 p-4 shadow-sm"
+    aria-label="Search database objects"
+  >
+    <div class="flex flex-wrap items-end gap-3">
+      <label class="min-w-64 flex-1 text-sm font-medium" for="object-search">
+        Search objects
+        <input
+          id="object-search"
+          class="mt-2 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+          type="search"
+          minlength="2"
+          maxlength="256"
+          [value]="store.searchQuery()"
+          [disabled]="!activeConnectionId()"
+          placeholder="Search tables, views, routines…"
+          aria-describedby="object-search-help"
+          (input)="searchChanged($event)"
+        />
+      </label>
+      <p id="object-search-help" class="max-w-sm text-xs text-muted-foreground">
+        @if (activeConnectionId()) {
+          Search the selected connected connection. Enter at least two characters.
+        } @else {
+          Select a connected connection in the explorer before searching.
+        }
+      </p>
+    </div>
+    @if (store.searchLoading()) {
+      <p class="mt-3 text-sm text-muted-foreground" role="status">Searching…</p>
+    }
+    @if (store.searchError(); as error) {
+      <p class="mt-3 text-sm text-destructive" role="alert">{{ error }}</p>
+    } @else if (
+      store.searchQuery().trim().length >= 2 &&
+      !store.searchLoading() &&
+      store.searchResults().length === 0
+    ) {
+      <p class="mt-3 text-sm text-muted-foreground">No matching objects found.</p>
+    } @else if (store.searchResults().length > 0) {
+      <div class="mt-4 space-y-3" role="listbox" aria-label="Object search results">
+        @for (group of searchGroups(); track group.type) {
+          <section>
+            <h2 class="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {{ group.label }}
+            </h2>
+            <div class="overflow-hidden rounded-md border border-border/70">
+              @for (
+                result of group.items;
+                track result.type +
+                  ':' +
+                  result.database +
+                  ':' +
+                  (result.schema ?? '') +
+                  ':' +
+                  result.name
+              ) {
+                <div
+                  class="search-result"
+                  role="option"
+                  tabindex="0"
+                  [id]="searchResultId(result, store.searchResults().indexOf(result))"
+                  [attr.aria-label]="result.name + ' in ' + result.database"
+                  appContextMenu
+                  [ContextMenuTrigger]="nodeMenu"
+                  (click)="openSearchResult(result)"
+                  (contextmenu)="selectSearchResult(result)"
+                  (keydown)="onSearchKeydown($event, result, store.searchResults().indexOf(result))"
+                >
+                  <span class="explorer-icon" [attr.data-kind]="result.type" aria-hidden="true">{{
+                    result.type.slice(0, 1).toUpperCase()
+                  }}</span>
+                  <span class="min-w-0 flex-1 truncate">
+                    <span class="block truncate text-sm font-medium">{{ result.name }}</span>
+                    <span class="block truncate text-xs text-muted-foreground">
+                      {{ result.database }}{{ result.schema ? '.' + result.schema : '' }}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    class="explorer-inline-action"
+                    aria-label="Open search result actions"
+                    (click)="$event.stopPropagation(); selectSearchResult(result)"
+                  >
+                    …
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+      @if (store.searchCursor()) {
+        <button
+          type="button"
+          class="mt-3 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted/50"
+          (click)="store.loadMoreSearch()"
+          [disabled]="store.searchLoading()"
+        >
+          Load more results
+        </button>
+      }
+    }
+  </section>
+
   @if (store.error(); as error) {
     <div
       class="flex items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"

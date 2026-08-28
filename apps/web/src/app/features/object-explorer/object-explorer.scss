@@ -12,6 +12,30 @@
   overflow: hidden;
 }
 
+.search-panel {
+  flex: 0 0 auto;
+}
+
+.search-result {
+  display: flex;
+  min-width: 0;
+  min-height: 3.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.55);
+  padding: 0.45rem 0.65rem;
+  outline: none;
+}
+
+.search-result:last-child {
+  border-bottom: 0;
+}
+
+.search-result:hover,
+.search-result:focus-visible {
+  background: hsl(var(--muted) / 0.45);
+}
+
 .explorer-viewport {
   height: 100%;
   min-height: 18rem;

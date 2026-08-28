@@ -8,6 +8,7 @@ import type {
   IndexDefinition,
   MetadataObjectType,
   MetadataPort,
+  MetadataSearchScope,
   ObjectRef,
   Page,
   PageRequest,
@@ -55,8 +56,7 @@ export interface PostgresqlRoutineDefinition {
   readonly returnType?: string;
 }
 
-export type PostgresqlMetadataScope =
-  string | ObjectRef | { readonly database?: string } | undefined;
+export type PostgresqlMetadataScope = MetadataSearchScope;
 
 interface CacheEntry {
   readonly expiresAt: number;
@@ -218,7 +218,14 @@ function bindSql(sql: string, values: readonly unknown[]): { parts: string[]; va
 }
 
 function objectType(value: unknown): DatabaseObjectType {
-  if (value === 'table' || value === 'view' || value === 'sequence' || value === 'routine') {
+  if (
+    value === 'database' ||
+    value === 'schema' ||
+    value === 'table' ||
+    value === 'view' ||
+    value === 'sequence' ||
+    value === 'routine'
+  ) {
     return value;
   }
   return 'other';
@@ -247,7 +254,7 @@ function schemaFromScope(scope: PostgresqlMetadataScope): string | undefined {
   if (scope && typeof scope === 'object' && 'type' in scope) {
     return scope.schema ?? undefined;
   }
-  return undefined;
+  return typeof scope === 'object' ? scope.schema : undefined;
 }
 
 function foreignKeyAction(value: unknown): string | undefined {
@@ -307,6 +314,49 @@ function catalogSelect(type: SupportedObjectType, schema?: string): string {
           JOIN pg_namespace AS n ON n.oid = p.pronamespace
          WHERE p.prokind IN ('f', 'p')${schemaFilter}`;
   }
+}
+
+type SearchableObjectType = 'database' | 'schema' | SupportedObjectType;
+
+function normalizeSearchObjectTypes(
+  requested: readonly DatabaseObjectType[] | undefined,
+): SearchableObjectType[] {
+  const allowed: readonly SearchableObjectType[] = ['database', 'schema', ...ALL_OBJECT_TYPES];
+  if (!requested || requested.length === 0) return [...allowed];
+  const selected = requested.filter((type): type is SearchableObjectType =>
+    allowed.includes(type as SearchableObjectType),
+  );
+  if (selected.length === 0) {
+    throw new DbError({
+      category: 'unsupported',
+      message: 'PostgreSQL metadata search object type is invalid',
+    });
+  }
+  return [...new Set(selected)];
+}
+
+function searchCatalogSelect(type: SearchableObjectType): string {
+  if (type === 'database') {
+    return `
+      SELECT d.datname AS database_name,
+             d.datname AS name,
+             NULL::text AS schema_name,
+             'database' AS object_type
+        FROM pg_database AS d
+       WHERE d.datallowconn = true
+         AND d.datistemplate = false`;
+  }
+  if (type === 'schema') {
+    return `
+      SELECT current_database() AS database_name,
+             n.nspname AS name,
+             n.nspname AS schema_name,
+             'schema' AS object_type
+        FROM pg_namespace AS n
+       WHERE n.nspname NOT LIKE 'pg\\_%' ESCAPE '\\'
+         AND n.nspname <> 'information_schema'`;
+  }
+  return catalogSelect(type);
 }
 
 function mapColumn(row: CatalogRow): ColumnDefinition {
@@ -764,11 +814,11 @@ export class PostgresqlMetadataAdapter implements MetadataPort {
     const window = normalizePage(page, this.defaultPageSize);
     const database = databaseFromScope(scope);
     const schema = schemaFromScope(scope);
-    const selectedTypes = normalizeObjectTypes(types);
+    const selectedTypes = normalizeSearchObjectTypes(types);
     return this.withHandle(context, async (handle) => {
       const cacheKey = `search:${database ?? ''}:${schema ?? ''}:${query}:${selectedTypes.join(',')}:${window.limit}:${window.offset}`;
       return this.cached(handle, cacheKey, async () => {
-        const branches = selectedTypes.map((type) => catalogSelect(type));
+        const branches = selectedTypes.map(searchCatalogSelect);
         const conditions = ["catalog.name ILIKE ? ESCAPE '\\'"];
         const values: unknown[] = [escapedLikePattern(query)];
         if (database !== undefined) {

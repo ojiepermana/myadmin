@@ -26,6 +26,7 @@ describe('object explorer contract', () => {
         'listExplorerDatabaseChildren',
         'listExplorerSchemaObjects',
         'describeExplorerObject',
+        'searchExplorerObjects',
       ]),
     );
 
@@ -70,5 +71,13 @@ describe('object explorer contract', () => {
       409,
       apiError,
     );
+    assertResponseMatchesContract(document, operation(operations, 'searchExplorerObjects'), 200, {
+      items: [
+        { database: 'app', schema: 'public', name: 'users', type: 'table' },
+        { database: 'app', schema: null, name: 'app', type: 'database' },
+      ],
+      cursor: null,
+      total: 2,
+    });
   });
 });

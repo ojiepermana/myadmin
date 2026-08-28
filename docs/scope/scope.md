@@ -465,10 +465,11 @@ Pohon lazy data driven dengan context menu bergerbang capability. Done when: tel
 Pencarian nama object server side dari panel explorer. Done when: pencarian pada 2000 table cepat dan hasil bisa dilompati ke node.
 
 - [x] Design it (spec): [0032](../specs/0032-object-search/index.md)
-- [ ] Build it: /develop object-search
-  - [ ] Endpoint search paginated (AC-1, AC-2)
-  - [ ] UI pencarian dengan debounce, abort, dan lompat ke node (AC-3, AC-4, AC-5)
-  - [ ] E2e pada fixture besar (AC-6)
+- [x] Build it: /develop object-search
+  - [x] Endpoint search paginated (AC-1, AC-2)
+  - [x] UI pencarian dengan debounce, abort, dan lompat ke node (AC-3, AC-4, AC-5)
+  - [x] E2e pada fixture besar (AC-6)
+  - code in `apps/server/src/object-explorer`, `apps/web/src/app/features/object-explorer`, `packages/database-core/src/contracts/metadata.ts`, `packages/database-postgresql/src/metadata`, `packages/database-mysql/src/metadata`, and `packages/sdk-angular/src/facades/explorer-client.ts`
 - [ ] [Verify it](../specs/0032-object-search/verify.md): /check verify object-search
 - [ ] [Test it](../specs/0032-object-search/test.md): /test object-search
 

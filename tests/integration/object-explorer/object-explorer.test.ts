@@ -54,6 +54,15 @@ function providerFor(engine: 'postgresql' | 'mysql'): DatabaseProvider {
       cursor: undefined,
     }),
     listObjects: async () => ({ items: [table.ref], cursor: undefined }),
+    searchObjects: async (_context, _scope, query, types) => ({
+      items:
+        query.length >= 2 && (types === undefined || types.includes('table'))
+          ? query === 'users'
+            ? [{ ...table.ref, name: 'user_sessions' }, table.ref]
+            : [table.ref]
+          : [],
+      cursor: undefined,
+    }),
     listColumns: async () => ({ items: table.columns, cursor: undefined }),
     listIndexes: async () => ({ items: [], cursor: undefined }),
     listConstraints: async () => ({ items: [], cursor: undefined }),
@@ -142,6 +151,13 @@ describe('object explorer metadata routes', () => {
     const disconnected = await request(app, `/connections/${connection.id}/databases`, { headers });
     expect(disconnected.status).toBe(409);
     expect(await disconnected.json()).toMatchObject({ code: 'NOT_CONNECTED' });
+    const disconnectedSearch = await request(
+      app,
+      `/connections/${connection.id}/search?q=users&types=table`,
+      { headers },
+    );
+    expect(disconnectedSearch.status).toBe(409);
+    expect(await disconnectedSearch.json()).toMatchObject({ code: 'NOT_CONNECTED' });
 
     const connected = await request(app, `/connections/${connection.id}/connect`, {
       ...jsonInit({}, headers),
@@ -173,5 +189,22 @@ describe('object explorer metadata routes', () => {
       items: [{ kind: 'object', ref: { name: 'users', type: 'table' }, hasChildren: true }],
       cursor: null,
     });
+
+    const search = await request(
+      app,
+      `/connections/${connection.id}/search?q=users&types=table&database=app`,
+      { headers },
+    );
+    expect(search.status).toBe(200);
+    expect(await search.json()).toEqual({
+      items: [
+        { database: 'app', schema: 'public', name: 'users', type: 'table' },
+        { database: 'app', schema: 'public', name: 'user_sessions', type: 'table' },
+      ],
+      cursor: null,
+    });
+
+    const shortQuery = await request(app, `/connections/${connection.id}/search?q=x`, { headers });
+    expect(shortQuery.status).toBe(422);
   });
 });

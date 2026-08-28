@@ -49,6 +49,7 @@ const initialPaths = {
   '/connections/{id}/reconnect': 'paths/connection-reconnect.yaml',
   '/connections/{id}/status-info': 'paths/connection-status-info.yaml',
   '/connections/{id}/duplicate': 'paths/connection-duplicate.yaml',
+  '/connections/{id}/search': 'paths/explorer-search.yaml',
   '/server-groups': 'paths/server-groups.yaml',
   '/server-groups/{id}': 'paths/server-group-by-id.yaml',
   '/query/executions': 'paths/query-executions.yaml',

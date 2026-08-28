@@ -17,6 +17,19 @@ import {
 export interface ExplorerPage<T> {
   readonly items: readonly T[];
   readonly cursor: string | null;
+  readonly total?: number;
+}
+
+export type SearchObjectType = Extract<
+  DatabaseObjectType,
+  'database' | 'schema' | 'table' | 'view' | 'routine'
+>;
+
+export interface ExplorerSearchInput {
+  readonly query: string;
+  readonly types?: readonly SearchObjectType[];
+  readonly database?: string;
+  readonly cursor?: string;
 }
 
 export interface ExplorerSchemaChild {
@@ -64,10 +77,16 @@ const FALLBACK_OBJECT_TYPES: readonly MetadataObjectType[] = [
   'trigger',
 ];
 
-function page<T>(value: readonly T[] | { items: readonly T[]; cursor?: string }): ExplorerPage<T> {
+function page<T>(
+  value: readonly T[] | { items: readonly T[]; cursor?: string; total?: number },
+): ExplorerPage<T> {
   if (Array.isArray(value)) return { items: value as readonly T[], cursor: null };
-  const pageValue = value as { items: readonly T[]; cursor?: string };
-  return { items: pageValue.items, cursor: pageValue.cursor ?? null };
+  const pageValue = value as { items: readonly T[]; cursor?: string; total?: number };
+  return {
+    items: pageValue.items,
+    cursor: pageValue.cursor ?? null,
+    ...(pageValue.total === undefined ? {} : { total: pageValue.total }),
+  };
 }
 
 function objectTypes(metadata: MetadataPort): readonly MetadataObjectType[] {
@@ -252,6 +271,39 @@ export class ObjectExplorerService {
     });
   }
 
+  public async searchObjects(
+    actor: ConnectionActor,
+    connectionId: string,
+    input: ExplorerSearchInput,
+  ): Promise<ExplorerPage<ObjectRef>> {
+    return this.withMetadata(
+      actor,
+      connectionId,
+      { cursor: input.cursor },
+      async (metadata, session) => {
+        if (!metadata.searchObjects) {
+          throw new DbError({
+            category: 'unsupported',
+            message: 'This connection does not expose object search.',
+          });
+        }
+        const result = await metadata.searchObjects(
+          session.handle,
+          input.database === undefined ? undefined : { database: input.database },
+          input.query,
+          input.types,
+          { cursor: input.cursor, limit: 50 },
+        );
+        const items = result.items.map((ref) => ({ ...ref, schema: ref.schema ?? null }));
+        return {
+          items: rankSearchResults(items, input.query),
+          cursor: result.cursor ?? null,
+          ...(result.total === undefined ? {} : { total: result.total }),
+        };
+      },
+    );
+  }
+
   private withMetadata<T>(
     actor: ConnectionActor,
     connectionId: string,
@@ -272,6 +324,37 @@ export class ObjectExplorerService {
   ): void {
     if (input.refresh) metadata.invalidateCache?.(session.handle);
   }
+}
+
+const SEARCH_TYPE_ORDER: readonly SearchObjectType[] = [
+  'database',
+  'schema',
+  'table',
+  'view',
+  'routine',
+];
+
+/** Ranks exact matches before prefixes and then broader substring matches. */
+export function rankSearchResults(items: readonly ObjectRef[], query: string): ObjectRef[] {
+  const needle = query.toLocaleLowerCase();
+  const rank = (name: string): number => {
+    const value = name.toLocaleLowerCase();
+    if (value === needle) return 0;
+    if (value.startsWith(needle)) return 1;
+    return 2;
+  };
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const match = rank(left.item.name) - rank(right.item.name);
+      if (match !== 0) return match;
+      const type =
+        SEARCH_TYPE_ORDER.indexOf(left.item.type as SearchObjectType) -
+        SEARCH_TYPE_ORDER.indexOf(right.item.type as SearchObjectType);
+      if (type !== 0) return type;
+      return left.index - right.index;
+    })
+    .map(({ item }) => item);
 }
 
 export function parseObjectRef(value: string | null): ObjectRef | null {

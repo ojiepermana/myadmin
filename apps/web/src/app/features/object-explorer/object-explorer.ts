@@ -1,7 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ScrollingModule } from '@angular/cdk/scrolling';
-import { ConnectionsClient, type ConnectionStatus } from '@myadmin/sdk-angular';
+import {
+  ConnectionsClient,
+  type ConnectionStatus,
+  type ExplorerSearchResult,
+} from '@myadmin/sdk-angular';
 import { ContextMenuTriggerDirective } from '@ojiepermana/angular/component/context-menu';
 import {
   MenuContentDirective,
@@ -38,6 +42,23 @@ export class ObjectExplorer {
   protected readonly focusedId = signal<string | null>(null);
   protected readonly menuNode = signal<ExplorerNode | null>(null);
   protected readonly actionError = signal<string | null>(null);
+  protected readonly activeConnectionId = computed(() => {
+    const focusedId = this.focusedId();
+    return focusedId ? (this.store.nodeFor(focusedId)?.connectionId ?? null) : null;
+  });
+  protected readonly searchGroups = computed(() => {
+    const groups = new Map<string, ExplorerSearchResult[]>();
+    for (const result of this.store.searchResults()) {
+      const group = groups.get(result.type) ?? [];
+      group.push(result);
+      groups.set(result.type, group);
+    }
+    return [...groups.entries()].map(([type, items]) => ({
+      type,
+      label: `${type.charAt(0).toUpperCase()}${type.slice(1)}s`,
+      items,
+    }));
+  });
   protected readonly menuActions = computed(() => {
     const node = this.menuNode();
     return node ? this.actionsFor(node) : [];
@@ -78,6 +99,58 @@ export class ObjectExplorer {
   protected async refresh(node: ExplorerNode): Promise<void> {
     this.select(node);
     await this.store.refresh(node.id);
+  }
+
+  protected searchChanged(event: Event): void {
+    const query = (event.target as HTMLInputElement).value;
+    this.store.search(query, this.activeConnectionId());
+  }
+
+  protected searchResultId(result: ExplorerSearchResult, index: number): string {
+    return `explorer-search-result-${result.type}-${result.database}-${result.schema ?? ''}-${result.name}-${index}`.replace(
+      /[^a-zA-Z0-9_-]/g,
+      '-',
+    );
+  }
+
+  protected async openSearchResult(result: ExplorerSearchResult): Promise<void> {
+    const connectionId = this.activeConnectionId();
+    if (!connectionId) return;
+    const node = await this.store.revealSearchResult(connectionId, result);
+    if (!node) {
+      this.actionError.set('The object could not be located in the explorer tree.');
+      return;
+    }
+    this.focusedId.set(node.id);
+    this.menuNode.set(node);
+    queueMicrotask(() => document.getElementById(this.domId(node.id))?.focus());
+  }
+
+  protected selectSearchResult(result: ExplorerSearchResult): void {
+    this.menuNode.set(this.searchResultNode(result));
+  }
+
+  protected async onSearchKeydown(
+    event: KeyboardEvent,
+    result: ExplorerSearchResult,
+    index: number,
+  ): Promise<void> {
+    const results = this.store.searchResults();
+    const moveTo = (nextIndex: number): void => {
+      const next = results[nextIndex];
+      if (!next) return;
+      queueMicrotask(() => document.getElementById(this.searchResultId(next, nextIndex))?.focus());
+    };
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      moveTo(Math.min(index + 1, results.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      moveTo(Math.max(index - 1, 0));
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      await this.openSearchResult(result);
+    }
   }
 
   protected async onKeydown(event: KeyboardEvent, node: ExplorerNode): Promise<void> {
@@ -178,5 +251,30 @@ export class ObjectExplorer {
 
   protected domId(id: string): string {
     return `explorer-node-${id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  }
+
+  private searchResultNode(result: ExplorerSearchResult): ExplorerNode {
+    return {
+      id: `search:${result.type}:${result.database}:${result.schema ?? ''}:${result.name}`,
+      parentId: null,
+      connectionId: this.activeConnectionId(),
+      kind: 'object',
+      label: result.name,
+      depth: 0,
+      hasChildren: result.type === 'table',
+      expanded: false,
+      loaded: false,
+      loading: false,
+      error: null,
+      cursor: null,
+      childIds: [],
+      database: result.database,
+      schema: result.schema,
+      objectType:
+        result.type === 'table' || result.type === 'view' || result.type === 'routine'
+          ? result.type
+          : undefined,
+      ref: result,
+    };
   }
 }

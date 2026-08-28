@@ -1,7 +1,7 @@
 # 0032. Object search
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-EXP-03: object search berjalan di server provider dengan pagination dan tidak
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna di server dengan ribuan table, saya ingin menemukan object dari namanya tanpa menelusuri pohon.
 
 **Acceptance criteria**:
@@ -35,17 +36,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Pencarian per koneksi aktif (dipilih)
 
 **Pros**:
+
 - Sesuai FR (pencarian pada metadata yang provider dukung); sederhana; hak akses mengikuti koneksi.
 
 **Cons**:
+
 - Tidak lintas semua koneksi sekaligus; bisa jadi V2 bila dibutuhkan.
 
 ### Option 2: Pencarian lintas semua koneksi tersambung
 
 **Pros**:
+
 - Satu kotak untuk semuanya.
 
 **Cons**:
+
 - Menggandakan beban ke banyak server sekaligus dan mencampur hasil beda hak akses; tidak diminta FR.
 
 ## Decision
@@ -61,18 +66,21 @@ FR-EXP-03 berbicara tentang katalog satu provider; per koneksi menjaga model hak
 **Data model sketch**: tidak ada tabel baru.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /connections/:id/search | GET | q, types?, database?, page | items (ObjectRef plus tipe), page, total? | pemilik, tersambung | 409 NOT_CONNECTED, 422 q pendek |
+
+| Endpoint                | Method | Key inputs                 | Key outputs                               | Auth                | Key errors                      |
+| ----------------------- | ------ | -------------------------- | ----------------------------------------- | ------------------- | ------------------------------- |
+| /connections/:id/search | GET    | q, types?, database?, page | items (ObjectRef plus tipe), page, total? | pemilik, tersambung | 409 NOT_CONNECTED, 422 q pendek |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| hasil | ObjectRef plus tipe | provider searchObjects |
-| lompat ke node | jalur ekspansi | ObjectRef (database, schema?, name) dipetakan ke node explorer |
-| aksi langsung | daftar aksi | registry aksi spec 0031 |
+
+| Action         | Value produced / displayed | Source                                                         |
+| -------------- | -------------------------- | -------------------------------------------------------------- |
+| hasil          | ObjectRef plus tipe        | provider searchObjects                                         |
+| lompat ke node | jalur ekspansi             | ObjectRef (database, schema?, name) dipetakan ke node explorer |
+| aksi langsung  | daftar aksi                | registry aksi spec 0031                                        |
 
 **Key invariants**:
+
 - Tidak ada jalur yang mengambil katalog penuh; hasil selalu paginated.
 - Request pencarian lama selalu dibatalkan saat kueri baru dikirim.
 
@@ -86,20 +94,23 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Tambah operasi search ke kontrak, endpoint server di modul explorer, contract test, memenuhi **AC-1**, **AC-2**.
-2. UI kotak pencarian plus daftar hasil berkelompok dengan debounce, abort, pagination, keyboard, memenuhi **AC-3**, **AC-5**.
-3. Lompat ke node (ekspansi malas berjalur) dan aksi langsung lewat registry, memenuhi **AC-4**.
-4. E2e dua engine pada fixture besar, memenuhi **AC-6**.
+1. [x] Tambah operasi search ke kontrak, endpoint server di modul explorer, contract test, memenuhi **AC-1**, **AC-2**.
+2. [x] UI kotak pencarian plus daftar hasil berkelompok dengan debounce, abort, pagination, keyboard, memenuhi **AC-3**, **AC-5**.
+3. [x] Lompat ke node (ekspansi malas berjalur) dan aksi langsung lewat registry, memenuhi **AC-4**.
+4. [x] E2e dua engine pada fixture besar, memenuhi **AC-6**.
 
 ## Consequences
 
 **Positive**:
+
 - Navigasi server besar menjadi praktis; melengkapi janji explorer.
 
 **Negative / tradeoffs**:
+
 - Pencarian substring pada katalog sangat besar bisa lambat di sisi server database; pagination dan minimal 2 karakter menahannya.
 
 **Neutral**:
+
 - Pencarian lintas koneksi dicatat sebagai kandidat V2.
 
 ## Follow-up
@@ -109,9 +120,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-EXP-03, NFR-01; spec 0023, 0025, 0031.
 
 **Practices & standards**:
+
 - Debounce plus abort untuk pencarian; hasil paginated.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

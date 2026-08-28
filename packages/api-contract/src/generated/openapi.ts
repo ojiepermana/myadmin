@@ -363,6 +363,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/connections/{id}/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search objects on a connected provider */
+        get: operations["searchExplorerObjects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/connections/{id}/status-info": {
         parameters: {
             query?: never;
@@ -1117,6 +1134,11 @@ export interface components {
             kind: "schema";
             name: string;
             schema: string;
+        };
+        ExplorerSearchPage: {
+            cursor: string | null;
+            items: components["schemas"]["ExplorerObjectRef"][];
+            total?: number;
         };
         health: {
             /** @enum {string} */
@@ -2901,6 +2923,91 @@ export interface operations {
                 };
             };
             /** @description The provider metadata operation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    searchExplorerObjects: {
+        parameters: {
+            query: {
+                /** @description Limit results to one database. */
+                database?: string;
+                /** @description Opaque provider cursor. Omit to request the first page. */
+                page?: components["parameters"]["explorer-page"];
+                /** @description At least two characters to search for in object names. */
+                q: string;
+                /** @description Comma separated object types to include. */
+                types?: string;
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["connection-id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One ranked page of provider object references. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExplorerSearchPage"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection belongs to another user. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The connection is not connected. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The search query is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The provider search operation failed. */
             502: {
                 headers: {
                     [name: string]: unknown;
