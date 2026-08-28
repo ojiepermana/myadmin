@@ -143,6 +143,7 @@ describe('spec 0001 foundation acceptance', () => {
       const child = Bun.spawn([process.execPath, 'run', 'scripts/dev/start.ts'], {
         cwd: repositoryRoot,
         env: { ...process.env, MYADMIN_DATA_DIR: dataRoot },
+        stdin: 'ignore',
         stdout: 'pipe',
         stderr: 'pipe',
       });
