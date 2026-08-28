@@ -120,10 +120,11 @@ Satu satunya jalur network Angular: transport, provider, SdkError. Done when: fi
 ### 06. CLI runtime dan data directory `in-progress`
 Siklus hidup proses binary: serve, data directory, sinyal, SPA fallback. Done when: serve jalan dengan default aman, override bekerja, dan shutdown rapi.
 - [x] Design it (spec): [0006](../specs/0006-cli-runtime-data-directory/index.md)
-- [ ] Build it: /develop cli-runtime-data-directory
-  - [ ] Resolusi data directory per platform plus subfolder (AC-2, AC-3)
-  - [ ] Perintah serve dan version, flag dan env, keluaran terminal (AC-1, AC-6, AC-7, AC-8)
-  - [ ] Graceful shutdown dan penyajian aset dengan SPA fallback (AC-4, AC-5)
+- [x] Build it: /develop cli-runtime-data-directory
+  - [x] Resolusi data directory per platform plus subfolder (AC-2, AC-3)
+  - [x] Perintah serve dan version, flag dan env, keluaran terminal (AC-1, AC-6, AC-7, AC-8)
+  - [x] Graceful shutdown dan penyajian aset dengan SPA fallback (AC-4, AC-5)
+  - code in `apps/cli/src`, `apps/server/src`, and `apps/cli/test/runtime.test.ts`
 - [ ] [Verify it](../specs/0006-cli-runtime-data-directory/verify.md): /check verify cli-runtime-data-directory
 - [ ] [Test it](../specs/0006-cli-runtime-data-directory/test.md): /test cli-runtime-data-directory
 

@@ -13,6 +13,7 @@
     "stop:ports": "bun run scripts/dev/stop-ports.ts",
     "health": "bun run apps/server/src/main.ts",
     "myadmin": "bun run apps/cli/src/main.ts",
+    "test:cli-runtime": "bun test apps/cli/test/runtime.test.ts",
     "start": "bun run scripts/dev/start.ts",
     "prepare": "husky",
     "lint": "bun run scripts/quality/lint.ts",
