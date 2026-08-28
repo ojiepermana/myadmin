@@ -37,7 +37,7 @@
     "format": "bun run scripts/quality/format.ts",
     "format:check": "bun run scripts/quality/format.ts --check",
     "typecheck": "bun run scripts/quality/typecheck.ts",
-    "test": "bun test --isolate --timeout=10000 --path-ignore-patterns='tests/e2e/**/*.spec.ts'",
+    "test": "bun run build:web && bun run bundle:contract && bun test --isolate --timeout=10000 --path-ignore-patterns='tests/e2e/**/*.spec.ts'",
     "test:e2e": "playwright test --config playwright.config.ts",
     "check:boundaries": "bun run scripts/verify/check-boundaries.ts",
     "check:manifests": "bun run scripts/verify/check-manifests.ts",

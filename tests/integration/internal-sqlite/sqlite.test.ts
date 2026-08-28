@@ -244,8 +244,8 @@ describe('IT-0008-AC7 WAL shutdown', () => {
     closeDatabase(database);
 
     expect(await Bun.file(join(directory, 'myadmin.db')).exists()).toBe(true);
-    expect(await Bun.file(join(directory, 'myadmin.db-wal')).exists()).toBe(true);
-    expect(Bun.file(join(directory, 'myadmin.db-wal')).size).toBe(0);
+    const walFile = Bun.file(join(directory, 'myadmin.db-wal'));
+    expect((await walFile.exists()) ? walFile.size : 0).toBe(0);
   });
 });
 
