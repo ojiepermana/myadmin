@@ -1,7 +1,7 @@
 # 0028. Jobs infrastructure
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -93,11 +93,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Bangun model job, state machine, dan JobManager (submit, antrean, konkurensi, penyimpanan sementara, pembersihan), memenuhi **AC-1**, **AC-2**, **AC-6**.
-2. Bangun cancellation (AbortSignal) dan progress (throttle, event internal), memenuhi **AC-3**, **AC-4**.
-3. Normalisasi error executor plus logging correlation, memenuhi **AC-7**.
-4. Tambah operasi jobs ke kontrak, endpoint server dengan kepemilikan, SDK facade, contract test, memenuhi **AC-5**.
-5. Unit test lengkap, memenuhi **AC-8**.
+1. [x] Bangun model job, state machine, dan JobManager (submit, antrean, konkurensi, penyimpanan sementara, pembersihan), memenuhi **AC-1**, **AC-2**, **AC-6**.
+2. [x] Bangun cancellation (AbortSignal) dan progress (throttle, event internal), memenuhi **AC-3**, **AC-4**.
+3. [x] Normalisasi error executor plus logging correlation, memenuhi **AC-7**.
+4. [x] Tambah operasi jobs ke kontrak, endpoint server dengan kepemilikan, SDK facade, contract test, memenuhi **AC-5**.
+5. [x] Unit test lengkap, memenuhi **AC-8**.
 
 ## Consequences
 

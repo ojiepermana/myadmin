@@ -21,6 +21,12 @@ paths:
     $ref: ./paths/auth-logout.yaml
   /auth/me:
     $ref: ./paths/auth-me.yaml
+  /jobs:
+    $ref: ./paths/jobs.yaml
+  /jobs/{id}:
+    $ref: ./paths/job-by-id.yaml
+  /jobs/{id}/cancel:
+    $ref: ./paths/job-cancel.yaml
 components:
   schemas:
     ApiError:
@@ -41,6 +47,14 @@ components:
       $ref: ./components/schemas/user.yaml#/LoginRequest
     AuthResponse:
       $ref: ./components/schemas/user.yaml#/AuthResponse
+    Job:
+      $ref: ./components/schemas/jobs.yaml#/Job
+    JobError:
+      $ref: ./components/schemas/jobs.yaml#/JobError
+    JobPage:
+      $ref: ./components/schemas/jobs.yaml#/JobPage
+    JobProgress:
+      $ref: ./components/schemas/jobs.yaml#/JobProgress
     Health:
       $ref: ./components/schemas/health.yaml
   parameters:

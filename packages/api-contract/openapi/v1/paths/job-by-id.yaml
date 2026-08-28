@@ -1,0 +1,32 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Job identifier.
+    schema:
+      type: string
+      minLength: 1
+get:
+  operationId: getJob
+  tags:
+    - jobs
+  summary: Get a job owned by the current user
+  responses:
+    '200':
+      description: Job state and progress.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/jobs.yaml#/Job
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The job does not exist or is not owned by the current user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

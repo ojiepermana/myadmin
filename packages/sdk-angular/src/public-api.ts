@@ -2,6 +2,7 @@ export * from './errors/sdk-error';
 export * from './events/session-expired';
 export * from './facades/auth-client';
 export * from './facades/health-client';
+export * from './facades/jobs-client';
 export * from './facades/setup-client';
 export * from './providers/config';
 export * from './providers/provide-myadmin-sdk';

@@ -1,6 +1,7 @@
 import { inject, type EnvironmentProviders, type Provider } from '@angular/core';
 import { AuthClient } from '../facades/auth-client';
 import { HealthClient } from '../facades/health-client';
+import { JobsClient } from '../facades/jobs-client';
 import { SetupClient } from '../facades/setup-client';
 import { SessionExpiredEvents } from '../events/session-expired';
 import { provideHttpTransport } from '../transport/http-transport';
@@ -15,6 +16,7 @@ export function provideMyadminSdk(
     { provide: MYADMIN_SDK_CONFIG, useValue: resolveMyadminSdkConfig(config) },
     SessionExpiredEvents,
     HealthClient,
+    JobsClient,
     SetupClient,
     AuthClient,
     MyadminSdk,
@@ -29,6 +31,7 @@ export function provideMyadminSdkTransport(transport: SdkTransport): Provider {
 export class MyadminSdk {
   public readonly auth = inject(AuthClient);
   public readonly health = inject(HealthClient);
+  public readonly jobs = inject(JobsClient);
   public readonly setup = inject(SetupClient);
   public readonly sessionExpired = inject(SessionExpiredEvents).sessionExpired;
 }

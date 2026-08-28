@@ -24,6 +24,7 @@ import {
   installObservability,
   type ObservabilityOptions,
 } from '@myadmin/observability';
+import { JobManager, JobManagerError, serializeJob, type Job } from '@myadmin/jobs';
 import { Elysia, type AnyElysia } from 'elysia';
 import packageManifest from '../../../package.json' with { type: 'json' };
 import {
@@ -46,6 +47,7 @@ export interface ServerStartOptions {
   authService?: AuthService;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
+  jobManager?: JobManager;
   websocketCheckIntervalMs?: number;
   observability?: ObservabilityOptions;
 }
@@ -62,6 +64,7 @@ export interface ServerAppOptions {
   authService?: AuthService;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
+  jobManager?: JobManager;
   websocketCheckIntervalMs?: number;
   observability?: ObservabilityOptions;
 }
@@ -98,6 +101,7 @@ type Credentials = { username: string; password: string };
 
 const sessionCleanupStops = new WeakMap<object, () => void>();
 const websocketCleanupStops = new Map<object, () => void>();
+const jobManagerCleanupStops = new WeakMap<object, () => void>();
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
   return new Response(JSON.stringify(value), {
@@ -379,6 +383,108 @@ function registerAuthRoutes(
     });
 }
 
+function queryInteger(
+  request: Request,
+  name: string,
+  defaultValue: number,
+  maximum?: number,
+): number | undefined {
+  const value = new URL(request.url).searchParams.get(name);
+  if (value === null) return defaultValue;
+  if (value.length === 0) return undefined;
+  if (!/^\d+$/.test(value)) return undefined;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1 || (maximum !== undefined && parsed > maximum)) {
+    return undefined;
+  }
+  return parsed;
+}
+
+function jobNotFoundResponse(request: Request): Response {
+  return apiError(request, 404, 'JOB_NOT_FOUND', 'Job was not found.');
+}
+
+function jobManagerErrorResponse(request: Request, error: unknown): Response {
+  if (error instanceof JobManagerError) {
+    if (error.code === 'JOB_NOT_FOUND') return jobNotFoundResponse(request);
+    if (error.code === 'JOB_NOT_CANCELLABLE' || error.code === 'JOB_ALREADY_FINISHED') {
+      return apiError(request, 409, error.code, error.message);
+    }
+  }
+  return apiError(
+    request,
+    500,
+    'JOB_OPERATION_FAILED',
+    'The job operation could not be completed.',
+  );
+}
+
+function jobResponse(job: Job) {
+  return serializeJob(job);
+}
+
+function registerJobsRoutes(
+  application: AnyElysia,
+  prefix: string,
+  setupService: InitialAdminService | undefined,
+  authService: AuthService | undefined,
+  secureCookies: boolean,
+  jobManager: JobManager,
+): AnyElysia {
+  const path = (suffix: string) => `${prefix}${suffix}`;
+
+  const validate = (
+    request: Request,
+  ): Response | Extract<SessionValidation, { authenticated: true }> => {
+    if (!authService) {
+      return apiError(request, 500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
+    }
+    if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+    const validation = authService.validateSession(sessionToken(request));
+    if (!validation.authenticated)
+      return sessionFailureResponse(request, validation, secureCookies);
+    return validation;
+  };
+
+  return application
+    .get(path('/jobs'), ({ request }) => {
+      const validation = validate(request);
+      if (validation instanceof Response) return validation;
+      const page = queryInteger(request, 'page', 1);
+      const pageSize = queryInteger(request, 'page-size', 20, 100);
+      if (page === undefined || pageSize === undefined) {
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The pagination parameters are invalid.');
+      }
+      const result = jobManager.listByOwner(validation.value.user.id, page, pageSize);
+      return {
+        items: result.items.map(jobResponse),
+        page: result.page,
+        pageSize: result.pageSize,
+        total: result.total,
+      };
+    })
+    .get(path('/jobs/:id'), ({ request, params }) => {
+      const validation = validate(request);
+      if (validation instanceof Response) return validation;
+      const id = (params as { id?: unknown }).id;
+      if (typeof id !== 'string') return jobNotFoundResponse(request);
+      const job = jobManager.getForOwner(id, validation.value.user.id);
+      return job === undefined ? jobNotFoundResponse(request) : jobResponse(job);
+    })
+    .post(path('/jobs/:id/cancel'), ({ request, params }) => {
+      const validation = validate(request);
+      if (validation instanceof Response) return validation;
+      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      const id = (params as { id?: unknown }).id;
+      if (typeof id !== 'string') return jobNotFoundResponse(request);
+      try {
+        return jsonResponse(jobResponse(jobManager.cancelForOwner(id, validation.value.user.id)));
+      } catch (error) {
+        return jobManagerErrorResponse(request, error);
+      }
+    });
+}
+
 function registerProtectedApiGuard(
   application: AnyElysia,
   prefix: string,
@@ -467,6 +573,8 @@ function scheduleSessionCleanup(application: AnyElysia, authService: AuthService
 export function disposeServerApp(application: AnyElysia): void {
   sessionCleanupStops.get(application)?.();
   sessionCleanupStops.delete(application);
+  jobManagerCleanupStops.get(application)?.();
+  jobManagerCleanupStops.delete(application);
   for (const stop of websocketCleanupStops.values()) stop();
   websocketCleanupStops.clear();
 }
@@ -492,6 +600,8 @@ export function createServerApp(options: ServerAppOptions = {}) {
     (options.database
       ? authServiceForDatabase(options.database, options.config, loginRateLimiter)
       : undefined);
+  const jobManager = options.jobManager ?? new JobManager();
+  const ownsJobManager = options.jobManager === undefined;
   const secureCookies = options.config?.security.secureCookies ?? false;
   const websocketCheckIntervalMs = options.websocketCheckIntervalMs ?? 60_000;
   if (
@@ -514,6 +624,16 @@ export function createServerApp(options: ServerAppOptions = {}) {
     secureCookies,
   );
   if (authService) {
+    application = registerJobsRoutes(
+      application,
+      '/api/v1',
+      setupService,
+      authService,
+      secureCookies,
+      jobManager,
+    );
+  }
+  if (authService) {
     application = registerWebSocketRoute(
       application,
       '/api/v1',
@@ -528,6 +648,10 @@ export function createServerApp(options: ServerAppOptions = {}) {
     authService,
     secureCookies,
   );
+  jobManagerCleanupStops.set(
+    application,
+    ownsJobManager ? () => jobManager.dispose() : () => undefined,
+  );
   if (authService) scheduleSessionCleanup(application, authService);
   return application.all('*', async ({ request }) =>
     serveStaticAsset(request, { source: await source() }),
@@ -535,7 +659,9 @@ export function createServerApp(options: ServerAppOptions = {}) {
 }
 
 /** Contract fixture backed by the same auth implementation and an in-memory SQLite database. */
-export function createApp(options: { observability?: ObservabilityOptions } = {}) {
+export function createApp(
+  options: { observability?: ObservabilityOptions; jobManager?: JobManager } = {},
+) {
   const database = new Database(':memory:', { create: true, readwrite: true, strict: true });
   runMigrations(database);
   const store = storeForDatabase(database);
@@ -548,7 +674,15 @@ export function createApp(options: { observability?: ObservabilityOptions } = {}
     observabilityOptions({ observability: options.observability }),
   ).get('/health', () => ({ status: 'ok' as const, version: packageManifest.version }));
   application = registerSetupRoutes(application, '', setupService, setupRateLimiter);
-  return registerAuthRoutes(application, '', setupService, authService, false);
+  application = registerAuthRoutes(application, '', setupService, authService, false);
+  return registerJobsRoutes(
+    application,
+    '',
+    setupService,
+    authService,
+    false,
+    options.jobManager ?? new JobManager(),
+  );
 }
 
 export const app = createServerApp();
@@ -574,6 +708,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       authService: options.authService,
       setupRateLimiter: options.setupRateLimiter,
       loginRateLimiter: options.loginRateLimiter,
+      jobManager: options.jobManager,
       websocketCheckIntervalMs: options.websocketCheckIntervalMs,
       observability: options.observability,
     });

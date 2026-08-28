@@ -18,6 +18,7 @@ import type {
   AuthLoginRequest,
   AuthLoginResponse,
   HealthResponse,
+  JobPage,
   RealtimeClient,
   RealtimeConnectionState,
   RealtimeUnsubscribe,
@@ -130,6 +131,46 @@ describe('MyAdmin Angular SDK', () => {
         path: '/health',
       },
     ]);
+  });
+
+  it('AC-5 exposes typed job list, detail, and cancellation calls', async () => {
+    const sdk = TestBed.inject(MyadminSdk);
+    const list = firstValueFrom(sdk.jobs.list(2, 10));
+    const listRequest = http.expectOne('/api/v1/jobs?page=2&page-size=10');
+    expect(listRequest.request.method).toBe('GET');
+    expect(listRequest.request.withCredentials).toBe(true);
+    listRequest.flush({ items: [], page: 2, pageSize: 10, total: 0 } satisfies JobPage);
+    await expect(list).resolves.toEqual({ items: [], page: 2, pageSize: 10, total: 0 });
+
+    const detail = firstValueFrom(sdk.jobs.get('job/1'));
+    const detailRequest = http.expectOne('/api/v1/jobs/job%2F1');
+    expect(detailRequest.request.method).toBe('GET');
+    expect(detailRequest.request.headers.get('X-Myadmin-Csrf')).toBeNull();
+    detailRequest.flush({
+      id: 'job/1',
+      type: 'synthetic',
+      ownerUserId: 'user-1',
+      state: 'running',
+      progress: { phase: 'work', current: 1 },
+      createdAt: '2026-08-28T00:00:00.000Z',
+      cancellable: true,
+    });
+    await expect(detail).resolves.toMatchObject({ id: 'job/1', state: 'running' });
+
+    const cancellation = firstValueFrom(sdk.jobs.cancel('job-1'));
+    const cancellationRequest = http.expectOne('/api/v1/jobs/job-1/cancel');
+    expect(cancellationRequest.request.method).toBe('POST');
+    expect(cancellationRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    cancellationRequest.flush({
+      id: 'job-1',
+      type: 'synthetic',
+      ownerUserId: 'user-1',
+      state: 'cancelling',
+      progress: { phase: 'work', current: 1 },
+      createdAt: '2026-08-28T00:00:00.000Z',
+      cancellable: true,
+    });
+    await expect(cancellation).resolves.toMatchObject({ id: 'job-1', state: 'cancelling' });
   });
 
   it('AC-7 exposes only the transport independent realtime contract seam', () => {

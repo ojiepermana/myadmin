@@ -1,0 +1,33 @@
+get:
+  operationId: listJobs
+  tags:
+    - jobs
+  summary: List the current user's jobs
+  parameters:
+    - $ref: ../components/parameters/page.yaml
+    - $ref: ../components/parameters/page-size.yaml
+  responses:
+    '200':
+      description: Paginated jobs owned by the current user, newest first.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/jobs.yaml#/JobPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required before reading jobs.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Pagination parameters are invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

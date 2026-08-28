@@ -410,10 +410,11 @@ Connect eksplisit, registry sesi aktif, status jujur di sidebar dan status bar. 
 Mesin pekerjaan panjang dalam proses: progress, cancel kooperatif, kepemilikan. Done when: job berjalan berbatas konkurensi, bisa dibatalkan, dan tidak pernah merobohkan proses.
 
 - [x] Design it (spec): [0028](../specs/0028-jobs-infrastructure/index.md)
-- [ ] Build it: /develop jobs-infrastructure
-  - [ ] Model job, state machine, JobManager dengan antrean dan pembersihan (AC-1, AC-2, AC-6)
-  - [ ] Cancellation AbortSignal plus progress throttled plus normalisasi error (AC-3, AC-4, AC-7)
-  - [ ] API jobs berkepemilikan plus unit test lengkap (AC-5, AC-8)
+- [x] Build it: /develop jobs-infrastructure
+  - [x] Model job, state machine, JobManager dengan antrean dan pembersihan (AC-1, AC-2, AC-6)
+  - [x] Cancellation AbortSignal plus progress throttled plus normalisasi error (AC-3, AC-4, AC-7)
+  - [x] API jobs berkepemilikan plus unit test lengkap (AC-5, AC-8)
+  - code in `packages/jobs/src`, `apps/server/src/app.ts`, `packages/api-contract/openapi/v1`, `packages/sdk-angular/src`, and `tests/`
 - [ ] [Verify it](../specs/0028-jobs-infrastructure/verify.md): /check verify jobs-infrastructure
 - [ ] [Test it](../specs/0028-jobs-infrastructure/test.md): /test jobs-infrastructure
 

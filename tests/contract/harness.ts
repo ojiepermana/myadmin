@@ -93,7 +93,8 @@ export function contractOperations(document: RecordValue): ContractOperation[] {
 
 function normalizeServerPath(path: string): string {
   const withoutPrefix = path.replace(/^\/api\/v1(?=\/|$)/, '');
-  return withoutPrefix.length > 1 ? withoutPrefix.replace(/\/$/, '') : withoutPrefix || '/';
+  const normalized = withoutPrefix.replace(/:([^/]+)/g, '{$1}');
+  return normalized.length > 1 ? normalized.replace(/\/$/, '') : normalized || '/';
 }
 
 export function serverOperations(app: RouteContainer): ServerOperation[] {

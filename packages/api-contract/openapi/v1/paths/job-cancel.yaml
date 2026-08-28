@@ -1,0 +1,52 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Job identifier.
+    schema:
+      type: string
+      minLength: 1
+post:
+  operationId: cancelJob
+  tags:
+    - jobs
+  summary: Cancel a job owned by the current user
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+      description: Same-origin mutation marker required for cookie-authenticated requests.
+  responses:
+    '200':
+      description: Job state after the cancellation request.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/jobs.yaml#/Job
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The CSRF or origin check failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The job does not exist or is not owned by the current user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The job cannot be cancelled or has already finished.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

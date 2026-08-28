@@ -19,6 +19,9 @@ const initialPaths = {
   '/auth/login': 'paths/auth-login.yaml',
   '/auth/logout': 'paths/auth-logout.yaml',
   '/auth/me': 'paths/auth-me.yaml',
+  '/jobs': 'paths/jobs.yaml',
+  '/jobs/{id}': 'paths/job-by-id.yaml',
+  '/jobs/{id}/cancel': 'paths/job-cancel.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);
@@ -145,7 +148,16 @@ async function assertContractRules(): Promise<void> {
 
   const components = record(property(root, 'components'), 'components');
   const schemas = record(property(components, 'schemas'), 'components.schemas');
-  for (const schemaName of ['ApiError', 'Pagination', 'PaginatedResponse', 'Capability']) {
+  for (const schemaName of [
+    'ApiError',
+    'Pagination',
+    'PaginatedResponse',
+    'Capability',
+    'Job',
+    'JobError',
+    'JobPage',
+    'JobProgress',
+  ]) {
     if (!(schemaName in schemas)) {
       throw new Error(`components.schemas.${schemaName} is missing`);
     }
