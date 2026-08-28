@@ -27,6 +27,16 @@ paths:
     $ref: ./paths/job-by-id.yaml
   /jobs/{id}/cancel:
     $ref: ./paths/job-cancel.yaml
+  /backup:
+    $ref: ./paths/backup.yaml
+  /backup/capability:
+    $ref: ./paths/backup-capability.yaml
+  /backups:
+    $ref: ./paths/backups.yaml
+  /backups/{id}:
+    $ref: ./paths/backup-by-id.yaml
+  /backups/{id}/download:
+    $ref: ./paths/backup-by-id-download.yaml
   /preferences:
     $ref: ./paths/preferences.yaml
   /preferences/{key}:
@@ -89,6 +99,20 @@ components:
       $ref: ./components/schemas/jobs.yaml#/JobPage
     JobProgress:
       $ref: ./components/schemas/jobs.yaml#/JobProgress
+    BackupScope:
+      $ref: ./components/schemas/backup.yaml#/BackupScope
+    BackupToolStatus:
+      $ref: ./components/schemas/backup.yaml#/BackupToolStatus
+    BackupCapability:
+      $ref: ./components/schemas/backup.yaml#/BackupCapability
+    BackupCreateRequest:
+      $ref: ./components/schemas/backup.yaml#/BackupCreateRequest
+    BackupCreateResponse:
+      $ref: ./components/schemas/backup.yaml#/BackupCreateResponse
+    BackupArtifact:
+      $ref: ./components/schemas/backup.yaml#/BackupArtifact
+    BackupArtifactPage:
+      $ref: ./components/schemas/backup.yaml#/BackupArtifactPage
     Preferences:
       $ref: ./components/schemas/settings.yaml#/Preferences
     PreferenceUpdate:

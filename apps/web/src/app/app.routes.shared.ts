@@ -65,33 +65,38 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
         ? [setupGateGuard]
         : definition.id === 'audit'
           ? [setupGateGuard, adminGuard]
-        : definition.id === 'users'
-          ? [setupGateGuard, authGuard, adminGuard]
-          : [setupGateGuard, authGuard],
+          : definition.id === 'users'
+            ? [setupGateGuard, authGuard, adminGuard]
+            : [setupGateGuard, authGuard],
     loadComponent:
       definition.id === 'auth'
         ? () => import('./features/login/login').then(({ Login }) => Login)
         : definition.id === 'connections'
           ? () =>
               import('./features/connections/connections').then(({ Connections }) => Connections)
-        : definition.id === 'settings'
-          ? () => import('./features/settings/settings').then(({ Settings }) => Settings)
-        : definition.id === 'audit'
-          ? () => import('./features/audit/audit').then(({ Audit }) => Audit)
-        : definition.id === 'change-password'
-          ? () =>
-              import('./features/change-password/change-password').then(
-                ({ ChangePassword }) => ChangePassword,
-              )
-          : definition.id === 'users'
-            ? () =>
-                import('./features/user-management/user-management').then(
-                ({ UserManagement }) => UserManagement,
-              )
-            : () =>
-                import('./features/route-placeholder/route-placeholder').then(
-                  ({ RoutePlaceholder }) => RoutePlaceholder,
-                ),
+          : definition.id === 'settings'
+            ? () => import('./features/settings/settings').then(({ Settings }) => Settings)
+            : definition.id === 'audit'
+              ? () => import('./features/audit/audit').then(({ Audit }) => Audit)
+              : definition.id === 'backup-restore'
+                ? () =>
+                    import('./features/backup-restore/backup-restore').then(
+                      ({ BackupRestore }) => BackupRestore,
+                    )
+                : definition.id === 'change-password'
+                  ? () =>
+                      import('./features/change-password/change-password').then(
+                        ({ ChangePassword }) => ChangePassword,
+                      )
+                  : definition.id === 'users'
+                    ? () =>
+                        import('./features/user-management/user-management').then(
+                          ({ UserManagement }) => UserManagement,
+                        )
+                    : () =>
+                        import('./features/route-placeholder/route-placeholder').then(
+                          ({ RoutePlaceholder }) => RoutePlaceholder,
+                        ),
   }));
 
   const devRoutes: Routes = includeDevDemo

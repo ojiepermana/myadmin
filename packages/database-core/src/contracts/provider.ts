@@ -1,6 +1,7 @@
 import type { CapabilityPort } from './provider-types';
 import type { ConnectionPort } from './connection';
 import type { BackupRestorePort } from './backup-restore';
+import type { BackupPort } from './backup-restore';
 import type { DataPort } from './data';
 import type { DatabasePort } from './database';
 import type { ImportExportPort } from './import-export';
@@ -31,6 +32,7 @@ export interface DatabaseProvider {
   query?: QueryPort;
   security?: SecurityPort;
   importExport?: ImportExportPort;
+  backup?: BackupPort;
   backupRestore?: BackupRestorePort;
   monitoring?: MonitoringPort;
 }

@@ -8,6 +8,8 @@ import {
   resolveDataDirectory,
   type ConfigEnvironment,
 } from '@myadmin/config';
+import { loadConfig } from '@myadmin/config';
+import { detectNativeTool } from '@myadmin/database-core';
 import {
   assertKeyFilePermissions,
   KeyProviderError,
@@ -321,7 +323,7 @@ export async function runKeyFileCheck(
 }
 
 function configCheckArguments(
-  options: DoctorCommandOptions,
+  options: Pick<DoctorCommandOptions, 'dataDirectory' | 'argv'>,
   dataDirectory: string,
 ): readonly string[] {
   const argv = (options.argv ?? []).filter((argument) => argument !== '--json');
@@ -355,6 +357,65 @@ export async function runConfigDoctorCheck(
         'Fix the reported configuration keys, then run myadmin doctor again.',
         details,
       );
+}
+
+export async function runBackupToolsCheck(
+  options: Omit<DoctorCommandOptions, 'presenter' | 'checks'>,
+  dataDirectory: string,
+): Promise<CheckResult> {
+  try {
+    const config = await loadConfig(
+      configCheckArguments(options, dataDirectory),
+      options.env,
+      resolveConfigFilePath(dataDirectory),
+    );
+    const statuses = await Promise.all([
+      detectNativeTool('pg_dump', config.tools.pgDumpPath),
+      detectNativeTool('pg_restore', config.tools.pgRestorePath),
+      detectNativeTool('mysqldump', config.tools.mysqldumpPath),
+      detectNativeTool('mysql', config.tools.mysqlPath),
+    ]);
+    const details = Object.fromEntries(
+      statuses.map((status) => [
+        status.command,
+        {
+          available: status.available,
+          ...(status.path ? { path: status.path } : {}),
+          ...(status.version ? { version: status.version } : {}),
+          ...(status.major === undefined ? {} : { major: status.major }),
+          ...(status.reason ? { reason: status.reason } : {}),
+        },
+      ]),
+    );
+    const dumpTools = statuses.filter(
+      (status) => status.command === 'pg_dump' || status.command === 'mysqldump',
+    );
+    const available = dumpTools
+      .filter((status) => status.available)
+      .map((status) => status.command);
+    if (available.length === dumpTools.length) {
+      return result(
+        'ok',
+        'Native PostgreSQL and MySQL backup tools are available.',
+        undefined,
+        details,
+      );
+    }
+    return result(
+      'warning',
+      available.length === 0
+        ? 'Native backup tools were not found; backup is unavailable until one is installed.'
+        : `Native backup is available for ${available.join(', ')}; another engine is unavailable.`,
+      'Install the missing native tool or set its configured path, then run myadmin doctor again.',
+      details,
+    );
+  } catch {
+    return result(
+      'warning',
+      'Native backup tools could not be inspected.',
+      'Fix configuration first, then run myadmin doctor again.',
+    );
+  }
 }
 
 export function createDefaultDoctorChecks(
@@ -392,6 +453,11 @@ export function createDefaultDoctorChecks(
       id: 'key-file',
       title: 'Master key file',
       run: () => runKeyFileCheck(dataDirectory, options.env),
+    },
+    {
+      id: 'backup-tools',
+      title: 'Native backup tools',
+      run: () => runBackupToolsCheck(options, dataDirectory),
     },
   ];
 }

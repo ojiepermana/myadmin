@@ -17,7 +17,8 @@ import {
   type UpdateUserRoleStatusInput,
 } from '@myadmin/auth';
 import { AuditAdminReader, isAuditAction } from '@myadmin/audit';
-import { CredentialVault } from '@myadmin/crypto';
+import { CredentialVault, createKeyProvider } from '@myadmin/crypto';
+import { BackupService } from '@myadmin/backup';
 import { MysqlProvider } from '@myadmin/database-mysql';
 import { ProviderRegistry } from '@myadmin/database-core';
 import { createPostgresqlProvider } from '@myadmin/database-postgresql';
@@ -60,10 +61,10 @@ import {
 import { MAX_WORKSPACE_STATE_BYTES } from '@myadmin/workspace';
 import {
   ConnectionManagerService,
-  createConnectionManager,
   type ActiveConnectionSessionRegistry,
 } from './connections/connection-manager';
 import { registerConnectionRoutes } from './connections/routes';
+import { registerBackupRoutes } from './backup/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -81,6 +82,7 @@ export interface ServerStartOptions {
   connectionManager?: ConnectionManagerService;
   providerRegistry?: ProviderRegistry;
   credentialVault?: CredentialVault;
+  backupService?: BackupService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
@@ -110,6 +112,7 @@ export interface ServerAppOptions {
   connectionManager?: ConnectionManagerService;
   providerRegistry?: ProviderRegistry;
   credentialVault?: CredentialVault;
+  backupService?: BackupService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
@@ -152,30 +155,11 @@ function workspaceServiceForStore(store: WorkspacePersistenceStore): WorkspaceSe
   return new WorkspaceService(store);
 }
 
-function providerRegistryForServer(): ProviderRegistry {
-  return new ProviderRegistry([createPostgresqlProvider(), new MysqlProvider()]);
-}
-
-function connectionManagerForDatabase(
-  database: Database,
-  config: MyadminConfig | undefined,
-  options: ServerAppOptions,
-): ConnectionManagerService {
-  const store = storeForDatabase(database);
-  const providers = options.providerRegistry ?? providerRegistryForServer();
-  if (options.credentialVault) {
-    return new ConnectionManagerService({
-      store,
-      providers,
-      vault: options.credentialVault,
-      activeSessions: options.activeConnectionSessions,
-      testRateLimiter: options.connectionTestRateLimiter,
-    });
-  }
-  return createConnectionManager(store, config?.dataDir ?? resolveDataDirectory(), providers, {
-    activeSessions: options.activeConnectionSessions,
-    testRateLimiter: options.connectionTestRateLimiter,
-  });
+function providerRegistryForServer(config?: MyadminConfig): ProviderRegistry {
+  return new ProviderRegistry([
+    createPostgresqlProvider(config?.tools ?? {}),
+    new MysqlProvider(config?.tools ?? {}),
+  ]);
 }
 
 export const host = defaultHost;
@@ -1275,6 +1259,13 @@ export function createServerApp(options: ServerAppOptions = {}) {
   };
 
   const runtimeStore = options.database ? storeForDatabase(options.database) : undefined;
+  const dataDirectory = options.config?.dataDir ?? resolveDataDirectory();
+  const providers = options.providerRegistry ?? providerRegistryForServer(options.config);
+  const credentialVault =
+    options.credentialVault ??
+    (runtimeStore
+      ? new CredentialVault({ keyProvider: createKeyProvider({ dataDirectory }) })
+      : undefined);
   const setupService =
     options.initialAdminService ??
     (runtimeStore ? new InitialAdminService({ store: runtimeStore }) : undefined);
@@ -1391,14 +1382,39 @@ export function createServerApp(options: ServerAppOptions = {}) {
   );
   const connectionManager =
     options.connectionManager ??
-    (options.database
-      ? connectionManagerForDatabase(options.database, options.config, options)
+    (runtimeStore && credentialVault
+      ? new ConnectionManagerService({
+          store: runtimeStore,
+          providers,
+          vault: credentialVault,
+          activeSessions: options.activeConnectionSessions,
+          testRateLimiter: options.connectionTestRateLimiter,
+        })
+      : undefined);
+  const backupService =
+    options.backupService ??
+    (runtimeStore && credentialVault
+      ? new BackupService({
+          store: runtimeStore,
+          providers,
+          vault: credentialVault,
+          jobs: jobManager,
+          dataDirectory,
+        })
       : undefined);
   if (connectionManager && authService) {
     application = registerConnectionRoutes(application, '/api/v1', {
       authService,
       setupService,
       connectionManager,
+      secureCookies,
+    });
+  }
+  if (backupService && authService) {
+    application = registerBackupRoutes(application, '/api/v1', {
+      authService,
+      setupService,
+      backupService,
       secureCookies,
     });
   }
@@ -1432,7 +1448,11 @@ export function createServerApp(options: ServerAppOptions = {}) {
 
 /** Contract fixture backed by the same auth implementation and an in-memory SQLite database. */
 export function createApp(
-  options: { observability?: ObservabilityOptions; jobManager?: JobManager } = {},
+  options: {
+    observability?: ObservabilityOptions;
+    jobManager?: JobManager;
+    backupService?: BackupService;
+  } = {},
 ) {
   const database = new Database(':memory:', { create: true, readwrite: true, strict: true });
   runMigrations(database);
@@ -1444,9 +1464,10 @@ export function createApp(
   const credentialVault = new CredentialVault({
     keyProvider: { load: async () => ({ key: contractKey, keyId: 'contract-key' }) },
   });
+  const providers = providerRegistryForServer();
   const connectionManager = new ConnectionManagerService({
     store,
-    providers: providerRegistryForServer(),
+    providers,
     vault: credentialVault,
   });
   const setupRateLimiter = new InMemoryRateLimiter();
@@ -1482,18 +1503,27 @@ export function createApp(
     false,
     workspaceServiceForStore(store),
   );
-  application = registerJobsRoutes(
-    application,
-    '',
-    setupService,
-    authService,
-    false,
-    options.jobManager ?? new JobManager(),
-  );
-  return registerConnectionRoutes(application, '', {
+  const jobManager = options.jobManager ?? new JobManager();
+  application = registerJobsRoutes(application, '', setupService, authService, false, jobManager);
+  application = registerConnectionRoutes(application, '', {
     authService,
     setupService,
     connectionManager,
+    secureCookies: false,
+  });
+  const backupService =
+    options.backupService ??
+    new BackupService({
+      store,
+      providers,
+      vault: credentialVault,
+      jobs: jobManager,
+      dataDirectory: `/tmp/myadmin-contract-${crypto.randomUUID()}`,
+    });
+  return registerBackupRoutes(application, '', {
+    authService,
+    setupService,
+    backupService,
     secureCookies: false,
   });
 }
@@ -1528,6 +1558,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       connectionManager: options.connectionManager,
       providerRegistry: options.providerRegistry,
       credentialVault: options.credentialVault,
+      backupService: options.backupService,
       activeConnectionSessions: options.activeConnectionSessions,
       connectionTestRateLimiter: options.connectionTestRateLimiter,
       websocketCheckIntervalMs: options.websocketCheckIntervalMs,

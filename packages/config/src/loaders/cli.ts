@@ -8,6 +8,7 @@ export type ConfigOverrides = {
   log?: Partial<MyadminConfig['log']>;
   limits?: Partial<MyadminConfig['limits']>;
   history?: Partial<MyadminConfig['history']>;
+  tools?: Partial<MyadminConfig['tools']>;
 };
 
 export class ConfigArgumentError extends Error {
@@ -40,6 +41,14 @@ const flagPaths: Readonly<Record<string, string>> = {
   '--limits.resultMaxRows': 'limits.resultMaxRows',
   '--max-entries-per-user': 'history.maxEntriesPerUser',
   '--history.maxEntriesPerUser': 'history.maxEntriesPerUser',
+  '--pg-dump-path': 'tools.pgDumpPath',
+  '--tools.pgDumpPath': 'tools.pgDumpPath',
+  '--pg-restore-path': 'tools.pgRestorePath',
+  '--tools.pgRestorePath': 'tools.pgRestorePath',
+  '--mysqldump-path': 'tools.mysqldumpPath',
+  '--tools.mysqldumpPath': 'tools.mysqldumpPath',
+  '--mysql-path': 'tools.mysqlPath',
+  '--tools.mysqlPath': 'tools.mysqlPath',
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

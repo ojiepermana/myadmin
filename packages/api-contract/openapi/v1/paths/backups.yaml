@@ -1,0 +1,20 @@
+get:
+  operationId: listBackups
+  tags: [backups]
+  summary: List the current user's backup artifacts
+  parameters:
+    - $ref: ../components/parameters/page.yaml
+    - $ref: ../components/parameters/page-size.yaml
+  responses:
+    '200':
+      description: Backup artifacts owned by the current user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/backup.yaml#/BackupArtifactPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

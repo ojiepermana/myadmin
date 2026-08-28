@@ -549,6 +549,9 @@
     <MenuGroup>
       <MenuLabel>Workspace actions</MenuLabel>
       <button MenuItem type="button" (click)="shortcutsOpen.set(true)">Keyboard shortcuts</button>
+      <button MenuItem type="button" (click)="goToRoute('backup-restore')">
+        Open backup and restore
+      </button>
       <button MenuItem type="button" (click)="onBottomPanelToggle()">Toggle activity panel</button>
     </MenuGroup>
   </MenuSurface>

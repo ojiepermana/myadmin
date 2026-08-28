@@ -56,6 +56,10 @@ describe('UT-0012-AC1 configuration schema and defaults', () => {
       'limits.uploadMaxBytes',
       'limits.resultMaxRows',
       'history.maxEntriesPerUser',
+      'tools.pgDumpPath',
+      'tools.pgRestorePath',
+      'tools.mysqldumpPath',
+      'tools.mysqlPath',
     ]);
     expect(config.server).toEqual({ host: '127.0.0.1', port: 8080 });
     expect(config.session).toEqual({ idleTimeoutMinutes: 720, absoluteTimeoutHours: 168 });
@@ -63,6 +67,7 @@ describe('UT-0012-AC1 configuration schema and defaults', () => {
     expect(config.log.level).toBe('info');
     expect(config.limits).toEqual({ uploadMaxBytes: 512 * 1024 * 1024, resultMaxRows: 1000 });
     expect(config.history.maxEntriesPerUser).toBe(1000);
+    expect(config.tools).toEqual({});
     expect(Value.Check(configSchema, config)).toBe(true);
     expect(Object.isFrozen(config)).toBe(true);
     expect(Object.isFrozen(config.server)).toBe(true);

@@ -1,0 +1,36 @@
+get:
+  operationId: getBackupCapability
+  tags: [backups]
+  summary: Inspect backup tooling and connection capability
+  parameters:
+    - name: connectionId
+      in: query
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    '200':
+      description: Tool and server capability.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/backup.yaml#/BackupCapability
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: Connection ownership failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Connection was not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

@@ -1,0 +1,303 @@
+<main class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:px-8 lg:gap-10 lg:py-14">
+  <section class="flex flex-wrap items-end justify-between gap-6">
+    <div class="max-w-3xl space-y-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <Badge>Operations</Badge>
+        <span class="font-mono text-sm text-muted-foreground">/backup-restore</span>
+      </div>
+      <div class="space-y-3">
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-primary">MyAdmin backup</p>
+        <h1 class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+          Keep a safe copy of your databases.
+        </h1>
+        <p class="max-w-2xl text-lg leading-relaxed text-muted-foreground">
+          Backups run through the configured native PostgreSQL or MySQL tools and stay in this
+          instance's backup directory. Restore will arrive in the next specification.
+        </p>
+      </div>
+    </div>
+    <button Button type="button" (click)="openCreate()" [disabled]="connections().length === 0">
+      Create backup
+    </button>
+  </section>
+
+  @if (loading()) {
+    <Card role="status" aria-label="Loading backups">
+      <CardHeader
+        ><Spinner aria-label="Loading backup artifacts" /><CardTitle
+          >Loading backup workspace</CardTitle
+        ></CardHeader
+      >
+      <CardContent
+        ><p class="text-sm text-muted-foreground">
+          Reading connections, artifacts, and backup jobs.
+        </p></CardContent
+      >
+    </Card>
+  } @else if (loadFailed()) {
+    <Alert variant="destructive">
+      <AlertTitle>Backup workspace could not be loaded</AlertTitle>
+      <AlertDescription class="flex flex-wrap items-center justify-between gap-4">
+        <span>Check the server session and try again.</span>
+        <button Button type="button" variant="outline" (click)="retry()">Try again</button>
+      </AlertDescription>
+    </Alert>
+  } @else {
+    <section class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+      <Card>
+        <CardHeader>
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle>Backup artifacts</CardTitle>
+              <CardDescription
+                >Completed files owned by your account. Nothing is deleted
+                automatically.</CardDescription
+              >
+            </div>
+            <button Button type="button" variant="outline" size="sm" (click)="refresh()">
+              Refresh
+            </button>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-3">
+          @if (artifacts().length === 0) {
+            <div
+              class="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground"
+            >
+              No completed backup artifacts yet.
+            </div>
+          } @else {
+            @for (artifact of artifacts(); track artifact.id) {
+              <div
+                class="flex flex-wrap items-center justify-between gap-4 rounded-md border border-border bg-muted/20 p-4"
+              >
+                <div class="min-w-0 space-y-1">
+                  <p class="truncate font-mono text-sm font-medium text-foreground">
+                    {{ artifact.fileName }}
+                  </p>
+                  <p class="text-sm text-muted-foreground">
+                    {{ artifact.connectionLabel }} · {{ artifact.database }} · {{ artifact.scope }}
+                  </p>
+                  <div class="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline">{{ artifact.compress ? 'gzip' : 'SQL' }}</Badge
+                    ><span>{{ formatSize(artifact.sizeBytes) }}</span
+                    ><span>{{ artifact.toolVersion }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    [disabled]="actionId() === artifact.id"
+                    (click)="download(artifact)"
+                  >
+                    Download
+                  </button>
+                  <button
+                    Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    [disabled]="actionId() === artifact.id"
+                    (click)="deleteArtifact(artifact)"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader
+          ><CardTitle>Backup jobs</CardTitle
+          ><CardDescription
+            >Progress and cancellation are managed by the shared jobs service.</CardDescription
+          ></CardHeader
+        >
+        <CardContent class="space-y-3">
+          @if (jobs().length === 0) {
+            <p
+              class="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground"
+            >
+              No backup jobs in the current job history.
+            </p>
+          } @else {
+            @for (job of jobs(); track job.id) {
+              <div class="rounded-md border border-border bg-muted/20 p-4">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="font-mono text-xs text-muted-foreground">{{ job.id }}</span
+                  ><Badge [variant]="job.state === 'failed' ? 'destructive' : 'secondary'">{{
+                    job.state
+                  }}</Badge>
+                </div>
+                <p class="mt-2 text-sm text-foreground">{{ jobLabel(job) }}</p>
+                <div
+                  class="mt-3 h-2 overflow-hidden rounded-full bg-muted"
+                  role="progressbar"
+                  [attr.aria-valuenow]="job.progress.current"
+                  [attr.aria-valuemax]="job.progress.total ?? null"
+                >
+                  <div
+                    class="h-full bg-primary transition-all"
+                    [style.width.%]="
+                      job.progress.total
+                        ? (job.progress.current / job.progress.total) * 100
+                        : job.state === 'completed'
+                          ? 100
+                          : 8
+                    "
+                  ></div>
+                </div>
+                @if (
+                  job.cancellable &&
+                  job.state !== 'completed' &&
+                  job.state !== 'failed' &&
+                  job.state !== 'cancelled'
+                ) {
+                  <button
+                    Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="mt-3"
+                    [disabled]="actionId() === job.id"
+                    (click)="cancelJob(job)"
+                  >
+                    Cancel backup
+                  </button>
+                }
+              </div>
+            }
+          }
+        </CardContent>
+      </Card>
+    </section>
+  }
+</main>
+
+@if (createOpen()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    role="presentation"
+    (click)="closeCreate()"
+  >
+    <section
+      class="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="backup-dialog-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="space-y-2">
+        <h2 id="backup-dialog-title" class="text-xl font-semibold">Create a backup</h2>
+        <p class="text-sm text-muted-foreground">
+          The password is passed through the credential vault and never placed in process arguments.
+        </p>
+      </div>
+      <div class="mt-6 grid gap-5">
+        <div class="grid gap-2">
+          <label for="backup-connection" class="text-sm font-medium">Connection</label
+          ><select
+            id="backup-connection"
+            class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            [value]="selectedConnectionId()"
+            (change)="selectConnection(($event.target as HTMLSelectElement).value)"
+          >
+            @for (connection of connections(); track connection.id) {
+              <option [value]="connection.id">
+                {{ connection.label }} ({{ connection.engine }})
+              </option>
+            }
+          </select>
+        </div>
+        <div class="grid gap-2">
+          <label for="backup-database" class="text-sm font-medium">Database</label
+          ><input
+            Input
+            id="backup-database"
+            [value]="database()"
+            (input)="onDatabaseInput($event)"
+            placeholder="database name"
+          />
+        </div>
+        <div class="grid gap-2">
+          <label for="backup-scope" class="text-sm font-medium">Scope</label
+          ><select
+            id="backup-scope"
+            class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            [value]="scope()"
+            (change)="onScopeChange($event)"
+          >
+            <option value="both">Structure and data</option>
+            <option value="structure">Structure only</option>
+            <option value="data">Data only</option>
+          </select>
+        </div>
+        <label class="flex items-center gap-3 text-sm"
+          ><input
+            type="checkbox"
+            class="size-4 accent-[hsl(var(--primary))]"
+            [checked]="compress()"
+            (change)="onCompressChange($event)"
+          />Compress with gzip</label
+        >
+        <div class="grid gap-2">
+          <label for="backup-note" class="text-sm font-medium"
+            >Note <span class="font-normal text-muted-foreground">(optional)</span></label
+          ><input
+            Input
+            id="backup-note"
+            [value]="note()"
+            (input)="onNoteInput($event)"
+            maxlength="500"
+          />
+        </div>
+      </div>
+      @if (capability(); as currentCapability) {
+        <div
+          class="mt-5 rounded-md border p-4 text-sm"
+          [class.border-emerald-500/30]="currentCapability.supported"
+          [class.border-amber-500/30]="!currentCapability.supported"
+        >
+          @if (currentCapability.supported) {
+            <p class="font-medium text-emerald-700 dark:text-emerald-300">
+              {{ currentCapability.backupTool.command }}
+              {{ currentCapability.backupTool.version }} is ready.
+            </p>
+          } @else {
+            <p class="font-medium text-amber-700 dark:text-amber-300">Backup is unavailable.</p>
+            <p class="mt-1 text-muted-foreground">
+              {{
+                currentCapability.reason ||
+                  'Install the native tool or configure its path, then run myadmin doctor.'
+              }}
+            </p>
+            <a routerLink="/settings" class="mt-2 inline-block text-primary underline"
+              >Review configuration and doctor guidance</a
+            >
+          }
+        </div>
+      } @else {
+        <p class="mt-5 text-sm text-muted-foreground">Checking native backup tooling…</p>
+      }
+      <div class="mt-6 flex justify-end gap-2">
+        <button
+          Button
+          type="button"
+          variant="outline"
+          (click)="closeCreate()"
+          [disabled]="creating()"
+        >
+          Cancel</button
+        ><button Button type="button" (click)="createBackup()" [disabled]="!canCreate()">
+          {{ creating() ? 'Starting…' : 'Start backup' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

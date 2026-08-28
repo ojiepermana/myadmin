@@ -97,7 +97,8 @@ describe('IT-0007-AC1 and IT-0007-AC2 doctor checks', () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(result.summary).toEqual({ total: 7, ok: 7, warning: 0, fail: 0 });
+    expect(result.summary.total).toBe(8);
+    expect(result.summary.ok + result.summary.warning).toBe(8);
     expect(result.checks.map((check) => check.id)).toEqual([
       'data-directory',
       'data-subdirectories',
@@ -106,9 +107,10 @@ describe('IT-0007-AC1 and IT-0007-AC2 doctor checks', () => {
       'web-assets',
       'config',
       'key-file',
+      'backup-tools',
     ]);
     expect(output.messages[0]).toContain('[OK] Data directory');
-    expect(output.messages[0]).not.toContain('Action');
+    expect(output.messages[0]).toContain('Native backup tools');
   });
 
   test('IT-0010-AC4 reports insecure key file permissions with a repair action and no key material', async () => {

@@ -2,12 +2,14 @@ import { InjectionToken } from '@angular/core';
 import type { Observable } from 'rxjs';
 
 export type SdkHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export type SdkResponseType = 'json' | 'blob';
 
 export interface SdkTransportRequest<TBody = unknown> {
   readonly method: SdkHttpMethod;
   readonly path: string;
   readonly body?: TBody;
   readonly requiresSession?: boolean;
+  readonly responseType?: SdkResponseType;
 }
 
 export interface SdkResponseHeaders {

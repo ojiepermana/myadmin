@@ -22,6 +22,11 @@ const initialPaths = {
   '/jobs': 'paths/jobs.yaml',
   '/jobs/{id}': 'paths/job-by-id.yaml',
   '/jobs/{id}/cancel': 'paths/job-cancel.yaml',
+  '/backup': 'paths/backup.yaml',
+  '/backup/capability': 'paths/backup-capability.yaml',
+  '/backups': 'paths/backups.yaml',
+  '/backups/{id}': 'paths/backup-by-id.yaml',
+  '/backups/{id}/download': 'paths/backup-by-id-download.yaml',
   '/preferences': 'paths/preferences.yaml',
   '/preferences/{key}': 'paths/preferences-key.yaml',
   '/settings': 'paths/settings.yaml',
@@ -174,6 +179,13 @@ async function assertContractRules(): Promise<void> {
     'JobError',
     'JobPage',
     'JobProgress',
+    'BackupScope',
+    'BackupToolStatus',
+    'BackupCapability',
+    'BackupCreateRequest',
+    'BackupCreateResponse',
+    'BackupArtifact',
+    'BackupArtifactPage',
   ]) {
     if (!(schemaName in schemas)) {
       throw new Error(`components.schemas.${schemaName} is missing`);

@@ -19,4 +19,5 @@ export * from './contracts/table';
 export * from './contracts/view';
 export * from './errors';
 export * from './models';
+export * from './native-tools';
 export * from './registry';

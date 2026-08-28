@@ -1,7 +1,7 @@
 # 0049. Backup
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-BKR-01: logical backup dengan progress, cancellation, validation, dan audit. 
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin membuat backup database sebelum operasi berisiko dan tahu pasti apakah kemampuan backup tersedia di instalasi saya.
 
 **Acceptance criteria**:
@@ -37,25 +38,31 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Native tool dari sistem/config, tanpa bundel di V1 (dipilih)
 
 **Pros**:
+
 - pg_dump dan mysqldump adalah standar emas kebenaran dump; deteksi jujur sesuai FR-BKR-02; binary Myadmin tetap ramping dan bebas urusan lisensi/penandatanganan tool pihak lain.
 
 **Cons**:
+
 - Pengguna tanpa tool harus memasangnya; doctor dan dokumentasi memandu.
 
 ### Option 2: Membundel tool ke distribusi
 
 **Pros**:
+
 - Bekerja langsung di mana saja.
 
 **Cons**:
+
 - Ukuran distribusi bengkak per platform, kewajiban keamanan atas binary pihak lain, dan kecocokan versi server tetap masalah; FR-BKR-02 mengizinkan jalur "doctor menyatakan tidak tersedia". Dapat dipertimbangkan ulang di spec 0055.
 
 ### Option 3: Implementasi dump sendiri lewat SQL
 
 **Pros**:
+
 - Tanpa dependency eksternal.
 
 **Cons**:
+
 - Menandingi kebenaran pg_dump adalah proyek bertahun tahun; risiko dump yang tidak bisa direstore adalah risiko terburuk produk ini.
 
 ## Decision
@@ -71,22 +78,25 @@ Backup yang tidak bisa direstore lebih buruk daripada tidak ada backup; karena i
 **Data model sketch**: artefak file plus manifest JSON per artefak di folder backups (bukan tabel; folder adalah sumber kebenaran, manifest berdampingan).
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /backup | POST | connectionId, database, scope, compress | jobId | pemilik, tersambung, capability | unsupported, 422 |
-| /backups | GET | tidak ada | daftar artefak milik user | sesi | |
-| /backups/:id/download | GET | tidak ada | file | pemilik artefak | 404 |
-| /backups/:id | DELETE | confirmName | kosong | pemilik | 409 |
+
+| Endpoint              | Method | Key inputs                              | Key outputs               | Auth                            | Key errors       |
+| --------------------- | ------ | --------------------------------------- | ------------------------- | ------------------------------- | ---------------- |
+| /backup               | POST   | connectionId, database, scope, compress | jobId                     | pemilik, tersambung, capability | unsupported, 422 |
+| /backups              | GET    | tidak ada                               | daftar artefak milik user | sesi                            |                  |
+| /backups/:id/download | GET    | tidak ada                               | file                      | pemilik artefak                 | 404              |
+| /backups/:id          | DELETE | confirmName                             | kosong                    | pemilik                         | 409              |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| capability backupRestore | boolean plus reason | deteksi tool plus kecocokan versi |
-| argumen tool | argv | pembangun provider (scope, format, host, user; tanpa password) |
-| password subprocess | env/option file sementara | vault lewat ConnectionContext, umur sesaat |
-| progress | byte, fase | ukuran file tumbuh plus parse stderr |
+
+| Action                   | Value produced / displayed | Source                                                         |
+| ------------------------ | -------------------------- | -------------------------------------------------------------- |
+| capability backupRestore | boolean plus reason        | deteksi tool plus kecocokan versi                              |
+| argumen tool             | argv                       | pembangun provider (scope, format, host, user; tanpa password) |
+| password subprocess      | env/option file sementara  | vault lewat ConnectionContext, umur sesaat                     |
+| progress                 | byte, fase                 | ukuran file tumbuh plus parse stderr                           |
 
 **Key invariants**:
+
 - Password tidak pernah muncul di argv, log, manifest, atau stderr yang diteruskan (redaction pada semua keluaran subprocess).
 - Artefak parsial tidak pernah tersisa (cancel/gagal membersihkan).
 - Fitur hanya aktif bila deteksi tool lulus; tidak ada fallback diam diam ke metode lain (FR-BKR-02).
@@ -94,6 +104,7 @@ Backup yang tidak bisa direstore lebih buruk daripada tidak ada backup; karena i
 **Security model**: pemilik koneksi membuat backup; artefak dimiliki pembuatnya; isi backup adalah data pengguna dan tinggal di data directory yang dilindungi permission OS.
 
 **Configuration required**:
+
 - `tools.pgDumpPath`, `tools.pgRestorePath`, `tools.mysqldumpPath`, `tools.mysqlPath` (baru di schema config): path eksplisit opsional.
 
 **Critical test scenarios**:
@@ -112,12 +123,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Backup yang benar formatnya dengan kejujuran ketersediaan; fondasi restore (spec 0050).
 
 **Negative / tradeoffs**:
+
 - Bergantung tool eksternal; jalur pemasangan didokumentasikan dan dipandu doctor.
 
 **Neutral**:
+
 - Scheduled backup V2; pembundelan tool dievaluasi di spec 0055.
 
 ## Follow-up
@@ -127,9 +141,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-BKR-01, FR-BKR-02, FR-JOB-01; feature.md baris backup (structure/data, compression V1); spec 0007, 0011, 0028.
 
 **Practices & standards**:
+
 - Dump lewat tool resmi engine; credential subprocess lewat env/file sementara, bukan argv; validasi artefak sebelum diklaim sukses.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

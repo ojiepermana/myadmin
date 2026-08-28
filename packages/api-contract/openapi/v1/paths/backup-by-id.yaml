@@ -1,0 +1,50 @@
+delete:
+  operationId: deleteBackup
+  tags: [backups]
+  summary: Delete a backup artifact after exact filename confirmation
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          additionalProperties: false
+          required: [confirmName]
+          properties:
+            confirmName:
+              type: string
+              minLength: 1
+  responses:
+    '204':
+      description: Artifact deleted.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: CSRF or ownership failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Artifact was not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Exact filename confirmation was missing.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

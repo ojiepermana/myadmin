@@ -1,5 +1,7 @@
 import { createCapabilityDescription } from '@myadmin/database-core';
 import type {
+  BackupCapability,
+  BackupPort,
   CapabilityDescription,
   CapabilityPort,
   ConnectionContext,
@@ -84,23 +86,47 @@ export function createMysqlCapabilityDescription(version: string): MysqlCapabili
 
 /** Detects MySQL capabilities from the live server version. */
 export class MysqlCapabilityAdapter implements CapabilityPort {
-  public constructor(private readonly connection: MysqlConnectionAdapter) {}
+  public constructor(
+    private readonly connection: MysqlConnectionAdapter,
+    private readonly backup?: BackupPort,
+  ) {}
 
   public async describe(
     context: ConnectionContext | ConnectionHandle,
   ): Promise<CapabilityDescription> {
     if (isConnectionHandle(context)) {
       const info = await this.connection.serverInfo(context);
-      return createMysqlCapabilityDescription(info.version);
+      return this.withBackup(
+        createMysqlCapabilityDescription(info.version),
+        await this.backup?.describe(context),
+      );
     }
 
     const handle = await this.connection.open(context);
     try {
       const info = await this.connection.serverInfo(handle);
-      return createMysqlCapabilityDescription(info.version);
+      return this.withBackup(
+        createMysqlCapabilityDescription(info.version),
+        await this.backup?.describe(context),
+      );
     } finally {
       await this.connection.close(handle);
     }
+  }
+
+  private withBackup(
+    description: MysqlCapabilityDescription,
+    backup: BackupCapability | undefined,
+  ): MysqlCapabilityDescription {
+    if (!backup) return description;
+    return {
+      ...description,
+      capabilities: { ...description.capabilities, backupRestore: backup.supported },
+      reasons: {
+        ...description.reasons,
+        ...(backup.supported ? {} : { backupRestore: backup.reason ?? 'Backup is unavailable.' }),
+      },
+    };
   }
 }
 

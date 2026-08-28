@@ -3,8 +3,10 @@ import {
   type CapabilityDescription,
   type ConnectionContext,
   type ConnectionHandle,
+  type BackupCapability,
 } from '@myadmin/database-core';
 import type { PostgresqlConnectionAdapter } from '../connection';
+import type { BackupPort } from '@myadmin/database-core';
 
 function majorVersion(version: string): number {
   const match = version.match(/\d+/);
@@ -53,7 +55,10 @@ export function createPostgresqlCapabilities(version: string): CapabilityDescrip
 }
 
 export class PostgresqlCapabilityAdapter {
-  public constructor(private readonly connection: PostgresqlConnectionAdapter) {}
+  public constructor(
+    private readonly connection: PostgresqlConnectionAdapter,
+    private readonly backup?: BackupPort,
+  ) {}
 
   public async describe(
     context: ConnectionContext | ConnectionHandle,
@@ -61,13 +66,32 @@ export class PostgresqlCapabilityAdapter {
     if ('descriptor' in context) {
       const handle = await this.connection.open(context);
       try {
-        return await this.describe(handle);
+        const description = await this.describe(handle);
+        return this.withBackup(description, await this.backup?.describe(context));
       } finally {
         await this.connection.close(handle);
       }
     }
 
     const info = await this.connection.serverInfo(context);
-    return createPostgresqlCapabilities(info.version);
+    return this.withBackup(
+      createPostgresqlCapabilities(info.version),
+      await this.backup?.describe(context),
+    );
+  }
+
+  private withBackup(
+    description: CapabilityDescription,
+    backup: BackupCapability | undefined,
+  ): CapabilityDescription {
+    if (!backup) return description;
+    return {
+      ...description,
+      capabilities: { ...description.capabilities, backupRestore: backup.supported },
+      reasons: {
+        ...description.reasons,
+        ...(backup.supported ? {} : { backupRestore: backup.reason ?? 'Backup is unavailable.' }),
+      },
+    };
   }
 }

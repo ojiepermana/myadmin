@@ -672,9 +672,9 @@ Import SQL dan CSV sebagai job dengan unggah streaming dan pemetaan kolom. Done 
 Logical backup lewat native tool dengan deteksi jujur. Done when: backup valid dihasilkan dua engine dan tanpa tool fitur menyatakan diri tidak tersedia.
 
 - [x] Design it (spec): [0049](../specs/0049-backup/index.md)
-- [ ] Build it: /develop backup
-  - [ ] Deteksi tool plus doctor check plus capability (AC-1, AC-7)
-  - [ ] Executor subprocess aman (password tanpa argv, gzip streaming, validasi artefak, manifest) (AC-2, AC-3, AC-4)
+- [x] Build it: /develop backup
+  - [x] Deteksi tool plus doctor check plus capability (AC-1, AC-7)
+  - [x] Executor subprocess aman (password tanpa argv, gzip streaming, validasi artefak, manifest) (AC-2, AC-3, AC-4)
   - [ ] Endpoint daftar unduh hapus plus audit plus UI plus e2e (AC-5, AC-6, AC-8)
 - [ ] [Verify it](../specs/0049-backup/verify.md): /check verify backup
 - [ ] [Test it](../specs/0049-backup/test.md): /test backup

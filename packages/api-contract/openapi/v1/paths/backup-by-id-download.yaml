@@ -1,0 +1,35 @@
+get:
+  operationId: downloadBackup
+  tags: [backups]
+  summary: Download a backup artifact
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    '200':
+      description: SQL or gzip-compressed SQL artifact.
+      content:
+        application/sql:
+          schema:
+            type: string
+            format: binary
+        application/gzip:
+          schema:
+            type: string
+            format: binary
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Artifact was not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

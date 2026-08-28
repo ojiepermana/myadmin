@@ -21,6 +21,18 @@ export class HttpTransport implements SdkTransport {
   private readonly config = inject<ResolvedMyadminSdkConfig>(MYADMIN_SDK_CONFIG);
 
   public request<TResponse>(request: SdkTransportRequest): Observable<TResponse> {
+    if (request.responseType === 'blob') {
+      return this.http.request(request.method, joinUrl(this.config.baseUrl, request.path), {
+        body: request.body,
+        headers:
+          request.method === 'GET' || !request.requiresSession
+            ? undefined
+            : { 'X-Myadmin-Csrf': '1' },
+        observe: 'body',
+        responseType: 'blob',
+        withCredentials: true,
+      }) as Observable<TResponse>;
+    }
     return this.http.request<TResponse>(
       request.method,
       joinUrl(this.config.baseUrl, request.path),
@@ -39,6 +51,20 @@ export class HttpTransport implements SdkTransport {
   public requestWithResponse<TResponse>(
     request: SdkTransportRequest,
   ): Observable<SdkTransportResponse<TResponse>> {
+    if (request.responseType === 'blob') {
+      return this.http
+        .request(request.method, joinUrl(this.config.baseUrl, request.path), {
+          body: request.body,
+          headers:
+            request.method === 'GET' || !request.requiresSession
+              ? undefined
+              : { 'X-Myadmin-Csrf': '1' },
+          observe: 'response',
+          responseType: 'blob',
+          withCredentials: true,
+        })
+        .pipe(map((response) => ({ body: response.body as TResponse, headers: response.headers })));
+    }
     return this.http
       .request<TResponse>(request.method, joinUrl(this.config.baseUrl, request.path), {
         body: request.body,

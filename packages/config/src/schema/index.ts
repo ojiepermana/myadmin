@@ -53,6 +53,19 @@ export const configSchema = Type.Object(
       },
       { additionalProperties: false },
     ),
+    tools: Type.Object(
+      {
+        pgDumpPath: Type.Optional(Type.String({ minLength: 1, pattern: '\\S', sensitive: false })),
+        pgRestorePath: Type.Optional(
+          Type.String({ minLength: 1, pattern: '\\S', sensitive: false }),
+        ),
+        mysqldumpPath: Type.Optional(
+          Type.String({ minLength: 1, pattern: '\\S', sensitive: false }),
+        ),
+        mysqlPath: Type.Optional(Type.String({ minLength: 1, pattern: '\\S', sensitive: false })),
+      },
+      { additionalProperties: false },
+    ),
   },
   { additionalProperties: false },
 );
@@ -123,6 +136,10 @@ export const configKeys = [
   'limits.uploadMaxBytes',
   'limits.resultMaxRows',
   'history.maxEntriesPerUser',
+  'tools.pgDumpPath',
+  'tools.pgRestorePath',
+  'tools.mysqldumpPath',
+  'tools.mysqlPath',
 ] as const;
 
 export type ConfigKey = (typeof configKeys)[number];
@@ -152,6 +169,10 @@ export const configFieldMetadata: Readonly<Record<ConfigKey, ConfigFieldMetadata
     env: ['MYADMIN_HISTORY_MAX_ENTRIES_PER_USER'],
     sensitive: false,
   },
+  'tools.pgDumpPath': { env: ['MYADMIN_TOOLS_PG_DUMP_PATH'], sensitive: false },
+  'tools.pgRestorePath': { env: ['MYADMIN_TOOLS_PG_RESTORE_PATH'], sensitive: false },
+  'tools.mysqldumpPath': { env: ['MYADMIN_TOOLS_MYSQLDUMP_PATH'], sensitive: false },
+  'tools.mysqlPath': { env: ['MYADMIN_TOOLS_MYSQL_PATH'], sensitive: false },
 };
 
 export const defaultConfigValues: Omit<MyadminConfig, 'dataDir'> = {
@@ -176,6 +197,7 @@ export const defaultConfigValues: Omit<MyadminConfig, 'dataDir'> = {
   history: {
     maxEntriesPerUser: 1000,
   },
+  tools: {},
 };
 
 export function createDefaultConfig(options: DataDirectoryOptions = {}): MyadminConfig {
@@ -186,6 +208,7 @@ export function createDefaultConfig(options: DataDirectoryOptions = {}): Myadmin
     log: { ...defaultConfigValues.log },
     limits: { ...defaultConfigValues.limits },
     history: { ...defaultConfigValues.history },
+    tools: { ...defaultConfigValues.tools },
     dataDir: resolveDataDirectory(options),
   };
 }
