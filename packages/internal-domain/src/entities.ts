@@ -148,3 +148,8 @@ export interface AuditEvent {
 }
 
 export type AuditLog = AuditEvent;
+
+/** Audit event enriched for the administrator read surface. */
+export interface AuditLogView extends AuditEvent {
+  actorUsername: string | null;
+}

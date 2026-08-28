@@ -150,4 +150,54 @@ describe('API contract', () => {
       );
     }
   });
+
+  test('CT-0020-AC1 and CT-0020-AC5 validate the administrator audit operations', async () => {
+    const document = await loadContract(contractPath);
+    const operations = contractOperations(document);
+    const app = createApp();
+    const request = async (input: string, init?: RequestInit): Promise<Response> =>
+      app.handle(new Request(`http://localhost${input}`, init));
+
+    const setup = await request('/setup/admin', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: 'audit-contract-admin', password: 'synthetic-password' }),
+    });
+    expect(setup.status).toBe(201);
+    const login = await request('/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: 'audit-contract-admin', password: 'synthetic-password' }),
+    });
+    const cookie = login.headers.get('set-cookie')?.split(';')[0];
+    if (!cookie) throw new Error('Contract audit login did not set a session cookie');
+
+    const list = await request('/audit?page=1&pageSize=10&action=auth.login_succeeded', {
+      headers: { cookie },
+    });
+    const actions = await request('/audit/actions', { headers: { cookie } });
+    const unauthenticated = await request('/audit');
+
+    expect(list.status).toBe(200);
+    expect(actions.status).toBe(200);
+    expect(unauthenticated.status).toBe(401);
+    assertResponseMatchesContract(
+      document,
+      operation(operations, 'queryAudit'),
+      list.status,
+      await responsePayload(list),
+    );
+    assertResponseMatchesContract(
+      document,
+      operation(operations, 'getAuditActions'),
+      actions.status,
+      await responsePayload(actions),
+    );
+    assertResponseMatchesContract(
+      document,
+      operation(operations, 'queryAudit'),
+      unauthenticated.status,
+      await responsePayload(unauthenticated),
+    );
+  });
 });

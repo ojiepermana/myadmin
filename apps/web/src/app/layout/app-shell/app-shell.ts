@@ -277,6 +277,9 @@ export class AppShell {
       };
     };
 
+    const reviewItems = [item('query-history'), item('monitoring')];
+    if (this.authSession.currentUser()?.role === 'admin') reviewItems.push(item('audit'));
+
     const groups = [
       {
         id: 'operate',
@@ -294,7 +297,7 @@ export class AppShell {
         id: 'review',
         type: 'group' as const,
         title: 'Review',
-        children: [item('query-history'), item('monitoring'), item('audit')],
+        children: reviewItems,
       },
       {
         id: 'personalize',

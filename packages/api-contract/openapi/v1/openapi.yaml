@@ -35,6 +35,10 @@ paths:
     $ref: ./paths/settings.yaml
   /settings/{key}:
     $ref: ./paths/settings-key.yaml
+  /audit:
+    $ref: ./paths/audit.yaml
+  /audit/actions:
+    $ref: ./paths/audit-actions.yaml
 components:
   schemas:
     ApiError:
@@ -71,6 +75,12 @@ components:
       $ref: ./components/schemas/settings.yaml#/Settings
     SettingUpdate:
       $ref: ./components/schemas/settings.yaml#/SettingUpdate
+    AuditLog:
+      $ref: ./components/schemas/audit.yaml#/AuditLog
+    AuditListResponse:
+      $ref: ./components/schemas/audit.yaml#/AuditListResponse
+    AuditActionsResponse:
+      $ref: ./components/schemas/audit.yaml#/AuditActionsResponse
     Health:
       $ref: ./components/schemas/health.yaml
   parameters:

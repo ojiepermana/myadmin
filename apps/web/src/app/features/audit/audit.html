@@ -1,0 +1,237 @@
+<main
+  class="audit-page mx-auto flex w-full max-w-[112rem] flex-col gap-8 px-6 py-10 sm:px-8 lg:gap-10 lg:py-14"
+>
+  <section class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <Badge variant="secondary">Admin review</Badge>
+        <span class="font-mono text-xs text-muted-foreground">/audit</span>
+      </div>
+      <h1 class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">Audit trail</h1>
+      <p class="text-lg leading-relaxed text-muted-foreground">
+        Review security and operational activity recorded by MyAdmin. Details are permanently shown
+        in their safe, redacted form.
+      </p>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-muted-foreground">
+      <span>Matching events</span>
+      <Badge>{{ total() }}</Badge>
+    </div>
+  </section>
+
+  @if (error(); as message) {
+    <Alert variant="destructive" role="alert">
+      <AlertTitle>Audit data unavailable</AlertTitle>
+      <AlertDescription>{{ message }}</AlertDescription>
+      <button Button type="button" variant="outline" size="sm" class="mt-3" (click)="retry()">
+        Try again
+      </button>
+    </Alert>
+  }
+
+  <section class="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]">
+    <Card class="h-fit bg-card/80">
+      <CardHeader>
+        <CardTitle>Filters</CardTitle>
+        <CardDescription>Combine filters to narrow the administrator event stream.</CardDescription>
+      </CardHeader>
+      <form (ngSubmit)="applyFilters()">
+        <CardContent class="space-y-5">
+          <div class="grid gap-2">
+            <label for="audit-from" class="text-sm font-medium">From</label>
+            <input
+              id="audit-from"
+              Input
+              type="datetime-local"
+              [(ngModel)]="filter.from"
+              name="from"
+            />
+          </div>
+          <div class="grid gap-2">
+            <label for="audit-to" class="text-sm font-medium">To</label>
+            <input id="audit-to" Input type="datetime-local" [(ngModel)]="filter.to" name="to" />
+          </div>
+          <div class="grid gap-2">
+            <label for="audit-actor" class="text-sm font-medium">Actor user ID</label>
+            <input id="audit-actor" Input [(ngModel)]="filter.actorUserId" name="actorUserId" />
+          </div>
+          <div class="grid gap-2">
+            <label for="audit-connection" class="text-sm font-medium">Connection ID</label>
+            <input
+              id="audit-connection"
+              Input
+              [(ngModel)]="filter.connectionId"
+              name="connectionId"
+            />
+          </div>
+          <div class="grid gap-2">
+            <label for="audit-target" class="text-sm font-medium">Target reference prefix</label>
+            <input id="audit-target" Input [(ngModel)]="filter.targetRef" name="targetRef" />
+          </div>
+          <div class="grid gap-2">
+            <label for="audit-result" class="text-sm font-medium">Result</label>
+            <select NativeSelect id="audit-result" [(ngModel)]="filter.result" name="result">
+              <option NativeSelectOption value="">All results</option>
+              <option NativeSelectOption value="success">Success</option>
+              <option NativeSelectOption value="failure">Failure</option>
+              <option NativeSelectOption value="denied">Denied</option>
+            </select>
+          </div>
+          <div class="grid gap-2">
+            <label for="audit-actions" class="text-sm font-medium">Actions</label>
+            <select
+              NativeSelect
+              id="audit-actions"
+              multiple
+              size="7"
+              [disabled]="actionsLoading() || actionsError() !== null"
+              [ngModel]="filter.action"
+              (ngModelChange)="setActions($event)"
+              name="action"
+            >
+              @for (action of actions(); track action) {
+                <option NativeSelectOption [value]="action">{{ action }}</option>
+              }
+            </select>
+            @if (actionsLoading()) {
+              <span class="text-xs text-muted-foreground" role="status">Loading actions…</span>
+            } @else if (actionsError(); as message) {
+              <p class="text-xs text-destructive">
+                {{ message }}
+                <button type="button" class="underline" (click)="retryActions()">Retry</button>
+              </p>
+            } @else {
+              <p class="text-xs text-muted-foreground">
+                Use Ctrl or Command to select more than one.
+              </p>
+            }
+          </div>
+        </CardContent>
+        <CardFooter class="flex gap-2">
+          <button Button type="submit" class="flex-1">Apply</button>
+          <button Button type="button" variant="outline" (click)="resetFilters()">Reset</button>
+        </CardFooter>
+      </form>
+    </Card>
+
+    <Card class="min-w-0">
+      <CardHeader class="flex flex-row items-start justify-between gap-4">
+        <div>
+          <CardTitle>Activity</CardTitle>
+          <CardDescription
+            >Newest events appear first. Expand a row to inspect safe metadata.</CardDescription
+          >
+        </div>
+        @if (loading()) {
+          <Spinner aria-label="Loading audit activity" />
+        }
+      </CardHeader>
+      <CardContent>
+        @if (loading()) {
+          <div class="space-y-4" role="status" aria-label="Loading audit activity">
+            <Skeleton class="h-4 w-full" />
+            <Skeleton class="h-4 w-11/12" />
+            <Skeleton class="h-4 w-4/5" />
+          </div>
+        } @else if (items().length === 0) {
+          <div class="rounded-md border border-dashed border-border px-6 py-12 text-center">
+            <p class="font-medium">No audit events match these filters.</p>
+            <p class="mt-2 text-sm text-muted-foreground">
+              Try resetting the filters or broaden the time range.
+            </p>
+          </div>
+        } @else {
+          <div class="audit-table overflow-x-auto rounded-md border border-border">
+            <Table density="compact">
+              <caption class="sr-only">
+                Administrator audit events
+              </caption>
+              <thead TableHeader>
+                <tr TableRow>
+                  <th TableHead>Time</th>
+                  <th TableHead>Actor</th>
+                  <th TableHead>Action</th>
+                  <th TableHead>Target</th>
+                  <th TableHead>Connection</th>
+                  <th TableHead>Result</th>
+                  <th TableHead>Correlation ID</th>
+                  <th TableHead><span class="sr-only">Details</span></th>
+                </tr>
+              </thead>
+              <tbody TableBody>
+                @for (item of items(); track item.id) {
+                  <tr TableRow [attr.data-state]="expandedId() === item.id ? 'selected' : null">
+                    <td TableCell class="whitespace-nowrap">
+                      <time [attr.datetime]="item.occurredAt">{{
+                        item.occurredAt | date: 'MMM d, y, HH:mm:ss'
+                      }}</time>
+                    </td>
+                    <td TableCell>{{ item.actorUsername || 'System' }}</td>
+                    <td TableCell class="whitespace-nowrap font-mono text-xs">{{ item.action }}</td>
+                    <td TableCell class="max-w-56 truncate">{{ targetLabel(item) }}</td>
+                    <td TableCell class="font-mono text-xs">{{ item.connectionId || '—' }}</td>
+                    <td TableCell>
+                      <Badge [variant]="resultVariant(item.result)">{{ item.result }}</Badge>
+                    </td>
+                    <td TableCell class="max-w-40 truncate font-mono text-xs">
+                      {{ item.correlationId || '—' }}
+                    </td>
+                    <td TableCell class="text-end">
+                      <button
+                        Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        [attr.aria-expanded]="expandedId() === item.id"
+                        [attr.aria-label]="
+                          (expandedId() === item.id ? 'Hide' : 'Show') +
+                          ' details for ' +
+                          item.action
+                        "
+                        (click)="toggleDetails(item.id)"
+                      >
+                        <span aria-hidden="true">{{ expandedId() === item.id ? '−' : '+' }}</span>
+                      </button>
+                    </td>
+                  </tr>
+                  @if (expandedId() === item.id) {
+                    <tr TableRow>
+                      <td TableCell colspan="8" class="bg-muted/30">
+                        <div class="space-y-2">
+                          <p
+                            class="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                          >
+                            Safe event details
+                          </p>
+                          <pre
+                            class="max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-border bg-background p-4 font-mono text-xs text-foreground"
+                            >{{ detailsLabel(item) }}</pre>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </Table>
+          </div>
+        }
+      </CardContent>
+      @if (!loading() && items().length > 0) {
+        <CardFooter
+          class="flex flex-col items-start justify-between gap-4 border-t border-border/60 sm:flex-row sm:items-center"
+        >
+          <p class="text-sm text-muted-foreground">
+            Page {{ page() }} of {{ totalPages() }} · {{ total() }} matching events
+          </p>
+          <Pagination
+            [page]="page()"
+            [total]="totalPages()"
+            [previousAriaLabel]="'Previous audit page'"
+            [nextAriaLabel]="'Next audit page'"
+            (pageChange)="onPageChange($event)"
+          />
+        </CardFooter>
+      }
+    </Card>
+  </section>
+</main>

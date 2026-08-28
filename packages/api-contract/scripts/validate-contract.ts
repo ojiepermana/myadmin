@@ -26,6 +26,8 @@ const initialPaths = {
   '/preferences/{key}': 'paths/preferences-key.yaml',
   '/settings': 'paths/settings.yaml',
   '/settings/{key}': 'paths/settings-key.yaml',
+  '/audit': 'paths/audit.yaml',
+  '/audit/actions': 'paths/audit-actions.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);

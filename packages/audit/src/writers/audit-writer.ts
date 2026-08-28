@@ -144,8 +144,10 @@ export class AuditWriter {
   }
 
   public query(filter?: AuditFilter, page?: PageRequest): Page<AuditEvent> {
-    if (filter?.action !== undefined && !isAuditAction(filter.action)) {
-      throw new InvalidAuditActionError(filter.action);
+    if (filter?.action !== undefined) {
+      const actions = Array.isArray(filter.action) ? filter.action : [filter.action];
+      const invalidAction = actions.find((action) => !isAuditAction(action));
+      if (invalidAction !== undefined) throw new InvalidAuditActionError(invalidAction);
     }
     return this.repository.query(filter, page);
   }

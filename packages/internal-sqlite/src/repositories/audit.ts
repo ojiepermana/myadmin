@@ -2,7 +2,8 @@ import type { Database } from 'bun:sqlite';
 import type {
   AuditEvent,
   AuditFilter,
-  AuditRepository,
+  AuditAdminRepository,
+  AuditLogView,
   Page,
   PageRequest,
 } from '@myadmin/internal-domain';
@@ -29,8 +30,14 @@ interface AuditRow {
   details: string | null;
 }
 
+interface AuditViewRow extends AuditRow {
+  actor_username: string | null;
+}
+
 const AUDIT_COLUMNS =
   'id, occurred_at, actor_user_id, action, target_type, target_ref, connection_id, result, correlation_id, details' as const;
+const AUDIT_VIEW_COLUMNS =
+  'audit_logs.id, audit_logs.occurred_at, audit_logs.actor_user_id, audit_logs.action, audit_logs.target_type, audit_logs.target_ref, audit_logs.connection_id, audit_logs.result, audit_logs.correlation_id, audit_logs.details' as const;
 
 export interface AuditStorageStats {
   readonly rowCount: number;
@@ -80,6 +87,14 @@ function mapAudit(row: AuditRow): AuditEvent {
   };
 }
 
+function mapAuditView(row: AuditViewRow): AuditLogView {
+  return { ...mapAudit(row), actorUsername: row.actor_username };
+}
+
+function escapeLikePrefix(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
+}
+
 function filterSql(filter: AuditFilter | undefined, bindings: SqliteBinding[]): string {
   if (!filter) return '';
   let sql = '';
@@ -91,8 +106,16 @@ function filterSql(filter: AuditFilter | undefined, bindings: SqliteBinding[]): 
     }
   }
   if (filter.action !== undefined) {
-    sql += ' AND action = ?';
-    bindings.push(filter.action);
+    const actions = Array.isArray(filter.action) ? filter.action : [filter.action];
+    if (actions.length === 0) {
+      sql += ' AND 0 = 1';
+    } else if (actions.length === 1) {
+      sql += ' AND action = ?';
+      bindings.push(actions[0] ?? null);
+    } else {
+      sql += ` AND action IN (${actions.map(() => '?').join(', ')})`;
+      bindings.push(...actions);
+    }
   }
   if (filter.targetType !== undefined) {
     sql += ' AND target_type = ?';
@@ -101,6 +124,17 @@ function filterSql(filter: AuditFilter | undefined, bindings: SqliteBinding[]): 
   if (filter.result !== undefined) {
     sql += ' AND result = ?';
     bindings.push(filter.result);
+  }
+  if (filter.targetRef !== undefined) {
+    sql += " AND target_ref LIKE ? ESCAPE '\\'";
+    bindings.push(`${escapeLikePrefix(filter.targetRef)}%`);
+  }
+  if (filter.connectionId !== undefined) {
+    if (filter.connectionId === null) sql += ' AND connection_id IS NULL';
+    else {
+      sql += ' AND connection_id = ?';
+      bindings.push(filter.connectionId);
+    }
   }
   if (filter.from !== undefined) {
     sql += ' AND occurred_at >= ?';
@@ -113,7 +147,7 @@ function filterSql(filter: AuditFilter | undefined, bindings: SqliteBinding[]): 
   return sql;
 }
 
-export class SqliteAuditRepository implements AuditRepository {
+export class SqliteAuditRepository implements AuditAdminRepository {
   public constructor(private readonly database: Database) {}
 
   public append(event: AuditEvent): void {
@@ -150,6 +184,25 @@ export class SqliteAuditRepository implements AuditRepository {
       [...bindings],
       window,
       mapAudit,
+    );
+  }
+
+  public queryAdmin(filter?: AuditFilter, page?: PageRequest): Page<AuditLogView> {
+    const window = pageWindow(page);
+    const bindings: SqliteBinding[] = [];
+    const filterClause = filterSql(filter, bindings);
+    return pageOf(
+      this.database,
+      `SELECT COUNT(*) AS count FROM audit_logs WHERE 1 = 1${filterClause}`,
+      bindings,
+      `SELECT ${AUDIT_VIEW_COLUMNS}, users.username AS actor_username
+       FROM audit_logs
+       LEFT JOIN users ON users.id = audit_logs.actor_user_id
+       WHERE 1 = 1${filterClause}
+       ORDER BY audit_logs.occurred_at DESC, audit_logs.id DESC LIMIT ? OFFSET ?`,
+      [...bindings],
+      window,
+      mapAuditView,
     );
   }
 }

@@ -259,17 +259,17 @@ describe('IT-0019-AC2, IT-0019-AC4, and SEC-0019-AC2 audit writer', () => {
     expect(JSON.stringify(repository.events[0])).not.toContain('synthetic-password');
   });
 
-  test('rejects row data in details before it can be persisted', async () => {
+  test('rejects row data in details before it can be persisted', () => {
     const repository = new MemoryAuditRepository();
     const writer = writerFor(repository);
 
-    await expect(
+    expect(() =>
       writer.record({
         action: AuditEvents.import.completed.action,
         result: 'success',
         details: { rows: [{ id: 'row-1' }] },
       }),
-    ).rejects.toBeInstanceOf(AuditDetailsError);
+    ).toThrow(AuditDetailsError);
     expect(repository.events).toHaveLength(0);
   });
 });
@@ -333,5 +333,85 @@ describe('SEC-0019-AC6 shared redaction', () => {
     }
 
     expect(JSON.stringify(repository.events[0])).not.toContain('synthetic-shared-secret');
+  });
+});
+
+describe('IT-0020-AC1 and IT-0020-AC2 administrator audit query', () => {
+  test('joins the actor username and applies combined filters with stable newest-first paging', async () => {
+    const database = await temporaryDatabase();
+    database
+      .prepare(
+        `INSERT INTO users
+         (id, username, password_hash, role, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        'user-admin',
+        'audit-admin',
+        'synthetic-hash',
+        'admin',
+        1,
+        '2026-08-28T00:00:00.000Z',
+        '2026-08-28T00:00:00.000Z',
+      );
+    const repository = new SqliteAuditRepository(database);
+    repository.append({
+      id: 'audit-1',
+      occurredAt: new Date('2026-08-28T02:00:00.000Z'),
+      actorUserId: 'user-admin',
+      action: 'connection.deleted',
+      targetType: 'connection',
+      targetRef: 'db1.public',
+      connectionId: 'connection-1',
+      result: 'success',
+      correlationId: 'corr-1',
+      details: { itemCount: 1 },
+    });
+    repository.append({
+      id: 'audit-2',
+      occurredAt: new Date('2026-08-28T03:00:00.000Z'),
+      actorUserId: 'user-admin',
+      action: 'connection.updated',
+      targetType: 'connection',
+      targetRef: 'db1.public',
+      connectionId: 'connection-1',
+      result: 'success',
+      correlationId: 'corr-2',
+      details: null,
+    });
+
+    const result = repository.queryAdmin(
+      {
+        actorUserId: 'user-admin',
+        action: ['connection.deleted'],
+        connectionId: 'connection-1',
+        targetRef: 'db1.',
+        result: 'success',
+        from: new Date('2026-08-28T00:00:00.000Z'),
+        to: new Date('2026-08-28T23:59:59.000Z'),
+      },
+      { page: 1, pageSize: 10 },
+    );
+
+    expect(result).toEqual({
+      items: [
+        {
+          id: 'audit-1',
+          occurredAt: new Date('2026-08-28T02:00:00.000Z'),
+          actorUserId: 'user-admin',
+          actorUsername: 'audit-admin',
+          action: 'connection.deleted',
+          targetType: 'connection',
+          targetRef: 'db1.public',
+          connectionId: 'connection-1',
+          result: 'success',
+          correlationId: 'corr-1',
+          details: { itemCount: 1 },
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 10,
+    });
   });
 });

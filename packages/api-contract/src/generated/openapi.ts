@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Query the administrator audit log */
+        get: operations["queryAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audit/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List registered audit actions */
+        get: operations["getAuditActions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -251,6 +285,32 @@ export interface components {
             message: string;
         };
         ApiError: components["schemas"]["api-error"];
+        AuditActionsResponse: {
+            actions: string[];
+        };
+        AuditListResponse: {
+            items: components["schemas"]["AuditLog"][];
+            page: number;
+            pageSize: number;
+            total: number;
+        };
+        AuditLog: {
+            action: string;
+            actorUserId: string | null;
+            actorUsername: string | null;
+            connectionId: string | null;
+            correlationId: string | null;
+            details: {
+                [key: string]: unknown;
+            } | null;
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** @enum {string} */
+            result: "success" | "failure" | "denied";
+            targetRef: string | null;
+            targetType: string | null;
+        };
         AuthResponse: {
             user: components["schemas"]["User"];
         };
@@ -389,6 +449,146 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    queryAudit: {
+        parameters: {
+            query?: {
+                /** @description Filter by one or more registered audit actions. */
+                action?: string[];
+                /** @description Filter by the actor user ID. */
+                actorUserId?: string;
+                /** @description Filter by the connection ID attached to the event. */
+                connectionId?: string;
+                /** @description Include events at or after this timestamp. */
+                from?: string;
+                /** @description One based page number. */
+                page?: components["parameters"]["page"];
+                /** @description Number of items per page. The maximum is 100. */
+                pageSize?: components["parameters"]["page-size"];
+                /** @description Filter by the audit result. */
+                result?: "success" | "failure" | "denied";
+                /** @description Match target references by prefix. */
+                targetRef?: string;
+                /** @description Include events at or before this timestamp. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A server paginated audit log page. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditListResponse"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The current user is not an administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Initial setup is required. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The audit filters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The audit log could not be read. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getAuditActions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The closed audit action taxonomy used by filters. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditActionsResponse"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The current user is not an administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Initial setup is required. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The audit action list could not be read. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;

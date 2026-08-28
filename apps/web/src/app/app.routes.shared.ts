@@ -1,6 +1,6 @@
 import type { Routes } from '@angular/router';
 import type { WorkspaceTabType } from './core/state/workspace.store';
-import { authGuard } from './core/auth/auth.guard';
+import { adminGuard, authGuard } from './core/auth/auth.guard';
 import { setupGateGuard } from './core/setup/setup-gate.guard';
 
 export interface AppRouteDefinition {
@@ -53,12 +53,19 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
     path: definition.path,
     title: definition.title,
     data: definition,
-    canActivate: definition.id === 'auth' ? [setupGateGuard] : [setupGateGuard, authGuard],
+    canActivate:
+      definition.id === 'auth'
+        ? [setupGateGuard]
+        : definition.id === 'audit'
+          ? [setupGateGuard, adminGuard]
+          : [setupGateGuard, authGuard],
     loadComponent:
       definition.id === 'auth'
         ? () => import('./features/login/login').then(({ Login }) => Login)
         : definition.id === 'settings'
           ? () => import('./features/settings/settings').then(({ Settings }) => Settings)
+        : definition.id === 'audit'
+          ? () => import('./features/audit/audit').then(({ Audit }) => Audit)
           : () =>
               import('./features/route-placeholder/route-placeholder').then(
                 ({ RoutePlaceholder }) => RoutePlaceholder,

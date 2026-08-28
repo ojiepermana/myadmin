@@ -312,9 +312,10 @@ Taksonomi event, writer tersensor, sukses menunggu audit. Done when: aksi wajib 
 Jalur baca audit dengan filter dan pagination. Done when: Admin bisa menelusuri kejadian dan role user ditolak.
 
 - [x] Design it (spec): [0020](../specs/0020-audit-admin-page/index.md)
-- [ ] Build it: /develop audit-admin-page
-  - [ ] Query berfilter berindeks plus endpoint admin plus daftar action (AC-1 sampai AC-4, AC-6)
-  - [ ] Halaman grid dengan panel filter dan baris expandable plus e2e (AC-5, AC-7)
+- [x] Build it: /develop audit-admin-page
+  - [x] Query berfilter berindeks plus endpoint admin plus daftar action (AC-1 sampai AC-4, AC-6)
+  - [x] Halaman grid dengan panel filter dan baris expandable plus e2e (AC-5, AC-7)
+  - code in `apps/server/src/app.ts`, `packages/internal-sqlite/src/repositories/audit.ts`, `packages/sdk-angular/src/facades/audit-client.ts`, and `apps/web/src/app/features/audit/`
 - [ ] [Verify it](../specs/0020-audit-admin-page/verify.md): /check verify audit-admin-page
 - [ ] [Test it](../specs/0020-audit-admin-page/test.md): /test audit-admin-page
 

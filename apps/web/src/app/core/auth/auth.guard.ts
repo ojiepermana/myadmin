@@ -32,3 +32,31 @@ export const authGuard: CanActivateFn = async (_route, state) => {
     return false;
   }
 };
+
+/** Prevents non-administrator sessions from entering administrator-only routes. */
+export const adminGuard: CanActivateFn = () => {
+  const sdk = inject(MyadminSdk);
+  const authSession = inject(AuthSessionStore);
+  const router = inject(Router);
+  const errorPresenter = inject(ErrorPresenterService);
+
+  const currentUser = authSession.currentUser();
+  if (currentUser) return currentUser.role === 'admin' ? true : router.parseUrl('/workspace');
+
+  return firstValueFrom(sdk.auth.getCurrentUser())
+    .then((user) => {
+      authSession.setUser(user);
+      return user.role === 'admin' ? true : router.parseUrl('/workspace');
+    })
+    .catch((error: unknown) => {
+      if (isSdkError(error) && error.status === 401) {
+        authSession.clear();
+        return router.parseUrl('/login');
+      }
+      if (isSdkError(error) && error.status === 409 && error.code === 'SETUP_REQUIRED') {
+        return router.parseUrl('/setup');
+      }
+      errorPresenter.presentUnknown(error);
+      return false;
+    });
+};

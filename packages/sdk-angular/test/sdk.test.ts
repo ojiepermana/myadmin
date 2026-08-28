@@ -17,6 +17,8 @@ import {
 import type {
   AuthLoginRequest,
   AuthLoginResponse,
+  AuditListQuery,
+  AuditListResponse,
   HealthResponse,
   JobPage,
   RealtimeClient,
@@ -75,6 +77,32 @@ describe('MyAdmin Angular SDK', () => {
     expect(sdk.auth).toBeDefined();
     expect(config).toEqual({ baseUrl: '/api/v1' });
     expect(Object.keys(config)).not.toContain('secret');
+  });
+
+  it('AC-0020-AC1 serializes the typed audit filters and action list request', async () => {
+    const sdk = TestBed.inject(MyadminSdk);
+    const query: AuditListQuery = {
+      page: 2,
+      pageSize: 10,
+      from: '2026-08-28T00:00:00.000Z',
+      actorUserId: 'user-1',
+      action: ['connection.deleted', 'table.dropped'],
+      targetRef: 'db1.',
+      result: 'success',
+    };
+    const result = firstValueFrom(sdk.audit.list(query));
+    const request = http.expectOne(
+      '/api/v1/audit?page=2&pageSize=10&from=2026-08-28T00%3A00%3A00.000Z&actorUserId=user-1&action=connection.deleted&action=table.dropped&targetRef=db1.&result=success',
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.withCredentials).toBe(true);
+    request.flush({ items: [], page: 2, pageSize: 10, total: 0 } satisfies AuditListResponse);
+    await expect(result).resolves.toEqual({ items: [], page: 2, pageSize: 10, total: 0 });
+
+    const actions = firstValueFrom(sdk.audit.actions());
+    const actionRequest = http.expectOne('/api/v1/audit/actions');
+    actionRequest.flush({ actions: ['connection.deleted'] });
+    await expect(actions).resolves.toEqual({ actions: ['connection.deleted'] });
   });
 
   it('AC-3 maps an ApiError response and a response-less network failure', () => {

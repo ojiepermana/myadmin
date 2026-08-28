@@ -1,0 +1,82 @@
+AuditLog:
+  type: object
+  additionalProperties: false
+  required:
+    - id
+    - occurredAt
+    - actorUserId
+    - actorUsername
+    - action
+    - targetType
+    - targetRef
+    - connectionId
+    - result
+    - correlationId
+    - details
+  properties:
+    id:
+      type: string
+      minLength: 1
+    occurredAt:
+      type: string
+      format: date-time
+    actorUserId:
+      type: [string, 'null']
+    actorUsername:
+      type: [string, 'null']
+    action:
+      type: string
+      minLength: 1
+    targetType:
+      type: [string, 'null']
+    targetRef:
+      type: [string, 'null']
+    connectionId:
+      type: [string, 'null']
+    result:
+      type: string
+      enum:
+        - success
+        - failure
+        - denied
+    correlationId:
+      type: [string, 'null']
+    details:
+      type: [object, 'null']
+      additionalProperties: true
+
+AuditListResponse:
+  type: object
+  additionalProperties: false
+  required:
+    - items
+    - page
+    - pageSize
+    - total
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/AuditLog'
+    page:
+      type: integer
+      minimum: 1
+    pageSize:
+      type: integer
+      minimum: 1
+      maximum: 100
+    total:
+      type: integer
+      minimum: 0
+
+AuditActionsResponse:
+  type: object
+  additionalProperties: false
+  required:
+    - actions
+  properties:
+    actions:
+      type: array
+      items:
+        type: string
+        minLength: 1

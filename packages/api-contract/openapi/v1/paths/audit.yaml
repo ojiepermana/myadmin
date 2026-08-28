@@ -1,0 +1,102 @@
+get:
+  operationId: queryAudit
+  tags:
+    - audit
+  summary: Query the administrator audit log
+  parameters:
+    - $ref: ../components/parameters/page.yaml
+    - $ref: ../components/parameters/page-size.yaml
+    - in: query
+      name: from
+      required: false
+      schema:
+        type: string
+        format: date-time
+      description: Include events at or after this timestamp.
+    - in: query
+      name: to
+      required: false
+      schema:
+        type: string
+        format: date-time
+      description: Include events at or before this timestamp.
+    - in: query
+      name: actorUserId
+      required: false
+      schema:
+        type: string
+        minLength: 1
+      description: Filter by the actor user ID.
+    - in: query
+      name: action
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        minItems: 1
+        items:
+          type: string
+          minLength: 1
+      description: Filter by one or more registered audit actions.
+    - in: query
+      name: connectionId
+      required: false
+      schema:
+        type: string
+        minLength: 1
+      description: Filter by the connection ID attached to the event.
+    - in: query
+      name: targetRef
+      required: false
+      schema:
+        type: string
+        minLength: 1
+      description: Match target references by prefix.
+    - in: query
+      name: result
+      required: false
+      schema:
+        type: string
+        enum:
+          - success
+          - failure
+          - denied
+      description: Filter by the audit result.
+  responses:
+    '200':
+      description: A server paginated audit log page.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/audit.yaml#/AuditListResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The current user is not an administrator.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The audit filters are invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: The audit log could not be read.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

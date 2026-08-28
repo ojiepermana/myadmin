@@ -1,0 +1,36 @@
+get:
+  operationId: getAuditActions
+  tags:
+    - audit
+  summary: List registered audit actions
+  responses:
+    '200':
+      description: The closed audit action taxonomy used by filters.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/audit.yaml#/AuditActionsResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The current user is not an administrator.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: The audit action list could not be read.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

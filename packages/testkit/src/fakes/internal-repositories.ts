@@ -461,8 +461,15 @@ export class FakeAuditRepository implements AuditRepository {
       .filter((event) => {
         if (filter?.actorUserId !== undefined && event.actorUserId !== filter.actorUserId)
           return false;
-        if (filter?.action !== undefined && event.action !== filter.action) return false;
+        if (filter?.action !== undefined) {
+          const actions = Array.isArray(filter.action) ? filter.action : [filter.action];
+          if (!actions.includes(event.action)) return false;
+        }
         if (filter?.targetType !== undefined && event.targetType !== filter.targetType)
+          return false;
+        if (filter?.targetRef !== undefined && !event.targetRef?.startsWith(filter.targetRef))
+          return false;
+        if (filter?.connectionId !== undefined && event.connectionId !== filter.connectionId)
           return false;
         if (filter?.result !== undefined && event.result !== filter.result) return false;
         if (filter?.from !== undefined && event.occurredAt < filter.from) return false;

@@ -1,5 +1,6 @@
 import type {
   AuditEvent,
+  AuditLogView,
   Connection,
   EncryptedCredential,
   EntityId,
@@ -103,8 +104,10 @@ export interface PreferencesRepository {
 
 export interface AuditFilter {
   actorUserId?: EntityId | null;
-  action?: string;
+  action?: string | readonly string[];
   targetType?: string;
+  targetRef?: string;
+  connectionId?: EntityId | null;
   result?: AuditEvent['result'];
   from?: Date;
   to?: Date;
@@ -113,6 +116,10 @@ export interface AuditFilter {
 export interface AuditRepository {
   append(event: AuditEvent): void;
   query(filter?: AuditFilter, page?: PageRequest): Page<AuditEvent>;
+}
+
+export interface AuditAdminRepository extends AuditRepository {
+  queryAdmin(filter?: AuditFilter, page?: PageRequest): Page<AuditLogView>;
 }
 
 export interface InternalRepositories {
