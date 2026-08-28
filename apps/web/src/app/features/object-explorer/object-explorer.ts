@@ -206,6 +206,16 @@ export class ObjectExplorer {
             },
           });
           break;
+        case 'create-table':
+          await this.router.navigate(['/table-designer'], {
+            queryParams: {
+              connection: node.connectionId,
+              database: node.database,
+              schema: node.schema,
+              mode: 'create',
+            },
+          });
+          break;
         case 'browse-data':
           await this.router.navigate(['/data-browser'], {
             queryParams: { connection: node.connectionId, ref: JSON.stringify(node.ref) },

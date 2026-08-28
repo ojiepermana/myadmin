@@ -108,9 +108,10 @@ export class TableDesignerService {
           () => designer.apply(session.handle, changeSet),
         );
         session.provider.metadata?.invalidateCache?.(session.handle);
-        for (const column of preview.statements.flatMap(
-          (statement) => statement.destructiveColumns ?? [],
-        )) {
+        const droppedColumns = [
+          ...new Set(preview.statements.flatMap((statement) => statement.destructiveColumns ?? [])),
+        ];
+        for (const column of droppedColumns) {
           this.auditWriter.record({
             ...this.auditDraft(
               AuditEvents.table.column_dropped.action,

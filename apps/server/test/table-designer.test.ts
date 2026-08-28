@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { Elysia } from 'elysia';
 import type {
   ConnectionHandle,
   DatabaseProvider,
@@ -9,13 +10,14 @@ import type {
 } from '@myadmin/database-core';
 import type { AuditEvent, Connection, User } from '@myadmin/internal-domain';
 import { TableDesignerService } from '../src/table-designer/table-designer';
+import { registerTableDesignerRoutes } from '../src/table-designer/routes';
 
-function fixture() {
+function fixture(designerPreview?: TableDdlPreview) {
   const events: AuditEvent[] = [];
   let applyCalls = 0;
   let invalidations = 0;
   const handle: ConnectionHandle = { id: 'handle-1', openedAt: new Date() };
-  const preview: TableDdlPreview = {
+  const preview = designerPreview ?? {
     operation: 'alter',
     statements: [
       {
@@ -125,5 +127,57 @@ describe('table designer service', () => {
       ['table.column_dropped', 'success'],
     ]);
     expect(value.events[1]).toMatchObject({ targetRef: 'public.accounts.email' });
+  });
+
+  test('records one column drop audit when a provider recreates a generated column', async () => {
+    const value = fixture({
+      operation: 'alter',
+      statements: [
+        {
+          sql: 'ALTER TABLE "public"."accounts" DROP COLUMN "total"',
+          destructiveColumns: ['total'],
+        },
+        {
+          sql: 'ALTER TABLE "public"."accounts" ADD COLUMN "total" integer',
+          destructiveColumns: ['total'],
+        },
+      ],
+      warnings: [],
+      destructive: true,
+    });
+
+    await value.service.apply(value.actor, 'connection-1', value.changeSet, true);
+
+    expect(value.events.filter((event) => event.action === 'table.column_dropped')).toHaveLength(1);
+  });
+
+  test('protects apply with both session authentication and same origin CSRF checks', async () => {
+    const actor = { id: 'user-1', username: 'fixture', role: 'user' as User['role'] };
+    const application = registerTableDesignerRoutes(new Elysia(), '', {
+      authService: {
+        validateSession: () => ({ authenticated: true, value: actor }),
+      } as never,
+      setupService: { isInitialized: () => true },
+      service: { apply: async () => ({}) } as never,
+      secureCookies: false,
+    });
+
+    const response = await application.handle(
+      new Request('http://localhost/tables/ddl/apply', {
+        method: 'POST',
+        headers: { cookie: 'myadmin_session=session' },
+        body: JSON.stringify({
+          connectionId: 'connection-1',
+          changeSet: {
+            operation: 'alter',
+            ref: { database: 'app', schema: 'public', name: 'accounts', type: 'table' },
+            alterations: [{ kind: 'drop', name: 'email' }],
+          },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({ code: 'CSRF_INVALID' });
   });
 });

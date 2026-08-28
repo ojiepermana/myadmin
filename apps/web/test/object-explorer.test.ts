@@ -70,6 +70,46 @@ describe('object explorer policy, client paths, and tree state', () => {
     expect(disconnected.find((action) => action.id === 'browse-data')).toMatchObject({
       disabled: true,
     });
+
+    expect(
+      new ExplorerActionRegistry().actionsFor(
+        node({
+          kind: 'database',
+          label: 'app',
+          database: 'app',
+          ref: undefined,
+          parentId: 'connection:one',
+        }),
+        status(),
+      ),
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'create-table' })]));
+    expect(
+      new ExplorerActionRegistry().actionsFor(
+        node({
+          kind: 'schema',
+          label: 'public',
+          database: 'app',
+          schema: 'public',
+          ref: undefined,
+          parentId: 'connection:one/database/app',
+        }),
+        status(),
+      ),
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'create-table' })]));
+    expect(
+      new ExplorerActionRegistry().actionsFor(
+        node({
+          kind: 'object-group',
+          label: 'table',
+          database: 'app',
+          schema: 'public',
+          objectType: 'table',
+          ref: undefined,
+          parentId: 'connection:one/schema/public',
+        }),
+        status(),
+      ),
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'create-table' })]));
   });
 
   it('keeps SDK paths opaque and URL-encodes connection segments', () => {

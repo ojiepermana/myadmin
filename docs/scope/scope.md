@@ -579,7 +579,9 @@ Create dan alter kolom lewat change set dengan pratinjau DDL wajib. Done when: y
 - [ ] Build it: /develop table-designer-columns
   - [x] Modul tipe engine plus kompilator change set dengan test snapshot (AC-1, AC-2, AC-3, AC-5)
   - [x] Endpoint preview apply dengan semantik transaksi per engine plus audit (AC-4, AC-6)
-  - [ ] UI editor kolom plus panel pratinjau plus invalidasi metadata plus e2e (AC-3, AC-7, AC-8)
+  - [x] UI editor kolom plus panel pratinjau plus invalidasi metadata (AC-3, AC-7)
+  - [ ] E2e dua engine lewat fixture database/browser (AC-8)
+  - code in `apps/server/src/table-designer/`, `packages/database-mysql/src/table-designer.ts`, `packages/database-postgresql/src/table-designer.ts`, and `apps/web/src/app/features/table-designer/`
 - [ ] [Verify it](../specs/0041-table-designer-columns/verify.md): /check verify table-designer-columns
 - [ ] [Test it](../specs/0041-table-designer-columns/test.md): /test table-designer-columns
 

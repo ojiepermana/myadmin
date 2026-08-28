@@ -42,6 +42,7 @@ export interface ExplorerAction {
     | 'test-connection'
     | 'browse-database'
     | 'drop-database'
+    | 'create-table'
     | 'browse-data'
     | 'export-data'
     | 'create-view'
@@ -114,7 +115,11 @@ export class ExplorerActionRegistry {
     if (node.kind === 'database') {
       add('browse-database', 'Browse database', 'database', state);
       add('drop-database', 'Drop database', 'database', state);
+      add('create-table', 'Create table', 'table-designer', state);
     }
+    if (node.kind === 'schema') add('create-table', 'Create table', 'table-designer', state);
+    if (node.kind === 'object-group' && node.objectType === 'table')
+      add('create-table', 'Create table', 'table-designer', state);
     if (node.kind === 'object' && node.ref?.type === 'table')
       add('browse-data', 'Browse data', 'data-browser', state);
     if (node.kind === 'object' && node.ref?.type === 'table')
