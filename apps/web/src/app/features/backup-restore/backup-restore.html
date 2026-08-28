@@ -206,7 +206,7 @@
             id="backup-connection"
             class="h-10 rounded-md border border-input bg-background px-3 text-sm"
             [value]="selectedConnectionId()"
-            (change)="selectConnection(($event.target as HTMLSelectElement).value)"
+            (change)="selectConnection($any($event.target).value)"
           >
             @for (connection of connections(); track connection.id) {
               <option [value]="connection.id">

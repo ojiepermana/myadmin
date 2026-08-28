@@ -1,5 +1,6 @@
 import { Redaction } from '@myadmin/crypto';
 import type {
+  ConnectionStatusPayload,
   RealtimeChannel,
   RealtimeClientCommand,
   RealtimeErrorEnvelope,
@@ -431,6 +432,32 @@ export function realtimeJobEvent(event: {
       jobId: event.job.id,
       progress: total === undefined || total === 0 ? 0 : Math.min(1, current / total),
       ...(event.job.progress.message === undefined ? {} : { message: event.job.progress.message }),
+    },
+  };
+}
+
+export function realtimeConnectionStatusEvent(event: {
+  readonly userId: string;
+  readonly state: {
+    readonly connectionId: string;
+    readonly status: ConnectionStatusPayload['status'];
+    readonly changedAt: Date;
+    readonly latencyMs: number | null;
+    readonly errorCategory: string | null;
+    readonly reason: 'idle_closed' | null;
+  };
+}): RealtimePublishedEvent {
+  return {
+    event: 'connection.status',
+    channel: 'connections.status',
+    userId: event.userId,
+    payload: {
+      connectionId: event.state.connectionId,
+      status: event.state.status,
+      changedAt: event.state.changedAt.toISOString(),
+      latencyMs: event.state.latencyMs,
+      errorCategory: event.state.errorCategory,
+      reason: event.state.reason,
     },
   };
 }

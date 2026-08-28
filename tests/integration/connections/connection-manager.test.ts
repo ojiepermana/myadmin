@@ -374,6 +374,12 @@ describe('connection manager integration', () => {
       jsonInit({ connectionId: other.id }, authInit(value.adminCookie).headers),
     );
     expect(testOther.status).toBe(403);
+    const statusInfoOther = await request(
+      value.app,
+      `/api/v1/connections/${other.id}/status-info`,
+      { headers: { cookie: value.adminCookie } },
+    );
+    expect(statusInfoOther.status).toBe(403);
     const duplicateOther = await request(
       value.app,
       `/api/v1/connections/${other.id}/duplicate`,

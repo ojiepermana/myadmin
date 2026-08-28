@@ -63,6 +63,8 @@ paths:
     $ref: ./paths/connections.yaml
   /connections/status:
     $ref: ./paths/connections-status.yaml
+  /connections/{id}/status-info:
+    $ref: ./paths/connection-status-info.yaml
   /connections/test:
     $ref: ./paths/connections-test.yaml
   /connections/{id}:
@@ -185,6 +187,8 @@ components:
       $ref: ./components/schemas/connection.yaml#/ConnectionStatus
     ConnectionStatusResponse:
       $ref: ./components/schemas/connection.yaml#/ConnectionStatusResponse
+    ConnectionStatusInfo:
+      $ref: ./components/schemas/connection.yaml#/ConnectionStatusInfo
     ConnectionPage:
       $ref: ./components/schemas/connection.yaml#/ConnectionPage
     ServerGroupInput:

@@ -2,6 +2,9 @@ import type { ProviderContext } from './metadata';
 
 export interface MonitoringStatusInfo {
   checkedAt: Date;
+  version: string;
+  database?: string;
+  uptimeSeconds?: number;
   activeSessions?: number;
   runningQueries?: number;
   details?: Record<string, unknown>;

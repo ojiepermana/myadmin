@@ -3,6 +3,7 @@ import {
   RealtimeHub,
   REALTIME_BACKPRESSURE_CLOSE_CODE,
   REALTIME_HEARTBEAT_CLOSE_CODE,
+  realtimeConnectionStatusEvent,
   realtimeJobEvent,
   type RealtimeSocket,
 } from '../src/realtime/websocket';
@@ -34,6 +35,35 @@ describe('RealtimeHub', () => {
 
   afterEach(() => {
     for (const hub of hubs.splice(0)) hub.dispose();
+  });
+
+  test('serializes a redacted connection status push for the owning user', () => {
+    const event = realtimeConnectionStatusEvent({
+      userId: 'user-1',
+      state: {
+        connectionId: 'connection-1',
+        status: 'connected',
+        changedAt: new Date('2026-08-28T12:00:00.000Z'),
+        latencyMs: 7,
+        errorCategory: null,
+        reason: null,
+      },
+    });
+
+    expect(event).toEqual({
+      event: 'connection.status',
+      channel: 'connections.status',
+      userId: 'user-1',
+      payload: {
+        connectionId: 'connection-1',
+        status: 'connected',
+        changedAt: '2026-08-28T12:00:00.000Z',
+        latencyMs: 7,
+        errorCategory: null,
+        reason: null,
+      },
+    });
+    expect(JSON.stringify(event)).not.toContain('password');
   });
 
   test('authorizes multiplexed channels and publishes redacted events', () => {

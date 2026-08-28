@@ -187,8 +187,8 @@ export class AppShell {
     });
 
     effect(() => {
-      if (this.authSession.currentUser()) this.connectionStatuses.startPolling();
-      else this.connectionStatuses.stopPolling();
+      if (this.authSession.currentUser()) this.connectionStatuses.startListening();
+      else this.connectionStatuses.stopListening();
     });
   }
 

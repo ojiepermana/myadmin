@@ -357,6 +357,15 @@ export function registerConnectionRoutes(
         return connectionErrorResponse(request, error);
       }
     })
+    .get(path('/connections/:id/status-info'), async ({ request, params }) => {
+      const actor = actorForRequest(request, options);
+      if (actor instanceof Response) return actor;
+      try {
+        return jsonResponse(await options.connectionManager.statusInfo(actor, params.id));
+      } catch (error) {
+        return connectionErrorResponse(request, error);
+      }
+    })
     .get(path('/connections'), ({ request }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;

@@ -51,6 +51,11 @@ class FakeMysqlClient implements MysqlSqlClient {
       query: async <T extends MysqlRow = MysqlRow>(statement: string) => {
         this.statements.push(statement);
         if (statement.includes('CONNECTION_ID')) return this.reserveRows as readonly T[];
+        if (statement.includes('@@GLOBAL.Uptime')) {
+          return [
+            { version: this.version, database_name: 'fixture', uptime_seconds: '37.9' },
+          ] as unknown as readonly T[];
+        }
         if (statement.includes('VERSION')) {
           return [{ version: this.version }] as unknown as readonly T[];
         }
@@ -199,6 +204,23 @@ describe('MySQL capabilities and connection lifecycle', () => {
     expect(result.version).toBe('8.0.36');
     expect(result.latencyMs).toBeGreaterThanOrEqual(0);
     expect(connection.activeSessionCount).toBe(0);
+  });
+
+  test('monitoring returns lightweight version, database, and uptime details', async () => {
+    const client = new FakeMysqlClient();
+    const provider = new MysqlProvider({
+      sqlFactory: () => client,
+      now: () => 1_700_000_000_000,
+      idFactory: () => 'monitoring-session',
+    });
+    const handle = await provider.connection.open(context({ timeoutMs: undefined }));
+    await expect(provider.monitoring.statusInfo(handle)).resolves.toEqual({
+      checkedAt: new Date(1_700_000_000_000),
+      version: '8.0.36',
+      database: 'fixture',
+      uptimeSeconds: 37,
+    });
+    await provider.connection.close(handle);
   });
 
   test('provider exposes cancellation through the query port', async () => {

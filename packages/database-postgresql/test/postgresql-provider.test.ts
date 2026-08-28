@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { ConnectionContext, DbError } from '@myadmin/database-core';
 import {
   PostgresqlConnectionAdapter,
+  PostgresqlProvider,
   createPostgresqlCapabilities,
   mapPostgresqlError,
   type BunSqlClient,
@@ -48,6 +49,9 @@ function fakeClient(state: Partial<FakeClientState> = {}): {
         : input.raw.reduce((text, part, index) => text + part + (values[index] ?? ''), '');
     fullState.queries.push(query);
     if (query.includes('pg_backend_pid')) return resolvedQuery([{ backend_pid: 1234 }]);
+    if (query.includes('pg_postmaster_start_time')) {
+      return resolvedQuery([{ version: '16.4', database_name: 'app', uptime_seconds: '42.8' }]);
+    }
     if (query.includes('server_version')) return resolvedQuery([{ version: '16.4' }]);
     if (query.includes('pg_cancel_backend')) return resolvedQuery([{ cancelled: true }]);
     return resolvedQuery([{ ok: 1 }]);
@@ -201,6 +205,23 @@ describe('PostgreSQL connection adapter', () => {
     await expect(adapter.cancel({ id: 'missing', openedAt: new Date() })).rejects.toMatchObject({
       category: 'not_found',
     });
+  });
+
+  test('monitoring returns lightweight version, database, and uptime details', async () => {
+    const { client } = fakeClient();
+    const provider = new PostgresqlProvider({
+      sqlFactory: () => client,
+      now: () => 1_700_000_000_000,
+      idFactory: () => 'monitoring-session',
+    });
+    const handle = await provider.connection.open(context());
+    await expect(provider.monitoring.statusInfo(handle)).resolves.toEqual({
+      checkedAt: new Date(1_700_000_000_000),
+      version: '16.4',
+      database: 'app',
+      uptimeSeconds: 42,
+    });
+    await provider.connection.close(handle);
   });
 
   test('cancel always uses the PostgreSQL protocol fallback', async () => {

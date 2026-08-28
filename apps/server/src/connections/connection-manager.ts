@@ -139,6 +139,8 @@ export interface ActiveConnectionSessionRegistry {
   closeForConnection(connectionId: string): Promise<void>;
 }
 
+export type ConnectionStatusPublisher = (userId: string, state: ConnectionLifecycleView) => void;
+
 export type ConnectionLifecycleStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 export type ConnectionLifecycleReason = 'idle_closed' | null;
 
@@ -161,6 +163,14 @@ export interface ConnectionStatusView extends ConnectionLifecycleView {
 
 export interface ConnectionStatusResponse {
   readonly items: ConnectionStatusView[];
+}
+
+export interface ConnectionStatusInfoView {
+  readonly connectionId: string;
+  readonly checkedAt: Date;
+  readonly version: string;
+  readonly uptimeSeconds: number | null;
+  readonly database: string | null;
 }
 
 interface LifecycleState extends ConnectionLifecycleView {
@@ -200,6 +210,7 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
     userId: string,
     connectionId: string,
   ) => void | PromiseLike<void>;
+  private onStatusChanged?: (userId: string, state: ConnectionLifecycleView) => void;
   private nextToken = 1;
 
   public constructor(
@@ -207,11 +218,13 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
       now?: () => Date;
       idleTimeoutMinutes?: number;
       onIdleClosed?: (userId: string, connectionId: string) => void | PromiseLike<void>;
+      onStatusChanged?: (userId: string, state: ConnectionLifecycleView) => void;
     } = {},
   ) {
     this.now = options.now ?? (() => new Date());
     this.idleTimeoutMinutes = options.idleTimeoutMinutes ?? 30;
     this.onIdleClosed = options.onIdleClosed;
+    this.onStatusChanged = options.onStatusChanged;
     if (!Number.isInteger(this.idleTimeoutMinutes) || this.idleTimeoutMinutes < 1) {
       throw new RangeError('Provider idle timeout must be a positive integer');
     }
@@ -227,6 +240,21 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
       );
       if (remaining.length === 0) this.sessions.delete(session.connectionId);
       else this.sessions.set(session.connectionId, remaining);
+    };
+  }
+
+  public addStatusPublisher(
+    publisher: ((userId: string, state: ConnectionLifecycleView) => void) | undefined,
+  ): void {
+    if (!publisher) return;
+    const previous = this.onStatusChanged;
+    if (!previous) {
+      this.onStatusChanged = publisher;
+      return;
+    }
+    this.onStatusChanged = (userId, state) => {
+      previous(userId, state);
+      publisher(userId, state);
     };
   }
 
@@ -288,6 +316,7 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
       lastActivityAt: now,
       token,
     });
+    this.notifyStatus(key);
     return { kind: 'reserved', reservation: { userId, connectionId, key, token } };
   }
 
@@ -315,6 +344,7 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
       lastActivityAt: now,
       session,
     });
+    this.notifyStatus(reservation.key);
     return true;
   }
 
@@ -329,6 +359,7 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
       reason: null,
       session: undefined,
     });
+    this.notifyStatus(reservation.key);
   }
 
   public stateFor(userId: string, connectionId: string): ConnectionLifecycleView {
@@ -349,6 +380,7 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
       lastActivityAt: snapshotNow(this.now),
       ...(latencyMs === undefined ? {} : { latencyMs }),
     });
+    this.notifyStatus(key);
   }
 
   public async disconnect(
@@ -379,6 +411,7 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
       reason: null,
       session: undefined,
     });
+    this.notifyStatus(key);
     if (state.session)
       await Promise.allSettled([state.session.provider.connection.close(state.session.handle)]);
   }
@@ -416,6 +449,12 @@ export class ConnectionSessionRegistry implements ActiveConnectionSessionRegistr
       token: this.nextToken++,
       session: undefined,
     });
+    this.notifyStatus(lifecycleKey(state.userId, state.connectionId));
+  }
+
+  private notifyStatus(key: string): void {
+    const state = this.states.get(key);
+    if (state) this.onStatusChanged?.(state.userId, this.publicState(state));
   }
 
   private publicState(state: LifecycleState): ConnectionLifecycleView {
@@ -458,7 +497,9 @@ export type ConnectionManagerErrorCode =
   | 'SECRET_REQUIRED'
   | 'PROVIDER_UNAVAILABLE'
   | 'CONNECTION_TEST_RATE_LIMITED'
-  | 'CONNECTION_ALREADY_CONNECTING';
+  | 'CONNECTION_ALREADY_CONNECTING'
+  | 'NOT_CONNECTED'
+  | 'MONITORING_UNAVAILABLE';
 
 export class ConnectionManagerError extends Error {
   public readonly code: ConnectionManagerErrorCode;
@@ -497,6 +538,7 @@ export interface ConnectionManagerOptions {
   readonly testRateLimiter?: InMemoryRateLimiter;
   readonly activeSessions?: ActiveConnectionSessionRegistry;
   readonly idleTimeoutMinutes?: number;
+  readonly onStatusChanged?: ConnectionStatusPublisher;
 }
 
 type StoredCredentialRecord = {
@@ -745,6 +787,7 @@ export class ConnectionManagerService {
   private readonly testRateLimiter: InMemoryRateLimiter;
   private readonly activeSessions?: ActiveConnectionSessionRegistry;
   private readonly lifecycleSessions: ConnectionSessionRegistry;
+  private statusPublisher?: ConnectionStatusPublisher;
   private readonly idleTimer: ReturnType<typeof setInterval>;
   private disposed = false;
 
@@ -766,10 +809,21 @@ export class ConnectionManagerService {
             now: this.now,
             idleTimeoutMinutes: options.idleTimeoutMinutes,
             onIdleClosed: (userId, connectionId) => this.auditIdleClosed(userId, connectionId),
+            onStatusChanged: (userId, state) => this.statusPublisher?.(userId, state),
           });
+    this.statusPublisher = options.onStatusChanged;
+    if (options.activeSessions instanceof ConnectionSessionRegistry) {
+      options.activeSessions.addStatusPublisher((userId, state) =>
+        this.statusPublisher?.(userId, state),
+      );
+    }
     const idleSweepIntervalMs = Math.min(60_000, (options.idleTimeoutMinutes ?? 30) * 60_000);
     this.idleTimer = setInterval(() => void this.sweepIdle(), idleSweepIntervalMs);
     (this.idleTimer as { unref?: () => void }).unref?.();
+  }
+
+  public setStatusPublisher(publisher: ConnectionStatusPublisher | undefined): void {
+    this.statusPublisher = publisher;
   }
 
   public listConnections(actor: ConnectionActor, page = 1, pageSize = 20): Page<ConnectionView> {
@@ -976,6 +1030,40 @@ export class ConnectionManagerService {
       });
     }
     return { items };
+  }
+
+  public async statusInfo(actor: ConnectionActor, id: string): Promise<ConnectionStatusInfoView> {
+    const connection = this.requireConnection(id);
+    this.assertConnectionOwner(actor, connection);
+    const session = this.lifecycleSessions.sessionFor(actor.id, connection.id);
+    if (!session) {
+      throw new ConnectionManagerError(
+        'NOT_CONNECTED',
+        'Connect this connection before loading server status.',
+        409,
+      );
+    }
+    if (!session.provider.monitoring) {
+      throw new ConnectionManagerError(
+        'MONITORING_UNAVAILABLE',
+        'Server status is unavailable for this provider.',
+        501,
+      );
+    }
+
+    try {
+      const info = await session.provider.monitoring.statusInfo(session.handle);
+      return {
+        connectionId: connection.id,
+        checkedAt: info.checkedAt,
+        version: info.version,
+        uptimeSeconds: info.uptimeSeconds ?? null,
+        database: info.database ?? null,
+      };
+    } catch (error) {
+      await this.lifecycleSessions.markError(actor.id, connection.id, this.dbErrorCategory(error));
+      throw error;
+    }
   }
 
   public async closeForUser(userId: string): Promise<void> {
@@ -1211,6 +1299,24 @@ export class ConnectionManagerService {
     if ('connectionId' in input) {
       const connection = this.requireConnection(input.connectionId);
       this.assertConnectionOwner(actor, connection);
+      const session = this.lifecycleSessions.sessionFor(actor.id, connection.id);
+      if (session) {
+        try {
+          const startedAt = performance.now();
+          await session.provider.connection.ping(session.handle);
+          const serverInfo = await session.provider.connection.serverInfo(session.handle);
+          const latencyMs = Math.max(0, Math.round(performance.now() - startedAt));
+          this.lifecycleSessions.touch(actor.id, connection.id, latencyMs);
+          return { success: true, version: serverInfo.version, latencyMs };
+        } catch (error) {
+          await this.lifecycleSessions.markError(
+            actor.id,
+            connection.id,
+            this.dbErrorCategory(error),
+          );
+          throw error;
+        }
+      }
       const encrypted = this.options.store.credentials.get(connection.id);
       if (!encrypted)
         throw new ConnectionManagerError(

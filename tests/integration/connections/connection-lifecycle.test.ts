@@ -101,6 +101,14 @@ function providerFor(fixture: {
       }),
     },
     capability: { describe: async () => capability },
+    monitoring: {
+      statusInfo: async () => ({
+        checkedAt: new Date('2026-08-28T12:00:00.000Z'),
+        version: capability.version,
+        database: 'app',
+        uptimeSeconds: 3_600,
+      }),
+    },
   };
 }
 
@@ -382,6 +390,47 @@ describe('connection lifecycle integration', () => {
       audit.some((event) => event.action === 'connection.opened' && event.result === 'failure'),
     ).toBe(true);
     expect(JSON.stringify(audit)).not.toContain('wrong-password');
+  });
+
+  test('IT-0051-AC2 and IT-0051-AC5 expose lightweight connected status only', async () => {
+    const value = await fixture();
+    const created = await request(
+      value.app,
+      '/api/v1/connections',
+      jsonInit(
+        { ...input('Monitoring connection'), secret: 'database-password', saveSecret: true },
+        authInit(value.cookie).headers,
+      ),
+    );
+    const id = ((await created.json()) as { id: string }).id;
+
+    const disconnected = await request(value.app, `/api/v1/connections/${id}/status-info`, {
+      headers: { cookie: value.cookie },
+    });
+    expect(disconnected.status).toBe(409);
+    expect(await disconnected.json()).toMatchObject({ code: 'NOT_CONNECTED' });
+
+    const connected = await request(
+      value.app,
+      `/api/v1/connections/${id}/connect`,
+      authInit(value.cookie, { method: 'POST' }),
+    );
+    expect(connected.status).toBe(200);
+
+    const statusInfo = await request(value.app, `/api/v1/connections/${id}/status-info`, {
+      headers: { cookie: value.cookie },
+    });
+    expect(statusInfo.status).toBe(200);
+    const body = (await statusInfo.json()) as Record<string, unknown>;
+    expect(body).toEqual({
+      connectionId: id,
+      checkedAt: '2026-08-28T12:00:00.000Z',
+      version: 'fixture-16',
+      uptimeSeconds: 3_600,
+      database: 'app',
+    });
+    expect(JSON.stringify(body)).not.toContain('database-password');
+    expect(JSON.stringify(body)).not.toContain('db.internal.test');
   });
 
   test('IT-0027-AC6 closes provider sessions on logout, session expiry, deletion, and shutdown', async () => {

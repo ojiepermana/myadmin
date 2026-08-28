@@ -16,9 +16,27 @@ export interface JobStatePayload {
   readonly state: 'queued' | 'running' | 'completed' | 'failed' | 'cancelling' | 'cancelled';
 }
 
+export type ConnectionStatusErrorCategory =
+  | 'auth_failed'
+  | 'connection_failed'
+  | 'tls_failed'
+  | 'timeout'
+  | 'permission_denied'
+  | 'not_found'
+  | 'conflict'
+  | 'syntax_error'
+  | 'constraint_violation'
+  | 'cancelled'
+  | 'unsupported'
+  | 'internal';
+
 export interface ConnectionStatusPayload {
   readonly connectionId: string;
   readonly status: 'connecting' | 'connected' | 'disconnected' | 'error';
+  readonly changedAt?: string;
+  readonly latencyMs?: number | null;
+  readonly errorCategory?: ConnectionStatusErrorCategory | null;
+  readonly reason?: 'idle_closed' | null;
   readonly message?: string;
 }
 

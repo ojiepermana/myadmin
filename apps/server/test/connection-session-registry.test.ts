@@ -65,6 +65,28 @@ function session(
 }
 
 describe('ConnectionSessionRegistry', () => {
+  test('publishes connecting, connected, measured, and disconnected states', async () => {
+    const events: string[] = [];
+    const databaseProvider = provider([]);
+    const registry = new ConnectionSessionRegistry({
+      idleTimeoutMinutes: 30,
+      onStatusChanged: (_userId, state) => events.push(`${state.status}:${state.latencyMs ?? ''}`),
+    });
+    const reserved = registry.reserve('user-a', 'connection-1');
+    if (reserved.kind !== 'reserved') throw new Error('Expected a reservation');
+    registry.complete(
+      reserved.reservation,
+      session('user-a', 'connection-1', databaseProvider),
+      { engine: 'postgresql', version: 'fixture-16' },
+      capability,
+      2,
+    );
+    registry.touch('user-a', 'connection-1', 5);
+    await registry.disconnect('user-a', 'connection-1');
+
+    expect(events).toEqual(['connecting:', 'connected:2', 'connected:5', 'disconnected:5']);
+  });
+
   test('UT-0027-AC2 keeps user/connection sessions isolated and idempotent', async () => {
     const closed: string[] = [];
     const databaseProvider = provider(closed);

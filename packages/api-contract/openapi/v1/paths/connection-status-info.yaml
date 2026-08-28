@@ -1,0 +1,54 @@
+get:
+  operationId: getConnectionStatusInfo
+  tags: [connections]
+  summary: Get lightweight server status for a connected connection
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    '200':
+      description: Lightweight status information from the connected provider session.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/connection.yaml#/ConnectionStatusInfo
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The caller does not own this connection.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: Connection not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not currently connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '501':
+      description: The provider does not expose lightweight status information.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider returned a normalized database error.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

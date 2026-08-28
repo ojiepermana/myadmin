@@ -1,0 +1,85 @@
+:host {
+  display: block;
+}
+
+.monitoring-page {
+  min-height: 100%;
+}
+
+.monitoring-card {
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.monitoring-card:hover {
+  border-color: hsl(var(--primary) / 0.45);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.status-pulse {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: hsl(var(--muted-foreground) / 0.65);
+}
+
+.monitoring-card[data-status='connected'] .status-pulse {
+  background: hsl(var(--primary));
+  box-shadow: 0 0 0 0.2rem hsl(var(--primary) / 0.12);
+}
+
+.monitoring-card[data-status='error'] .status-pulse {
+  background: hsl(var(--destructive));
+}
+
+.metric-label {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  margin-top: 0.35rem;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.latency-chart {
+  display: flex;
+  align-items: end;
+  gap: 0.25rem;
+  height: 4rem;
+}
+
+.latency-bar {
+  min-width: 0.45rem;
+  flex: 1 1 0;
+  border-radius: 0.2rem 0.2rem 0 0;
+  background: hsl(var(--primary) / 0.7);
+}
+
+.monitoring-skeleton {
+  animation: monitoring-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes monitoring-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monitoring-card,
+  .monitoring-skeleton {
+    animation: none;
+    transition: none;
+  }
+}

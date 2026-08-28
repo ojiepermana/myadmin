@@ -58,6 +58,37 @@ components:
             - connected
             - disconnected
             - error
+        changedAt:
+          type: string
+          format: date-time
+        latencyMs:
+          oneOf:
+            - type: integer
+              minimum: 0
+            - type: 'null'
+        errorCategory:
+          oneOf:
+            - type: string
+              enum:
+                - auth_failed
+                - connection_failed
+                - tls_failed
+                - timeout
+                - permission_denied
+                - not_found
+                - conflict
+                - syntax_error
+                - constraint_violation
+                - cancelled
+                - unsupported
+                - internal
+            - type: 'null'
+        reason:
+          oneOf:
+            - type: string
+              enum:
+                - idle_closed
+            - type: 'null'
         message:
           type: string
     QueryExecutionPayload:

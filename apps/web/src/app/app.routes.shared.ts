@@ -76,27 +76,30 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
               import('./features/connections/connections').then(({ Connections }) => Connections)
           : definition.id === 'settings'
             ? () => import('./features/settings/settings').then(({ Settings }) => Settings)
-            : definition.id === 'audit'
-              ? () => import('./features/audit/audit').then(({ Audit }) => Audit)
-              : definition.id === 'backup-restore'
-                ? () =>
-                    import('./features/backup-restore/backup-restore').then(
-                      ({ BackupRestore }) => BackupRestore,
-                    )
-                : definition.id === 'change-password'
+            : definition.id === 'monitoring'
+              ? () =>
+                  import('./features/monitoring/monitoring').then(({ Monitoring }) => Monitoring)
+              : definition.id === 'audit'
+                ? () => import('./features/audit/audit').then(({ Audit }) => Audit)
+                : definition.id === 'backup-restore'
                   ? () =>
-                      import('./features/change-password/change-password').then(
-                        ({ ChangePassword }) => ChangePassword,
+                      import('./features/backup-restore/backup-restore').then(
+                        ({ BackupRestore }) => BackupRestore,
                       )
-                  : definition.id === 'users'
+                  : definition.id === 'change-password'
                     ? () =>
-                        import('./features/user-management/user-management').then(
-                          ({ UserManagement }) => UserManagement,
+                        import('./features/change-password/change-password').then(
+                          ({ ChangePassword }) => ChangePassword,
                         )
-                    : () =>
-                        import('./features/route-placeholder/route-placeholder').then(
-                          ({ RoutePlaceholder }) => RoutePlaceholder,
-                        ),
+                    : definition.id === 'users'
+                      ? () =>
+                          import('./features/user-management/user-management').then(
+                            ({ UserManagement }) => UserManagement,
+                          )
+                      : () =>
+                          import('./features/route-placeholder/route-placeholder').then(
+                            ({ RoutePlaceholder }) => RoutePlaceholder,
+                          ),
   }));
 
   const devRoutes: Routes = includeDevDemo

@@ -1,7 +1,7 @@
 # 0051. Monitoring status dasar
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ Kontradiksi scope monitoring antara tiga dokumen diputuskan pemilik proyek 2026-
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin satu tempat melihat kesehatan semua koneksi saya: tersambung atau tidak, versi apa, seberapa responsif.
 
 **Acceptance criteria**:
@@ -36,17 +37,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Kartu status berbasis data yang sudah ada (dipilih)
 
 **Pros**:
+
 - Nol beban baru ke server target; memenuhi FR-OPS-01 persis; cepat dibangun di atas spec 0027/0029.
 
 **Cons**:
+
 - Halaman sederhana; memang itu scope nya.
 
 ### Option 2: Menambah sebagian data sesi/aktivitas
 
 **Pros**:
+
 - Lebih kaya.
 
 **Cons**:
+
 - Persis yang diputuskan V2; menambah query katalog aktivitas dan izin yang belum dirancang.
 
 ## Decision
@@ -62,19 +67,22 @@ Keputusan scope monitoring sudah final; nilai spec ini adalah merangkum kesehata
 **Data model sketch**: tidak ada tabel; riwayat latency array kecil per koneksi di store klien.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /connections/:id/status-info | GET | tidak ada | versi, uptime?, database aktif | pemilik, tersambung | 409 NOT_CONNECTED |
+
+| Endpoint                     | Method | Key inputs | Key outputs                    | Auth                | Key errors        |
+| ---------------------------- | ------ | ---------- | ------------------------------ | ------------------- | ----------------- |
+| /connections/:id/status-info | GET    | tidak ada  | versi, uptime?, database aktif | pemilik, tersambung | 409 NOT_CONNECTED |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| status kini | state | push `connections.status` (spec 0029) |
-| versi, uptime | nilai | MonitoringPort.statusInfo provider |
-| latency | ms | hasil test/connect (spec 0027) plus uji manual |
-| error terakhir | kategori, waktu | registry status |
+
+| Action         | Value produced / displayed | Source                                         |
+| -------------- | -------------------------- | ---------------------------------------------- |
+| status kini    | state                      | push `connections.status` (spec 0029)          |
+| versi, uptime  | nilai                      | MonitoringPort.statusInfo provider             |
+| latency        | ms                         | hasil test/connect (spec 0027) plus uji manual |
+| error terakhir | kategori, waktu            | registry status                                |
 
 **Key invariants**:
+
 - Halaman tidak memicu polling berkala; semua pembaruan event driven atau atas aksi pengguna.
 - Tanpa data sensitif (AC-5).
 
@@ -88,19 +96,22 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Implementasikan `MonitoringPort.statusInfo` ringan di kedua provider plus endpoint, kontrak, contract test, memenuhi **AC-2**.
-2. UI halaman monitoring (kartu, grafik latency kecil, uji sekarang, pernyataan batas V1), memenuhi **AC-1**, **AC-3**, **AC-6**.
-3. E2e reaktivitas dan kebersihan network membuktikan tidak ada polling berat, memenuhi **AC-4**, **AC-7**; review data sensitif memenuhi **AC-5**.
+1. [x] Implementasikan `MonitoringPort.statusInfo` ringan di kedua provider plus endpoint, kontrak, contract test, memenuhi **AC-2**.
+2. [x] UI halaman monitoring (kartu, grafik latency kecil, uji sekarang, pernyataan batas V1), memenuhi **AC-1**, **AC-3**, **AC-6**.
+3. [x] E2e reaktivitas dan kebersihan network membuktikan tidak ada polling berat, memenuhi **AC-4**, **AC-7**; review data sensitif memenuhi **AC-5**.
 
 ## Consequences
 
 **Positive**:
+
 - FR-OPS-01 selesai; kontradiksi monitoring tertutup dengan implementasi yang eksplisit batasnya.
 
 **Negative / tradeoffs**:
+
 - Pengguna yang mengharapkan process watcher belum mendapatkannya; kalimat batas V1 mengelola ekspektasi.
 
 **Neutral**:
+
 - Struktur folder monitoring siap menampung V2 tanpa mengubah halaman ini.
 
 ## Follow-up
@@ -110,9 +121,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - Keputusan monitoring V1 sesi desain 2026-08-28; v1-feature-specification.md FR-OPS-01, bagian 11; spec 0021, 0027, 0029.
 
 **Practices & standards**:
+
 - Event driven daripada polling; batas fitur dinyatakan di UI.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

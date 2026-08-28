@@ -16,6 +16,8 @@ export type ConnectionLifecycleResponse =
 export type ConnectionStatus = components['schemas']['ConnectionStatus'];
 export type ConnectionStatusResponse =
   operations['getConnectionStatus']['responses'][200]['content']['application/json'];
+export type ConnectionStatusInfo =
+  operations['getConnectionStatusInfo']['responses'][200]['content']['application/json'];
 export type ConnectionPage =
   operations['listConnections']['responses'][200]['content']['application/json'];
 export type ServerGroup = components['schemas']['ServerGroup'];
@@ -94,6 +96,14 @@ export class ConnectionsClient {
     return this.transport.request<ConnectionStatusResponse>({
       method: 'GET',
       path: '/connections/status',
+      requiresSession: true,
+    });
+  }
+
+  public statusInfo(id: string): Observable<ConnectionStatusInfo> {
+    return this.transport.request<ConnectionStatusInfo>({
+      method: 'GET',
+      path: `/connections/${encodeURIComponent(id)}/status-info`,
       requiresSession: true,
     });
   }

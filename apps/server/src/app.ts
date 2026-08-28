@@ -43,6 +43,7 @@ import {
   DEFAULT_REALTIME_HEARTBEAT_INTERVAL_MS,
   RealtimeHub,
   REALTIME_SESSION_CLOSE_CODE,
+  realtimeConnectionStatusEvent,
   realtimeJobEvent,
   type RealtimeSocket,
 } from './realtime/websocket';
@@ -1356,6 +1357,9 @@ export function createServerApp(options: ServerAppOptions = {}) {
       canSubscribeJob: (userId, jobId) => jobManager.getForOwner(jobId, userId) !== undefined,
       canSubscribeQuery: options.canSubscribeQuery,
     });
+  connectionManager?.setStatusPublisher((userId, state) => {
+    realtimeHub.publish(realtimeConnectionStatusEvent({ userId, state }));
+  });
 
   let application: AnyElysia = installObservability(
     new Elysia({

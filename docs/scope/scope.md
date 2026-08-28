@@ -696,10 +696,10 @@ Pemulihan dari artefak dengan konfirmasi paling ketat. Done when: roundtrip back
 Kartu kesehatan per koneksi, event driven, batas V1 dinyatakan. Done when: kartu reaktif terhadap push tanpa polling dan bebas data sensitif.
 
 - [x] Design it (spec): [0051](../specs/0051-monitoring-status/index.md)
-- [ ] Build it: /develop monitoring-status
-  - [ ] MonitoringPort statusInfo ringan plus endpoint (AC-2)
-  - [ ] Halaman kartu status dengan riwayat latency klien dan uji sekarang (AC-1, AC-3, AC-6)
-  - [ ] E2e reaktivitas dan kebersihan network (AC-4, AC-5, AC-7)
+- [x] Build it: /develop monitoring-status
+  - [x] MonitoringPort statusInfo ringan plus endpoint (AC-2)
+  - [x] Halaman kartu status dengan riwayat latency klien dan uji sekarang (AC-1, AC-3, AC-6)
+  - [x] E2e reaktivitas dan kebersihan network (AC-4, AC-5, AC-7)
 - [ ] [Verify it](../specs/0051-monitoring-status/verify.md): /check verify monitoring-status
 - [ ] [Test it](../specs/0051-monitoring-status/test.md): /test monitoring-status
 
