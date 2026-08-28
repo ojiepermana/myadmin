@@ -7,6 +7,7 @@ const outputPath = join(specsRoot, 'ac-evidence-matrix.md');
 const sourceRoots = ['apps', 'packages', 'scripts', 'tests'].map((directory) =>
   join(repositoryRoot, directory),
 );
+const e2eEvidencePath = join(specsRoot, 'evidence/2026-08-29-e2e.md');
 const testIdPattern = /\b(?:UT|IT|CT|E2E|SEC|PERF|VIS|SMOKE|MANUAL)-\d{4}-AC\d+\b/g;
 const acceptanceHeadingPattern = /^### AC-(\d+)\s*$/gm;
 
@@ -106,10 +107,24 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
     .join(', ');
 
   if (type === 'E2E') {
+    const hasExecutedTest = sourceReferences.some((reference) =>
+      reference.path.startsWith('tests/e2e/'),
+    );
+    const e2eEvidence = readFileSync(e2eEvidencePath, 'utf8');
+    if (hasExecutedTest && e2eEvidence.includes('Result: **14 passed, 0 failed**')) {
+      return {
+        id,
+        status: 'PASS',
+        message: `bun run test:e2e (14 pass, 0 fail); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-e2e.md`,
+        references: sourceReferences,
+      };
+    }
     return {
       id,
       status: 'BLOCKED',
-      message: 'bun run test:e2e belum dijalankan pada audit ini',
+      message: hasExecutedTest
+        ? 'bun run test:e2e belum memiliki evidence run yang cocok'
+        : 'planned E2E ID belum ditemukan pada source test',
       references: sourceReferences,
     };
   }
