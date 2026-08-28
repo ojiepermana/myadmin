@@ -14,7 +14,15 @@
     "health": "bun run apps/server/src/main.ts",
     "myadmin": "bun run apps/cli/src/main.ts",
     "start": "bun run scripts/dev/start.ts",
-    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "prepare": "husky",
+    "lint": "bun run scripts/quality/lint.ts",
+    "format": "bun run scripts/quality/format.ts",
+    "format:check": "bun run scripts/quality/format.ts --check",
+    "typecheck": "bun run scripts/quality/typecheck.ts",
+    "test": "vitest run --config vitest.workspace.ts",
+    "test:e2e": "playwright test --config playwright.config.ts",
+    "check:boundaries": "bun run scripts/verify/check-boundaries.ts",
+    "check:manifests": "bun run scripts/verify/check-manifests.ts",
     "validate-contract": "bun run scripts/validate-contract.ts",
     "test:database-core": "bun test packages/database-core/test",
     "version": "bun run apps/cli/src/main.ts version",
@@ -36,9 +44,25 @@
     "@angular/cli": "^22.1.6",
     "@angular/compiler-cli": "^22.1.0",
     "@redocly/cli": "2.49.0",
+    "@commitlint/cli": "21.2.2",
+    "@commitlint/config-conventional": "21.2.2",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.62.1",
     "@types/bun": "^1.2.20",
+    "dependency-cruiser": "18.2.0",
+    "eslint": "10.9.1",
+    "husky": "9.1.7",
+    "lint-staged": "17.4.1",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
-    "yaml": "2.9.0"
+    "yaml": "2.9.0",
+    "typescript-eslint": "8.68.0",
+    "vitest": "4.1.11"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx,html,scss,json,yaml,yml,md}": [
+      "bun run scripts/quality/format.ts",
+      "bun run scripts/quality/lint.ts"
+    ]
   }
 }

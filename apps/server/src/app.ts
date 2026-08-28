@@ -7,7 +7,8 @@ export const defaultPort = 8080;
 export const host = process.env['MYADMIN_HOST'] || defaultHost;
 
 const configuredPort = Number(process.env['MYADMIN_PORT'] || defaultPort);
-export const port = Number.isInteger(configuredPort) && configuredPort > 0 ? configuredPort : defaultPort;
+export const port =
+  Number.isInteger(configuredPort) && configuredPort > 0 ? configuredPort : defaultPort;
 
 export const app = new Elysia().get('/health', () => ({
   status: 'ok',

@@ -80,10 +80,10 @@ Kerangka repo: tepat satu `package.json` di akar, tiga aplikasi, modul source in
 ### 02. Quality tooling dan CI `in-progress`
 Lint, format, test runner, hook Git, boundary check, penjaga satu manifest, dan CI. Done when: pelanggaran format, commit, boundary, dan manifest gagal otomatis di lokal serta CI.
 - [x] Design it (spec): [0002](../specs/0002-quality-tooling-ci/index.md)
-- [ ] Build it: /develop quality-tooling-ci
-  - [ ] ESLint, Prettier, husky, commitlint, vitest, playwright (AC-1 sampai AC-5)
-  - [ ] Boundary check dependency-cruiser dan penjaga satu manifest dari aturan struktur.md (AC-6, AC-9)
-  - [ ] Workflow ci.yml dan dependabot (AC-7, AC-8)
+- [x] Build it: /develop quality-tooling-ci
+  - [x] ESLint, Prettier, husky, commitlint, vitest, playwright (AC-1 sampai AC-5)
+  - [x] Boundary check dependency-cruiser dan penjaga satu manifest dari aturan struktur.md (AC-6, AC-9)
+  - [x] Workflow ci.yml dan dependabot (AC-7, AC-8)
 - [ ] [Verify it](../specs/0002-quality-tooling-ci/verify.md): /check verify quality-tooling-ci
 - [ ] [Test it](../specs/0002-quality-tooling-ci/test.md): /test quality-tooling-ci
 

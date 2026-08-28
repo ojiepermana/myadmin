@@ -4,6 +4,13 @@
     "noEmit": true,
     "types": ["bun"]
   },
-  "include": ["apps/**/*.ts", "packages/**/*.ts", "scripts/**/*.ts"],
+  "include": [
+    "apps/**/*.ts",
+    "packages/**/*.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.ts",
+    "playwright.config.ts",
+    "vitest.workspace.ts"
+  ],
   "exclude": ["apps/web/**/*.spec.ts"]
 }

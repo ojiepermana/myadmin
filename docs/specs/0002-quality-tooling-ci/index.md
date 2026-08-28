@@ -1,7 +1,7 @@
 # 0002. Quality tooling dan CI
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
