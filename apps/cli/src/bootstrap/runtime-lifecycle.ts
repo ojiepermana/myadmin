@@ -39,7 +39,7 @@ export interface RuntimeBootstrapHooks {
   resolveDataDirectory?: typeof resolveDataDirectory;
   prepareDataDirectory?: typeof prepareDataDirectory;
   runMigrations?: (paths: DataDirectoryPaths) => Promise<void>;
-  composeApp?: (config: MyadminConfig) => ReturnType<typeof createServerApp>;
+  composeApp?: (config: MyadminConfig, database?: Database) => ReturnType<typeof createServerApp>;
   listen?: (
     app: ReturnType<typeof createServerApp>,
     host: string,
@@ -177,8 +177,9 @@ export async function bootstrapRuntime(options: RuntimeOptions = {}): Promise<Ru
   let application: ReturnType<typeof createServerApp>;
   try {
     const composeApp =
-      hooks.composeApp ?? ((loadedConfig) => createServerApp({ config: loadedConfig }));
-    application = composeApp(config);
+      hooks.composeApp ??
+      ((loadedConfig, database) => createServerApp({ config: loadedConfig, database }));
+    application = composeApp(config, internalDatabase);
   } catch (error) {
     if (internalDatabase) {
       try {

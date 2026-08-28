@@ -1,0 +1,122 @@
+<main class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10 sm:px-8 lg:py-14">
+  <section class="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+    <div class="space-y-5">
+      <div class="flex flex-wrap items-center gap-2">
+        <Badge>First run</Badge>
+        <span class="font-mono text-xs text-muted-foreground">/setup</span>
+      </div>
+      <div class="space-y-3">
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+          Claim your instance
+        </p>
+        <h1 class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+          Create your first administrator
+        </h1>
+        <p class="text-lg leading-relaxed text-muted-foreground">
+          This account becomes the owner of this MyAdmin instance. Setup is a one-time action and
+          does not sign you in automatically.
+        </p>
+      </div>
+      <Alert>
+        <svg
+          aria-hidden="true"
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 8v4m0 4h.01"></path>
+        </svg>
+        <AlertTitle>Keep these credentials safe</AlertTitle>
+        <AlertDescription>
+          MyAdmin stores only a one-way password hash. You will use this account to sign in after
+          setup.
+        </AlertDescription>
+      </Alert>
+    </div>
+
+    <Card class="bg-card/90 shadow-lg">
+      <CardHeader>
+        <CardTitle>Administrator details</CardTitle>
+        <CardDescription>Choose a username and a password for this local instance.</CardDescription>
+      </CardHeader>
+      <form [formRoot]="setupForm" (submit)="onSubmit()">
+        <CardContent class="space-y-6">
+          <div class="grid gap-2">
+            <label for="setup-username" class="text-sm font-medium">Username</label>
+            <input
+              id="setup-username"
+              Input
+              autocomplete="username"
+              [formField]="setupForm.username"
+            />
+            <p class="text-xs text-muted-foreground">
+              3–32 characters: letters, numbers, dots, hyphens, or underscores.
+            </p>
+            @if (setupForm.username().touched() && setupForm.username().invalid()) {
+              <ul class="space-y-1 text-sm text-destructive" aria-live="polite">
+                @for (error of setupForm.username().errors(); track error.kind) {
+                  <li>{{ error.message }}</li>
+                }
+              </ul>
+            }
+          </div>
+
+          <div class="grid gap-2">
+            <label for="setup-password" class="text-sm font-medium">Password</label>
+            <input
+              id="setup-password"
+              Input
+              type="password"
+              autocomplete="new-password"
+              [formField]="setupForm.password"
+            />
+            <div class="space-y-2" aria-live="polite" aria-atomic="true">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-medium text-muted-foreground">Password strength</span>
+                <span [class]="'font-semibold text-' + passwordStrength().tone">{{
+                  passwordStrength().label
+                }}</span>
+              </div>
+              <div
+                class="h-2 overflow-hidden rounded-full bg-muted"
+                role="progressbar"
+                aria-label="Password strength"
+                [attr.aria-valuetext]="passwordStrength().label"
+              >
+                <div
+                  class="h-full rounded-full bg-primary transition-all"
+                  [style.width]="passwordStrength().width"
+                ></div>
+              </div>
+            </div>
+            @if (setupForm.password().touched() && setupForm.password().invalid()) {
+              <ul class="space-y-1 text-sm text-destructive" aria-live="polite">
+                @for (error of setupForm.password().errors(); track error.kind) {
+                  <li>{{ error.message }}</li>
+                }
+              </ul>
+            }
+          </div>
+
+          @if (completed()) {
+            <p
+              class="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700"
+              role="status"
+            >
+              Administrator created. Redirecting to sign in…
+            </p>
+          }
+        </CardContent>
+        <CardFooter class="flex items-center justify-between gap-4">
+          <span class="text-xs text-muted-foreground">One-time setup</span>
+          <button Button type="submit" [disabled]="setupForm().invalid() || submitting()">
+            {{ submitting() ? 'Creating…' : 'Create administrator' }}
+          </button>
+        </CardFooter>
+      </form>
+    </Card>
+  </section>
+</main>

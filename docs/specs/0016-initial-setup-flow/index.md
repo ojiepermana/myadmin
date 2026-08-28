@@ -96,11 +96,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Implementasikan use case `initial-admin` di `packages/auth` (validasi, transaksi tepat satu admin, audit), unit test dengan fake repo, memenuhi **AC-3**, **AC-4**, **AC-7**.
-2. Implementasikan controller dan middleware `SETUP_REQUIRED` di server, plus rate limit setup, sesuai kontrak, memenuhi **AC-1**, **AC-2**, **AC-6**.
-3. Tambahkan validasi response setup ke contract test (spec 0004), memenuhi **AC-1**, **AC-3**.
-4. Bangun facade SDK setup (sudah berkerangka di spec 0005) dan feature `initial-setup` di web (halaman, store, guard redirect), memenuhi **AC-2**, **AC-5**, **AC-8**.
-5. Tulis e2e Playwright alur setup dan penolakan setup kedua, memenuhi **AC-9**.
+1. [x] Implementasikan use case `initial-admin` di `packages/auth` (validasi, transaksi tepat satu admin, audit), unit test dengan fake repo, memenuhi **AC-3**, **AC-4**, **AC-7**.
+2. [x] Implementasikan controller dan middleware `SETUP_REQUIRED` di server, plus rate limit setup, sesuai kontrak, memenuhi **AC-1**, **AC-2**, **AC-6**.
+3. [x] Tambahkan validasi response setup ke contract test (spec 0004), memenuhi **AC-1**, **AC-3**.
+4. [x] Bangun facade SDK setup (sudah berkerangka di spec 0005) dan feature `initial-setup` di web (halaman, store, guard redirect), memenuhi **AC-2**, **AC-5**, **AC-8**.
+5. [x] Tulis e2e Playwright alur setup dan penolakan setup kedua, memenuhi **AC-9**.
 
 ## Consequences
 

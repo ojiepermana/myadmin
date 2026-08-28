@@ -10,6 +10,12 @@ get:
         application/json:
           schema:
             $ref: ../components/schemas/user.yaml#/User
+    '409':
+      description: Initial setup is required before reading the current user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
     '401':
       description: No valid session was provided.
       content:

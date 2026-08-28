@@ -29,6 +29,12 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/api-error.yaml
+    '429':
+      description: Too many setup attempts from the client address.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
     '500':
       description: Administrator could not be created.
       content:

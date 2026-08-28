@@ -1,5 +1,6 @@
 import type { Routes } from '@angular/router';
 import type { WorkspaceTabType } from './core/state/workspace.store';
+import { setupGateGuard } from './core/setup/setup-gate.guard';
 
 export interface AppRouteDefinition {
   readonly id: string;
@@ -41,10 +42,17 @@ export const V1_ROUTE_DEFINITIONS: readonly AppRouteDefinition[] = [
 ];
 
 export function createAppRoutes(includeDevDemo: boolean): Routes {
+  const setupRoute = {
+    path: 'setup',
+    title: 'Initial setup',
+    loadComponent: () =>
+      import('./features/initial-setup/initial-setup').then(({ InitialSetup }) => InitialSetup),
+  };
   const lazyFeatureRoutes: Routes = V1_ROUTE_DEFINITIONS.map((definition) => ({
     path: definition.path,
     title: definition.title,
     data: definition,
+    canActivate: [setupGateGuard],
     loadComponent: () =>
       import('./features/route-placeholder/route-placeholder').then(
         ({ RoutePlaceholder }) => RoutePlaceholder,
@@ -57,6 +65,7 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
           path: DEV_ROUTE.path,
           title: DEV_ROUTE.title,
           data: DEV_ROUTE,
+          canActivate: [setupGateGuard],
           loadComponent: () =>
             import('./features/ui-foundation-demo/ui-foundation-demo').then(
               ({ UiFoundationDemo }) => UiFoundationDemo,
@@ -66,6 +75,8 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
     : [];
 
   return [
+    setupRoute,
+    { path: 'initial-setup', redirectTo: '/setup', pathMatch: 'full' },
     {
       path: '',
       pathMatch: 'full',

@@ -141,7 +141,7 @@ describe('API contract', () => {
 
     for (const [operationId, request] of invalidRequests) {
       const response = await app.handle(request);
-      expect([401, 422]).toContain(response.status);
+      expect([401, 409, 422]).toContain(response.status);
       assertResponseMatchesContract(
         document,
         operation(operations, operationId),

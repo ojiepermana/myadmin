@@ -264,12 +264,12 @@ Shell aplikasi: top bar, sidebar, tab host, panel, status bar, context menu, err
 Tracer bullet pertama: klaim instance lewat pembuatan Admin pertama. Done when: instance kosong memaksa setup, race menghasilkan tepat satu admin, dan setup kedua ditolak.
 
 - [x] Design it (spec): [0016](../specs/0016-initial-setup-flow/index.md)
-- [ ] Build it: /develop initial-setup-flow
-  - [ ] Use case initial admin transaksional plus audit plus rate limit (AC-3, AC-4, AC-6, AC-7)
-  - [ ] Guard SETUP_REQUIRED server dan web plus halaman setup (AC-1, AC-2, AC-5, AC-8)
-  - [ ] Contract test dan e2e alur setup (AC-9)
-- [ ] [Verify it](../specs/0016-initial-setup-flow/verify.md): /check verify initial-setup-flow
-- [ ] [Test it](../specs/0016-initial-setup-flow/test.md): /test initial-setup-flow
+- [x] Build it: /develop initial-setup-flow
+  - [x] Use case initial admin transaksional plus audit plus rate limit (AC-3, AC-4, AC-6, AC-7)
+  - [x] Guard SETUP_REQUIRED server dan web plus halaman setup (AC-1, AC-2, AC-5, AC-8)
+  - [x] Contract test dan e2e alur setup (AC-9)
+- [x] [Verify it](../specs/0016-initial-setup-flow/verify.md): /check verify initial-setup-flow
+- [x] [Test it](../specs/0016-initial-setup-flow/test.md): /test initial-setup-flow
 
 ### 17. Login, logout, dan session `in-progress`
 

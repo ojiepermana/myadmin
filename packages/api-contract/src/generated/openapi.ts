@@ -230,6 +230,15 @@ export interface operations {
                     "application/json": components["schemas"]["api-error"];
                 };
             };
+            /** @description Initial setup is required before login. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
             /** @description Request validation failed. */
             422: {
                 headers: {
@@ -284,6 +293,15 @@ export interface operations {
                     "application/json": components["schemas"]["api-error"];
                 };
             };
+            /** @description Initial setup is required before logout. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
             /** @description Session could not be ended. */
             500: {
                 headers: {
@@ -315,6 +333,15 @@ export interface operations {
             };
             /** @description No valid session was provided. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Initial setup is required before reading the current user. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -395,6 +422,15 @@ export interface operations {
             };
             /** @description Request validation failed. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Too many setup attempts from the client address. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

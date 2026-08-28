@@ -34,11 +34,14 @@ SetupAdminRequest:
   properties:
     username:
       type: string
-      minLength: 1
+      minLength: 3
+      maxLength: 32
+      pattern: '^[A-Za-z0-9._-]+$'
     password:
       type: string
       format: password
-      minLength: 1
+      minLength: 10
+      maxLength: 256
 LoginRequest:
   type: object
   additionalProperties: false
