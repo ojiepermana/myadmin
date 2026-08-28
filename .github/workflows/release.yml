@@ -163,7 +163,7 @@ jobs:
       - name: Prepare target artifact
         shell: bash
         run: cp release/README.md dist/binaries/${{ matrix.target }}/README.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: myadmin-${{ matrix.target }}
           path: dist/binaries/${{ matrix.target }}
@@ -218,7 +218,7 @@ jobs:
           bun run release:sizes >> "$GITHUB_STEP_SUMMARY"
           echo '' >> "$GITHUB_STEP_SUMMARY"
           echo 'Smoke coverage: linux x64 has a disposable PostgreSQL proof. Matching runner smoke runs on Linux and macOS. Windows and any unavailable runner target are reported as compile only.' >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: myadmin-release-artifacts
           path: |
