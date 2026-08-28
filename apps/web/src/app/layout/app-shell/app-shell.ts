@@ -128,7 +128,7 @@ export class AppShell {
   protected readonly mainPanelHeight = computed(() =>
     this.workspace.bottomCollapsed() ? 100 : 100 - this.workspace.bottomHeight(),
   );
-  protected readonly navigationItems = this.createNavigationItems();
+  protected readonly navigationItems = computed(() => this.createNavigationItems());
 
   constructor() {
     const matchMedia = this.document.defaultView?.matchMedia;
@@ -277,7 +277,7 @@ export class AppShell {
       };
     };
 
-    return [
+    const groups = [
       {
         id: 'operate',
         type: 'group' as const,
@@ -297,17 +297,23 @@ export class AppShell {
         children: [item('query-history'), item('monitoring'), item('audit')],
       },
       {
+        id: 'personalize',
+        type: 'group' as const,
+        title: 'Personalize',
+        children: [item('settings')],
+      },
+    ];
+
+    if (this.authSession.currentUser()?.role === 'admin') {
+      groups.push({
         id: 'admin',
         type: 'group' as const,
         title: 'Admin',
-        children: [
-          item('security'),
-          item('import-export'),
-          item('backup-restore'),
-          item('settings'),
-        ],
-      },
-    ] as const;
+        children: [item('security'), item('import-export'), item('backup-restore')],
+      });
+    }
+
+    return groups;
   }
 
   private capturePanelSize(splitId: string, panelId: string, update: (size: number) => void): void {

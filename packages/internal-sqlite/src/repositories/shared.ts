@@ -1,5 +1,6 @@
 import type { Database, Statement } from 'bun:sqlite';
 import type { JsonObject, JsonValue, Page, PageRequest } from '@myadmin/internal-domain';
+import type { RuntimeSettingsReader } from '@myadmin/settings';
 
 export type SqliteBinding = string | number | bigint | null | Uint8Array;
 
@@ -12,6 +13,7 @@ export function prepare<ReturnType>(
 
 export interface RepositoryOptions {
   now?: () => Date;
+  settingsService?: RuntimeSettingsReader;
 }
 
 export const DEFAULT_HISTORY_MAX_ENTRIES = 1000;
@@ -81,7 +83,15 @@ export function changes(result: { changes: number | bigint }): number {
   return Number(result.changes);
 }
 
-export function historyMaxFromSettings(database: Database): number {
+export function historyMaxFromSettings(
+  database: Database,
+  settingsService?: RuntimeSettingsReader,
+): number {
+  const runtimeValue = settingsService?.getSettingValue('history.maxEntriesPerUser');
+  if (typeof runtimeValue === 'number' && Number.isInteger(runtimeValue) && runtimeValue >= 0) {
+    return runtimeValue;
+  }
+
   const row = prepare<{ value: string }>(database, 'SELECT value FROM settings WHERE key = ?').get(
     'history.maxEntriesPerUser',
   );

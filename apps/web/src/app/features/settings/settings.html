@@ -1,0 +1,190 @@
+<main class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:px-8 lg:gap-10 lg:py-14">
+  <section class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+    <div class="space-y-5">
+      <div class="flex flex-wrap items-center gap-2">
+        <Badge>Workspace settings</Badge>
+        <span class="font-mono text-sm text-muted-foreground">/settings</span>
+      </div>
+      <div class="space-y-3">
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+          MyAdmin control
+        </p>
+        <h1 class="max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+          Make the workspace feel like yours.
+        </h1>
+        <p class="max-w-2xl text-lg leading-relaxed text-muted-foreground">
+          Preferences follow your account. Application policy stays visible to administrators and
+          takes effect as soon as it is saved.
+        </p>
+      </div>
+    </div>
+
+    <Card class="bg-card/70 shadow-lg">
+      <CardHeader>
+        <CardTitle>Current session</CardTitle>
+        <CardDescription>Your settings are scoped to this signed in account.</CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-3 text-sm">
+        <div
+          class="flex items-center justify-between gap-4 rounded-md border border-border bg-muted/30 p-3"
+        >
+          <span class="text-muted-foreground">Account</span>
+          <span class="font-medium text-foreground">{{ authSession.currentUser()?.username }}</span>
+        </div>
+        <div
+          class="flex items-center justify-between gap-4 rounded-md border border-border bg-muted/30 p-3"
+        >
+          <span class="text-muted-foreground">Access</span>
+          <Badge variant="secondary">{{ isAdmin() ? 'Administrator' : 'User' }}</Badge>
+        </div>
+      </CardContent>
+    </Card>
+  </section>
+
+  @if (loading()) {
+    <section class="grid gap-6 lg:grid-cols-2" role="status" aria-label="Loading settings">
+      <Card>
+        <CardHeader>
+          <Spinner aria-label="Loading preferences" />
+          <CardTitle>Loading preferences</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-3 text-sm text-muted-foreground">
+          <p>Reading your saved choices from the local MyAdmin session.</p>
+          <div class="h-3 animate-pulse rounded bg-muted"></div>
+          <div class="h-3 animate-pulse rounded bg-muted"></div>
+        </CardContent>
+      </Card>
+    </section>
+  } @else if (loadFailed()) {
+    <Alert variant="destructive">
+      <AlertTitle>Settings could not be loaded</AlertTitle>
+      <AlertDescription class="flex flex-wrap items-center justify-between gap-4">
+        <span>Try again while keeping this session open.</span>
+        <button Button type="button" variant="outline" (click)="retry()">Try again</button>
+      </AlertDescription>
+    </Alert>
+  } @else if (loaded()) {
+    <section class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+      <Card>
+        <CardHeader>
+          <div class="flex items-start justify-between gap-4">
+            <div class="space-y-2">
+              <CardTitle>Preferences</CardTitle>
+              <CardDescription>Personal choices that travel with your account.</CardDescription>
+            </div>
+            <Badge variant="outline">Synced</Badge>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-6">
+          <div class="grid gap-2">
+            <label for="settings-theme" class="text-sm font-medium">Color theme</label>
+            <select
+              id="settings-theme"
+              NativeSelect
+              [formField]="preferenceForm.theme"
+              (change)="onThemeChange($event)"
+            >
+              <option NativeSelectOption value="system">System default</option>
+              <option NativeSelectOption value="light">Light</option>
+              <option NativeSelectOption value="dark">Dark</option>
+            </select>
+            <p class="text-sm text-muted-foreground">
+              Your choice is stored on the account after login, and updates the shell immediately.
+            </p>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div class="grid gap-2">
+              <label for="settings-page-size" class="text-sm font-medium">Default page size</label>
+              <input
+                id="settings-page-size"
+                Input
+                type="number"
+                inputmode="numeric"
+                [formField]="preferenceForm.pageSize"
+                (change)="onPageSizeChange($event)"
+              />
+              <p class="text-xs text-muted-foreground">Between 1 and 100 rows.</p>
+            </div>
+            <div class="grid gap-2">
+              <label for="settings-font-size" class="text-sm font-medium">Editor font size</label>
+              <input
+                id="settings-font-size"
+                Input
+                type="number"
+                inputmode="numeric"
+                [formField]="preferenceForm.fontSize"
+                (change)="onFontSizeChange($event)"
+              />
+              <p class="text-xs text-muted-foreground">Between 8 and 32 pixels.</p>
+            </div>
+          </div>
+
+          <label
+            class="flex items-start justify-between gap-4 rounded-md border border-border bg-muted/30 p-4"
+          >
+            <span class="space-y-1">
+              <span class="block text-sm font-medium">Wrap long editor lines</span>
+              <span class="block text-sm text-muted-foreground"
+                >Keep long SQL readable without horizontal scrolling.</span
+              >
+            </span>
+            <input
+              type="checkbox"
+              class="mt-1 size-4 accent-[hsl(var(--primary))]"
+              [formField]="preferenceForm.wordWrap"
+              (change)="onWordWrapChange($event)"
+            />
+          </label>
+        </CardContent>
+      </Card>
+
+      @if (isAdmin()) {
+        <Card class="border-primary/30 bg-primary/[0.03]">
+          <CardHeader>
+            <div class="flex items-start justify-between gap-4">
+              <div class="space-y-2">
+                <CardTitle>Application settings</CardTitle>
+                <CardDescription>Runtime policy for the whole MyAdmin instance.</CardDescription>
+              </div>
+              <Badge>Admin</Badge>
+            </div>
+          </CardHeader>
+          <CardContent class="space-y-6">
+            <div
+              class="rounded-md border border-primary/20 bg-background/70 p-4 text-sm text-muted-foreground"
+            >
+              @if (applicationMetadata(); as metadata) {
+                <p class="font-medium text-foreground">{{ metadata.label }}</p>
+                <p class="mt-1">{{ metadata.description }}</p>
+              } @else {
+                <p class="font-medium text-foreground">History retention</p>
+                <p class="mt-1">Maximum number of query history entries kept per user.</p>
+              }
+            </div>
+            <div class="grid gap-2">
+              <label for="settings-history-retention" class="text-sm font-medium"
+                >Maximum history entries per user</label
+              >
+              <input
+                id="settings-history-retention"
+                Input
+                type="number"
+                inputmode="numeric"
+                [formField]="applicationForm.maxEntriesPerUser"
+                (change)="onHistoryRetentionChange($event)"
+              />
+              <p class="text-xs text-muted-foreground">
+                Between 1 and 100,000. New history writes use the value without a restart.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-muted-foreground" role="status">
+              <span class="size-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+              Changes are audited and apply to the next history write.
+            </div>
+          </CardContent>
+        </Card>
+      }
+    </section>
+  }
+</main>

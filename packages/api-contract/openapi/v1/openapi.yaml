@@ -27,6 +27,14 @@ paths:
     $ref: ./paths/job-by-id.yaml
   /jobs/{id}/cancel:
     $ref: ./paths/job-cancel.yaml
+  /preferences:
+    $ref: ./paths/preferences.yaml
+  /preferences/{key}:
+    $ref: ./paths/preferences-key.yaml
+  /settings:
+    $ref: ./paths/settings.yaml
+  /settings/{key}:
+    $ref: ./paths/settings-key.yaml
 components:
   schemas:
     ApiError:
@@ -55,6 +63,14 @@ components:
       $ref: ./components/schemas/jobs.yaml#/JobPage
     JobProgress:
       $ref: ./components/schemas/jobs.yaml#/JobProgress
+    Preferences:
+      $ref: ./components/schemas/settings.yaml#/Preferences
+    PreferenceUpdate:
+      $ref: ./components/schemas/settings.yaml#/PreferenceUpdate
+    Settings:
+      $ref: ./components/schemas/settings.yaml#/Settings
+    SettingUpdate:
+      $ref: ./components/schemas/settings.yaml#/SettingUpdate
     Health:
       $ref: ./components/schemas/health.yaml
   parameters:

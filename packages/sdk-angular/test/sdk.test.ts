@@ -214,4 +214,60 @@ describe('MyAdmin Angular SDK', () => {
     logoutRequest.flush(null, { status: 204, statusText: 'No Content' });
     await expect(logout).resolves.toBeUndefined();
   });
+
+  it('AC-0052 sends preferences and settings mutations through the generated paths', async () => {
+    const sdk = TestBed.inject(MyadminSdk);
+    const preferencesResult = firstValueFrom(sdk.settings.getPreferences());
+    const preferencesRequest = http.expectOne('/api/v1/preferences');
+    expect(preferencesRequest.request.method).toBe('GET');
+    expect(preferencesRequest.request.withCredentials).toBe(true);
+    preferencesRequest.flush({
+      'ui.theme': 'system',
+      'ui.pageSize': 50,
+      'editor.fontSize': 14,
+      'editor.wordWrap': false,
+    });
+    await expect(preferencesResult).resolves.toMatchObject({ 'ui.theme': 'system' });
+
+    const preferenceUpdate = firstValueFrom(sdk.settings.updatePreference('ui.theme', 'dark'));
+    const preferenceRequest = http.expectOne('/api/v1/preferences/ui.theme');
+    expect(preferenceRequest.request.method).toBe('PUT');
+    expect(preferenceRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    expect(preferenceRequest.request.body).toEqual({ value: 'dark' });
+    preferenceRequest.flush(null, { status: 204, statusText: 'No Content' });
+    await expect(preferenceUpdate).resolves.toBeUndefined();
+
+    const settingsResult = firstValueFrom(sdk.settings.getSettings());
+    const settingsRequest = http.expectOne('/api/v1/settings');
+    expect(settingsRequest.request.method).toBe('GET');
+    settingsRequest.flush({
+      values: { 'history.maxEntriesPerUser': 1000 },
+      meta: {
+        'history.maxEntriesPerUser': {
+          key: 'history.maxEntriesPerUser',
+          scope: 'app',
+          valueType: 'integer',
+          defaultValue: 1000,
+          label: 'History retention',
+          description: 'Maximum history entries retained.',
+          sensitive: false,
+          minimum: 1,
+          maximum: 100000,
+        },
+      },
+    });
+    await expect(settingsResult).resolves.toMatchObject({
+      values: { 'history.maxEntriesPerUser': 1000 },
+    });
+
+    const settingUpdate = firstValueFrom(
+      sdk.settings.updateSetting('history.maxEntriesPerUser', 10),
+    );
+    const settingRequest = http.expectOne('/api/v1/settings/history.maxEntriesPerUser');
+    expect(settingRequest.request.method).toBe('PUT');
+    expect(settingRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    expect(settingRequest.request.body).toEqual({ value: 10 });
+    settingRequest.flush(null, { status: 204, statusText: 'No Content' });
+    await expect(settingUpdate).resolves.toBeUndefined();
+  });
 });

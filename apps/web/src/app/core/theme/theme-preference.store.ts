@@ -1,11 +1,14 @@
 import { DOCUMENT } from '@angular/common';
-import { inject, Injectable, InjectionToken, signal, type Signal } from '@angular/core';
+import { effect, inject, Injectable, InjectionToken, signal, type Signal } from '@angular/core';
 import {
   normalizeThemeMode,
   ThemeModeService,
   type ThemeMode,
 } from '@ojiepermana/angular/theme/styles';
 import { MYADMIN_THEME_CONFIG } from './theme.config';
+import { MyadminSdk, type PreferencesResponse } from '@myadmin/sdk-angular';
+import { firstValueFrom } from 'rxjs';
+import { AuthSessionStore } from '../auth/auth-session.store';
 
 export const THEME_PREFERENCE_STORAGE_KEY = 'myadmin.theme';
 
@@ -45,10 +48,26 @@ export class LocalStorageThemePreferenceSource implements ThemePreferenceSource 
 export class ThemePreferenceStore {
   private readonly source = inject(THEME_PREFERENCE_SOURCE);
   private readonly themeMode = inject(ThemeModeService);
+  private readonly sdk = inject(MyadminSdk, { optional: true });
+  private readonly authSession = inject(AuthSessionStore, { optional: true });
   private readonly preference = signal<ThemeMode>(this.source.read() ?? MYADMIN_THEME_CONFIG.mode);
+  private syncedUserId: string | null = null;
 
   readonly mode: Signal<ThemeMode> = this.preference.asReadonly();
   readonly resolvedMode = this.themeMode.resolvedMode;
+
+  constructor() {
+    effect(() => {
+      const user = this.authSession?.currentUser();
+      if (!user) {
+        this.syncedUserId = null;
+        return;
+      }
+      if (this.syncedUserId === user.id) return;
+      this.syncedUserId = user.id;
+      void this.syncFromServer(user.id);
+    });
+  }
 
   initialize(): void {
     this.themeMode.setMode(this.preference());
@@ -59,5 +78,32 @@ export class ThemePreferenceStore {
     this.source.write(normalized);
     this.preference.set(normalized);
     this.themeMode.setMode(normalized);
+
+    const userId = this.authSession?.currentUser()?.id;
+    if (userId && this.sdk) {
+      void firstValueFrom(this.sdk.settings.updatePreference('ui.theme', normalized)).catch(
+        () => undefined,
+      );
+    }
   }
+
+  private async syncFromServer(userId: string): Promise<void> {
+    if (!this.sdk) return;
+
+    try {
+      const preferences = await firstValueFrom(this.sdk.settings.getPreferences());
+      if (this.authSession?.currentUser()?.id !== userId) return;
+      const serverMode = preferences['ui.theme'];
+      if (!isThemeMode(serverMode)) return;
+      this.source.write(serverMode);
+      this.preference.set(serverMode);
+      this.themeMode.setMode(serverMode);
+    } catch {
+      // Keep the local preference if the server cannot be reached during login.
+    }
+  }
+}
+
+function isThemeMode(value: PreferencesResponse['ui.theme']): value is ThemeMode {
+  return value === 'system' || value === 'light' || value === 'dark';
 }

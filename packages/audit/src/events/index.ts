@@ -73,6 +73,9 @@ export const AuditEvents = {
     completed: required('restore.completed', 'restore'),
     failed: required('restore.failed', 'restore'),
   },
+  settings: {
+    changed: required('settings.changed', 'setting'),
+  },
 } as const;
 
 Object.values(AuditEvents).forEach((group) => Object.freeze(group));

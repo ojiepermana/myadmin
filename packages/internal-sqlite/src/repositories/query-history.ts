@@ -81,12 +81,14 @@ function filterSql(filter: QueryHistoryFilter | undefined, bindings: SqliteBindi
 
 export class SqliteQueryHistoryRepository implements QueryHistoryRepository {
   private readonly now: () => Date;
+  private readonly settingsService: RepositoryOptions['settingsService'];
 
   public constructor(
     private readonly database: Database,
     options?: RepositoryOptions,
   ) {
     this.now = options?.now ?? (() => new Date());
+    this.settingsService = options?.settingsService;
   }
 
   public append(entry: QueryHistoryEntry): void {
@@ -139,7 +141,10 @@ export class SqliteQueryHistoryRepository implements QueryHistoryRepository {
     );
   }
 
-  public enforceRetention(userId: string, max = historyMaxFromSettings(this.database)): number {
+  public enforceRetention(
+    userId: string,
+    max = historyMaxFromSettings(this.database, this.settingsService),
+  ): number {
     const limit = validateRetentionLimit(max);
     return changes(
       this.database

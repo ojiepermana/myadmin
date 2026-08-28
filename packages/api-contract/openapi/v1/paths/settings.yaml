@@ -1,0 +1,36 @@
+get:
+  operationId: getSettings
+  tags:
+    - settings
+  summary: Get application settings for an administrator
+  responses:
+    '200':
+      description: Effective application settings and safe metadata.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/settings.yaml#/Settings
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The current user is not an administrator.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required before reading settings.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Settings could not be read.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

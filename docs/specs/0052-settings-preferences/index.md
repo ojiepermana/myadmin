@@ -1,7 +1,7 @@
 # 0052. Settings dan preferences
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR internal menyebut settings dan preferences sebagai bagian internal state (FR-
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin preferensi saya (theme, ukuran halaman) mengikuti akun saya di browser mana pun.
 - Sebagai Admin, saya ingin mengatur kebijakan aplikasi (retensi history) dari UI dengan jejak audit.
 
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Daftar key tertutup dengan schema per key (dipilih)
 
 **Pros**:
+
 - Nilai selalu tervalidasi; UI bisa digenerate dari daftar; tidak ada tempat sampah key bebas yang membusuk.
 
 **Cons**:
+
 - Menambah key butuh perubahan kode; disengaja, key adalah kontrak.
 
 ### Option 2: Key value bebas
 
 **Pros**:
+
 - Fleksibel.
 
 **Cons**:
+
 - Nilai tak tervalidasi merusak pemakainya diam diam; tidak ada dokumentasi diri.
 
 ## Decision
@@ -63,21 +68,24 @@ Settings adalah kontrak antar fitur; registry tertutup membuat penambahan nilai 
 **Data model sketch**: memakai `settings` dan `preferences` (spec 0008) apa adanya.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /preferences | GET | tidak ada | peta key nilai | sesi | |
-| /preferences/:key | PUT | value | kosong | sesi | 422 key/nilai |
-| /settings | GET | tidak ada | peta key nilai plus meta | admin | 403 |
-| /settings/:key | PUT | value | kosong | admin | 403, 422 |
+
+| Endpoint          | Method | Key inputs | Key outputs              | Auth  | Key errors    |
+| ----------------- | ------ | ---------- | ------------------------ | ----- | ------------- |
+| /preferences      | GET    | tidak ada  | peta key nilai           | sesi  |               |
+| /preferences/:key | PUT    | value      | kosong                   | sesi  | 422 key/nilai |
+| /settings         | GET    | tidak ada  | peta key nilai plus meta | admin | 403           |
+| /settings/:key    | PUT    | value      | kosong                   | admin | 403, 422      |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| daftar key dan schema | registry | modul registry key (server, dibagikan ke UI lewat endpoint GET) |
-| nilai efektif retensi | angka | SettingsService (cache plus invalidasi) |
-| theme lintas perangkat | nilai | preferences server, localStorage hanya pra login |
+
+| Action                 | Value produced / displayed | Source                                                          |
+| ---------------------- | -------------------------- | --------------------------------------------------------------- |
+| daftar key dan schema  | registry                   | modul registry key (server, dibagikan ke UI lewat endpoint GET) |
+| nilai efektif retensi  | angka                      | SettingsService (cache plus invalidasi)                         |
+| theme lintas perangkat | nilai                      | preferences server, localStorage hanya pra login                |
 
 **Key invariants**:
+
 - Tidak ada key di luar registry; tidak ada nilai yang hidup di config dan settings sekaligus.
 - Perubahan settings terlihat pemakainya tanpa restart (AC-6).
 
@@ -100,12 +108,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Preferensi mengikuti akun; kebijakan aplikasi bisa diatur dengan jejak; janji FR-INT-02 bagian settings dan preferences genap.
 
 **Negative / tradeoffs**:
+
 - Registry menuntut disiplin penambahan key lewat spec; itu fitur, bukan bug.
 
 **Neutral**:
+
 - Key bertambah alami saat fitur V2 datang.
 
 ## Follow-up
@@ -115,9 +126,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-INT-02, FR-UI-02; struktur.md feature settings; spec 0008, 0009, 0012, 0014.
 
 **Practices & standards**:
+
 - Registry konfigurasi tertutup dan tervalidasi; pemisahan boot config dari runtime settings.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

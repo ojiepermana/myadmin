@@ -12,6 +12,7 @@ import {
   type SessionValidation,
 } from '@myadmin/auth';
 import { resolveDataDirectory, type MyadminConfig } from '@myadmin/config';
+import { SettingsServiceError, type SettingsService } from '@myadmin/settings';
 import {
   closeDatabase,
   openDatabase,
@@ -45,6 +46,7 @@ export interface ServerStartOptions {
   database?: Database;
   initialAdminService?: InitialAdminService;
   authService?: AuthService;
+  settingsService?: SettingsService;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
   jobManager?: JobManager;
@@ -62,6 +64,7 @@ export interface ServerAppOptions {
   database?: Database;
   initialAdminService?: InitialAdminService;
   authService?: AuthService;
+  settingsService?: SettingsService;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
   jobManager?: JobManager;
@@ -81,12 +84,11 @@ function storeForDatabase(database: Database): SqliteUnitOfWork {
   return new SqliteUnitOfWork(database);
 }
 
-function authServiceForDatabase(
-  database: Database,
+function authServiceForStore(
+  store: AuthStore,
   config: MyadminConfig | undefined,
   loginRateLimiter: InMemoryRateLimiter,
 ): AuthService {
-  const store: AuthStore = storeForDatabase(database);
   return new AuthService(store, {
     loginRateLimiter,
     idleTimeoutMinutes: config?.session.idleTimeoutMinutes,
@@ -266,6 +268,59 @@ function isMutation(request: Request): boolean {
 
 function csrfFailureResponse(request: Request): Response {
   return apiError(request, 403, 'CSRF_INVALID', 'The request could not be verified.');
+}
+
+function authenticatedSession(
+  request: Request,
+  setupService: InitialAdminService | undefined,
+  authService: AuthService | undefined,
+  secureCookies: boolean,
+): Extract<SessionValidation, { authenticated: true }> | Response {
+  if (!authService) {
+    return apiError(request, 500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
+  }
+  if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+
+  const validation = authService.validateSession(sessionToken(request));
+  if (!validation.authenticated) {
+    return sessionFailureResponse(request, validation, secureCookies);
+  }
+  return validation;
+}
+
+function preferenceOrSettingInput(value: unknown): { value: unknown } | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (Object.keys(record).length !== 1 || !Object.prototype.hasOwnProperty.call(record, 'value')) {
+    return null;
+  }
+  return { value: record['value'] };
+}
+
+function settingsErrorResponse(request: Request, error: unknown): Response {
+  if (error instanceof SettingsServiceError) {
+    const code =
+      error.code === 'INVALID_VALUE'
+        ? 'SETTINGS_VALUE_INVALID'
+        : error.code === 'UNKNOWN_KEY'
+          ? 'SETTINGS_KEY_UNKNOWN'
+          : 'SETTINGS_KEY_INVALID';
+    return apiError(request, 422, code, error.message);
+  }
+  return apiError(
+    request,
+    500,
+    'SETTINGS_FAILED',
+    'The settings operation could not be completed.',
+  );
+}
+
+function forbiddenAdminResponse(request: Request): Response {
+  return apiError(request, 403, 'FORBIDDEN', 'Administrator access is required.');
+}
+
+function noContentResponse(): Response {
+  return new Response(null, { status: 204 });
 }
 
 function registerSetupRoutes(
@@ -485,6 +540,87 @@ function registerJobsRoutes(
     });
 }
 
+function registerSettingsRoutes(
+  application: AnyElysia,
+  prefix: string,
+  setupService: InitialAdminService | undefined,
+  authService: AuthService | undefined,
+  settingsService: SettingsService | undefined,
+  secureCookies: boolean,
+): AnyElysia {
+  const path = (suffix: string) => `${prefix}${suffix}`;
+
+  return application
+    .get(path('/preferences'), ({ request }) => {
+      const session = authenticatedSession(request, setupService, authService, secureCookies);
+      if (session instanceof Response) return session;
+      if (!settingsService) {
+        return apiError(request, 500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
+      }
+      try {
+        return settingsService.getPreferences(session.value.user.id);
+      } catch (error) {
+        return settingsErrorResponse(request, error);
+      }
+    })
+    .put(path('/preferences/:key'), async ({ request, params }) => {
+      const session = authenticatedSession(request, setupService, authService, secureCookies);
+      if (session instanceof Response) return session;
+      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      if (!settingsService) {
+        return apiError(request, 500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
+      }
+
+      const input = preferenceOrSettingInput(await readJson(request));
+      if (!input)
+        return apiError(request, 422, 'SETTINGS_VALUE_INVALID', 'The request body is invalid.');
+
+      try {
+        settingsService.setPreference(session.value.user.id, params.key, input.value);
+        return noContentResponse();
+      } catch (error) {
+        return settingsErrorResponse(request, error);
+      }
+    })
+    .get(path('/settings'), ({ request }) => {
+      const session = authenticatedSession(request, setupService, authService, secureCookies);
+      if (session instanceof Response) return session;
+      if (session.value.user.role !== 'admin') return forbiddenAdminResponse(request);
+      if (!settingsService) {
+        return apiError(request, 500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
+      }
+
+      try {
+        return {
+          values: settingsService.getSettings(),
+          meta: settingsService.getSettingsMetadata(),
+        };
+      } catch (error) {
+        return settingsErrorResponse(request, error);
+      }
+    })
+    .put(path('/settings/:key'), async ({ request, params }) => {
+      const session = authenticatedSession(request, setupService, authService, secureCookies);
+      if (session instanceof Response) return session;
+      if (session.value.user.role !== 'admin') return forbiddenAdminResponse(request);
+      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      if (!settingsService) {
+        return apiError(request, 500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
+      }
+
+      const input = preferenceOrSettingInput(await readJson(request));
+      if (!input)
+        return apiError(request, 422, 'SETTINGS_VALUE_INVALID', 'The request body is invalid.');
+
+      try {
+        settingsService.setSetting(session.value.user.id, params.key, input.value);
+        return noContentResponse();
+      } catch (error) {
+        return settingsErrorResponse(request, error);
+      }
+    });
+}
+
 function registerProtectedApiGuard(
   application: AnyElysia,
   prefix: string,
@@ -588,20 +724,20 @@ export function createServerApp(options: ServerAppOptions = {}) {
     return sourcePromise;
   };
 
+  const runtimeStore = options.database ? storeForDatabase(options.database) : undefined;
   const setupService =
     options.initialAdminService ??
-    (options.database
-      ? new InitialAdminService({ store: storeForDatabase(options.database) })
-      : undefined);
+    (runtimeStore ? new InitialAdminService({ store: runtimeStore }) : undefined);
   const setupRateLimiter = options.setupRateLimiter ?? new InMemoryRateLimiter();
   const loginRateLimiter = options.loginRateLimiter ?? new InMemoryRateLimiter();
   const authService =
     options.authService ??
-    (options.database
-      ? authServiceForDatabase(options.database, options.config, loginRateLimiter)
+    (runtimeStore
+      ? authServiceForStore(runtimeStore, options.config, loginRateLimiter)
       : undefined);
   const jobManager = options.jobManager ?? new JobManager();
   const ownsJobManager = options.jobManager === undefined;
+  const settingsService = options.settingsService ?? runtimeStore?.settingsService;
   const secureCookies = options.config?.security.secureCookies ?? false;
   const websocketCheckIntervalMs = options.websocketCheckIntervalMs ?? 60_000;
   if (
@@ -621,6 +757,14 @@ export function createServerApp(options: ServerAppOptions = {}) {
     '/api/v1',
     setupService,
     authService,
+    secureCookies,
+  );
+  application = registerSettingsRoutes(
+    application,
+    '/api/v1',
+    setupService,
+    authService,
+    settingsService,
     secureCookies,
   );
   if (authService) {
@@ -675,6 +819,14 @@ export function createApp(
   ).get('/health', () => ({ status: 'ok' as const, version: packageManifest.version }));
   application = registerSetupRoutes(application, '', setupService, setupRateLimiter);
   application = registerAuthRoutes(application, '', setupService, authService, false);
+  application = registerSettingsRoutes(
+    application,
+    '',
+    setupService,
+    authService,
+    store.settingsService,
+    false,
+  );
   return registerJobsRoutes(
     application,
     '',
@@ -706,6 +858,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       database,
       initialAdminService: options.initialAdminService,
       authService: options.authService,
+      settingsService: options.settingsService,
       setupRateLimiter: options.setupRateLimiter,
       loginRateLimiter: options.loginRateLimiter,
       jobManager: options.jobManager,

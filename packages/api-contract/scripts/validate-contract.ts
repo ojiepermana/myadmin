@@ -22,6 +22,10 @@ const initialPaths = {
   '/jobs': 'paths/jobs.yaml',
   '/jobs/{id}': 'paths/job-by-id.yaml',
   '/jobs/{id}/cancel': 'paths/job-cancel.yaml',
+  '/preferences': 'paths/preferences.yaml',
+  '/preferences/{key}': 'paths/preferences-key.yaml',
+  '/settings': 'paths/settings.yaml',
+  '/settings/{key}': 'paths/settings-key.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);

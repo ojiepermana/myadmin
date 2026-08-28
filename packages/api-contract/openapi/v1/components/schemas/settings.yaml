@@ -1,0 +1,118 @@
+Preferences:
+  type: object
+  additionalProperties: false
+  required:
+    - ui.theme
+    - ui.pageSize
+    - editor.fontSize
+    - editor.wordWrap
+  properties:
+    ui.theme:
+      type: string
+      enum:
+        - system
+        - light
+        - dark
+    ui.pageSize:
+      type: integer
+      minimum: 1
+      maximum: 100
+    editor.fontSize:
+      type: integer
+      minimum: 8
+      maximum: 32
+    editor.wordWrap:
+      type: boolean
+
+PreferenceUpdate:
+  type: object
+  additionalProperties: false
+  required:
+    - value
+  properties:
+    value:
+      anyOf:
+        - type: string
+          enum:
+            - system
+            - light
+            - dark
+        - type: integer
+          minimum: 1
+          maximum: 100
+        - type: integer
+          minimum: 8
+          maximum: 32
+        - type: boolean
+
+SettingMetadata:
+  type: object
+  additionalProperties: false
+  required:
+    - key
+    - scope
+    - valueType
+    - defaultValue
+    - label
+    - description
+    - sensitive
+  properties:
+    key:
+      type: string
+    scope:
+      type: string
+      enum:
+        - app
+    valueType:
+      type: string
+      enum:
+        - integer
+    defaultValue:
+      type: integer
+    label:
+      type: string
+    description:
+      type: string
+    sensitive:
+      type: boolean
+    minimum:
+      type: integer
+    maximum:
+      type: integer
+
+Settings:
+  type: object
+  additionalProperties: false
+  required:
+    - values
+    - meta
+  properties:
+    values:
+      type: object
+      additionalProperties: false
+      required:
+        - history.maxEntriesPerUser
+      properties:
+        history.maxEntriesPerUser:
+          type: integer
+          minimum: 1
+          maximum: 100000
+    meta:
+      type: object
+      additionalProperties: false
+      required:
+        - history.maxEntriesPerUser
+      properties:
+        history.maxEntriesPerUser:
+          $ref: '#/SettingMetadata'
+
+SettingUpdate:
+  type: object
+  additionalProperties: false
+  required:
+    - value
+  properties:
+    value:
+      type: integer
+      minimum: 1
+      maximum: 100000

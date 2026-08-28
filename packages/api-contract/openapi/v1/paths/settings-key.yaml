@@ -1,0 +1,59 @@
+put:
+  operationId: updateSetting
+  tags:
+    - settings
+  summary: Update one application setting as an administrator
+  parameters:
+    - name: key
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - history.maxEntriesPerUser
+    - name: X-Myadmin-Csrf
+      in: header
+      required: true
+      schema:
+        type: string
+        enum:
+          - '1'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/settings.yaml#/SettingUpdate
+  responses:
+    '204':
+      description: Setting updated and audited.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The current user is not an administrator or the CSRF check failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required before updating settings.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The setting key or value is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Setting could not be updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

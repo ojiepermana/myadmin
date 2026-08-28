@@ -4,6 +4,7 @@ export * from './facades/auth-client';
 export * from './facades/health-client';
 export * from './facades/jobs-client';
 export * from './facades/setup-client';
+export * from './facades/settings-client';
 export * from './providers/config';
 export * from './providers/provide-myadmin-sdk';
 export * from './realtime/realtime-client';

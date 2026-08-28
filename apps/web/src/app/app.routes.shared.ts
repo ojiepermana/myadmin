@@ -57,10 +57,12 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
     loadComponent:
       definition.id === 'auth'
         ? () => import('./features/login/login').then(({ Login }) => Login)
-        : () =>
-            import('./features/route-placeholder/route-placeholder').then(
-              ({ RoutePlaceholder }) => RoutePlaceholder,
-            ),
+        : definition.id === 'settings'
+          ? () => import('./features/settings/settings').then(({ Settings }) => Settings)
+          : () =>
+              import('./features/route-placeholder/route-placeholder').then(
+                ({ RoutePlaceholder }) => RoutePlaceholder,
+              ),
   }));
 
   const devRoutes: Routes = includeDevDemo

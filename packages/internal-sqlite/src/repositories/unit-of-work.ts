@@ -1,5 +1,6 @@
 import type { Database } from 'bun:sqlite';
 import type { InternalRepositories, InternalUnitOfWork } from '@myadmin/internal-domain';
+import { SettingsService } from '@myadmin/settings';
 import { withTransaction } from '../database/transaction';
 import { SqliteAuditRepository } from './audit';
 import { SqliteConnectionRepository } from './connections';
@@ -27,6 +28,7 @@ export class SqliteUnitOfWork implements InternalUnitOfWork {
   public readonly settings: SqliteSettingsRepository;
   public readonly preferences: SqlitePreferencesRepository;
   public readonly audit: SqliteAuditRepository;
+  public readonly settingsService: SettingsService;
 
   public constructor(database: Database, options?: RepositoryOptions) {
     this.database = database;
@@ -37,10 +39,14 @@ export class SqliteUnitOfWork implements InternalUnitOfWork {
     this.serverGroups = new SqliteServerGroupRepository(database);
     this.workspaces = new SqliteWorkspaceRepository(database);
     this.settings = new SqliteSettingsRepository(database);
-    this.queryHistory = new SqliteQueryHistoryRepository(database, options);
-    this.savedQueries = new SqliteSavedQueryRepository(database);
     this.preferences = new SqlitePreferencesRepository(database);
     this.audit = new SqliteAuditRepository(database);
+    this.settingsService = new SettingsService(this);
+    this.queryHistory = new SqliteQueryHistoryRepository(database, {
+      ...options,
+      settingsService: this.settingsService,
+    });
+    this.savedQueries = new SqliteSavedQueryRepository(database);
   }
 
   public run<T>(operation: (repositories: InternalRepositories) => T): T {

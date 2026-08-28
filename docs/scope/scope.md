@@ -704,10 +704,11 @@ Kartu kesehatan per koneksi, event driven, batas V1 dinyatakan. Done when: kartu
 Registry key tertutup: preferensi per user dan pengaturan aplikasi Admin. Done when: theme mengikuti akun lintas perangkat dan perubahan settings efektif tanpa restart.
 
 - [x] Design it (spec): [0052](../specs/0052-settings-preferences/index.md)
-- [ ] Build it: /develop settings-preferences
-  - [ ] Registry key plus SettingsService bercache (AC-1, AC-3, AC-6)
-  - [ ] Endpoint preferences dan settings plus audit settings (AC-1, AC-3, AC-4)
-  - [ ] Sambungan theme dan halaman settings dua bagian plus e2e (AC-2, AC-5, AC-7)
+- [x] Build it: /develop settings-preferences
+  - [x] Registry key plus SettingsService bercache (AC-1, AC-3, AC-6)
+  - [x] Endpoint preferences dan settings plus audit settings (AC-1, AC-3, AC-4)
+  - [x] Sambungan theme dan halaman settings dua bagian plus e2e (AC-2, AC-5, AC-7)
+  - code in `packages/settings/`, `apps/server/src/app.ts`, `packages/sdk-angular/src/`, `apps/web/src/app/`, and `tests/`
 - [ ] [Verify it](../specs/0052-settings-preferences/verify.md): /check verify settings-preferences
 - [ ] [Test it](../specs/0052-settings-preferences/test.md): /test settings-preferences
 

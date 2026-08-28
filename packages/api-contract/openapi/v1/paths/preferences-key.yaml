@@ -1,0 +1,62 @@
+put:
+  operationId: updatePreference
+  tags:
+    - preferences
+  summary: Update one current user preference
+  parameters:
+    - name: key
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - ui.theme
+          - ui.pageSize
+          - editor.fontSize
+          - editor.wordWrap
+    - name: X-Myadmin-Csrf
+      in: header
+      required: true
+      schema:
+        type: string
+        enum:
+          - '1'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/settings.yaml#/PreferenceUpdate
+  responses:
+    '204':
+      description: Preference updated.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The CSRF or origin check failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required before updating preferences.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The preference key or value is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Preference could not be updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

@@ -1,0 +1,30 @@
+get:
+  operationId: getPreferences
+  tags:
+    - preferences
+  summary: Get the current user's preferences
+  responses:
+    '200':
+      description: Effective preferences for the current user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/settings.yaml#/Preferences
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required before reading preferences.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Preferences could not be read.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
