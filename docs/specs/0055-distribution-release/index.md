@@ -1,7 +1,7 @@
 # 0055. Distribusi, signing, installer, dan dokumentasi operator
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-RUN-02 menuntut distribusi terdokumentasi; Definition of Done butir 10 menunt
 ## Requirements
 
 **User stories**:
+
 - Sebagai operator, saya ingin memasang Myadmin dengan cara wajar untuk platform saya (unduhan langsung, Docker, atau service) dan membaca dokumentasi yang menjawab pertanyaan operasional saya.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: GitHub Releases plus Docker sebagai saluran utama (dipilih)
 
 **Pros**:
+
 - Cocok untuk alat self hosted open source; tanpa infrastruktur distribusi sendiri; Docker menjawab pemakaian server sekaligus persoalan native tool lewat varian image.
 
 **Cons**:
+
 - Pemakai di luar GitHub/Docker harus unduh manual; wajar untuk V1.
 
 ### Option 2: Installer penuh per platform (msi, pkg, deb, rpm) di V1
 
 **Pros**:
+
 - Pengalaman pasang paling halus.
 
 **Cons**:
+
 - Empat toolchain packaging dan pemeliharaannya untuk rilis pertama produk; arsip plus service file plus Docker sudah melayani target pengguna awal.
 
 ## Decision
@@ -65,14 +70,16 @@ Target pengguna V1 adalah operator yang nyaman mengunduh binary atau menarik ima
 **API surface**: tidak ada.
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| catatan rilis | changelog | conventional commits sejak tag sebelumnya |
-| status signing | ditandatangani atau tidak | keberadaan secret sertifikat di CI |
-| isi dokumentasi config | referensi key dan env | registry config (spec 0012) di ekspor ke markdown oleh skrip |
-| varian tools | paket klien db | manifest Docker `-tools` |
+
+| Action                 | Value produced / displayed | Source                                                       |
+| ---------------------- | -------------------------- | ------------------------------------------------------------ |
+| catatan rilis          | changelog                  | conventional commits sejak tag sebelumnya                    |
+| status signing         | ditandatangani atau tidak  | keberadaan secret sertifikat di CI                           |
+| isi dokumentasi config | referensi key dan env      | registry config (spec 0012) di ekspor ke markdown oleh skrip |
+| varian tools           | paket klien db             | manifest Docker `-tools`                                     |
 
 **Key invariants**:
+
 - Tidak ada secret signing di repo; hanya di secret CI (struktur.md: signing input privat tidak disimpan repo).
 - Dokumen operator dihasilkan sebagian dari sumber kebenaran kode (referensi config) supaya tidak basi.
 - Rilis selalu menyertakan checksum; release notes menyatakan status signing per platform dengan jujur.
@@ -97,13 +104,16 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - V1 benar benar bisa diserahkan ke orang lain; Definition of Done butir 10 selesai; FR-BKR-02 terjawab operasional lewat varian image dan dokumentasi.
 
 **Negative / tradeoffs**:
+
 - Tanpa installer native di V1; pengguna desktop non teknis menunggu V2.
 - Signing bergantung belanja sertifikat pemilik proyek; rilis tak bertanda tangan menampilkan peringatan OS.
 
 **Neutral**:
+
 - Homebrew formula opsional bisa menyusul kapan pun tanpa mengubah pipeline.
 
 ## Follow-up
@@ -114,9 +124,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-RUN-02, FR-BKR-02, Definition of Done butir 10; struktur.md folder distribution; spec 0010, 0012, 0049, 0054.
 
 **Practices & standards**:
+
 - Rantai pasok rilis dengan checksum dan signing; dokumentasi dihasilkan dari sumber kebenaran; uji penerimaan mengikuti dokumen sendiri.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

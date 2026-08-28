@@ -1,0 +1,28 @@
+[Unit]
+Description=MyAdmin database administration server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=myadmin
+Group=myadmin
+ExecStart=/usr/local/bin/myadmin serve --host 127.0.0.1 --data-dir /var/lib/myadmin
+WorkingDirectory=/var/lib/myadmin
+StateDirectory=myadmin
+LogsDirectory=myadmin
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/myadmin /var/log/myadmin
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

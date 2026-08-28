@@ -1,0 +1,10 @@
+.git
+.angular
+coverage
+node_modules
+dist/binaries
+dist/web
+dist/release
+!dist/docker/
+!dist/docker/*/
+!dist/docker/*/myadmin

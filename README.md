@@ -1,6 +1,26 @@
 # MyAdmin
 
-MyAdmin is a database administration application built as one Bun product with an Angular web application, an Elysia server, and a CLI.
+MyAdmin is a self hosted database administration application built as one Bun
+product with an Angular web application, an Elysia server, and a CLI.
+
+## Quick start
+
+Download the archive for your platform from the [latest GitHub
+Release](https://github.com/ojiepermana/myadmin/releases/latest), verify it
+against `checksums.txt`, extract it, and run:
+
+```sh
+myadmin serve --host 127.0.0.1 --port 8080
+```
+
+Open `http://127.0.0.1:8080` and complete the initial administrator setup.
+MyAdmin stores its internal database, encrypted credentials, logs, and backups
+in the platform data directory. Use `--data-dir PATH` or `MYADMIN_DATA_DIR` to
+choose another location.
+
+For a server deployment, use the [operator guide](docs/operations/README.md),
+the [Docker image](distribution/docker/README.md), or the
+[systemd and launchd service files](distribution/service/README.md).
 
 ## Requirements
 

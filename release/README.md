@@ -20,5 +20,6 @@ Use `myadmin doctor --data-dir PATH` to check an installation. Use
 `myadmin version` to print the release version, commit, and platform.
 
 The accompanying `checksums.txt` file contains a SHA-256 checksum for every
-binary. Signing, installers, service files, and container images are handled
-by the later distribution release work.
+downloadable release archive. Signing status is stated in the release notes.
+Native installers remain deferred to V2. Service templates and container image
+instructions are available in the repository operator documentation.

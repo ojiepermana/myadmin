@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.myadmin.server</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/myadmin</string>
+    <string>serve</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+    <string>--data-dir</string>
+    <string>__MYADMIN_DATA_DIR__</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__MYADMIN_DATA_DIR__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>MYADMIN_SECURITY_SECURE_COOKIES</key>
+    <string>true</string>
+  </dict>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>LowPriorityIO</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+  <key>Umask</key>
+  <integer>63</integer>
+  <key>StandardOutPath</key>
+  <string>__MYADMIN_DATA_DIR__/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__MYADMIN_DATA_DIR__/logs/launchd.err.log</string>
+</dict>
+</plist>

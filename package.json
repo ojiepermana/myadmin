@@ -10,6 +10,7 @@
     "embed:web": "bun run scripts/build/embed-web-assets.ts",
     "build:binaries": "bun run scripts/build/compile-binary.ts",
     "checksums": "bun run scripts/build/checksums.ts",
+    "release:changelog": "bun run scripts/release/changelog.ts",
     "release:sizes": "bun run scripts/build/report-sizes.ts",
     "smoke:binary": "bun run scripts/verify/smoke-binary.ts",
     "bundle:contract": "bun run scripts/bundle-contract.ts",

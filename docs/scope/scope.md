@@ -754,10 +754,11 @@ Dari kode ke lima binary terverifikasi. Done when: artefak per target lahir dari
 Signing bergerbang sertifikat, Docker multi arch, service file, dokumentasi operator. Done when: pemasangan dari artefak nyata mengikuti dokumen sendiri berhasil di platform tersedia.
 
 - [x] Design it (spec): [0055](../specs/0055-distribution-release/index.md)
-- [ ] Build it: /develop distribution-release
-  - [ ] GitHub Releases plus changelog plus langkah signing bergerbang (AC-1, AC-2, AC-3)
-  - [ ] Docker multi arch plus varian tools plus service file systemd launchd (AC-4, AC-5)
-  - [ ] Dokumentasi operator lengkap, SECURITY.md, README, uji penerimaan (AC-6, AC-7, AC-8)
+- [x] Build it: /develop distribution-release
+  - [x] GitHub Releases plus changelog plus langkah signing bergerbang (AC-1, AC-2, AC-3)
+  - [x] Docker multi arch plus varian tools plus service file systemd launchd (AC-4, AC-5)
+  - [x] Dokumentasi operator lengkap, SECURITY.md, dan README (AC-6, AC-7)
+  - [ ] Uji penerimaan dari artefak nyata pada VM atau container bersih (AC-8)
 - [ ] [Verify it](../specs/0055-distribution-release/verify.md): /check verify distribution-release
 - [ ] [Test it](../specs/0055-distribution-release/test.md): /test distribution-release
 
