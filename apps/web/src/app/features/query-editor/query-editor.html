@@ -148,7 +148,7 @@
           <h2 id="query-results-title" class="text-sm font-semibold">Results</h2>
           <p class="text-xs text-muted-foreground">
             {{ execution()?.state }} · {{ execution()?.durationMs ?? 0 }} ms ·
-            {{ results().length }} result set(s)
+            {{ statements().length }} statement(s)
           </p>
         </div>
         @if (errorPosition() !== null) {
@@ -165,60 +165,58 @@
           <strong>{{ execution()?.error?.code }}</strong> {{ execution()?.error?.message }}
         </div>
       }
-      @for (statement of execution()?.statements ?? []; track $index) {
-        @if (statement.error) {
-          <div
-            class="mx-5 mb-3 rounded-md border border-destructive/20 bg-destructive/5 px-4 py-2 text-sm text-destructive sm:mx-7"
-          >
-            Statement {{ $index + 1 }}: {{ statement.error.message }}
-            @if (statement.state === 'skipped') {
-              <span>Not run.</span>
-            }
-          </div>
-        }
-        @if (statement.result) {
-          <div
-            class="query-result-table mx-5 mb-4 overflow-auto rounded-md border border-border sm:mx-7"
-          >
-            <div class="border-b border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              Statement {{ $index + 1 }} · {{ statement.message }} ·
-              {{ statement.durationMs ?? 0 }} ms
-            </div>
-            <table class="w-full min-w-max text-left text-xs">
-              <thead class="bg-muted/20 text-muted-foreground">
-                <tr>
-                  @for (column of statement.result.columns; track column) {
-                    <th class="whitespace-nowrap border-b border-border px-3 py-2 font-semibold">
-                      {{ column }}
-                    </th>
-                  }
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of statement.result.rows; track $index) {
-                  <tr class="border-b border-border/60 last:border-0">
-                    @for (column of statement.result.columns; track column) {
-                      <td
-                        class="whitespace-pre-wrap px-3 py-2 align-top"
-                        [class]="cellClass(row[column])"
-                      >
-                        {{ cellValue(row[column]) }}
-                      </td>
-                    }
-                  </tr>
-                }
-              </tbody>
-            </table>
-            @if (statement.result.truncated) {
-              <p
-                class="border-t border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"
+      @if (statements().length > 0) {
+        <Tabs [(value)]="activeResultTab" class="query-result-tabs">
+          <TabsList variant="line" class="query-result-tab-list px-5 sm:px-7">
+            @for (statement of statements(); track $index) {
+              <button
+                TabsTrigger
+                [value]="resultTabId($index)"
+                [attr.aria-label]="
+                  'Statement ' + ($index + 1) + ', ' + statementStateLabel(statement)
+                "
               >
-                Only the configured row limit is shown. Total rows:
-                {{ statement.result.totalRows }}.
-              </p>
+                <span>Statement {{ $index + 1 }}</span>
+                <span class="query-result-tab-summary">{{ statementSummary(statement) }}</span>
+              </button>
             }
-          </div>
-        }
+          </TabsList>
+          @for (statement of statements(); track $index) {
+            <TabsContent [value]="resultTabId($index)" class="query-result-tab-content">
+              <div class="query-result-statement-meta" role="status">
+                <span>{{ statementStateLabel(statement) }}</span>
+                <span>{{ statementSummary(statement) }}</span>
+                @if (statement.durationMs !== undefined) {
+                  <span>{{ statement.durationMs }} ms</span>
+                }
+              </div>
+              @if (statement.result) {
+                <app-result-grid
+                  [result]="statement.result"
+                  [executionId]="execution()?.executionId ?? null"
+                />
+              } @else if (statement.error) {
+                <div class="query-result-error" role="alert">
+                  <strong>Statement {{ $index + 1 }} failed.</strong>
+                  <p>{{ statement.error.message }}</p>
+                  @if (statement.error.position !== undefined) {
+                    <p class="text-xs">Error position: {{ statement.error.position }}</p>
+                  }
+                </div>
+              } @else if (statement.state === 'skipped') {
+                <p class="query-result-empty" role="status">
+                  This statement was not run after an earlier error.
+                </p>
+              } @else {
+                <p class="query-result-empty" role="status">
+                  Waiting for this statement to finish.
+                </p>
+              }
+            </TabsContent>
+          }
+        </Tabs>
+      } @else {
+        <p class="query-result-empty" role="status">Statements are being prepared.</p>
       }
     </section>
   }

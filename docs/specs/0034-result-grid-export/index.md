@@ -1,7 +1,7 @@
 # 0034. Result grid dan export result
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-QRY-05: result grid mendukung multiple result set, menampilkan kolom dan nila
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin membaca hasil query dengan jelas (NULL vs kosong, JSON terbaca) dan menyalin apa yang saya pilih.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: ResultGrid di atas data grid foundation (dipilih)
 
 **Pros**:
+
 - Sesuai aturan FR-UI-01; virtualisasi dan aksesibilitas dari foundation; Myadmin hanya menambah semantik database (tipe sel, NULL, result set).
 
 **Cons**:
+
 - Fitur grid dibatasi kapabilitas foundation; gap dieskalasikan ke paket (pola spec 0014).
 
 ### Option 2: Grid hasil khusus dari nol
 
 **Pros**:
+
 - Kendali penuh.
 
 **Cons**:
+
 - Melanggar aturan komponen generik; virtualisasi dan a11y mahal dibangun ulang.
 
 ## Decision
@@ -65,14 +70,16 @@ ResultGrid akan menjadi komponen paling sering dipandang pengguna; membangunnya 
 **API surface**: tidak menambah endpoint (export penuh milik spec 0047).
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| render sel | nilai dan tipe | payload sel berlabel tipe dari eksekusi |
-| indikator terpotong | jumlah dimuat, batas | metadata hasil (spec 0033 AC-6) |
-| export klien | CSV/JSON | baris termuat di memori klien |
-| export penuh | job export | spec 0047 (executionId atau SQL asal sebagai sumber) |
+
+| Action              | Value produced / displayed | Source                                               |
+| ------------------- | -------------------------- | ---------------------------------------------------- |
+| render sel          | nilai dan tipe             | payload sel berlabel tipe dari eksekusi              |
+| indikator terpotong | jumlah dimuat, batas       | metadata hasil (spec 0033 AC-6)                      |
+| export klien        | CSV/JSON                   | baris termuat di memori klien                        |
+| export penuh        | job export                 | spec 0047 (executionId atau SQL asal sebagai sumber) |
 
 **Key invariants**:
+
 - Semua nilai dirender sebagai teks; tidak ada jalur innerHTML atas data hasil.
 - Salin dan export klien tidak pernah memicu query baru.
 - Grid tidak mengubah data (read only di konteks query editor).
@@ -96,12 +103,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Pengalaman membaca hasil setara alat desktop; komponen dipakai ulang data browser.
 
 **Negative / tradeoffs**:
+
 - Pengurutan klien atas data terpotong bisa disalahpahami; label eksplisit menekan risiko itu.
 
 **Neutral**:
+
 - Viewer BLOB ditunda V2 sesuai feature.md.
 
 ## Follow-up
@@ -111,9 +121,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-QRY-05, NFR-04; feature.md baris BLOB viewer V2; struktur.md shared/database-components; spec 0033.
 
 **Practices & standards**:
+
 - Render data sebagai teks; virtualisasi untuk daftar besar; presisi lewat nilai berlabel tipe.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

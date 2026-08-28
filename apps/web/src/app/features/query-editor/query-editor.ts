@@ -21,18 +21,31 @@ import {
 import {
   MyadminSdk,
   type Connection,
-  type QueryCell,
   type QueryExecution,
   type QueryExecutionRequest,
 } from '@myadmin/sdk-angular';
+import {
+  TabsComponent,
+  TabsContentComponent,
+  TabsListComponent,
+  TabsTriggerComponent,
+} from '@ojiepermana/angular/component/tabs';
 import { firstValueFrom } from 'rxjs';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { WorkspaceStore } from '../../core/state/workspace.store';
+import { ResultGrid } from '../../shared/database-components/result-grid';
 
 type MetadataKind = 'schemas' | 'objects' | 'columns';
 
 @Component({
   selector: 'app-query-editor',
+  imports: [
+    ResultGrid,
+    TabsComponent,
+    TabsContentComponent,
+    TabsListComponent,
+    TabsTriggerComponent,
+  ],
   templateUrl: './query-editor.html',
   styleUrl: './query-editor.scss',
 })
@@ -57,6 +70,7 @@ export class QueryEditor implements AfterViewInit {
   protected readonly schema = signal(this.contextString('schema'));
   protected readonly sqlText = signal(this.contextString('draftSql') || 'SELECT 1;');
   protected readonly execution = signal<QueryExecution | null>(null);
+  protected readonly activeResultTab = signal('statement-0');
   protected readonly loadingConnections = signal(true);
   protected readonly loadingMetadata = signal(false);
   protected readonly metadataMessage = signal<string | null>(null);
@@ -69,9 +83,7 @@ export class QueryEditor implements AfterViewInit {
     () => this.connections().find((connection) => connection.id === this.connectionId()) ?? null,
   );
   protected readonly engine = computed(() => this.selectedConnection()?.engine ?? 'postgresql');
-  protected readonly results = computed(
-    () => this.execution()?.statements.filter((statement) => statement.result !== undefined) ?? [],
-  );
+  protected readonly statements = computed(() => this.execution()?.statements ?? []);
   protected readonly errorPosition = computed(() => {
     const execution = this.execution();
     if (!execution) return null;
@@ -160,7 +172,7 @@ export class QueryEditor implements AfterViewInit {
     try {
       const accepted = await firstValueFrom(this.sdk.query.execute(request));
       this.stopWatching = this.sdk.query.watch(accepted.executionId, (execution) => {
-        this.execution.set(execution);
+        this.updateExecution(execution);
       });
     } catch (error) {
       this.message.set(error instanceof Error ? error.message : 'The query could not be started.');
@@ -184,7 +196,7 @@ export class QueryEditor implements AfterViewInit {
         }),
       );
       this.stopWatching = this.sdk.query.watch(accepted.executionId, (execution) => {
-        this.execution.set(execution);
+        this.updateExecution(execution);
       });
     } catch (error) {
       this.message.set(error instanceof Error ? error.message : 'The transaction command failed.');
@@ -217,17 +229,29 @@ export class QueryEditor implements AfterViewInit {
     this.editor.focus();
   }
 
-  protected cellValue(cell: QueryCell | undefined): string {
-    if (!cell || cell.type === 'null') return 'NULL';
-    return typeof cell.value === 'string' ? cell.value : String(cell.value);
+  protected resultTabId(index: number): string {
+    return `statement-${index}`;
   }
 
-  protected cellClass(cell: QueryCell | undefined): string {
-    if (!cell || cell.type === 'null') return 'text-muted-foreground italic';
-    if (cell.type === 'number') return 'text-sky-700 dark:text-sky-300';
-    if (cell.type === 'boolean') return 'text-violet-700 dark:text-violet-300';
-    if (cell.type === 'bytes' || cell.type === 'json') return 'text-amber-700 dark:text-amber-300';
-    return '';
+  protected statementSummary(statement: QueryExecution['statements'][number]): string {
+    if (statement.result?.affectedRows !== undefined) {
+      const affected = statement.result.affectedRows;
+      return `${affected} affected row${affected === 1 ? '' : 's'}`;
+    }
+    if (statement.result) {
+      return `${statement.result.rows.length} of ${statement.result.totalRows} rows`;
+    }
+    if (statement.error) return 'Error';
+    if (statement.state === 'skipped') return 'Skipped';
+    return statement.state;
+  }
+
+  protected statementStateLabel(statement: QueryExecution['statements'][number]): string {
+    if (statement.state === 'done') return 'Complete';
+    if (statement.state === 'error') return 'Error';
+    if (statement.state === 'skipped') return 'Skipped';
+    if (statement.state === 'running') return 'Running';
+    return 'Waiting';
   }
 
   protected metadataKind(): MetadataKind {
@@ -300,6 +324,17 @@ export class QueryEditor implements AfterViewInit {
       database: this.database(),
       schema: this.schema(),
     });
+  }
+
+  private updateExecution(execution: QueryExecution): void {
+    this.execution.set(execution);
+    if (
+      !execution.statements.some(
+        (_statement, index) => this.resultTabId(index) === this.activeResultTab(),
+      )
+    ) {
+      this.activeResultTab.set('statement-0');
+    }
   }
 
   private dialectFor(engine: 'postgresql' | 'mysql') {

@@ -491,8 +491,8 @@ ResultGrid bertipe aman dengan multiple result set dan export klien. Done when: 
 
 - [x] Design it (spec): [0034](../specs/0034-result-grid-export/index.md)
 - [ ] Build it: /develop result-grid-export
-  - [ ] ResultGrid virtualized dengan render sel bertipe dan viewer JSON (AC-1, AC-3, AC-7)
-  - [ ] Sub tab result set, panel error, salin dan export klien (AC-2, AC-4, AC-5, AC-6)
+  - [x] ResultGrid virtualized dengan render sel bertipe dan viewer JSON (AC-1, AC-3, AC-7)
+  - [x] Sub tab result set, panel error, salin dan export klien (AC-2, AC-4, AC-5, AC-6)
   - [ ] Test render, kinerja, dan e2e (AC-8)
 - [ ] [Verify it](../specs/0034-result-grid-export/verify.md): /check verify result-grid-export
 - [ ] [Test it](../specs/0034-result-grid-export/test.md): /test result-grid-export

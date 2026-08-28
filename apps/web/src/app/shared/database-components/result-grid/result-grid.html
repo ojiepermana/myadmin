@@ -1,0 +1,214 @@
+<section class="result-grid" aria-label="Query result grid">
+  <div class="result-grid-toolbar">
+    <div class="result-grid-summary" role="status" aria-live="polite">
+      @if (result().affectedRows !== undefined) {
+        <span
+          >{{ result().affectedRows }} affected row{{
+            result().affectedRows === 1 ? '' : 's'
+          }}</span
+        >
+      } @else {
+        <span
+          >{{ result().rows.length }} loaded of {{ result().totalRows }} row{{
+            result().totalRows === 1 ? '' : 's'
+          }}</span
+        >
+      }
+      @if (result().durationMs !== undefined) {
+        <span class="result-grid-summary-divider" aria-hidden="true">·</span>
+        <span>{{ result().durationMs }} ms</span>
+      }
+      @if (result().truncated) {
+        <Badge variant="secondary">Truncated, loaded rows only</Badge>
+      }
+    </div>
+
+    <div class="result-grid-actions">
+      <label class="result-grid-format-label" for="result-grid-format">Copy as</label>
+      <select
+        id="result-grid-format"
+        class="result-grid-format"
+        [value]="copyFormat()"
+        (change)="setCopyFormat($any($event.target).value)"
+      >
+        <option value="tsv">TSV</option>
+        <option value="csv">CSV</option>
+        <option value="json">JSON</option>
+      </select>
+      <button
+        Button
+        type="button"
+        variant="outline"
+        size="sm"
+        [disabled]="selectedCount() === 0"
+        (click)="copySelected()"
+      >
+        Copy selected<span class="sr-only"> rows</span>
+      </button>
+      <button Button type="button" variant="outline" size="sm" (click)="copyLoaded()">
+        Copy loaded
+      </button>
+      <details class="result-export-menu">
+        <summary class="result-export-trigger">Export</summary>
+        <div class="result-export-options">
+          <button type="button" (click)="exportLoaded('csv')">Loaded rows as CSV</button>
+          <button type="button" (click)="exportLoaded('json')">Loaded rows as JSON</button>
+          <button type="button" (click)="exportLoaded('tsv')">Loaded rows as TSV</button>
+          <button
+            type="button"
+            [disabled]="!result().truncated || !fullExportEnabled()"
+            [attr.title]="fullExportLabel()"
+            (click)="requestFullExport()"
+          >
+            Export all rows via job
+          </button>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  @if (result().truncated) {
+    <p class="result-grid-notice" role="status">
+      This result is truncated. Client sorting and exports use the {{ result().rows.length }} loaded
+      rows; the full export job will be enabled by the export service.
+    </p>
+  }
+  @if (status()) {
+    <p class="result-grid-status" role="status">{{ status() }}</p>
+  }
+
+  @if (result().rows.length === 0) {
+    <p class="result-grid-empty" role="status">This statement returned no rows.</p>
+  } @else if (visibleRows().length === 0) {
+    <p class="result-grid-empty" role="status">No loaded rows match the column filters.</p>
+  } @else {
+    <cdk-virtual-scroll-viewport
+      class="result-grid-viewport"
+      itemSize="52"
+      minBufferPx="260"
+      maxBufferPx="520"
+      [attr.aria-label]="'Query result rows, ' + result().rows.length + ' loaded'"
+    >
+      <table
+        class="result-grid-table"
+        role="grid"
+        [attr.aria-rowcount]="result().rows.length + 1"
+        [attr.aria-colcount]="columns().length + 1"
+      >
+        <caption class="sr-only">
+          Loaded query result rows
+        </caption>
+        <colgroup>
+          <col class="result-grid-selection-column" />
+          @for (column of columns(); track column.name) {
+            <col [style.width.px]="columnWidth(column.name)" />
+          }
+        </colgroup>
+        <thead>
+          <tr role="row">
+            <th scope="col" class="result-grid-selection-header" role="columnheader">
+              <span class="sr-only">Select row</span>
+            </th>
+            @for (column of columns(); track column.name) {
+              <th
+                scope="col"
+                role="columnheader"
+                [attr.aria-sort]="ariaSort(column.name)"
+                [attr.aria-label]="column.name + ', type ' + columnTypeName(column.name)"
+              >
+                <div class="result-grid-column-heading">
+                  <button
+                    type="button"
+                    class="result-grid-sort-button"
+                    [attr.aria-label]="'Sort ' + column.name"
+                    (click)="sortBy(column.name)"
+                  >
+                    <span>{{ column.name }}</span>
+                    <span class="result-grid-sort-indicator" aria-hidden="true">{{
+                      sortIndicator(column.name)
+                    }}</span>
+                  </button>
+                  <span class="result-grid-column-type">{{ columnTypeName(column.name) }}</span>
+                  <input
+                    class="result-grid-filter"
+                    type="search"
+                    [value]="filterValue(column.name)"
+                    [attr.aria-label]="'Filter ' + column.name"
+                    placeholder="Filter"
+                    (input)="updateFilter(column.name, $any($event.target).value)"
+                  />
+                  <button
+                    type="button"
+                    class="result-grid-resize-handle"
+                    [attr.aria-label]="'Resize ' + column.name + ' column'"
+                    (pointerdown)="startResize($event, column.name)"
+                    (keydown)="resizeWithKeyboard($event, column.name)"
+                  ></button>
+                </div>
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *cdkVirtualFor="let entry of visibleRows(); trackBy: trackRow"
+            role="row"
+            [class.result-grid-row-selected]="selectedRows().has(entry.originalIndex)"
+            [attr.aria-rowindex]="entry.originalIndex + 2"
+          >
+            <td class="result-grid-selection-cell" role="gridcell">
+              <input
+                type="checkbox"
+                [checked]="selectedRows().has(entry.originalIndex)"
+                [attr.aria-label]="'Select row ' + (entry.originalIndex + 1)"
+                (click)="toggleRow(entry.originalIndex, $event)"
+              />
+            </td>
+            @for (column of columns(); track column.name; let columnIndex = $index) {
+              <td
+                class="result-grid-cell"
+                role="gridcell"
+                tabindex="0"
+                [class.result-grid-number-cell]="isNumber(entry.row[column.name])"
+                [class.result-grid-null-cell]="isNull(entry.row[column.name])"
+                [attr.aria-colindex]="columnIndex + 2"
+                [attr.aria-label]="column.name + ': ' + cellPreview(entry.row[column.name])"
+                (click)="activateCell(entry.row[column.name], column.name)"
+                (keydown)="onCellKeydown($event, entry.row[column.name], column.name)"
+              >
+                @if (isNull(entry.row[column.name])) {
+                  <Badge variant="outline">NULL</Badge>
+                } @else if (isEmptyString(entry.row[column.name])) {
+                  <span class="result-grid-empty-string" aria-label="Empty string">∅</span>
+                } @else {
+                  <span class="result-grid-cell-value">{{
+                    cellPreview(entry.row[column.name])
+                  }}</span>
+                  @if (isLong(entry.row[column.name]) || entry.row[column.name]?.type === 'json') {
+                    <span class="result-grid-cell-hint" aria-hidden="true">View</span>
+                  }
+                }
+              </td>
+            }
+          </tr>
+        </tbody>
+      </table>
+    </cdk-virtual-scroll-viewport>
+  }
+</section>
+
+<Dialog [open]="fullCell() !== null" (openChange)="$event || closeFullValue()">
+  <DialogHeader>
+    <DialogTitle>{{ fullCellTitle() }}</DialogTitle>
+    <DialogDescription
+      >Values are shown as text. JSON is formatted for reading only.</DialogDescription
+    >
+  </DialogHeader>
+  <DialogContent>
+    <pre class="result-grid-full-value">{{ fullCellText() }}</pre>
+  </DialogContent>
+  <DialogFooter>
+    <button Button type="button" variant="outline" (click)="copyFullValue()">Copy value</button>
+    <button Button type="button" DialogClose>Close</button>
+  </DialogFooter>
+</Dialog>
