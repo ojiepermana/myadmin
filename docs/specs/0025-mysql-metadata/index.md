@@ -1,7 +1,7 @@
 # 0025. Provider MySQL: metadata dan introspeksi
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -86,11 +86,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Fungsi quoting backtick plus test, memenuhi **AC-6**.
-2. listDatabases (saring sistem, charset, collation, ukuran malas), listObjects paginated termasuk trigger, memenuhi **AC-1**, **AC-2**.
-3. describeTable lengkap plus properti engine/collation, memenuhi **AC-3**.
-4. getViewDefinition, listRoutines, daftar trigger, memenuhi **AC-4**.
-5. searchObjects paginated, memenuhi **AC-5**.
+1. [x] Fungsi quoting backtick plus test, memenuhi **AC-6**.
+2. [x] listDatabases (saring sistem, charset, collation, ukuran malas), listObjects paginated termasuk trigger, memenuhi **AC-1**, **AC-2**.
+3. [x] describeTable lengkap plus properti engine/collation, memenuhi **AC-3**.
+4. [x] getViewDefinition, listRoutines, daftar trigger, memenuhi **AC-4**.
+5. [x] searchObjects paginated, memenuhi **AC-5**.
 6. Test integrasi dua versi, test bentuk lintas provider, test performa, memenuhi **AC-7**, **AC-8**.
 
 ## Consequences

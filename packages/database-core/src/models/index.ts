@@ -6,7 +6,7 @@ export type DatabaseObjectType =
 /** A provider independent identity for an object in a database hierarchy. */
 export interface ObjectRef {
   database: string;
-  schema?: string;
+  schema?: string | null;
   name: string;
   type: DatabaseObjectType;
 }

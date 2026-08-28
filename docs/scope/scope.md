@@ -370,9 +370,10 @@ Introspeksi information_schema dengan hierarki datar. Done when: bentuk hasil id
 
 - [x] Design it (spec): [0025](../specs/0025-mysql-metadata/index.md)
 - [ ] Build it: /develop mysql-metadata
-  - [ ] Quoting backtick plus daftar database dan object termasuk trigger (AC-1, AC-2, AC-6)
-  - [ ] describeTable lengkap plus definisi view dan routine (AC-3, AC-4)
+  - [x] Quoting backtick plus daftar database dan object termasuk trigger (AC-1, AC-2, AC-6)
+  - [x] describeTable lengkap plus definisi view dan routine (AC-3, AC-4)
   - [ ] Pencarian plus test bentuk lintas provider dan performa (AC-5, AC-7, AC-8)
+  - code in `packages/database-mysql/src/metadata/`, `packages/database-mysql/test/metadata.test.ts`, and `packages/database-core/src/models/index.ts`
 - [ ] [Verify it](../specs/0025-mysql-metadata/verify.md): /check verify mysql-metadata
 - [ ] [Test it](../specs/0025-mysql-metadata/test.md): /test mysql-metadata
 
