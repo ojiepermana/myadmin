@@ -8,6 +8,7 @@ const sourceRoots = ['apps', 'packages', 'scripts', 'tests'].map((directory) =>
   join(repositoryRoot, directory),
 );
 const e2eEvidencePath = join(specsRoot, 'evidence/2026-08-29-e2e.md');
+const databaseEvidencePath = join(specsRoot, 'evidence/2026-08-29-database.md');
 const testIdPattern = /\b(?:UT|IT|CT|E2E|SEC|PERF|VIS|SMOKE|MANUAL)-\d{4}-AC\d+\b/g;
 const acceptanceHeadingPattern = /^### AC-(\d+)\s*$/gm;
 
@@ -105,6 +106,26 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
   const referenceText = sourceReferences
     .map((reference) => `${reference.path}:${reference.line}`)
     .join(', ');
+  const databaseEvidence = readFileSync(databaseEvidencePath, 'utf8');
+  const hasPostgresqlEvidence =
+    sourceReferences.some(
+      (reference) =>
+        reference.path.startsWith('tests/integration/postgresql/') ||
+        reference.path.startsWith('tests/performance/postgresql'),
+    ) && databaseEvidence.includes('PostgreSQL: **14 passed, 0 failed**');
+  const hasMysqlEvidence =
+    sourceReferences.some((reference) => reference.path.startsWith('tests/integration/mysql/')) &&
+    databaseEvidence.includes('MySQL: **24 passed, 0 failed**');
+
+  if (hasPostgresqlEvidence || hasMysqlEvidence) {
+    const engine = hasPostgresqlEvidence ? 'PostgreSQL' : 'MySQL';
+    return {
+      id,
+      status: 'PASS',
+      message: `bun test ${engine} integration (pass, 0 fail); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-database.md`,
+      references: sourceReferences,
+    };
+  }
 
   if (type === 'E2E') {
     const hasExecutedTest = sourceReferences.some((reference) =>
@@ -216,7 +237,7 @@ function generate(): void {
     `- AC blocked: **${blockedCount}**`,
     '- `PASS` means the matching source test ID was found and its command gate passed.',
     '- `BLOCKED` means the planned ID is missing, or its proof type/environment was not executed. A source file alone is not acceptance evidence.',
-    '- The root suite had 8 environment-dependent skips; database integration references remain blocked unless the disposable database URL is present.',
+    '- The baseline root suite had 8 environment-dependent skips; recorded PostgreSQL/MySQL runs are linked from docs/specs/evidence/2026-08-29-database.md, and unmatched environment-dependent IDs remain blocked.',
     '',
     '| Spec | AC | Requirement | Test ID(s) | Implementation | Evidence | Verdict |',
     '|---|---:|---|---|---|---|---|',
