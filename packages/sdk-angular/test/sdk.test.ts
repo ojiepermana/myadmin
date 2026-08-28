@@ -19,6 +19,7 @@ import type {
   AuthLoginResponse,
   AuditListQuery,
   AuditListResponse,
+  ChangePasswordRequest,
   HealthResponse,
   JobPage,
   RealtimeClient,
@@ -297,5 +298,25 @@ describe('MyAdmin Angular SDK', () => {
     expect(settingRequest.request.body).toEqual({ value: 10 });
     settingRequest.flush(null, { status: 204, statusText: 'No Content' });
     await expect(settingUpdate).resolves.toBeUndefined();
+  });
+
+  it('AC-0018 sends password and user-management operations through the contract paths', async () => {
+    const sdk = TestBed.inject(MyadminSdk);
+    const changeRequest: ChangePasswordRequest = {
+      currentPassword: 'current-password',
+      newPassword: 'new-password-0018',
+    };
+    const change = firstValueFrom(sdk.auth.changePassword(changeRequest));
+    const changeHttpRequest = http.expectOne('/api/v1/auth/change-password');
+    expect(changeHttpRequest.request.headers.get('X-Myadmin-Csrf')).toBe('1');
+    expect(changeHttpRequest.request.body).toEqual(changeRequest);
+    changeHttpRequest.flush(null, { status: 204, statusText: 'No Content' });
+    await expect(change).resolves.toBeUndefined();
+
+    const users = firstValueFrom(sdk.users.list({ page: 2, pageSize: 10 }));
+    const listRequest = http.expectOne('/api/v1/users?page=2&pageSize=10');
+    expect(listRequest.request.method).toBe('GET');
+    listRequest.flush({ items: [], page: 2, pageSize: 10, total: 10 });
+    await expect(users).resolves.toMatchObject({ page: 2, total: 10 });
   });
 });

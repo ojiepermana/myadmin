@@ -39,6 +39,14 @@ paths:
     $ref: ./paths/audit.yaml
   /audit/actions:
     $ref: ./paths/audit-actions.yaml
+  /auth/change-password:
+    $ref: ./paths/auth-change-password.yaml
+  /users:
+    $ref: ./paths/users.yaml
+  /users/{id}:
+    $ref: ./paths/user.yaml
+  /users/{id}/reset-password:
+    $ref: ./paths/user-reset-password.yaml
 components:
   schemas:
     ApiError:
@@ -81,6 +89,20 @@ components:
       $ref: ./components/schemas/audit.yaml#/AuditListResponse
     AuditActionsResponse:
       $ref: ./components/schemas/audit.yaml#/AuditActionsResponse
+    ManagedUser:
+      $ref: ./components/schemas/user.yaml#/ManagedUser
+    UserPage:
+      $ref: ./components/schemas/user.yaml#/UserPage
+    ChangePasswordRequest:
+      $ref: ./components/schemas/user.yaml#/ChangePasswordRequest
+    CreateUserRequest:
+      $ref: ./components/schemas/user.yaml#/CreateUserRequest
+    UpdateUserRequest:
+      $ref: ./components/schemas/user.yaml#/UpdateUserRequest
+    ResetPasswordRequest:
+      $ref: ./components/schemas/user.yaml#/ResetPasswordRequest
+    ManagedUserResponse:
+      $ref: ./components/schemas/user.yaml#/ManagedUserResponse
     Health:
       $ref: ./components/schemas/health.yaml
   parameters:

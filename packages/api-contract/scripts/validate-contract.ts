@@ -28,6 +28,10 @@ const initialPaths = {
   '/settings/{key}': 'paths/settings-key.yaml',
   '/audit': 'paths/audit.yaml',
   '/audit/actions': 'paths/audit-actions.yaml',
+  '/auth/change-password': 'paths/auth-change-password.yaml',
+  '/users': 'paths/users.yaml',
+  '/users/{id}': 'paths/user.yaml',
+  '/users/{id}/reset-password': 'paths/user-reset-password.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);
@@ -124,7 +128,7 @@ async function assertContractRules(): Promise<void> {
   const actualPaths = Object.keys(paths).sort();
   const expectedPaths = Object.keys(initialPaths).sort();
   if (JSON.stringify(actualPaths) !== JSON.stringify(expectedPaths)) {
-    throw new Error(`Initial paths differ from the required set: ${actualPaths.join(', ')}`);
+    throw new Error(`Contract paths differ from the required set: ${actualPaths.join(', ')}`);
   }
 
   for (const [pathName, relativePath] of Object.entries(initialPaths)) {

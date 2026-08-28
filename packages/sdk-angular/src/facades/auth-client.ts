@@ -9,6 +9,8 @@ export type AuthLoginResponse =
   operations['login']['responses'][200]['content']['application/json'];
 export type CurrentUser =
   operations['getCurrentUser']['responses'][200]['content']['application/json'];
+export type ChangePasswordRequest =
+  operations['changePassword']['requestBody']['content']['application/json'];
 
 export class AuthClient {
   private readonly transport = inject<SdkTransport>(MYADMIN_SDK_TRANSPORT);
@@ -40,5 +42,16 @@ export class AuthClient {
       path: '/auth/me',
       requiresSession: true,
     });
+  }
+
+  public changePassword(request: ChangePasswordRequest): Observable<void> {
+    return this.transport
+      .request<unknown>({
+        method: 'POST',
+        path: '/auth/change-password',
+        body: request,
+        requiresSession: true,
+      })
+      .pipe(map(() => undefined));
   }
 }

@@ -40,6 +40,13 @@ export const V1_ROUTE_DEFINITIONS: readonly AppRouteDefinition[] = [
   { id: 'monitoring', path: 'monitoring', title: 'Monitoring', type: 'monitoring' },
   { id: 'audit', path: 'audit', title: 'Audit', type: 'audit' },
   { id: 'settings', path: 'settings', title: 'Settings', type: 'settings' },
+  {
+    id: 'change-password',
+    path: 'change-password',
+    title: 'Change password',
+    type: 'change-password',
+  },
+  { id: 'users', path: 'users', title: 'User management', type: 'users' },
 ];
 
 export function createAppRoutes(includeDevDemo: boolean): Routes {
@@ -58,6 +65,8 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
         ? [setupGateGuard]
         : definition.id === 'audit'
           ? [setupGateGuard, adminGuard]
+        : definition.id === 'users'
+          ? [setupGateGuard, authGuard, adminGuard]
           : [setupGateGuard, authGuard],
     loadComponent:
       definition.id === 'auth'
@@ -66,10 +75,20 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
           ? () => import('./features/settings/settings').then(({ Settings }) => Settings)
         : definition.id === 'audit'
           ? () => import('./features/audit/audit').then(({ Audit }) => Audit)
-          : () =>
-              import('./features/route-placeholder/route-placeholder').then(
-                ({ RoutePlaceholder }) => RoutePlaceholder,
-              ),
+        : definition.id === 'change-password'
+          ? () =>
+              import('./features/change-password/change-password').then(
+                ({ ChangePassword }) => ChangePassword,
+              )
+          : definition.id === 'users'
+            ? () =>
+                import('./features/user-management/user-management').then(
+                ({ UserManagement }) => UserManagement,
+              )
+            : () =>
+                import('./features/route-placeholder/route-placeholder').then(
+                  ({ RoutePlaceholder }) => RoutePlaceholder,
+                ),
   }));
 
   const devRoutes: Routes = includeDevDemo

@@ -11,6 +11,10 @@ import {
   type AuthLoginInput,
   type AuthStore,
   type SessionValidation,
+  UserManagementError,
+  UserManagementService,
+  type CreateUserInput,
+  type UpdateUserRoleStatusInput,
 } from '@myadmin/auth';
 import { AuditAdminReader, isAuditAction } from '@myadmin/audit';
 import { resolveDataDirectory, type MyadminConfig } from '@myadmin/config';
@@ -50,6 +54,7 @@ export interface ServerStartOptions {
   initialAdminService?: InitialAdminService;
   authService?: AuthService;
   settingsService?: SettingsService;
+  userManagementService?: UserManagementService;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
   jobManager?: JobManager;
@@ -69,6 +74,7 @@ export interface ServerAppOptions {
   initialAdminService?: InitialAdminService;
   authService?: AuthService;
   settingsService?: SettingsService;
+  userManagementService?: UserManagementService;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
   jobManager?: JobManager;
@@ -144,6 +150,63 @@ function isCredentials(value: unknown): value is Credentials {
   );
 }
 
+function isChangePasswordInput(
+  value: unknown,
+): value is { currentPassword: string; newPassword: string } {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    Object.keys(record).length === 2 &&
+    typeof record['currentPassword'] === 'string' &&
+    record['currentPassword'].length > 0 &&
+    typeof record['newPassword'] === 'string' &&
+    record['newPassword'].length > 0
+  );
+}
+
+function isCreateUserInput(value: unknown): value is CreateUserInput {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    Object.keys(record).length === 3 &&
+    typeof record['username'] === 'string' &&
+    typeof record['password'] === 'string' &&
+    (record['role'] === 'admin' || record['role'] === 'user')
+  );
+}
+
+function isUpdateUserInput(value: unknown): value is UpdateUserRoleStatusInput {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (keys.length === 0 || keys.some((key) => !['role', 'isActive'].includes(key))) return false;
+  return (
+    (record['role'] === undefined || record['role'] === 'admin' || record['role'] === 'user') &&
+    (record['isActive'] === undefined || typeof record['isActive'] === 'boolean')
+  );
+}
+
+function isResetPasswordInput(value: unknown): value is { newPassword: string } {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    Object.keys(record).length === 1 &&
+    typeof record['newPassword'] === 'string' &&
+    record['newPassword'].length > 0
+  );
+}
+
+function positiveIntegerQuery(
+  value: string | null,
+  fallback: number,
+  maximum: number,
+): number | null {
+  if (value === null || value === '') return fallback;
+  if (!/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 1 && parsed <= maximum ? parsed : null;
+}
+
 async function readJson(request: Request): Promise<unknown> {
   try {
     return await request.json();
@@ -216,10 +279,10 @@ function authErrorResponse(request: Request, error: unknown, secureCookies: bool
     }
     return apiError(
       request,
-      error.code === 'RATE_LIMITED' ? 429 : 401,
+      error.code === 'RATE_LIMITED' ? 429 : error.code === 'VALIDATION_FAILED' ? 422 : 401,
       error.code,
       error.message,
-      undefined,
+      error.details,
       headers,
     );
   }
@@ -230,6 +293,20 @@ function authErrorResponse(request: Request, error: unknown, secureCookies: bool
     'Authentication could not be completed.',
     undefined,
     { 'set-cookie': clearSessionCookie(secureCookies) },
+  );
+}
+
+function userManagementErrorResponse(request: Request, error: unknown): Response {
+  if (error instanceof UserManagementError) {
+    const status =
+      error.code === 'VALIDATION_FAILED' ? 422 : error.code === 'USER_NOT_FOUND' ? 404 : 409;
+    return apiError(request, status, error.code, error.message, error.details);
+  }
+  return apiError(
+    request,
+    500,
+    'USER_MANAGEMENT_FAILED',
+    'The user management operation could not be completed.',
   );
 }
 
@@ -333,12 +410,14 @@ function requireAdmin(
   setupService: InitialAdminService | undefined,
   authService: AuthService | undefined,
   secureCookies: boolean,
+  mutation = false,
 ): AuthenticatedSession | Response {
   const validation = authenticatedSession(request, setupService, authService, secureCookies);
   if (validation instanceof Response) return validation;
   if (validation.value.user.role !== 'admin') {
     return apiError(request, 403, 'FORBIDDEN', 'Administrator access is required.');
   }
+  if (mutation && !csrfAllowed(request)) return csrfFailureResponse(request);
   return validation.value;
 }
 
@@ -551,6 +630,34 @@ function registerAuthRoutes(
         return jsonResponse({ user: result.user }, 200, {
           'set-cookie': sessionCookie(result.token, secureCookies),
         });
+      } catch (error) {
+        return authErrorResponse(request, error, secureCookies);
+      }
+    })
+    .post(path('/auth/change-password'), async ({ request }) => {
+      if (!authService) {
+        return apiError(request, 500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
+      }
+      if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+
+      const validation = authService.validateSession(sessionToken(request));
+      if (!validation.authenticated) {
+        return sessionFailureResponse(request, validation, secureCookies);
+      }
+      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+
+      const body = await readJson(request);
+      if (!isChangePasswordInput(body)) {
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+      }
+
+      try {
+        await authService.changePassword({
+          userId: validation.value.user.id,
+          sessionId: validation.value.session.id,
+          ...body,
+        });
+        return new Response(null, { status: 204 });
       } catch (error) {
         return authErrorResponse(request, error, secureCookies);
       }
@@ -774,6 +881,124 @@ function registerSettingsRoutes(
     });
 }
 
+function registerUserRoutes(
+  application: AnyElysia,
+  prefix: string,
+  setupService: InitialAdminService | undefined,
+  authService: AuthService | undefined,
+  userManagementService: UserManagementService | undefined,
+  secureCookies: boolean,
+): AnyElysia {
+  const path = (suffix: string) => `${prefix}${suffix}`;
+
+  return application
+    .get(path('/users'), ({ request }) => {
+      if (!userManagementService) {
+        return apiError(
+          request,
+          500,
+          'USER_MANAGEMENT_UNAVAILABLE',
+          'User management is unavailable.',
+        );
+      }
+      const admin = requireAdmin(request, setupService, authService, secureCookies);
+      if (admin instanceof Response) return admin;
+
+      const page = positiveIntegerQuery(new URL(request.url).searchParams.get('page'), 1, 10_000);
+      const pageSize = positiveIntegerQuery(
+        new URL(request.url).searchParams.get('pageSize'),
+        20,
+        100,
+      );
+      if (page === null || pageSize === null) {
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The pagination parameters are invalid.');
+      }
+
+      try {
+        return userManagementService.list({ page, pageSize });
+      } catch (error) {
+        return userManagementErrorResponse(request, error);
+      }
+    })
+    .post(path('/users'), async ({ request }) => {
+      if (!userManagementService) {
+        return apiError(
+          request,
+          500,
+          'USER_MANAGEMENT_UNAVAILABLE',
+          'User management is unavailable.',
+        );
+      }
+      const admin = requireAdmin(request, setupService, authService, secureCookies, true);
+      if (admin instanceof Response) return admin;
+      const body = await readJson(request);
+      if (!isCreateUserInput(body)) {
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+      }
+
+      try {
+        const user = await userManagementService.createUser(body, admin.user.id);
+        return jsonResponse({ user }, 201);
+      } catch (error) {
+        return userManagementErrorResponse(request, error);
+      }
+    })
+    .patch(path('/users/:id'), async ({ request, params }) => {
+      if (!userManagementService) {
+        return apiError(
+          request,
+          500,
+          'USER_MANAGEMENT_UNAVAILABLE',
+          'User management is unavailable.',
+        );
+      }
+      const admin = requireAdmin(request, setupService, authService, secureCookies, true);
+      if (admin instanceof Response) return admin;
+      const body = await readJson(request);
+      if (!isUpdateUserInput(body)) {
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+      }
+
+      try {
+        const user = await userManagementService.updateUserRoleStatus(
+          String((params as { id: string }).id),
+          body,
+          admin.user.id,
+        );
+        return jsonResponse({ user });
+      } catch (error) {
+        return userManagementErrorResponse(request, error);
+      }
+    })
+    .post(path('/users/:id/reset-password'), async ({ request, params }) => {
+      if (!userManagementService) {
+        return apiError(
+          request,
+          500,
+          'USER_MANAGEMENT_UNAVAILABLE',
+          'User management is unavailable.',
+        );
+      }
+      const admin = requireAdmin(request, setupService, authService, secureCookies, true);
+      if (admin instanceof Response) return admin;
+      const body = await readJson(request);
+      if (!isResetPasswordInput(body)) {
+        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+      }
+
+      try {
+        await userManagementService.resetPassword(
+          String((params as { id: string }).id),
+          body,
+          admin.user.id,
+        );
+        return new Response(null, { status: 204 });
+      } catch (error) {
+        return userManagementErrorResponse(request, error);
+      }
+    });
+}
+
 function registerProtectedApiGuard(
   application: AnyElysia,
   prefix: string,
@@ -894,6 +1119,11 @@ export function createServerApp(options: ServerAppOptions = {}) {
   const auditRepository =
     options.auditRepository ??
     (options.database ? storeForDatabase(options.database).audit : undefined);
+  const userManagementService =
+    options.userManagementService ??
+    (options.database
+      ? new UserManagementService({ store: storeForDatabase(options.database) })
+      : undefined);
   const secureCookies = options.config?.security.secureCookies ?? false;
   const websocketCheckIntervalMs = options.websocketCheckIntervalMs ?? 60_000;
   if (
@@ -941,6 +1171,14 @@ export function createServerApp(options: ServerAppOptions = {}) {
     auditRepository,
     secureCookies,
   );
+  application = registerUserRoutes(
+    application,
+    '/api/v1',
+    setupService,
+    authService,
+    userManagementService,
+    secureCookies,
+  );
   if (authService) {
     application = registerWebSocketRoute(
       application,
@@ -975,6 +1213,7 @@ export function createApp(
   const store = storeForDatabase(database);
   const setupService = new InitialAdminService({ store });
   const authService = new AuthService(store);
+  const userManagementService = new UserManagementService({ store });
   const setupRateLimiter = new InMemoryRateLimiter();
 
   let application: AnyElysia = installObservability(
@@ -992,6 +1231,14 @@ export function createApp(
     false,
   );
   application = registerAuditRoutes(application, '', setupService, authService, store.audit, false);
+  application = registerUserRoutes(
+    application,
+    '',
+    setupService,
+    authService,
+    userManagementService,
+    false,
+  );
   return registerJobsRoutes(
     application,
     '',
@@ -1024,6 +1271,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       initialAdminService: options.initialAdminService,
       authService: options.authService,
       settingsService: options.settingsService,
+      userManagementService: options.userManagementService,
       setupRateLimiter: options.setupRateLimiter,
       loginRateLimiter: options.loginRateLimiter,
       jobManager: options.jobManager,

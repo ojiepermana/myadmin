@@ -1,0 +1,101 @@
+get:
+  operationId: listUsers
+  tags:
+    - users
+  summary: List users for administrators
+  parameters:
+    - $ref: ../components/parameters/page.yaml
+    - $ref: ../components/parameters/page-size.yaml
+  responses:
+    '200':
+      description: A page of users without password data.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/user.yaml#/UserPage
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The current user is not an administrator.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Initial setup is required before listing users.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Pagination validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Users could not be listed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+post:
+  operationId: createUser
+  tags:
+    - users
+  summary: Create a user for administrators
+  parameters:
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+      description: Same-origin mutation marker required for cookie-authenticated requests.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/user.yaml#/CreateUserRequest
+  responses:
+    '201':
+      description: User created without password data.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/user.yaml#/ManagedUserResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The current user is not an administrator or CSRF validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The username is already in use.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: User validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: User could not be created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

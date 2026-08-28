@@ -288,10 +288,10 @@ Sesi opaque server side dengan cookie HttpOnly, expiry ganda, CSRF. Done when: s
 Ganti password sendiri plus kelola user oleh Admin dengan invariant Admin terakhir. Done when: dua peran ditegakkan dua lapis dan deactivate memutus sesi seketika.
 
 - [x] Design it (spec): [0018](../specs/0018-user-management-change-password/index.md)
-- [ ] Build it: /develop user-management-change-password
-  - [ ] Use case change password, create user, role status, reset password (AC-1, AC-3 sampai AC-6)
-  - [ ] Endpoint admin only plus kontrak plus audit (AC-2, AC-8)
-  - [ ] Halaman ganti password dan manajemen user plus e2e otorisasi (AC-7, AC-9)
+- [x] Build it: /develop user-management-change-password
+  - [x] Use case change password, create user, role status, reset password (AC-1, AC-3 sampai AC-6)
+  - [x] Endpoint admin only plus kontrak plus audit (AC-2, AC-8)
+  - [x] Halaman ganti password dan manajemen user plus e2e otorisasi (AC-7, AC-9)
 - [ ] [Verify it](../specs/0018-user-management-change-password/verify.md): /check verify user-management-change-password
 - [ ] [Test it](../specs/0018-user-management-change-password/test.md): /test user-management-change-password
 

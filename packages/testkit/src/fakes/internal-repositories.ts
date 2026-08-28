@@ -87,6 +87,10 @@ export class FakeUserRepository implements UserRepository {
       .map(copy);
   }
 
+  public listPage(request?: PageRequest): Page<User> {
+    return pageOf(this.list(), request);
+  }
+
   public update(user: User): void {
     if (!this.users.has(user.id)) return;
     if (
@@ -137,6 +141,21 @@ export class FakeSessionRepository implements SessionRepository {
     let count = 0;
     for (const [id, session] of this.sessions) {
       if (session.userId === userId && session.revokedAt === null) {
+        this.sessions.set(id, { ...session, revokedAt });
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  public revokeAllForUserExcept(
+    userId: string,
+    exceptSessionId: string,
+    revokedAt = now(),
+  ): number {
+    let count = 0;
+    for (const [id, session] of this.sessions) {
+      if (id !== exceptSessionId && session.userId === userId && session.revokedAt === null) {
         this.sessions.set(id, { ...session, revokedAt });
         count += 1;
       }

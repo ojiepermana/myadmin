@@ -1,7 +1,7 @@
 # 0018. User management dan change password
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-AUTH-04 (change password memverifikasi password saat ini dan diaudit) dan FR-
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin mengganti password saya sendiri dengan aman.
 - Sebagai Admin, saya ingin menambahkan rekan kerja sebagai user dan mencabut aksesnya saat tidak diperlukan.
 
@@ -39,17 +40,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Reset password admin menyetel password baru langsung (dipilih)
 
 **Pros**:
+
 - Tanpa mekanisme tambahan (email, token reset) yang tidak ada di scope V1; cocok untuk alat internal self hosted.
 
 **Cons**:
+
 - Admin mengetahui password sementara user; dimitigasi kebiasaan user mengganti sendiri setelahnya (dianjurkan di UI).
 
 ### Option 2: Alur force change at next login
 
 **Pros**:
+
 - Password sementara berumur pendek secara paksa.
 
 **Cons**:
+
 - Menambah state dan alur login bersyarat yang tidak diminta scope V1; ditunda.
 
 ## Decision
@@ -69,23 +74,26 @@ Scope V1 menyebut manajemen user "dasar" dengan sengaja; setiap tambahan alur (u
 **State transitions** (user): active ⇄ inactive; role user ⇄ admin (dibatasi AC-4).
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /auth/change-password | POST | currentPassword, newPassword | kosong | sessionCookie | 401 password salah, 422 policy |
-| /users | GET | page, pageSize | items, total | admin | 403 |
-| /users | POST | username, password, role | user | admin | 409 username dipakai, 422 |
-| /users/:id | PATCH | role?, isActive? | user | admin | 404, 409 LAST_ADMIN |
-| /users/:id/reset-password | POST | newPassword | kosong | admin | 404, 422 |
+
+| Endpoint                  | Method | Key inputs                   | Key outputs  | Auth          | Key errors                     |
+| ------------------------- | ------ | ---------------------------- | ------------ | ------------- | ------------------------------ |
+| /auth/change-password     | POST   | currentPassword, newPassword | kosong       | sessionCookie | 401 password salah, 422 policy |
+| /users                    | GET    | page, pageSize               | items, total | admin         | 403                            |
+| /users                    | POST   | username, password, role     | user         | admin         | 409 username dipakai, 422      |
+| /users/:id                | PATCH  | role?, isActive?             | user         | admin         | 404, 409 LAST_ADMIN            |
+| /users/:id/reset-password | POST   | newPassword                  | kosong       | admin         | 404, 422                       |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| change password | keputusan sesi mana dipertahankan | id sesi dari cookie request itu |
-| list users | status aktif, role | kolom users |
-| LAST_ADMIN | jumlah admin aktif | hitungan dalam transaksi yang sama dengan mutasi |
-| reset password | password baru | input Admin; hanya di body request, tidak dicatat |
+
+| Action          | Value produced / displayed        | Source                                            |
+| --------------- | --------------------------------- | ------------------------------------------------- |
+| change password | keputusan sesi mana dipertahankan | id sesi dari cookie request itu                   |
+| list users      | status aktif, role                | kolom users                                       |
+| LAST_ADMIN      | jumlah admin aktif                | hitungan dalam transaksi yang sama dengan mutasi  |
+| reset password  | password baru                     | input Admin; hanya di body request, tidak dicatat |
 
 **Key invariants**:
+
 - Selalu ada minimal satu Admin aktif (AC-4).
 - Setiap perubahan kredensial atau status mencabut sesi yang terdampak (AC-1, AC-3, AC-5).
 - Response user tidak pernah memuat `password_hash`.
@@ -110,12 +118,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Model dua peran V1 selesai; fitur berikutnya tinggal memakai `admin`/`user` yang sudah ditegakkan.
 
 **Negative / tradeoffs**:
+
 - Tanpa force change, kebersihan password pasca reset bergantung pada user; dicatat sebagai kandidat V2.
 
 **Neutral**:
+
 - Kepemilikan koneksi per user (spec 0026) akan menumpang model user ini.
 
 ## Follow-up
@@ -125,9 +136,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-AUTH-04, FR-AUTH-06, bagian 6; spec 0010, 0017.
 
 **Practices & standards**:
+
 - Pencabutan sesi pada perubahan kredensial; invariant di transaksi; otorisasi server side dua lapis dengan UI.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

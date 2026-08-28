@@ -1,7 +1,7 @@
 import { randomBytes as cryptoRandomBytes, createHash } from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import { AuditEvents, AuditWriter } from '@myadmin/audit';
-import { PasswordHasher } from '@myadmin/crypto';
+import { PasswordHasher, validatePassword, type PasswordPolicyViolation } from '@myadmin/crypto';
 import type { InternalUnitOfWork, Session, User } from '@myadmin/internal-domain';
 import { createUuidV7 } from '@myadmin/kernel';
 import { InMemoryRateLimiter } from './rate-limiter';
@@ -18,17 +18,28 @@ const DUMMY_PASSWORD_HASH =
   '$argon2id$v=19$m=19456,t=2,p=1$ze5edbzdJWdIm/VzAxNq+Qw7kJJdCi1G3ofg62PiL18$d32RNJJ6VP1UQvQckmd7OwaZtDj9jgmEG/doyzSXVfo';
 
 export type AuthErrorCode =
-  'AUTH_INVALID_CREDENTIALS' | 'AUTH_UNAUTHENTICATED' | 'SESSION_EXPIRED' | 'RATE_LIMITED';
+  | 'AUTH_INVALID_CREDENTIALS'
+  | 'AUTH_UNAUTHENTICATED'
+  | 'SESSION_EXPIRED'
+  | 'RATE_LIMITED'
+  | 'VALIDATION_FAILED';
 
 export class AuthError extends Error {
   public readonly code: AuthErrorCode;
   public readonly retryAfterSeconds?: number;
+  public readonly details?: Record<string, unknown>;
 
-  public constructor(code: AuthErrorCode, message: string, retryAfterSeconds?: number) {
+  public constructor(
+    code: AuthErrorCode,
+    message: string,
+    retryAfterSeconds?: number,
+    details?: Record<string, unknown>,
+  ) {
     super(message);
     this.name = 'AuthError';
     this.code = code;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.details = details;
   }
 }
 
@@ -41,6 +52,13 @@ export interface AuthLoginInput {
 export interface AuthLoginResult {
   readonly user: PublicUser;
   readonly token: string;
+}
+
+export interface ChangePasswordInput {
+  readonly userId: string;
+  readonly sessionId: string;
+  readonly currentPassword: string;
+  readonly newPassword: string;
 }
 
 export interface AuthenticatedSession {
@@ -260,6 +278,68 @@ export class AuthService {
     return authenticated;
   }
 
+  public async changePassword(input: ChangePasswordInput): Promise<void> {
+    const user = this.store.transaction(({ users }) => users.findById(input.userId));
+    if (!user || !user.isActive) {
+      throw new AuthError('AUTH_UNAUTHENTICATED', 'A valid session is required.');
+    }
+
+    const verification = await this.passwordHasher.verify(input.currentPassword, user.passwordHash);
+    if (!verification.ok) {
+      this.store.transaction(() => {
+        this.auditWriter.record({
+          action: AuditEvents.user.password_changed.action,
+          result: 'failure',
+          actorUserId: user.id,
+          targetRef: user.id,
+          details: { reason: 'current_password_invalid' },
+        });
+      });
+      throw new AuthError('AUTH_INVALID_CREDENTIALS', 'The current password is incorrect.');
+    }
+
+    const policy = validatePassword(input.newPassword, user.username);
+    if (!policy.valid) {
+      this.store.transaction(() => {
+        this.auditWriter.record({
+          action: AuditEvents.user.password_changed.action,
+          result: 'failure',
+          actorUserId: user.id,
+          targetRef: user.id,
+          details: { reason: 'password_policy_invalid' },
+        });
+      });
+      throw new AuthError(
+        'VALIDATION_FAILED',
+        'The new password does not meet the password requirements.',
+        undefined,
+        passwordPolicyDetails(policy.violations),
+      );
+    }
+
+    const passwordHash = await this.passwordHasher.hash(input.newPassword);
+    this.store.transaction(({ users, sessions }) => {
+      const current = users.findById(user.id);
+      if (!current || !current.isActive) {
+        throw new AuthError('AUTH_UNAUTHENTICATED', 'A valid session is required.');
+      }
+      if (current.passwordHash !== user.passwordHash) {
+        throw new AuthError('AUTH_INVALID_CREDENTIALS', 'The current password is incorrect.');
+      }
+
+      const updatedAt = this.now();
+      users.update({ ...current, passwordHash, updatedAt });
+      sessions.revokeAllForUserExcept(current.id, input.sessionId, updatedAt);
+      this.auditWriter.record({
+        action: AuditEvents.user.password_changed.action,
+        result: 'success',
+        actorUserId: current.id,
+        targetRef: current.id,
+        details: { username: current.username },
+      });
+    });
+  }
+
   public deleteExpired(): number {
     return this.store.transaction(({ sessions }) => sessions.deleteExpired(this.now()));
   }
@@ -274,3 +354,9 @@ export class AuthService {
 }
 
 export { DUMMY_PASSWORD_HASH };
+
+function passwordPolicyDetails(
+  violations: readonly PasswordPolicyViolation[],
+): Record<string, unknown> {
+  return { fields: { newPassword: violations.map((violation) => violation.code) } };
+}

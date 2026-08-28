@@ -79,6 +79,22 @@ export class SqliteSessionRepository implements SessionRepository {
     );
   }
 
+  public revokeAllForUserExcept(
+    userId: string,
+    exceptSessionId: string,
+    revokedAt = this.now(),
+  ): number {
+    return changes(
+      this.database
+        .prepare(
+          `UPDATE sessions
+           SET revoked_at = ?
+           WHERE user_id = ? AND id != ? AND revoked_at IS NULL`,
+        )
+        .run(toIso(revokedAt), userId, exceptSessionId),
+    );
+  }
+
   public deleteExpired(at = this.now()): number {
     return changes(
       this.database.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(toIso(at)),

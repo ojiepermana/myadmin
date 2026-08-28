@@ -1,0 +1,253 @@
+<main class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10 sm:px-8 lg:gap-10 lg:py-14">
+  <section class="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+    <div class="space-y-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <Badge>Administrator control</Badge>
+        <span class="font-mono text-xs text-muted-foreground">/users</span>
+      </div>
+      <div class="space-y-3">
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+          Access directory
+        </p>
+        <h1 class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+          User management
+        </h1>
+        <p class="max-w-2xl text-lg leading-relaxed text-muted-foreground">
+          Keep workspace access deliberate. Role and status changes are audited, and deactivation
+          revokes the user's active sessions immediately.
+        </p>
+      </div>
+    </div>
+    <button Button type="button" (click)="openCreateDialog()">Create user</button>
+  </section>
+
+  <Alert>
+    <svg
+      aria-hidden="true"
+      class="size-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
+      <path
+        d="M12 3 4 7v5c0 4.8 3.4 8.3 8 9 4.6-.7 8-4.2 8-9V7l-8-4Z"
+        stroke-linejoin="round"
+      ></path>
+      <path d="M12 8v4m0 4h.01" stroke-linecap="round"></path>
+    </svg>
+    <AlertTitle>Protect the last administrator</AlertTitle>
+    <AlertDescription>
+      MyAdmin prevents the final active administrator from being disabled or demoted. Every password
+      and access change revokes sessions where appropriate.
+    </AlertDescription>
+  </Alert>
+
+  <Card>
+    <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <CardTitle>Workspace users</CardTitle>
+        <CardDescription
+          >{{ total() }} account{{ total() === 1 ? '' : 's' }} in this instance.</CardDescription
+        >
+      </div>
+      @if (loading()) {
+        <div class="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+          <Spinner aria-label="Loading users" /> Loading directory…
+        </div>
+      }
+    </CardHeader>
+    <CardContent>
+      @if (loadFailed()) {
+        <div
+          class="flex flex-col items-start gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-5"
+        >
+          <p class="text-sm text-destructive">The user directory could not be loaded.</p>
+          <button Button type="button" variant="outline" (click)="loadUsers()">Try again</button>
+        </div>
+      } @else if (loading() && users().length === 0) {
+        <div class="space-y-3" role="status" aria-label="Loading user directory">
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+        </div>
+      } @else if (users().length === 0) {
+        <div class="rounded-md border border-dashed border-border px-6 py-12 text-center">
+          <p class="font-medium">No users yet</p>
+          <p class="mt-1 text-sm text-muted-foreground">
+            Create an account to grant workspace access.
+          </p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto rounded-md border border-border">
+          <Table>
+            <caption class="sr-only">
+              MyAdmin workspace users
+            </caption>
+            <thead TableHeader>
+              <tr TableRow>
+                <th TableHead>Username</th>
+                <th TableHead>Role</th>
+                <th TableHead>Status</th>
+                <th TableHead class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody TableBody>
+              @for (user of users(); track user.id) {
+                <tr TableRow>
+                  <td TableCell class="font-medium">{{ user.username }}</td>
+                  <td TableCell>
+                    <select
+                      NativeSelect
+                      class="min-w-32"
+                      [value]="user.role"
+                      [attr.aria-label]="'Role for ' + user.username"
+                      (change)="requestRoleChange(user, $event)"
+                    >
+                      <option NativeSelectOption value="user">User</option>
+                      <option NativeSelectOption value="admin">Admin</option>
+                    </select>
+                  </td>
+                  <td TableCell>
+                    <Badge [variant]="user.isActive ? 'secondary' : 'outline'">
+                      {{ user.isActive ? 'Active' : 'Inactive' }}
+                    </Badge>
+                  </td>
+                  <td TableCell>
+                    <div class="flex justify-end gap-2">
+                      <button
+                        Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        [disabled]="submitting()"
+                        (click)="requestStatusChange(user)"
+                      >
+                        {{ user.isActive ? 'Deactivate' : 'Activate' }}
+                      </button>
+                      <button
+                        Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        [disabled]="submitting()"
+                        (click)="requestReset(user)"
+                      >
+                        Reset password
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </Table>
+        </div>
+      }
+    </CardContent>
+    @if (totalPages() > 1) {
+      <CardFooter class="justify-between gap-4 border-t border-border/70">
+        <span class="text-xs text-muted-foreground">Page {{ page() }} of {{ totalPages() }}</span>
+        <Pagination [(page)]="page" [total]="totalPages()" (pageChange)="loadUsers($event)" />
+      </CardFooter>
+    }
+  </Card>
+</main>
+
+<Dialog [(open)]="createOpen" [showCloseButton]="false" class="sm:max-w-lg">
+  <DialogHeader>
+    <DialogTitle>Create user</DialogTitle>
+    <DialogDescription
+      >Set the initial role and password. The password is never returned.</DialogDescription
+    >
+  </DialogHeader>
+  <form [formRoot]="createForm" (submit)="requestCreate()">
+    <DialogContent class="grid gap-5 py-2">
+      <div class="grid gap-2">
+        <label for="managed-username" class="text-sm font-medium">Username</label>
+        <input id="managed-username" Input autocomplete="off" [formField]="createForm.username" />
+        @if (createForm.username().touched() && createForm.username().invalid()) {
+          <p class="text-sm text-destructive" aria-live="polite">
+            {{ createForm.username().errors()[0]?.message }}
+          </p>
+        }
+      </div>
+      <div class="grid gap-2">
+        <label for="managed-password" class="text-sm font-medium">Temporary password</label>
+        <input
+          id="managed-password"
+          Input
+          type="password"
+          autocomplete="new-password"
+          [formField]="createForm.password"
+        />
+        <p class="text-xs text-muted-foreground">
+          10–256 characters. Share it through a secure channel.
+        </p>
+        @if (createForm.password().touched() && createForm.password().invalid()) {
+          <p class="text-sm text-destructive" aria-live="polite">
+            {{ createForm.password().errors()[0]?.message }}
+          </p>
+        }
+      </div>
+      <div class="grid gap-2">
+        <label for="managed-role" class="text-sm font-medium">Role</label>
+        <select id="managed-role" NativeSelect [formField]="createForm.role">
+          <option NativeSelectOption value="user">User</option>
+          <option NativeSelectOption value="admin">Admin</option>
+        </select>
+      </div>
+    </DialogContent>
+    <DialogFooter>
+      <button Button type="button" variant="outline" DialogClose>Cancel</button>
+      <button Button type="submit" [disabled]="createForm().invalid()">Review creation</button>
+    </DialogFooter>
+  </form>
+</Dialog>
+
+<Dialog [(open)]="resetOpen" [showCloseButton]="false" class="sm:max-w-lg">
+  <DialogHeader>
+    <DialogTitle>Reset password</DialogTitle>
+    <DialogDescription
+      >Set a new password for {{ resetTarget()?.username }}. All sessions will be
+      revoked.</DialogDescription
+    >
+  </DialogHeader>
+  <form [formRoot]="resetForm" (submit)="requestResetSubmit()">
+    <DialogContent class="grid gap-5 py-2">
+      <div class="grid gap-2">
+        <label for="reset-password" class="text-sm font-medium">New password</label>
+        <input
+          id="reset-password"
+          Input
+          type="password"
+          autocomplete="new-password"
+          [formField]="resetForm.newPassword"
+        />
+        @if (resetForm.newPassword().touched() && resetForm.newPassword().invalid()) {
+          <p class="text-sm text-destructive" aria-live="polite">
+            {{ resetForm.newPassword().errors()[0]?.message }}
+          </p>
+        }
+      </div>
+    </DialogContent>
+    <DialogFooter>
+      <button Button type="button" variant="outline" DialogClose>Cancel</button>
+      <button Button type="submit" [disabled]="resetForm().invalid()">Review reset</button>
+    </DialogFooter>
+  </form>
+</Dialog>
+
+<AlertDialog [(open)]="confirmOpen">
+  <AlertDialogContent size="sm">
+    <AlertDialogHeader>
+      <AlertDialogTitle>{{ confirmationTitle() }}</AlertDialogTitle>
+      <AlertDialogDescription>{{ confirmationDescription() }}</AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <button type="button" AlertDialogCancel (click)="cancelMutation()">Cancel</button>
+      <button type="button" AlertDialogAction [disabled]="submitting()" (click)="confirmMutation()">
+        {{ confirmationActionLabel() }}
+      </button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>

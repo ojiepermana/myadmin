@@ -5,6 +5,7 @@ import { HealthClient } from '../facades/health-client';
 import { JobsClient } from '../facades/jobs-client';
 import { SetupClient } from '../facades/setup-client';
 import { SettingsClient } from '../facades/settings-client';
+import { UserClient } from '../facades/user-client';
 import { SessionExpiredEvents } from '../events/session-expired';
 import { provideHttpTransport } from '../transport/http-transport';
 import { MYADMIN_SDK_TRANSPORT_CAPABILITY, type SdkTransport } from '../transport/transport';
@@ -23,6 +24,7 @@ export function provideMyadminSdk(
     SettingsClient,
     AuthClient,
     AuditClient,
+    UserClient,
     MyadminSdk,
   ];
 }
@@ -39,5 +41,6 @@ export class MyadminSdk {
   public readonly jobs = inject(JobsClient);
   public readonly setup = inject(SetupClient);
   public readonly settings = inject(SettingsClient);
+  public readonly users = inject(UserClient);
   public readonly sessionExpired = inject(SessionExpiredEvents).sessionExpired;
 }

@@ -64,3 +64,119 @@ AuthResponse:
   properties:
     user:
       $ref: '#/User'
+ManagedUser:
+  type: object
+  additionalProperties: false
+  required:
+    - id
+    - username
+    - role
+    - isActive
+  properties:
+    id:
+      type: string
+      minLength: 1
+    username:
+      type: string
+      minLength: 1
+    role:
+      type: string
+      enum:
+        - admin
+        - user
+    isActive:
+      type: boolean
+ManagedUserResponse:
+  type: object
+  additionalProperties: false
+  required:
+    - user
+  properties:
+    user:
+      $ref: '#/ManagedUser'
+UserPage:
+  type: object
+  additionalProperties: false
+  required:
+    - items
+    - page
+    - pageSize
+    - total
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/ManagedUser'
+    page:
+      type: integer
+      minimum: 1
+    pageSize:
+      type: integer
+      minimum: 1
+      maximum: 100
+    total:
+      type: integer
+      minimum: 0
+ChangePasswordRequest:
+  type: object
+  additionalProperties: false
+  required:
+    - currentPassword
+    - newPassword
+  properties:
+    currentPassword:
+      type: string
+      format: password
+      minLength: 1
+      maxLength: 256
+    newPassword:
+      type: string
+      format: password
+      minLength: 1
+      maxLength: 256
+CreateUserRequest:
+  type: object
+  additionalProperties: false
+  required:
+    - username
+    - password
+    - role
+  properties:
+    username:
+      type: string
+      minLength: 3
+      maxLength: 32
+      pattern: '^[A-Za-z0-9._-]+$'
+    password:
+      type: string
+      format: password
+      minLength: 10
+      maxLength: 256
+    role:
+      type: string
+      enum:
+        - admin
+        - user
+UpdateUserRequest:
+  type: object
+  additionalProperties: false
+  minProperties: 1
+  properties:
+    role:
+      type: string
+      enum:
+        - admin
+        - user
+    isActive:
+      type: boolean
+ResetPasswordRequest:
+  type: object
+  additionalProperties: false
+  required:
+    - newPassword
+  properties:
+    newPassword:
+      type: string
+      format: password
+      minLength: 1
+      maxLength: 256

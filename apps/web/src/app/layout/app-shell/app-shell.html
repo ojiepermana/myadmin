@@ -516,6 +516,14 @@
     <MenuGroup>
       <MenuLabel>{{ authSession.currentUser()?.username || 'Not signed in' }}</MenuLabel>
       <button MenuItem type="button" (click)="shortcutsOpen.set(true)">Keyboard shortcuts</button>
+      @if (authSession.currentUser()) {
+        <button MenuItem type="button" (click)="goToRoute('change-password')">
+          Change password
+        </button>
+        @if (authSession.currentUser()?.role === 'admin') {
+          <button MenuItem type="button" (click)="goToRoute('users')">User management</button>
+        }
+      }
       <button MenuItem type="button" (click)="errorPresenter.presentUnknown(null)">
         Preview error boundary
       </button>

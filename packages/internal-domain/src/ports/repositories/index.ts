@@ -21,6 +21,7 @@ export interface UserRepository {
   findByUsername(username: string): User | null;
   findById(id: EntityId): User | null;
   list(): User[];
+  listPage(page?: PageRequest): Page<User>;
   update(user: User): void;
   setActive(id: EntityId, isActive: boolean, updatedAt?: Date): void;
 }
@@ -31,6 +32,7 @@ export interface SessionRepository {
   touch(id: EntityId, lastSeenAt?: Date): void;
   revoke(id: EntityId, revokedAt?: Date): void;
   revokeAllForUser(userId: EntityId, revokedAt?: Date): number;
+  revokeAllForUserExcept(userId: EntityId, exceptSessionId: EntityId, revokedAt?: Date): number;
   deleteExpired(at?: Date): number;
 }
 

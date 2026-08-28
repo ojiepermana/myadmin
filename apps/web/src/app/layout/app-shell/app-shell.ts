@@ -128,7 +128,9 @@ export class AppShell {
   protected readonly mainPanelHeight = computed(() =>
     this.workspace.bottomCollapsed() ? 100 : 100 - this.workspace.bottomHeight(),
   );
-  protected readonly navigationItems = computed(() => this.createNavigationItems());
+  protected readonly navigationItems = computed(() =>
+    this.createNavigationItems(this.authSession.currentUser()?.role === 'admin'),
+  );
 
   constructor() {
     const matchMedia = this.document.defaultView?.matchMedia;
@@ -226,6 +228,11 @@ export class AppShell {
     void this.router.navigateByUrl('/login');
   }
 
+  protected goToRoute(id: string): void {
+    const definition = V1_ROUTE_DEFINITIONS.find((item) => item.id === id);
+    if (definition) this.openTab(definition);
+  }
+
   @HostListener('document:pointerup')
   protected capturePointerPanelSize(): void {
     this.captureSidebarWidth();
@@ -258,7 +265,7 @@ export class AppShell {
     return typeof route === 'string' ? route : '/workspace';
   }
 
-  private createNavigationItems() {
+  private createNavigationItems(isAdmin: boolean) {
     const find = (id: string): AppRouteDefinition => {
       const definition = V1_ROUTE_DEFINITIONS.find((item) => item.id === id);
       if (!definition) {
@@ -278,7 +285,7 @@ export class AppShell {
     };
 
     const reviewItems = [item('query-history'), item('monitoring')];
-    if (this.authSession.currentUser()?.role === 'admin') reviewItems.push(item('audit'));
+    if (isAdmin) reviewItems.push(item('audit'));
 
     const groups = [
       {
@@ -307,12 +314,12 @@ export class AppShell {
       },
     ];
 
-    if (this.authSession.currentUser()?.role === 'admin') {
+    if (isAdmin) {
       groups.push({
         id: 'admin',
         type: 'group' as const,
         title: 'Admin',
-        children: [item('security'), item('import-export'), item('backup-restore')],
+        children: [item('security'), item('import-export'), item('backup-restore'), item('users')],
       });
     }
 

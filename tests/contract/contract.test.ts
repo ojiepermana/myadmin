@@ -200,4 +200,75 @@ describe('API contract', () => {
       await responsePayload(unauthenticated),
     );
   });
+
+  test('CT-0018-AC2 validates administrator user-management responses', async () => {
+    const document = await loadContract(contractPath);
+    const operations = contractOperations(document);
+    const app = createApp();
+    const request = async (input: string, init?: RequestInit): Promise<Response> =>
+      app.handle(new Request(`http://localhost${input}`, init));
+    const json = (body: unknown, headers?: HeadersInit): RequestInit => ({
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...headers },
+      body: JSON.stringify(body),
+    });
+
+    await request(
+      '/setup/admin',
+      json({ username: 'contract-admin', password: 'contract-admin-password' }),
+    );
+    const loginResponse = await request(
+      '/auth/login',
+      json({ username: 'contract-admin', password: 'contract-admin-password' }),
+    );
+    const cookie = loginResponse.headers.get('set-cookie')?.split(';', 1)[0];
+    if (!cookie) throw new Error('Contract user-management test did not receive a session cookie');
+    const mutationHeaders = { cookie, 'X-Myadmin-Csrf': '1' };
+
+    const created = await request(
+      '/users',
+      json(
+        { username: 'contract-user', password: 'contract-user-password', role: 'user' },
+        mutationHeaders,
+      ),
+    );
+    const createdPayload = await responsePayload(created);
+    assertResponseMatchesContract(
+      document,
+      operation(operations, 'createUser'),
+      created.status,
+      createdPayload,
+    );
+    const userId = (createdPayload as { user: { id: string } }).user.id;
+
+    const listed = await request('/users?page=1&pageSize=10', { headers: { cookie } });
+    assertResponseMatchesContract(
+      document,
+      operation(operations, 'listUsers'),
+      listed.status,
+      await responsePayload(listed),
+    );
+
+    const updated = await request(`/users/${userId}`, {
+      ...json({ isActive: false }, mutationHeaders),
+      method: 'PATCH',
+    });
+    assertResponseMatchesContract(
+      document,
+      operation(operations, 'updateUser'),
+      updated.status,
+      await responsePayload(updated),
+    );
+
+    const reset = await request(
+      `/users/${userId}/reset-password`,
+      json({ newPassword: 'contract-reset-password' }, mutationHeaders),
+    );
+    assertResponseMatchesContract(
+      document,
+      operation(operations, 'resetUserPassword'),
+      reset.status,
+      await responsePayload(reset),
+    );
+  });
 });

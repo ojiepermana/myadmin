@@ -1,6 +1,14 @@
 import type { Database } from 'bun:sqlite';
-import type { User, UserRepository } from '@myadmin/internal-domain';
-import { changes, fromIso, prepare, toIso, type RepositoryOptions } from './shared';
+import type { Page, PageRequest, User, UserRepository } from '@myadmin/internal-domain';
+import {
+  changes,
+  fromIso,
+  pageOf,
+  pageWindow,
+  prepare,
+  toIso,
+  type RepositoryOptions,
+} from './shared';
 
 interface UserRow {
   id: string;
@@ -74,6 +82,20 @@ export class SqliteUserRepository implements UserRepository {
     )
       .all()
       .map(mapUser);
+  }
+
+  public listPage(request?: PageRequest): Page<User> {
+    const window = pageWindow(request);
+    return pageOf(
+      this.database,
+      'SELECT COUNT(*) AS count FROM users',
+      [],
+      `SELECT ${USER_COLUMNS} FROM users
+       ORDER BY created_at ASC, id ASC LIMIT ? OFFSET ?`,
+      [],
+      window,
+      mapUser,
+    );
   }
 
   public update(user: User): void {

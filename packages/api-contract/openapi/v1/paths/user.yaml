@@ -1,0 +1,68 @@
+patch:
+  operationId: updateUser
+  tags:
+    - users
+  summary: Change a user's role or active status
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    - in: header
+      name: X-Myadmin-Csrf
+      required: true
+      schema:
+        type: string
+        enum: ['1']
+      description: Same-origin mutation marker required for cookie-authenticated requests.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/user.yaml#/UpdateUserRequest
+  responses:
+    '200':
+      description: User updated without password data.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/user.yaml#/ManagedUserResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The current user is not an administrator or CSRF validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The user was not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The update would remove the last active administrator.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: User validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: User could not be updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

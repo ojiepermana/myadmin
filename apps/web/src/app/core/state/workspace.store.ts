@@ -19,7 +19,9 @@ export type WorkspaceTabType =
   | 'backup-restore'
   | 'monitoring'
   | 'audit'
-  | 'settings';
+  | 'settings'
+  | 'change-password'
+  | 'users';
 
 export interface TabDescriptor {
   readonly id: string;
