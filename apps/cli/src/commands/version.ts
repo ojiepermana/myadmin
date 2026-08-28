@@ -1,5 +1,6 @@
 import packageManifest from '../../../../package.json' with { type: 'json' };
 import type { TerminalPresenter } from '../output/terminal-presenter';
+import { buildInfo } from '../runtime/build-info.generated';
 
 export interface VersionInfo {
   version: string;
@@ -8,9 +9,9 @@ export interface VersionInfo {
 }
 
 export function getVersionInfo(env: Record<string, string | undefined> = process.env): VersionInfo {
-  const commitHash = env['MYADMIN_COMMIT_HASH'] || env['GIT_COMMIT'];
+  const commitHash = env['MYADMIN_COMMIT_HASH'] || env['GIT_COMMIT'] || buildInfo.commitHash;
   return {
-    version: packageManifest.version,
+    version: buildInfo.version || packageManifest.version,
     ...(commitHash ? { commitHash } : {}),
     platform: `${process.platform}/${process.arch}`,
   };

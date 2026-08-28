@@ -1,6 +1,10 @@
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join } from 'node:path';
-import type { AssetSource, EmbeddedAssets } from '../runtime/embedded-assets';
+import type {
+  AssetSource,
+  EmbeddedAssetMetadata,
+  EmbeddedAssets,
+} from '../runtime/embedded-assets';
 import { isApiPath, isSafeAssetPath, shouldUseSpaFallback } from './spa-fallback';
 
 const contentTypes: Record<string, string> = {
@@ -37,10 +41,26 @@ function embeddedAsset(assets: EmbeddedAssets, pathname: string): EmbeddedAssetV
 
 type EmbeddedAssetValue = string | Uint8Array | Blob;
 
-function embeddedResponse(value: EmbeddedAssetValue, pathname: string): Response {
+function embeddedResponse(
+  value: EmbeddedAssetValue,
+  pathname: string,
+  metadata?: Readonly<Record<string, EmbeddedAssetMetadata>>,
+): Response {
+  const assetMetadata = metadata?.[pathname] ?? metadata?.[assetKey(pathname)];
   return new Response(value as unknown as BodyInit, {
     headers: {
-      'content-type': contentTypes[extname(pathname).toLowerCase()] ?? 'application/octet-stream',
+      'content-type':
+        assetMetadata?.mimeType ??
+        contentTypes[extname(pathname).toLowerCase()] ??
+        'application/octet-stream',
+      ...(assetMetadata
+        ? {
+            etag: `"${assetMetadata.hash}"`,
+            'cache-control': pathname.endsWith('/index.html')
+              ? 'no-cache'
+              : 'public, max-age=31536000, immutable',
+          }
+        : {}),
     },
   });
 }
@@ -86,11 +106,11 @@ export async function serveStaticAsset(
   if (options.source.kind === 'embedded') {
     const direct = embeddedAsset(options.source.assets, pathname);
     if (direct !== undefined) {
-      return embeddedResponse(direct, pathname);
+      return embeddedResponse(direct, pathname, options.source.metadata);
     }
     const fallback = embeddedAsset(options.source.assets, '/index.html');
     return shouldUseSpaFallback(pathname, fallback !== undefined)
-      ? embeddedResponse(fallback as EmbeddedAssetValue, '/index.html')
+      ? embeddedResponse(fallback as EmbeddedAssetValue, '/index.html', options.source.metadata)
       : new Response('Not found', { status: 404 });
   }
 

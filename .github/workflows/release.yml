@@ -1,0 +1,167 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]*'
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run format:check
+      - run: bun run typecheck
+      - run: bun run check:boundaries
+      - run: bun run check:manifests
+      - run: bun run test
+
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bun run validate-contract
+      - run: bun run bundle:contract
+      - run: bun run check:contract-drift
+      - run: bun run test:contract
+
+  integration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bun test tests/integration/internal-sqlite tests/integration/auth/initial-setup.test.ts tests/integration/connections/connection-manager.test.ts
+
+  security:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bun run security:scan-secrets
+      - run: bun run security:authorization-matrix --check
+      - run: bun run validate-contract
+      - run: bun run check:contract-drift
+      - run: bun run test:security
+
+  build:
+    needs: [ci, contract, integration, security]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x64
+            runner: ubuntu-24.04
+            smoke: available
+          - target: linux-arm64
+            runner: ubuntu-24.04
+            smoke: unavailable
+          - target: macos-x64
+            runner: macos-13
+            smoke: available
+          - target: macos-arm64
+            runner: macos-14
+            smoke: available
+          - target: windows-x64
+            runner: windows-2025
+            smoke: unavailable
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bun run build:web:release
+      - run: bun run embed:web
+      - run: bun run build:binaries -- --target=${{ matrix.target }}
+      - name: Smoke binary on matching runner
+        if: matrix.smoke == 'available'
+        run: bun run smoke:binary -- --binary dist/binaries/${{ matrix.target }}/myadmin
+      - name: Record unavailable runner smoke
+        if: matrix.smoke == 'unavailable'
+        shell: bash
+        run: echo "Smoke test unavailable for ${{ matrix.target }} on the configured runner; compilation is still required." >> "$GITHUB_STEP_SUMMARY"
+      - name: Prepare target artifact
+        shell: bash
+        run: cp release/README.md dist/binaries/${{ matrix.target }}/README.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: myadmin-${{ matrix.target }}
+          path: dist/binaries/${{ matrix.target }}
+
+  smoke-linux-database:
+    needs: build
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16.4
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: myadmin-linux-x64
+          path: dist/binaries/linux-x64
+      - run: chmod +x dist/binaries/linux-x64/myadmin
+      - run: bun run smoke:binary -- --binary dist/binaries/linux-x64/myadmin --database-url postgres://postgres:postgres@127.0.0.1:5432/postgres --require-database
+
+  artifacts:
+    needs: [build, smoke-linux-database]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: myadmin-*
+          path: dist/binaries
+          merge-multiple: true
+      - run: bun run checksums
+      - name: Add size report to summary
+        shell: bash
+        run: |
+          echo '## Release binary sizes' >> "$GITHUB_STEP_SUMMARY"
+          bun run release:sizes >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Smoke coverage: linux x64 has a disposable PostgreSQL proof. Matching runner smoke runs on Linux and macOS. Windows and any unavailable runner target are reported as compile only.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: myadmin-release-artifacts
+          path: |
+            dist/binaries
+            dist/checksums.txt
+          if-no-files-found: error

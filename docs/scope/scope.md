@@ -742,10 +742,10 @@ Standar redaction, header keamanan, matriks otorisasi, gerbang security.yml. Don
 Dari kode ke lima binary terverifikasi. Done when: artefak per target lahir dari release.yml dengan checksum dan smoke test lulus di runner tersedia.
 
 - [x] Design it (spec): [0054](../specs/0054-binary-packaging-smoke/index.md)
-- [ ] Build it: /develop binary-packaging-smoke
-  - [ ] Build web plus embed manifest aset plus penyajian release (AC-1)
-  - [ ] Kompilasi lima target dengan injeksi versi plus checksum (AC-2, AC-3)
-  - [ ] Harness smoke lengkap plus release.yml bergerbang plus README rilis (AC-4 sampai AC-7)
+- [x] Build it: /develop binary-packaging-smoke
+  - [x] Build web plus embed manifest aset plus penyajian release (AC-1)
+  - [x] Kompilasi lima target dengan injeksi versi plus checksum (AC-2, AC-3)
+  - [x] Harness smoke lengkap plus release.yml bergerbang plus README rilis (AC-4 sampai AC-7)
 - [ ] [Verify it](../specs/0054-binary-packaging-smoke/verify.md): /check verify binary-packaging-smoke
 - [ ] [Test it](../specs/0054-binary-packaging-smoke/test.md): /test binary-packaging-smoke
 

@@ -6,6 +6,12 @@
   "packageManager": "bun@1.4.0",
   "scripts": {
     "build:web": "ng build web --configuration production",
+    "build:web:release": "bun run scripts/build/build-web.ts",
+    "embed:web": "bun run scripts/build/embed-web-assets.ts",
+    "build:binaries": "bun run scripts/build/compile-binary.ts",
+    "checksums": "bun run scripts/build/checksums.ts",
+    "release:sizes": "bun run scripts/build/report-sizes.ts",
+    "smoke:binary": "bun run scripts/verify/smoke-binary.ts",
     "bundle:contract": "bun run scripts/bundle-contract.ts",
     "lint:ui-boundary": "bun run scripts/quality/check-ui-boundary.ts",
     "test:ui-boundary": "bun test scripts/quality/check-ui-boundary.spec.ts",
