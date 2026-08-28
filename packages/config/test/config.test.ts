@@ -215,7 +215,7 @@ describe('UT-0012-AC4 and SEC-0012-AC5 config injection and redaction', () => {
   });
 });
 
-describe('IT-0012-AC6 and UT-0012-AC7 config doctor contract', () => {
+describe('IT-0012-AC6, SEC-0012-AC6, and UT-0012-AC7 config doctor contract', () => {
   it('reports valid state, file path, source winners, and a safe dump', async () => {
     const filePath = await temporaryConfig('server.port = 9090\n');
     const check = await runConfigCheck(

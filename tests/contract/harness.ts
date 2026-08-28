@@ -183,7 +183,7 @@ export function assertResponseMatchesContract(
   }
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
-  addFormats(ajv, { formats: ['date-time'] });
+  addFormats(ajv, { formats: ['date-time'], mode: 'full' });
   if (typeof schema !== 'object' || schema === null) {
     throw new Error(`${operation.operationId} ${status} response schema must be an object`);
   }

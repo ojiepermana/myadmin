@@ -65,6 +65,7 @@ interface Fixture {
   now: Date;
   openSecrets: string[];
   closedHandles: string[];
+  logs: string[];
   setPingFailure(value: boolean): void;
 }
 
@@ -163,6 +164,7 @@ async function fixture(sessionIdleMinutes = 720): Promise<Fixture> {
   const now = new Date('2026-08-28T12:00:00.000Z');
   const openSecrets: string[] = [];
   const closedHandles: string[] = [];
+  const logs: string[] = [];
   let pingFailure = false;
   const key = new Uint8Array(32).fill(23);
   const vault = new CredentialVault({
@@ -190,7 +192,7 @@ async function fixture(sessionIdleMinutes = 720): Promise<Fixture> {
     initialAdminService: setup,
     authService: auth,
     connectionManager: manager,
-    observability: { stdout: () => undefined },
+    observability: { stdout: (line) => logs.push(line) },
   });
   const setupResponse = await request(
     app,
@@ -214,6 +216,7 @@ async function fixture(sessionIdleMinutes = 720): Promise<Fixture> {
     now,
     openSecrets,
     closedHandles,
+    logs,
     setPingFailure: (value) => {
       pingFailure = value;
     },
@@ -234,7 +237,7 @@ describe('connection lifecycle integration', () => {
     );
   });
 
-  test('IT-0027-AC1, IT-0027-AC2, IT-0027-AC3, IT-0027-AC4, and SEC-0027-AC7 use saved and transient credentials safely', async () => {
+  test('IT-0027-AC1, IT-0027-AC2, IT-0027-AC3, IT-0027-AC4, SEC-0027-AC1, SEC-0027-AC3, and SEC-0027-AC7 use saved and transient credentials safely', async () => {
     const value = await fixture();
     const saved = await request(
       value.app,
@@ -297,6 +300,7 @@ describe('connection lifecycle integration', () => {
     expect(JSON.stringify(await transientConnect.clone().json())).not.toContain(
       'database-password',
     );
+    expect(value.logs.join('\n')).not.toContain('database-password');
 
     const statuses = await request(value.app, '/api/v1/connections/status', {
       headers: { cookie: value.cookie },
@@ -326,7 +330,7 @@ describe('connection lifecycle integration', () => {
     expect(value.openSecrets).toHaveLength(3);
   });
 
-  test('IT-0027-AC5, IT-0027-AC8, and IT-0027-AC9 recover errors and audit safe lifecycle events', async () => {
+  test('IT-0027-AC5, IT-0027-AC8, IT-0027-AC9, and SEC-0027-AC8 recover errors and audit safe lifecycle events', async () => {
     const value = await fixture();
     const created = await request(
       value.app,

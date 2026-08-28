@@ -153,7 +153,7 @@ async function createUser(
 }
 
 describe('user management integration', () => {
-  test('IT-0018-AC1 changes the current password and preserves only the current session', async () => {
+  test('IT-0018-AC1 and SEC-0018-AC1 change the current password and preserve only the current session', async () => {
     const value = await fixture();
     const first = await login(value);
     const second = await login(value);
@@ -208,7 +208,7 @@ describe('user management integration', () => {
     expect(policy.status).toBe(422);
   });
 
-  test('IT-0018-AC2,AC3 creates users, enforces administrator routes, and revokes on deactivation', async () => {
+  test('IT-0018-AC2, IT-0018-AC3, and SEC-0018-AC3 create users, enforce administrator routes, and revoke on deactivation', async () => {
     const value = await fixture();
     const admin = await login(value);
     const created = await createUser(
@@ -261,7 +261,7 @@ describe('user management integration', () => {
     );
   });
 
-  test('IT-0018-AC4,AC6 protects the last active administrator while allowing safe self-management', async () => {
+  test('IT-0018-AC4, IT-0018-AC6, SEC-0018-AC4, and SEC-0018-AC6 protect the last active administrator while allowing safe self-management', async () => {
     const value = await fixture();
     const admin = await login(value);
     const selfDisable = await request(
@@ -301,7 +301,7 @@ describe('user management integration', () => {
     expect(value.store.audit.query({ action: 'user.role_changed' }).items).toHaveLength(1);
   });
 
-  test('IT-0018-AC5,AC8 resets credentials, revokes target sessions, and records safe audit data', async () => {
+  test('IT-0018-AC5 and SEC-0018-AC5 reset credentials, revoke target sessions, and record safe audit data', async () => {
     const value = await fixture();
     const admin = await login(value);
     const created = await createUser(
@@ -339,5 +339,67 @@ describe('user management integration', () => {
     });
     expect(JSON.stringify(events)).not.toContain('reset-target-new-password-0018');
     expect(JSON.stringify(events)).not.toContain('reset-target-password-0018');
+  });
+
+  test('IT-0018-AC8 and SEC-0018-AC8 record every user audit event without secret material', async () => {
+    const value = await fixture();
+    const admin = await login(value);
+    const password = 'audit-target-password-0018';
+    const created = await createUser(value, admin.cookie, 'audit-target', password);
+    expect(created.response.status).toBe(201);
+
+    const roleChanged = await request(
+      value.app,
+      `/api/v1/users/${created.id}`,
+      mutationInit(admin.cookie, { role: 'admin' }, 'PATCH'),
+    );
+    expect(roleChanged.status).toBe(200);
+
+    const deactivated = await request(
+      value.app,
+      `/api/v1/users/${created.id}`,
+      mutationInit(admin.cookie, { isActive: false }, 'PATCH'),
+    );
+    expect(deactivated.status).toBe(200);
+    const activated = await request(
+      value.app,
+      `/api/v1/users/${created.id}`,
+      mutationInit(admin.cookie, { isActive: true }, 'PATCH'),
+    );
+    expect(activated.status).toBe(200);
+
+    const target = await login(value, 'audit-target', password);
+    expect(target.response.status).toBe(200);
+    const changed = await request(
+      value.app,
+      '/api/v1/auth/change-password',
+      mutationInit(target.cookie, {
+        currentPassword: password,
+        newPassword: 'audit-target-changed-0018',
+      }),
+    );
+    expect(changed.status).toBe(204);
+
+    const reset = await request(
+      value.app,
+      `/api/v1/users/${created.id}/reset-password`,
+      mutationInit(admin.cookie, { newPassword: 'audit-target-reset-0018' }),
+    );
+    expect(reset.status).toBe(204);
+
+    const events = value.store.audit.query().items;
+    expect(events.map((event) => event.action)).toEqual(
+      expect.arrayContaining([
+        'user.created',
+        'user.role_changed',
+        'user.deactivated',
+        'user.activated',
+        'user.password_changed',
+        'user.password_reset',
+      ]),
+    );
+    expect(JSON.stringify(events)).not.toContain(password);
+    expect(JSON.stringify(events)).not.toContain('audit-target-changed-0018');
+    expect(JSON.stringify(events)).not.toContain('audit-target-reset-0018');
   });
 });

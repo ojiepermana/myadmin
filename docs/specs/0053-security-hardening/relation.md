@@ -20,17 +20,19 @@ Dokumen ini mencatat relasi yang memengaruhi urutan build, kontrak yang dikonsum
 | `deferred`    | Kewajiban sengaja diteruskan ke spec yang lebih akhir.                                   |
 | `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia.                      |
 
-## Prasyarat wajib
+## Prasyarat build
 
-Tidak ada dependency spec bernomor yang menjadi gerbang langsung.
+| Jenis      | Dependency                                       | Sumber                              |
+| ---------- | ------------------------------------------------ | ----------------------------------- |
+| `requires` | Seluruh fitur P0 (kelompok, bukan spec bernomor) | Indeks build dan definisi prioritas |
 
-Dependency kelompok dari indeks: `seluruh fitur P0`. Definisi canonical P0 berada di [v1-feature-specification.md](../../../plan/v1-feature-specification.md#tingkat-prioritas); ini tetap diperlakukan sebagai gate kelompok, bukan synthetic numbered edge.
+Tidak ada prasyarat spec bernomor terpisah. Definisi canonical P0 berada di [v1-feature-specification.md](../../../plan/v1-feature-specification.md#tingkat-prioritas); dependency ini tetap diperlakukan sebagai gate kelompok, bukan synthetic numbered edge.
 
 ## Konteks prasyarat dari spec utama
 
-> seluruh fitur P0 selesai; idealnya dijalankan saat fitur P1 sudah lengkap.
+> Prasyarat build: seluruh fitur P0 selesai. Spec ini idealnya dijalankan saat fitur P1 sudah lengkap, tetapi P1 bukan gate build.
 
-Baris di atas dipertahankan utuh. Bila bertentangan dengan tabel prasyarat wajib, selesaikan perbedaan melalui `/architect` sebelum implementasi.
+Ringkasan ini sama dengan tabel `requires` di atas. Spec bernomor yang menjadi sumber pola atau kontrak dicatat pada tabel `references` dan tidak menambah gerbang build.
 
 ## Kontrak repo global
 
@@ -46,18 +48,18 @@ Baris di atas dipertahankan utuh. Bila bertentangan dengan tabel prasyarat wajib
 
 ## Relasi nonblocking dan handoff
 
-| Jenis awal   | Spec                                                                                | Cara membaca relasi                                                                                                 |
-| ------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `references` | [0011. Credential vault dan redaction](../0011-credential-vault-redaction/index.md) | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build.                       |
-| `references` | [0013. Package observability](../0013-observability-package/index.md)               | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build.                       |
-| `references` | [0019. Subsistem audit append only](../0019-audit-subsystem/index.md)               | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build.                       |
-| `references` | [0017. Login, logout, dan session](../0017-login-session/index.md)                  | Referensi berbentuk daftar, rentang, atau nomor singkat pada spec utama. Baca konteks sebelum mengubah graph build. |
+| Jenis awal   | Spec                                                                                | Cara membaca relasi                                                                           |
+| ------------ | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `references` | [0011. Credential vault dan redaction](../0011-credential-vault-redaction/index.md) | Modul redaction yang disweep lintas saluran; bukan gerbang build langsung.                    |
+| `references` | [0013. Package observability](../0013-observability-package/index.md)               | Saluran logging dan observability yang masuk cakupan hardening; bukan gerbang build langsung. |
+| `references` | [0017. Login, logout, dan session](../0017-login-session/index.md)                  | Sumber pola sesi dan otorisasi untuk matriks lintas fitur; bukan gerbang build langsung.      |
+| `references` | [0019. Subsistem audit append only](../0019-audit-subsystem/index.md)               | Taksonomi audit untuk pemeriksaan operasi destructive; bukan gerbang build langsung.          |
 
 ## Prasyarat environment atau manusia
 
-| Jenis         | Kebutuhan                                                                                    | Bukti kesiapan                             |
-| ------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `environment` | Tidak ada prasyarat environment atau manusia yang dinyatakan eksplisit pada baris prasyarat. | Dicatat sebelum build atau verify dimulai. |
+| Jenis         | Kebutuhan                                                                                                              | Bukti kesiapan                                                     |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `environment` | Runner CI yang dapat menjalankan `security.yml`, resource SQLite test yang disposable, dan hosted CI untuk proof AC-8. | Disediakan sebelum security suite atau hosted CI proof dijalankan. |
 
 ## Boundary lintas spec
 

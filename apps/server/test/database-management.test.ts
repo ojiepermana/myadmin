@@ -63,7 +63,7 @@ function fixture() {
 }
 
 describe('database management service', () => {
-  test('audits create and drop and enforces exact confirmation on the server', async () => {
+  test('[IT-0039-AC3, IT-0039-AC4, SEC-0039-AC3, SEC-0039-AC4] audits create and drop and enforces exact confirmation on the server', async () => {
     const value = fixture();
 
     await value.service.create(value.actor, 'connection-1', { name: 'new_database' });
@@ -86,7 +86,7 @@ describe('database management service', () => {
     expect(value.events[1]).toMatchObject({ action: 'database.dropped', result: 'denied' });
   });
 
-  test('blocks a database that an active query tab owns and allows a confirmed drop otherwise', async () => {
+  test('[IT-0039-AC3, IT-0039-AC4] blocks a database that an active query tab owns and allows a confirmed drop otherwise', async () => {
     const value = fixture();
     value.setActive(true);
     await expect(

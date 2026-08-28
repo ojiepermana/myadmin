@@ -226,7 +226,7 @@ describe('JobManager', () => {
     ).toThrow(/disposed/);
   });
 
-  test('UT-0028-AC7 catches executor failures, redacts the job error, and logs correlation', async () => {
+  test('UT-0028-AC7 and SEC-0028-AC7 catch executor failures, redact the job error, and log correlation', async () => {
     const lines: string[] = [];
     const jobs = manager({
       createId: ids(),

@@ -11,29 +11,29 @@ Dokumen ini mencatat relasi yang memengaruhi urutan build, kontrak yang dikonsum
 
 ## Legenda relasi
 
-| Jenis | Makna |
-|---|---|
-| `requires` | Spec belum boleh dimulai sebelum dependency selesai. |
-| `references` | Spec memakai keputusan atau istilah dari spec lain, tetapi bukan gerbang build langsung. |
-| `enables` | Spec lain menjadikan spec ini dependency langsung. |
-| `coordinates` | Perubahan perlu diselaraskan tanpa mengubah urutan build. |
-| `deferred` | Kewajiban sengaja diteruskan ke spec yang lebih akhir. |
-| `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia. |
+| Jenis         | Makna                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| `requires`    | Spec belum boleh dimulai sebelum dependency selesai.                                     |
+| `references`  | Spec memakai keputusan atau istilah dari spec lain, tetapi bukan gerbang build langsung. |
+| `enables`     | Spec lain menjadikan spec ini dependency langsung.                                       |
+| `coordinates` | Perubahan perlu diselaraskan tanpa mengubah urutan build.                                |
+| `deferred`    | Kewajiban sengaja diteruskan ke spec yang lebih akhir.                                   |
+| `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia.                      |
 
-## Prasyarat wajib
+## Prasyarat build
 
-| Jenis | Spec | Sumber |
-|---|---|---|
-| `requires` | [0031. Object explorer](../0031-object-explorer/index.md) | Indeks build dan konteks spec |
+| Jenis      | Spec                                                                       | Sumber                        |
+| ---------- | -------------------------------------------------------------------------- | ----------------------------- |
+| `requires` | [0031. Object explorer](../0031-object-explorer/index.md)                  | Indeks build dan konteks spec |
 | `requires` | [0034. Result grid dan export result](../0034-result-grid-export/index.md) | Indeks build dan konteks spec |
 
-Tidak ada dependency kelompok tambahan dari indeks.
+Tidak ada dependency kelompok atau prasyarat bernomor lain dari indeks.
 
 ## Konteks prasyarat dari spec utama
 
-> spec 0031 (pintu masuk explorer), 0034 (grid).
+> Prasyarat build: spec 0031 (pintu masuk explorer) dan 0034 (grid).
 
-Baris di atas dipertahankan utuh. Bila bertentangan dengan tabel prasyarat wajib, selesaikan perbedaan melalui `/architect` sebelum implementasi.
+Ringkasan ini sama dengan tabel `requires` di atas. Spec yang hanya dirujuk dicatat pada tabel `references` dan tidak menjadi gerbang build.
 
 ## Kontrak repo global
 
@@ -43,24 +43,24 @@ Baris di atas dipertahankan utuh. Bila bertentangan dengan tabel prasyarat wajib
 
 ## Output dan konsumen langsung
 
-| Jenis | Spec konsumen | Kontrak |
-|---|---|---|
+| Jenis     | Spec konsumen                                                          | Kontrak                                         |
+| --------- | ---------------------------------------------------------------------- | ----------------------------------------------- |
 | `enables` | [0038. Data browser: jalur tulis](../0038-data-browser-write/index.md) | Spec ini harus selesai sebelum konsumen dimulai |
-| `enables` | [0047. Export](../0047-export-jobs/index.md) | Spec ini harus selesai sebelum konsumen dimulai |
+| `enables` | [0047. Export](../0047-export-jobs/index.md)                           | Spec ini harus selesai sebelum konsumen dimulai |
 
 ## Relasi nonblocking dan handoff
 
-| Jenis awal | Spec | Cara membaca relasi |
-|---|---|---|
-| `references` | [0023. Provider PostgreSQL: metadata dan introspeksi](../0023-postgresql-metadata/index.md) | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build. |
-| `references` | [0033. Query editor: tab dan eksekusi](../0033-query-editor-execution/index.md) | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build. |
-| `references` | [0025. Provider MySQL: metadata dan introspeksi](../0025-mysql-metadata/index.md) | Referensi berbentuk daftar, rentang, atau nomor singkat pada spec utama. Baca konteks sebelum mengubah graph build. |
+| Jenis awal   | Spec                                                                                        | Cara membaca relasi                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `references` | [0023. Provider PostgreSQL: metadata dan introspeksi](../0023-postgresql-metadata/index.md) | Sumber metadata PostgreSQL untuk jalur baca; bukan gerbang build langsung.                |
+| `references` | [0025. Provider MySQL: metadata dan introspeksi](../0025-mysql-metadata/index.md)           | Sumber metadata MySQL untuk jalur baca; bukan gerbang build langsung.                     |
+| `references` | [0033. Query editor: tab dan eksekusi](../0033-query-editor-execution/index.md)             | Bentuk sel bertipe dan pola konteks tab yang dipakai ulang; bukan gerbang build langsung. |
 
 ## Prasyarat environment atau manusia
 
-| Jenis | Kebutuhan | Bukti kesiapan |
-|---|---|---|
-| `environment` | Tidak ada prasyarat environment atau manusia yang dinyatakan eksplisit pada baris prasyarat. | Dicatat sebelum build atau verify dimulai. |
+| Jenis         | Kebutuhan                                                                                                          | Bukti kesiapan                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `environment` | Database test PostgreSQL dan MySQL yang disposable, fixture satu juta baris, serta browser untuk E2E kedua engine. | Disediakan sebelum integration, performance, atau E2E proof yang terkait dijalankan. |
 
 ## Boundary lintas spec
 

@@ -20,20 +20,20 @@ Dokumen ini mencatat relasi yang memengaruhi urutan build, kontrak yang dikonsum
 | `deferred`    | Kewajiban sengaja diteruskan ke spec yang lebih akhir.                                   |
 | `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia.                      |
 
-## Prasyarat wajib
+## Prasyarat build
 
 | Jenis      | Spec                                                                                | Sumber                        |
 | ---------- | ----------------------------------------------------------------------------------- | ----------------------------- |
 | `requires` | [0006. CLI runtime dan data directory](../0006-cli-runtime-data-directory/index.md) | Indeks build dan konteks spec |
 | `requires` | [0053. Hardening keamanan lintas fitur](../0053-security-hardening/index.md)        | Indeks build dan konteks spec |
 
-Tidak ada dependency kelompok tambahan dari indeks. Isi smoke test memakai bukti dari runtime `0006`, hardening `0053`, dan alur P0 yang disebut di acceptance criteria.
+Tidak ada dependency kelompok atau prasyarat bernomor lain dari indeks. Alur P0 yang dipakai smoke test dicatat sebagai `references`, bukan sebagai build gate tambahan.
 
 ## Konteks prasyarat dari spec utama
 
-> spec 0006; fitur P0 (setup, login, koneksi) untuk isi smoke test; `security.yml` (spec 0053) sebagai gerbang rilis.
+> Prasyarat build: spec 0006 dan 0053. Referensi isi smoke test: spec 0016, 0017, dan 0026. `security.yml` dari spec 0053 adalah gerbang rilis.
 
-Baris di atas dipertahankan utuh. Bila bertentangan dengan tabel prasyarat wajib, selesaikan perbedaan melalui `/architect` sebelum implementasi.
+Ringkasan ini sama dengan tabel `requires` di atas. Referensi isi smoke dan kebutuhan runner dicatat terpisah agar tidak menjadi prasyarat build bernomor baru.
 
 ## Kontrak repo global
 
@@ -49,13 +49,17 @@ Baris di atas dipertahankan utuh. Bila bertentangan dengan tabel prasyarat wajib
 
 ## Relasi nonblocking dan handoff
 
-Tidak ada mention lintas spec lain di luar dependency langsung dan konsumen langsung.
+| Jenis        | Spec                                                                                 | Cara membaca relasi                                                                        |
+| ------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `references` | [0016. Initial setup end to end](../0016-initial-setup-flow/index.md)                | Alur setup yang dibuktikan smoke test; bukan gerbang build langsung.                       |
+| `references` | [0017. Login, logout, dan session](../0017-login-session/index.md)                   | Alur login dan `/auth/me` yang dibuktikan smoke test; bukan gerbang build langsung.        |
+| `references` | [0026. Connection manager: CRUD dan vault](../0026-connection-manager-crud/index.md) | Alur tambah dan connect database yang dibuktikan smoke test; bukan gerbang build langsung. |
 
 ## Prasyarat environment atau manusia
 
-| Jenis         | Kebutuhan                                                                                    | Bukti kesiapan                             |
-| ------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `environment` | Tidak ada prasyarat environment atau manusia yang dinyatakan eksplisit pada baris prasyarat. | Dicatat sebelum build atau verify dimulai. |
+| Jenis         | Kebutuhan                                                                                                                                                                       | Bukti kesiapan                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `environment` | Matrix runner CI untuk lima target, runner yang dapat menjalankan smoke test, data directory dan database test yang disposable, serta hosted CI dengan tag dan artifact upload. | Disediakan sebelum packaging, smoke, atau release workflow proof yang terkait dijalankan. |
 
 ## Boundary lintas spec
 

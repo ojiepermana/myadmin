@@ -182,7 +182,7 @@ describe('MySQL metadata adapter', () => {
     return new MysqlMetadataAdapter(connection);
   }
 
-  test('[AC-6] quotes backticks in one identifier helper', () => {
+  test('[UT-0025-AC6] quotes backticks in one identifier helper', () => {
     expect(quoteMysqlIdentifier('view`name')).toBe('`view``name`');
     expect(() => quoteMysqlIdentifier('invalid\u0000name')).toThrowError(
       'MySQL identifier contains an invalid character',
@@ -299,7 +299,7 @@ describe('MySQL metadata adapter', () => {
     ).toEqual(['app', 'accounts', 2, 0]);
   });
 
-  test('[AC-4, AC-5, AC-6] discovers view definitions, routines, triggers, and parameterized search', async () => {
+  test('[AC-4, AC-5, SEC-0025-AC6] discovers view definitions, routines, triggers, and parameterized search', async () => {
     const metadata = await openMetadata();
     await expect(
       metadata.getViewDefinition(handle!, {

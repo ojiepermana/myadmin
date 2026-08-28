@@ -68,7 +68,7 @@ function createMetadata(localType = 'integer', targetType = localType) {
 const metadata = createMetadata();
 
 describe('PostgreSQL table designer', () => {
-  test('compiles a provider-neutral create change set into stable DDL', async () => {
+  test('[UT-0041-AC1, UT-0041-AC3] compiles a provider-neutral create change set into stable DDL', async () => {
     const connection = createConnection();
     const designer = new PostgresqlTableDesigner(connection as never, metadata as never);
     const changeSet: TableChangeSet = {
@@ -106,7 +106,7 @@ describe('PostgreSQL table designer', () => {
     });
   });
 
-  test('returns field-level validation for unsupported identity and invalid defaults', async () => {
+  test('[UT-0041-AC5] returns field-level validation for unsupported identity and invalid defaults', async () => {
     const connection = createConnection('9.6.24');
     const designer = new PostgresqlTableDesigner(connection as never, metadata as never);
     const invalid: TableChangeSet = {
@@ -131,7 +131,7 @@ describe('PostgreSQL table designer', () => {
     });
   });
 
-  test('normalizes described varchar types when altering nullability', async () => {
+  test('[UT-0041-AC2] normalizes described varchar types when altering nullability', async () => {
     const connection = createConnection();
     const described = {
       ...metadata,
@@ -154,7 +154,7 @@ describe('PostgreSQL table designer', () => {
     ]);
   });
 
-  test('uses a transaction and rolls back at the failing statement', async () => {
+  test('[UT-0041-AC3] uses a transaction and rolls back at the failing statement', async () => {
     const connection = createConnection('16.4', 'COMMENT ON COLUMN');
     const designer = new PostgresqlTableDesigner(connection as never, metadata as never);
     const changeSet: TableChangeSet = {
@@ -177,7 +177,7 @@ describe('PostgreSQL table designer', () => {
     expect(connection.statements).not.toContain('COMMIT');
   });
 
-  test('compiles composite indexes and every supported constraint with FK rules', async () => {
+  test('[UT-0042-AC1, UT-0042-AC2, UT-0042-AC3, UT-0042-AC5, UT-0042-AC8] compiles composite indexes and every supported constraint with FK rules', async () => {
     const connection = createConnection();
     const designer = new PostgresqlTableDesigner(connection as never, createMetadata() as never);
     const preview = await designer.preview(handle, {
@@ -215,7 +215,7 @@ describe('PostgreSQL table designer', () => {
     ]);
   });
 
-  test('reports destructive index and PK/FK drops and rejects incompatible FK types', async () => {
+  test('[UT-0042-AC4, UT-0042-AC7, UT-0042-AC8] reports destructive index and PK/FK drops and rejects incompatible FK types', async () => {
     const connection = createConnection();
     const described = {
       describeTable: async (_handle: ConnectionHandle, ref: { name: string }) => ({

@@ -23,7 +23,7 @@ afterEach(async () => {
 });
 
 describe('table operations routes integration', () => {
-  test('requires an authenticated same-origin CSRF-protected request and forwards exact confirmation', async () => {
+  test('[IT-0043-AC1] requires an authenticated same-origin CSRF-protected request and forwards exact confirmation', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'myadmin-table-operations-'));
     temporaryDirectories.push(directory);
     const database = openDatabase(directory);

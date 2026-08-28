@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures';
 
-test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC8, E2E-0032-AC3, E2E-0032-AC4, E2E-0032-AC5, and E2E-0032-AC6 render provider-driven lazy trees and paginated search results', async ({
+test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC6, E2E-0031-AC7, E2E-0031-AC8, E2E-0032-AC3, E2E-0032-AC4, E2E-0032-AC5, and E2E-0032-AC6 render provider-driven lazy trees and paginated search results', async ({
   page,
 }) => {
   await page.route('**/api/v1/connections*', async (route) => {
@@ -254,6 +254,8 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC8, E2E-0032-AC3, E2E-
   const mysql = page.getByRole('treeitem', { name: 'MySQL fixture' });
   await expect(postgres).toBeVisible();
   await expect(mysql).toBeVisible();
+  await expect(postgres.locator('.explorer-icon')).toHaveAttribute('data-kind', 'connection');
+  await expect(mysql.locator('.explorer-icon')).toHaveAttribute('data-kind', 'connection');
   await postgres.getByRole('button', { name: 'Expand PostgreSQL fixture' }).click();
   await expect(page.getByRole('treeitem', { name: 'app' })).toBeVisible();
   await mysql.getByRole('button', { name: 'Expand MySQL fixture' }).click();
@@ -270,6 +272,14 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC8, E2E-0032-AC3, E2E-
     .click();
   await expect(page.getByRole('treeitem', { name: 'public' })).toBeVisible();
   await expect(page.getByRole('treeitem', { name: 'Schemas' })).toHaveCount(0);
+
+  await postgres.focus();
+  await postgres.press('ArrowLeft');
+  await expect(postgres).toHaveAttribute('aria-expanded', 'false');
+  await postgres.press('ArrowRight');
+  await expect(postgres).toHaveAttribute('aria-expanded', 'true');
+  await postgres.getByRole('button', { name: 'Refresh node' }).click();
+  await expect(page.getByRole('treeitem', { name: 'PostgreSQL fixture' })).toBeVisible();
 
   await postgres.click();
   const search = page.getByLabel('Search objects');

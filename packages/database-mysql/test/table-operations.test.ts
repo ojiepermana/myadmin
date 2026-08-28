@@ -42,7 +42,7 @@ function fixture() {
 }
 
 describe('MySQL table operations', () => {
-  test('uses native rename, truncate reset, and restrict drop syntax', async () => {
+  test('[UT-0043-AC1, UT-0043-AC2, UT-0043-AC3] uses native rename, truncate reset, and restrict drop syntax', async () => {
     const value = fixture();
     await value.port.rename(handle, ref, 'accounts_archive');
     await value.port.truncate(handle, ref, { restartIdentity: false });
@@ -55,7 +55,7 @@ describe('MySQL table operations', () => {
     expect(value.statements.join(' ')).not.toContain('CASCADE');
   });
 
-  test('reports MySQL estimate, view impact, incoming foreign keys, and native identity semantics', async () => {
+  test('[UT-0043-AC2, UT-0043-AC3] reports MySQL estimate, view impact, incoming foreign keys, and native identity semantics', async () => {
     const value = fixture();
     await expect(value.port.impact(handle, ref)).resolves.toMatchObject({
       estimatedRows: 9,

@@ -154,11 +154,11 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
       reference.path.startsWith('tests/e2e/'),
     );
     const e2eEvidence = readFileSync(e2eEvidencePath, 'utf8');
-    if (hasExecutedTest && e2eEvidence.includes('Result: **14 passed, 0 failed**')) {
+    if (hasExecutedTest && e2eEvidence.includes('Result: **20 passed, 0 failed**')) {
       return {
         id,
         status: 'PASS',
-        message: `bun run test:e2e (14 pass, 0 fail); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-e2e.md`,
+        message: `bun run test:e2e (20 pass, 0 fail); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-e2e.md`,
         references: sourceReferences,
       };
     }
@@ -206,7 +206,7 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
     ? 'bun run test:contract (68 pass, 0 fail)'
     : sourceReferences.some((reference) => /(?:^|\/)tests\/security\//.test(reference.path))
       ? 'bun run test:security (40 pass, 0 fail)'
-      : 'bun run test (551 pass, 0 fail, 8 skip)';
+      : 'bun run test (554 pass, 0 fail, 8 skip)';
   return {
     id,
     status: 'PASS',

@@ -45,7 +45,7 @@ function fixture() {
 }
 
 describe('PostgreSQL table operations', () => {
-  test('compiles quoted rename, truncate options, and restrict drop statements', async () => {
+  test('[UT-0043-AC1, UT-0043-AC2, UT-0043-AC3] compiles quoted rename, truncate options, and restrict drop statements', async () => {
     const value = fixture();
     await value.port.rename(handle, ref, 'accounts_archive');
     await value.port.truncate(handle, ref, { restartIdentity: true });
@@ -58,7 +58,7 @@ describe('PostgreSQL table operations', () => {
     expect(value.statements.join(' ')).not.toContain('CASCADE');
   });
 
-  test('returns estimated rows, views, and incoming foreign key impact', async () => {
+  test('[UT-0043-AC2, UT-0043-AC3] returns estimated rows, views, and incoming foreign key impact', async () => {
     const value = fixture();
     await expect(value.port.impact(handle, ref)).resolves.toMatchObject({
       estimatedRows: 42,
@@ -70,7 +70,7 @@ describe('PostgreSQL table operations', () => {
     });
   });
 
-  test('rejects unqualified and unsafe identifiers before issuing SQL', async () => {
+  test('[SEC-0043-AC2, SEC-0043-AC3] rejects unqualified and unsafe identifiers before issuing SQL', async () => {
     const value = fixture();
     await expect(value.port.drop(handle, { ...ref, schema: null })).rejects.toMatchObject({
       category: 'syntax_error',

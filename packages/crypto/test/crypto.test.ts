@@ -182,6 +182,46 @@ describe('key provider', () => {
       new KeyProvider({ dataDirectory: root, env: {}, platform: 'darwin' }).load(),
     ).rejects.toMatchObject({ code: 'insecure_key_file' });
   });
+
+  it('UT-0010-AC9 covers keyfile creation, overrides, permissions, round trips, and rehashing', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'myadmin-crypto-aggregate-'));
+    temporaryDirectories.push(root);
+    const generated = fixtureKey(149);
+    const provider = new KeyProvider({
+      dataDirectory: root,
+      env: {},
+      platform: 'darwin',
+      randomBytes: () => generated,
+    });
+
+    const first = await provider.load();
+    expect(first.key).toEqual(generated);
+    expect((await stat(keyFile(root))).mode & 0o777).toBe(MASTER_KEY_FILE_MODE);
+
+    const encoded = Buffer.from(generated).toString('base64');
+    const fromEnvironment = await new KeyProvider({
+      dataDirectory: root,
+      env: { MYADMIN_MASTER_KEY: encoded },
+    }).load();
+    expect(fromEnvironment.source).toBe('env');
+    expect(fromEnvironment.key).toEqual(generated);
+
+    await chmod(keyFile(root), 0o644);
+    await expect(new KeyProvider({ dataDirectory: root, env: {} }).load()).rejects.toMatchObject({
+      code: 'insecure_key_file',
+    });
+
+    const hasher = new PasswordHasher();
+    const plain = 'synthetic-password-0010';
+    const hash = await hasher.hash(plain);
+    await expect(hasher.verify(plain, hash)).resolves.toEqual({ ok: true, needsRehash: false });
+    const oldHash = await Bun.password.hash(plain, {
+      algorithm: 'argon2id',
+      memoryCost: 8,
+      timeCost: 1,
+    });
+    await expect(hasher.verify(plain, oldHash)).resolves.toEqual({ ok: true, needsRehash: true });
+  });
 });
 
 describe('password policy', () => {

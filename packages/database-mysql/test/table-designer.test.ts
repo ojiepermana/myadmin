@@ -49,7 +49,7 @@ function createMetadata(localType = 'int', targetType = localType) {
 const metadata = createMetadata();
 
 describe('MySQL table designer', () => {
-  test('compiles length, default, identity, and comments into one create statement', async () => {
+  test('[UT-0041-AC1, UT-0041-AC3] compiles length, default, identity, and comments into one create statement', async () => {
     const connection = createConnection();
     const designer = new MysqlTableDesigner(connection as never, metadata as never);
     const changeSet: TableChangeSet = {
@@ -79,7 +79,7 @@ describe('MySQL table designer', () => {
     });
   });
 
-  test('stops after the first failed statement and reports its position', async () => {
+  test('[UT-0041-AC3, UT-0041-AC5] stops after the first failed statement and reports its position', async () => {
     const connection = createConnection('`second`');
     const designer = new MysqlTableDesigner(connection as never, metadata as never);
     const changeSet: TableChangeSet = {
@@ -101,7 +101,7 @@ describe('MySQL table designer', () => {
     ]);
   });
 
-  test('compiles composite indexes and every supported constraint with FK rules', async () => {
+  test('[UT-0042-AC1, UT-0042-AC2, UT-0042-AC3, UT-0042-AC5, UT-0042-AC8] compiles composite indexes and every supported constraint with FK rules', async () => {
     const connection = createConnection();
     const designer = new MysqlTableDesigner(connection as never, createMetadata() as never);
     const preview = await designer.preview(handle, {
@@ -139,7 +139,7 @@ describe('MySQL table designer', () => {
     ]);
   });
 
-  test('adds a MySQL FK supporting index and rejects incompatible FK types', async () => {
+  test('[UT-0042-AC3, UT-0042-AC5, UT-0042-AC8] adds a MySQL FK supporting index and rejects incompatible FK types', async () => {
     const connection = createConnection();
     const designer = new MysqlTableDesigner(connection as never, createMetadata() as never);
     const preview = await designer.preview(handle, {
@@ -196,7 +196,7 @@ describe('MySQL table designer', () => {
     });
   });
 
-  test('gates check constraints below MySQL 8.0.16 and reports destructive drops', async () => {
+  test('[UT-0042-AC4, UT-0042-AC6, UT-0042-AC7, UT-0042-AC8] gates check constraints below MySQL 8.0.16 and reports destructive drops', async () => {
     const oldConnection = {
       ...createConnection(),
       serverInfo: async () => ({ engine: 'mysql' as const, version: '8.0.15' }),

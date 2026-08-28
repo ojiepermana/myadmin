@@ -55,7 +55,7 @@ describe('UT-0006-AC2 data directory resolution', () => {
   });
 });
 
-describe('IT-0006-AC3 data directory preparation', () => {
+describe('IT-0006-AC3 and SEC-0006-AC3 data directory preparation', () => {
   it('creates all required subdirectories and performs a write check', async () => {
     const parent = await mkdtemp(join(tmpdir(), 'myadmin-test-'));
     const root = join(parent, 'data');
@@ -157,7 +157,7 @@ describe('IT-0006-AC4 signal handling', () => {
   });
 });
 
-describe('IT-0006-AC1, IT-0006-AC4, and IT-0006-AC7 serve process', () => {
+describe('IT-0006-AC1, IT-0006-AC4, IT-0006-AC7, and SEC-0006-AC7 serve process', () => {
   it('serves health and SPA content, prints safe startup details, and exits cleanly on SIGTERM', async () => {
     const reserved = Bun.serve({ port: 0, fetch: () => new Response() });
     const port = reserved.port;
@@ -184,6 +184,7 @@ describe('IT-0006-AC1, IT-0006-AC4, and IT-0006-AC7 serve process', () => {
           ...(process.env as Record<string, string>),
           MYADMIN_PORT: '1',
           MYADMIN_DATA_DIR: '/not-used',
+          MYADMIN_MASTER_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
         },
         stdout: 'pipe',
         stderr: 'pipe',
@@ -210,6 +211,7 @@ describe('IT-0006-AC1, IT-0006-AC4, and IT-0006-AC7 serve process', () => {
     expect(output).toContain(`http://127.0.0.1:${port}`);
     expect(output).toContain(dataDirectory);
     expect(output).toContain('Ctrl+C');
+    expect(output).not.toContain('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
   }, 15000);
 });
 

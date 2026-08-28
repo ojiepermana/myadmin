@@ -177,7 +177,7 @@ describe('transport integration', () => {
     expect(openedAsyncCorrelationId).toBe(openedCorrelationId);
   });
 
-  it('IT-0013-AC5 logs a redacted stack while returning only a generic ApiError', async () => {
+  it('IT-0013-AC5 and SEC-0013-AC5 log a redacted stack while returning only a generic ApiError', async () => {
     const lines: string[] = [];
     const app = installObservability(new Elysia(), {
       logger: capturedLogger(lines),

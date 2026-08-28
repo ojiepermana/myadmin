@@ -146,7 +146,7 @@ describe('API contract', () => {
     ).toThrow(/\/status/);
   });
 
-  test('CT-0004-AC4 rejects malformed date-time values', () => {
+  test('CT-0004-AC4 accepts valid RFC3339 date-time values and rejects invalid calendar/time values', () => {
     const document = {};
     const operation: ContractOperation = {
       method: 'get',
@@ -168,16 +168,22 @@ describe('API contract', () => {
       },
     };
 
-    expect(() =>
-      assertResponseMatchesContract(document, operation, 200, {
-        createdAt: '2026-08-29T12:34:56.000Z',
-      }),
-    ).not.toThrow();
-    expect(() =>
-      assertResponseMatchesContract(document, operation, 200, {
-        createdAt: 'not-a-date',
-      }),
-    ).toThrow(/\/createdAt.*date-time/);
+    for (const createdAt of ['2026-08-29T12:34:56.000Z', '2024-02-29T23:59:59.123+07:00']) {
+      expect(() =>
+        assertResponseMatchesContract(document, operation, 200, { createdAt }),
+      ).not.toThrow();
+    }
+
+    for (const createdAt of [
+      '2026-02-29T12:34:56Z',
+      '2026-08-29T24:00:00Z',
+      '2026-08-29T12:60:00Z',
+      'not-a-date',
+    ]) {
+      expect(() => assertResponseMatchesContract(document, operation, 200, { createdAt })).toThrow(
+        /\/createdAt.*date-time/,
+      );
+    }
   });
 
   test('CT-0004-AC5 returns ApiError for invalid requests', async () => {

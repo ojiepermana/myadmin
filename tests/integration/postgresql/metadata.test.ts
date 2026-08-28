@@ -131,7 +131,7 @@ describe('PostgreSQL metadata integration', () => {
     expect(page.cursor).toBeDefined();
   });
 
-  test('[IT-0023-AC3] describes columns, constraints, indexes, comments, and estimates', async () => {
+  test('[IT-0023-AC3, CT-0023-AC3] describes columns, constraints, indexes, comments, and estimates', async () => {
     const description = await provider.metadata.describeTable(handle!, ordersRef);
     const identity = description.columns.find((column) => column.name === 'id');
     const generated = description.columns.find((column) => column.name === 'display_name');
@@ -219,7 +219,7 @@ describe('PostgreSQL metadata integration', () => {
     ).resolves.toBeDefined();
   });
 
-  test('[CT-0023-AC7] returns the engine neutral metadata shape', async () => {
+  test('[IT-0023-AC7, CT-0023-AC7] returns the engine neutral metadata shape', async () => {
     const objects = await provider.metadata.listObjects(handle!, schemaRef, [
       'table',
       'view',

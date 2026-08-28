@@ -142,7 +142,7 @@ describe('initial setup integration', () => {
     expect(await secondAttempt.json()).toMatchObject({ code: 'ALREADY_INITIALIZED' });
   });
 
-  test('IT-0016-AC7 writes a safe audit handoff without a password', async () => {
+  test('IT-0016-AC7 and SEC-0016-AC7 write a safe audit handoff without a password', async () => {
     const database = await setupDatabase();
     const app = createServerApp({ observability: { stdout: () => undefined }, database });
     const password = 'synthetic-password-for-audit';

@@ -18,10 +18,16 @@ async function signIn(page: Page): Promise<void> {
   ).toBeVisible();
 }
 
-test('E2E-0052-AC2, E2E-0052-AC5, and E2E-0052-AC7 sync account theme and show admin policy', async ({
+test('E2E-0014-AC3, E2E-0052-AC2, E2E-0052-AC5, and E2E-0052-AC7 sync account theme and show admin policy', async ({
   page,
   browser,
 }) => {
+  await page.goto('/login');
+  await page.evaluate(() => window.localStorage.setItem('myadmin.theme', 'dark'));
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem('myadmin.theme')))
+    .toBe('dark');
+
   await signIn(page);
 
   await expect(page.getByRole('heading', { name: 'Application settings' })).toBeVisible();
@@ -47,4 +53,25 @@ test('E2E-0052-AC2, E2E-0052-AC5, and E2E-0052-AC7 sync account theme and show a
   } finally {
     await secondContext.close();
   }
+});
+
+test('E2E-0014-AC2 changes light, dark, and system modes without navigation', async ({ page }) => {
+  await signIn(page);
+  const initialUrl = page.url();
+  let navigations = 0;
+  page.on('framenavigated', () => {
+    navigations += 1;
+  });
+
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.locator('#settings-theme').selectOption('system');
+  await expect(page.locator('html')).toHaveAttribute('theme-mode', 'light');
+
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('theme-mode', 'dark');
+
+  await page.locator('#settings-theme').selectOption('light');
+  await expect(page.locator('html')).toHaveAttribute('theme-mode', 'light');
+  expect(page.url()).toBe(initialUrl);
+  expect(navigations).toBe(0);
 });

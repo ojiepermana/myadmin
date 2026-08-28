@@ -119,3 +119,31 @@ test('E2E-0030-AC4 and E2E-0030-AC7 skip unavailable connections and explain why
   await expect(page.getByRole('button', { name: 'Deleted query A' })).not.toBeVisible();
   await expect(page.getByText('1 tab', { exact: false })).toBeVisible();
 });
+
+test('E2E-0030-AC5 treats an unknown saved workspace version as a fresh session', async ({
+  page,
+}) => {
+  await page.route('**/api/v1/workspace', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ version: 999, tabs: [], activeTabId: '', panels: {} }),
+      headers: { 'x-myadmin-workspace-notice': 'unknown-version' },
+    });
+  });
+
+  await login(page);
+
+  await expect(page).toHaveURL(/\/workspace$/);
+  await expect(page.getByRole('heading', { name: 'Workspace' })).toBeVisible();
+  await expect(
+    page.getByText(
+      'The saved workspace version is not supported, so a fresh workspace was loaded.',
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Workspace' })).toBeVisible();
+});

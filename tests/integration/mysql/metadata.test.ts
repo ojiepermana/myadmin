@@ -110,7 +110,7 @@ if (configuredTargets.length > 0) {
         expect(capped.items.length).toBeLessThanOrEqual(500);
       });
 
-      test('IT-0025-AC3 describes columns, keys, constraints, and table properties', async () => {
+      test('IT-0025-AC3, CT-0025-AC3 describes columns, keys, constraints, and table properties', async () => {
         const handle = requiredHandle(fixture);
         const description = await provider.metadata.describeTable(handle, table);
         const generated = description.columns.find((column) => column.name === 'full_name');
@@ -225,6 +225,27 @@ if (configuredTargets.length > 0) {
         await expect(
           provider.metadata.searchObjects(handle, 'fixture', '%', ['table'], { limit: 10 }),
         ).resolves.toMatchObject({ items: [] });
+      });
+
+      test('IT-0025-AC7 validates the common metadata shape on a real MySQL provider', async () => {
+        const handle = requiredHandle(fixture);
+        const objects = await provider.metadata.listObjects(handle, database, ['table'], {
+          limit: 50,
+        });
+        const tableObject = objects.items.find((item) => item.name === names.table);
+        expect(tableObject).toEqual(table);
+        expect(tableObject).toMatchObject({
+          database: 'fixture',
+          schema: null,
+          name: names.table,
+          type: 'table',
+        });
+
+        const description = await provider.metadata.describeTable(handle, table);
+        expect(description.ref).toEqual(table);
+        expect(description.columns).toBeInstanceOf(Array);
+        expect(description.indexes).toBeInstanceOf(Array);
+        expect(description.constraints).toBeInstanceOf(Array);
       });
 
       test(

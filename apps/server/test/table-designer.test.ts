@@ -97,7 +97,7 @@ function fixture(designerPreview?: TableDdlPreview) {
 }
 
 describe('table designer service', () => {
-  test('requires destructive confirmation before applying and auditing a drop', async () => {
+  test('[SEC-0041-AC4] requires destructive confirmation before applying and auditing a drop', async () => {
     const value = fixture();
 
     await expect(
@@ -112,7 +112,7 @@ describe('table designer service', () => {
     expect(value.events[0]).toMatchObject({ action: 'table.altered', result: 'denied' });
   });
 
-  test('audits successful changes, records dropped columns, and invalidates metadata', async () => {
+  test('[IT-0041-AC6, IT-0041-AC7, SEC-0041-AC6] audits successful changes, records dropped columns, and invalidates metadata', async () => {
     const value = fixture();
 
     await expect(
@@ -129,7 +129,7 @@ describe('table designer service', () => {
     expect(value.events[1]).toMatchObject({ targetRef: 'public.accounts.email' });
   });
 
-  test('records one column drop audit when a provider recreates a generated column', async () => {
+  test('[IT-0041-AC6, SEC-0041-AC6] records one column drop audit when a provider recreates a generated column', async () => {
     const value = fixture({
       operation: 'alter',
       statements: [
@@ -151,7 +151,7 @@ describe('table designer service', () => {
     expect(value.events.filter((event) => event.action === 'table.column_dropped')).toHaveLength(1);
   });
 
-  test('protects apply with both session authentication and same origin CSRF checks', async () => {
+  test('[SEC-0041-AC4] protects apply with both session authentication and same origin CSRF checks', async () => {
     const actor = { id: 'user-1', username: 'fixture', role: 'user' as User['role'] };
     const application = registerTableDesignerRoutes(new Elysia(), '', {
       authService: {

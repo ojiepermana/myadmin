@@ -40,6 +40,7 @@ interface Fixture {
   manager: ConnectionManagerService;
   testedSecrets: string[];
   closedConnectionIds: string[];
+  logs: string[];
 }
 
 function providerFor(secrets: string[]): DatabaseProvider {
@@ -107,6 +108,7 @@ async function fixture(testLimit = 10): Promise<Fixture> {
     keyProvider: { load: async () => ({ key, keyId: 'fixture-key' }) },
   });
   const closedConnectionIds: string[] = [];
+  const logs: string[] = [];
   const manager = new ConnectionManagerService({
     store,
     providers: new ProviderRegistry([providerFor(testedSecrets)]),
@@ -125,7 +127,7 @@ async function fixture(testLimit = 10): Promise<Fixture> {
     initialAdminService: setup,
     authService: auth,
     connectionManager: manager,
-    observability: { stdout: () => undefined },
+    observability: { stdout: (line) => logs.push(line) },
   });
   const setupResponse = await request(
     app,
@@ -140,7 +142,16 @@ async function fixture(testLimit = 10): Promise<Fixture> {
   );
   const cookie = loginResponse.headers.get('set-cookie')?.split(';', 1)[0];
   if (!cookie) throw new Error('Fixture login did not set a cookie');
-  return { app, database, store, adminCookie: cookie, manager, testedSecrets, closedConnectionIds };
+  return {
+    app,
+    database,
+    store,
+    adminCookie: cookie,
+    manager,
+    testedSecrets,
+    closedConnectionIds,
+    logs,
+  };
 }
 
 function request(
@@ -225,7 +236,7 @@ describe('connection manager integration', () => {
     expect(new TextDecoder().decode(credential?.ciphertext)).not.toContain('database-password');
   });
 
-  test('IT-0026-AC3 tests transient and saved credentials without writing transient secrets', async () => {
+  test('IT-0026-AC3 and SEC-0026-AC3 test transient and saved credentials without writing transient secrets', async () => {
     const value = await fixture();
     const transient = await request(
       value.app,
@@ -262,6 +273,7 @@ describe('connection manager integration', () => {
     expect(byId.status).toBe(200);
     expect(value.testedSecrets).toEqual(['database-password', 'database-password']);
     expect(transientText).not.toContain('database-password');
+    expect(value.logs.join('\n')).not.toContain('database-password');
 
     const limited = await fixture(1);
     const limitedInput = jsonInit(
@@ -273,7 +285,7 @@ describe('connection manager integration', () => {
     expect(rateLimited.status).toBe(429);
   });
 
-  test('IT-0026-AC4, IT-0026-AC5, IT-0026-AC6, and IT-0026-AC9 enforce CRUD, duplicate, cascade, and audit policy', async () => {
+  test('IT-0026-AC4, IT-0026-AC5, IT-0026-AC6, IT-0026-AC9, SEC-0026-AC4, and SEC-0026-AC9 enforce CRUD, duplicate, cascade, and audit policy', async () => {
     const value = await fixture();
     const created = await request(
       value.app,
@@ -307,6 +319,11 @@ describe('connection manager integration', () => {
     expect((await updated.json()) as { hasSavedSecret: boolean }).toMatchObject({
       hasSavedSecret: false,
     });
+    const listed = await request(value.app, '/api/v1/connections', {
+      headers: { cookie: value.adminCookie },
+    });
+    expect(listed.status).toBe(200);
+    expect(JSON.stringify(await listed.json())).not.toContain('database-password');
     expect(value.store.credentials.get(original.id)).toBeNull();
 
     const audit = new SqliteAuditRepository(value.database).query({
@@ -329,6 +346,43 @@ describe('connection manager integration', () => {
     expect(
       new SqliteAuditRepository(value.database).query({ action: 'connection.deleted' }).items,
     ).toHaveLength(1);
+  });
+
+  test('SEC-0026-AC6 copies a saved credential only when its owner opts in', async () => {
+    const value = await fixture();
+    const created = await request(
+      value.app,
+      '/api/v1/connections',
+      jsonInit(
+        { ...connectionInput(), secret: 'database-password', saveSecret: true },
+        authInit(value.adminCookie).headers,
+      ),
+    );
+    const source = (await created.json()) as { id: string };
+
+    const withoutSecret = await request(
+      value.app,
+      `/api/v1/connections/${source.id}/duplicate`,
+      jsonInit(
+        { newLabel: 'Without copied secret', copySecret: false },
+        authInit(value.adminCookie).headers,
+      ),
+    );
+    const withoutSecretPayload = (await withoutSecret.json()) as { hasSavedSecret: boolean };
+    expect(withoutSecret.status).toBe(201);
+    expect(withoutSecretPayload.hasSavedSecret).toBe(false);
+
+    const withSecret = await request(
+      value.app,
+      `/api/v1/connections/${source.id}/duplicate`,
+      jsonInit(
+        { newLabel: 'With copied secret', copySecret: true },
+        authInit(value.adminCookie).headers,
+      ),
+    );
+    const withSecretPayload = (await withSecret.json()) as { hasSavedSecret: boolean };
+    expect(withSecret.status).toBe(201);
+    expect(withSecretPayload.hasSavedSecret).toBe(true);
   });
 
   test('SEC-0026-AC8 denies Admin secret access to another owner but permits descriptor listing and deletion', async () => {
