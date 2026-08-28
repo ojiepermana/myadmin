@@ -142,6 +142,40 @@ describe('API contract', () => {
     ).toThrow(/\/status/);
   });
 
+  test('CT-0004-AC4 rejects malformed date-time values', () => {
+    const document = {};
+    const operation: ContractOperation = {
+      method: 'get',
+      path: '/example',
+      operationId: 'example',
+      responses: {
+        '200': {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: { createdAt: { type: 'string', format: 'date-time' } },
+                required: ['createdAt'],
+                additionalProperties: false,
+              },
+            },
+          },
+        },
+      },
+    };
+
+    expect(() =>
+      assertResponseMatchesContract(document, operation, 200, {
+        createdAt: '2026-08-29T12:34:56.000Z',
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertResponseMatchesContract(document, operation, 200, {
+        createdAt: 'not-a-date',
+      }),
+    ).toThrow(/\/createdAt.*date-time/);
+  });
+
   test('CT-0004-AC5 returns ApiError for invalid requests', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);

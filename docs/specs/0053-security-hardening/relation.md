@@ -11,20 +11,20 @@ Dokumen ini mencatat relasi yang memengaruhi urutan build, kontrak yang dikonsum
 
 ## Legenda relasi
 
-| Jenis | Makna |
-|---|---|
-| `requires` | Spec belum boleh dimulai sebelum dependency selesai. |
-| `references` | Spec memakai keputusan atau istilah dari spec lain, tetapi bukan gerbang build langsung. |
-| `enables` | Spec lain menjadikan spec ini dependency langsung. |
-| `coordinates` | Perubahan perlu diselaraskan tanpa mengubah urutan build. |
-| `deferred` | Kewajiban sengaja diteruskan ke spec yang lebih akhir. |
-| `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia. |
+| Jenis         | Makna                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| `requires`    | Spec belum boleh dimulai sebelum dependency selesai.                                     |
+| `references`  | Spec memakai keputusan atau istilah dari spec lain, tetapi bukan gerbang build langsung. |
+| `enables`     | Spec lain menjadikan spec ini dependency langsung.                                       |
+| `coordinates` | Perubahan perlu diselaraskan tanpa mengubah urutan build.                                |
+| `deferred`    | Kewajiban sengaja diteruskan ke spec yang lebih akhir.                                   |
+| `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia.                      |
 
 ## Prasyarat wajib
 
 Tidak ada dependency spec bernomor yang menjadi gerbang langsung.
 
-Dependency kelompok dari indeks: `seluruh fitur P0`.
+Dependency kelompok dari indeks: `seluruh fitur P0`. Definisi canonical P0 berada di [v1-feature-specification.md](../../plan/v1-feature-specification.md#tingkat-prioritas); ini tetap diperlakukan sebagai gate kelompok, bukan synthetic numbered edge.
 
 ## Konteks prasyarat dari spec utama
 
@@ -40,23 +40,23 @@ Baris di atas dipertahankan utuh. Bila bertentangan dengan tabel prasyarat wajib
 
 ## Output dan konsumen langsung
 
-| Jenis | Spec konsumen | Kontrak |
-|---|---|---|
+| Jenis     | Spec konsumen                                                                    | Kontrak                                         |
+| --------- | -------------------------------------------------------------------------------- | ----------------------------------------------- |
 | `enables` | [0054. Packaging binary dan smoke test](../0054-binary-packaging-smoke/index.md) | Spec ini harus selesai sebelum konsumen dimulai |
 
 ## Relasi nonblocking dan handoff
 
-| Jenis awal | Spec | Cara membaca relasi |
-|---|---|---|
-| `references` | [0011. Credential vault dan redaction](../0011-credential-vault-redaction/index.md) | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build. |
-| `references` | [0013. Package observability](../0013-observability-package/index.md) | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build. |
-| `references` | [0019. Subsistem audit append only](../0019-audit-subsystem/index.md) | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build. |
-| `references` | [0017. Login, logout, dan session](../0017-login-session/index.md) | Referensi berbentuk daftar, rentang, atau nomor singkat pada spec utama. Baca konteks sebelum mengubah graph build. |
+| Jenis awal   | Spec                                                                                | Cara membaca relasi                                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `references` | [0011. Credential vault dan redaction](../0011-credential-vault-redaction/index.md) | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build.                       |
+| `references` | [0013. Package observability](../0013-observability-package/index.md)               | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build.                       |
+| `references` | [0019. Subsistem audit append only](../0019-audit-subsystem/index.md)               | Mention dalam spec utama bukan otomatis prasyarat. Baca konteks sebelum mengubah graph build.                       |
+| `references` | [0017. Login, logout, dan session](../0017-login-session/index.md)                  | Referensi berbentuk daftar, rentang, atau nomor singkat pada spec utama. Baca konteks sebelum mengubah graph build. |
 
 ## Prasyarat environment atau manusia
 
-| Jenis | Kebutuhan | Bukti kesiapan |
-|---|---|---|
+| Jenis         | Kebutuhan                                                                                    | Bukti kesiapan                             |
+| ------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | `environment` | Tidak ada prasyarat environment atau manusia yang dinyatakan eksplisit pada baris prasyarat. | Dicatat sebelum build atau verify dimulai. |
 
 ## Boundary lintas spec

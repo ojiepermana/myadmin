@@ -11,23 +11,23 @@ Dokumen ini mencatat relasi yang memengaruhi urutan build, kontrak yang dikonsum
 
 ## Legenda relasi
 
-| Jenis | Makna |
-|---|---|
-| `requires` | Spec belum boleh dimulai sebelum dependency selesai. |
-| `references` | Spec memakai keputusan atau istilah dari spec lain, tetapi bukan gerbang build langsung. |
-| `enables` | Spec lain menjadikan spec ini dependency langsung. |
-| `coordinates` | Perubahan perlu diselaraskan tanpa mengubah urutan build. |
-| `deferred` | Kewajiban sengaja diteruskan ke spec yang lebih akhir. |
-| `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia. |
+| Jenis         | Makna                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| `requires`    | Spec belum boleh dimulai sebelum dependency selesai.                                     |
+| `references`  | Spec memakai keputusan atau istilah dari spec lain, tetapi bukan gerbang build langsung. |
+| `enables`     | Spec lain menjadikan spec ini dependency langsung.                                       |
+| `coordinates` | Perubahan perlu diselaraskan tanpa mengubah urutan build.                                |
+| `deferred`    | Kewajiban sengaja diteruskan ke spec yang lebih akhir.                                   |
+| `environment` | Kebutuhan layanan, runner, sertifikat, akun, atau resource manusia.                      |
 
 ## Prasyarat wajib
 
-| Jenis | Spec | Sumber |
-|---|---|---|
+| Jenis      | Spec                                                                                | Sumber                        |
+| ---------- | ----------------------------------------------------------------------------------- | ----------------------------- |
 | `requires` | [0006. CLI runtime dan data directory](../0006-cli-runtime-data-directory/index.md) | Indeks build dan konteks spec |
-| `requires` | [0053. Hardening keamanan lintas fitur](../0053-security-hardening/index.md) | Indeks build dan konteks spec |
+| `requires` | [0053. Hardening keamanan lintas fitur](../0053-security-hardening/index.md)        | Indeks build dan konteks spec |
 
-Dependency kelompok dari indeks: `0006, fitur P0`.
+Tidak ada dependency kelompok tambahan dari indeks. Isi smoke test memakai bukti dari runtime `0006`, hardening `0053`, dan alur P0 yang disebut di acceptance criteria.
 
 ## Konteks prasyarat dari spec utama
 
@@ -43,8 +43,8 @@ Baris di atas dipertahankan utuh. Bila bertentangan dengan tabel prasyarat wajib
 
 ## Output dan konsumen langsung
 
-| Jenis | Spec konsumen | Kontrak |
-|---|---|---|
+| Jenis     | Spec konsumen                                                                                           | Kontrak                                         |
+| --------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
 | `enables` | [0055. Distribusi, signing, installer, dan dokumentasi operator](../0055-distribution-release/index.md) | Spec ini harus selesai sebelum konsumen dimulai |
 
 ## Relasi nonblocking dan handoff
@@ -53,8 +53,8 @@ Tidak ada mention lintas spec lain di luar dependency langsung dan konsumen lang
 
 ## Prasyarat environment atau manusia
 
-| Jenis | Kebutuhan | Bukti kesiapan |
-|---|---|---|
+| Jenis         | Kebutuhan                                                                                    | Bukti kesiapan                             |
+| ------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | `environment` | Tidak ada prasyarat environment atau manusia yang dinyatakan eksplisit pada baris prasyarat. | Dicatat sebelum build atau verify dimulai. |
 
 ## Boundary lintas spec

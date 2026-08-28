@@ -88,6 +88,7 @@
     "@tailwindcss/postcss": "4.3.0",
     "jsdom": "27.0.0",
     "ajv": "8",
+    "ajv-formats": "3",
     "openapi-typescript": "7",
     "prettier": "^3.8.1",
     "tailwindcss": "4.3.0",

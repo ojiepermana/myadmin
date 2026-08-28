@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { parse } from 'yaml';
 import Ajv2020, { type ErrorObject } from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
 type RecordValue = Record<string, unknown>;
 type HttpMethod = 'get' | 'put' | 'post' | 'delete' | 'options' | 'head' | 'patch' | 'trace';
 type RouteContainer = { routes: Array<{ method: string; path: string }> };
@@ -182,6 +183,7 @@ export function assertResponseMatchesContract(
   }
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
+  addFormats(ajv, { formats: ['date-time'] });
   if (typeof schema !== 'object' || schema === null) {
     throw new Error(`${operation.operationId} ${status} response schema must be an object`);
   }
