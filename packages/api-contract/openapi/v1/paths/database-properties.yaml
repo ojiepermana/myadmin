@@ -1,0 +1,48 @@
+get:
+  operationId: getDatabaseProperties
+  tags: [databases]
+  summary: Get database properties
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+    - name: db
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    '200':
+      description: Provider supplied database properties.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/database.yaml#/Database
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The connection belongs to another user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The database was not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

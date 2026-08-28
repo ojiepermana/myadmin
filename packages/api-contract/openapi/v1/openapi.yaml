@@ -101,6 +101,12 @@ paths:
     $ref: ./paths/explorer-databases.yaml
   /connections/{id}/search:
     $ref: ./paths/explorer-search.yaml
+  /connections/{id}/databases/options:
+    $ref: ./paths/database-options.yaml
+  /connections/{id}/databases/{db}/properties:
+    $ref: ./paths/database-properties.yaml
+  /connections/{id}/databases/{db}:
+    $ref: ./paths/database-by-name.yaml
   /connections/{id}/databases/{db}/children:
     $ref: ./paths/explorer-database-children.yaml
   /connections/{id}/schemas/{schema}/objects:
@@ -323,6 +329,14 @@ components:
       $ref: ./components/schemas/query.yaml#/SavedQuery
     SavedQueryPage:
       $ref: ./components/schemas/query.yaml#/SavedQueryPage
+    Database:
+      $ref: ./components/schemas/database.yaml#/Database
+    DatabaseCreateRequest:
+      $ref: ./components/schemas/database.yaml#/DatabaseCreateRequest
+    DatabaseCreateOptions:
+      $ref: ./components/schemas/database.yaml#/DatabaseCreateOptions
+    DatabaseDropRequest:
+      $ref: ./components/schemas/database.yaml#/DatabaseDropRequest
   parameters:
     Page:
       $ref: ./components/parameters/page.yaml

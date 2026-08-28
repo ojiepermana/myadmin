@@ -47,6 +47,10 @@ export const AuditEvents = {
     renamed: required('schema.renamed', 'schema'),
     dropped: required('schema.dropped', 'schema'),
   },
+  database: {
+    created: required('database.created', 'database'),
+    dropped: required('database.dropped', 'database'),
+  },
   view: {
     created: required('view.created', 'view'),
     updated: required('view.updated', 'view'),

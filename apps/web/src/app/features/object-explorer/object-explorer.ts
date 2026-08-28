@@ -194,6 +194,15 @@ export class ObjectExplorer {
             queryParams: { connection: node.connectionId, database: node.database },
           });
           break;
+        case 'drop-database':
+          await this.router.navigate(['/database'], {
+            queryParams: {
+              connection: node.connectionId,
+              database: node.database,
+              action: 'drop',
+            },
+          });
+          break;
         case 'browse-data':
           await this.router.navigate(['/data-browser'], {
             queryParams: { connection: node.connectionId, ref: JSON.stringify(node.ref) },

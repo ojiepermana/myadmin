@@ -1,7 +1,7 @@
 # 0039. Manajemen database
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-DB-01 dan FR-DB-02: browse database dengan properti yang provider dukung; cre
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin membuat database baru dengan opsi yang benar untuk engine nya, dan menghapus database dengan pengaman yang membuat salah sasaran hampir mustahil.
 
 **Acceptance criteria**:
@@ -35,17 +36,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Konfirmasi ketik nama plus confirmName di API (dipilih)
 
 **Pros**:
+
 - Pengaman dua lapis (UI dan server) sesuai FR-SAFE-01; konfirmasi generik klik ganda tidak mungkin salah sasaran.
 
 **Cons**:
+
 - Sedikit gesekan pada operasi yang memang harus bergesekan.
 
 ### Option 2: Dialog konfirmasi biasa
 
 **Pros**:
+
 - Lebih cepat.
 
 **Cons**:
+
 - FR-SAFE-01 menuntut confirmation menyebut target dan tahan klik tak sengaja; dialog Ya/Tidak tidak memenuhi semangat itu untuk operasi sebesar drop database.
 
 ## Decision
@@ -63,21 +68,24 @@ Drop database adalah operasi paling berbahaya di produk ini; pola pengamannya ha
 **Data model sketch**: tidak ada tabel internal; operasi `DatabasePort.create/drop/properties` di provider.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /connections/:id/databases | POST | name, opsi per engine | database | pemilik, tersambung | 409 nama, 422, DbError |
-| /connections/:id/databases/:name | DELETE | confirmName | kosong | pemilik | 409 confirm salah / sedang dipakai, DbError |
-| /connections/:id/databases/:name/properties | GET | tidak ada | properti | pemilik | 404 |
+
+| Endpoint                                    | Method | Key inputs            | Key outputs | Auth                | Key errors                                  |
+| ------------------------------------------- | ------ | --------------------- | ----------- | ------------------- | ------------------------------------------- |
+| /connections/:id/databases                  | POST   | name, opsi per engine | database    | pemilik, tersambung | 409 nama, 422, DbError                      |
+| /connections/:id/databases/:name            | DELETE | confirmName           | kosong      | pemilik             | 409 confirm salah / sedang dipakai, DbError |
+| /connections/:id/databases/:name/properties | GET    | tidak ada             | properti    | pemilik             | 404                                         |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| opsi create | daftar charset/collation/template | query metadata server target lewat provider |
-| properti | ukuran, encoding, owner | metadata provider (malas untuk ukuran) |
-| pengaman drop | confirmName | input pengguna, dibandingkan server |
-| blokir drop | database dipakai tab | registry sesi tab user (spec 0033) |
+
+| Action        | Value produced / displayed        | Source                                      |
+| ------------- | --------------------------------- | ------------------------------------------- |
+| opsi create   | daftar charset/collation/template | query metadata server target lewat provider |
+| properti      | ukuran, encoding, owner           | metadata provider (malas untuk ukuran)      |
+| pengaman drop | confirmName                       | input pengguna, dibandingkan server         |
+| blokir drop   | database dipakai tab              | registry sesi tab user (spec 0033)          |
 
 **Key invariants**:
+
 - Tidak ada operasi drop tanpa confirmName yang cocok di server.
 - Audit tertulis sebelum response sukses (jalur `withAudit`).
 - Formulir hanya menampilkan opsi yang engine dukung (capability/metadata, bukan nama engine di logic UI).
@@ -101,12 +109,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Pola safety destructive baku lahir dan teruji; pengelolaan database dasar lengkap.
 
 **Negative / tradeoffs**:
+
 - Ketik nama menambah friksi; disengaja.
 
 **Neutral**:
+
 - Rename database tidak ada di V1 (tidak ada di FR; PostgreSQL butuh disconnect semua, MySQL tidak punya rename database modern).
 
 ## Follow-up
@@ -116,9 +127,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-DB-01, FR-DB-02, FR-SAFE-01, FR-AUD-01; spec 0019, 0023, 0025, 0031.
 
 **Practices & standards**:
+
 - Konfirmasi ketik nama untuk operasi tak terpulihkan; verifikasi konfirmasi di server; UI data driven dari metadata engine.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

@@ -1,0 +1,79 @@
+Database:
+  type: object
+  additionalProperties: false
+  required: [name]
+  properties:
+    name:
+      type: string
+      minLength: 1
+    owner:
+      type: string
+    sizeBytes:
+      type: integer
+      minimum: 0
+    encoding:
+      type: string
+    charset:
+      type: string
+    collation:
+      type: string
+    objectCount:
+      type: integer
+      minimum: 0
+
+DatabaseCreateRequest:
+  type: object
+  additionalProperties: false
+  required: [name]
+  properties:
+    name:
+      type: string
+      minLength: 1
+    owner:
+      type: string
+    encoding:
+      type: string
+    template:
+      type: string
+    charset:
+      type: string
+    collation:
+      type: string
+
+DatabaseCreateOptions:
+  type: object
+  additionalProperties: false
+  required: [engine]
+  properties:
+    engine:
+      type: string
+      enum: [postgresql, mysql]
+    encodings:
+      type: array
+      items:
+        type: string
+    charsets:
+      type: array
+      items:
+        type: string
+    collations:
+      type: array
+      items:
+        type: string
+    templates:
+      type: array
+      items:
+        type: string
+    owners:
+      type: array
+      items:
+        type: string
+
+DatabaseDropRequest:
+  type: object
+  additionalProperties: false
+  required: [confirmName]
+  properties:
+    confirmName:
+      type: string
+      minLength: 1

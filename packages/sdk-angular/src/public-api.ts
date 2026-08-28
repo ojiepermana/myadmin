@@ -5,6 +5,7 @@ export * from './facades/audit-client';
 export * from './facades/backup-client';
 export * from './facades/connections-client';
 export * from './facades/explorer-client';
+export * from './facades/databases-client';
 export * from './facades/health-client';
 export * from './facades/jobs-client';
 export * from './facades/setup-client';

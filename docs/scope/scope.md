@@ -553,8 +553,8 @@ Properti, create data driven per engine, drop ketik nama. Done when: pola konfir
 
 - [x] Design it (spec): [0039](../specs/0039-database-management/index.md)
 - [ ] Build it: /develop database-management
-  - [ ] DatabasePort create drop properties di kedua provider (AC-1, AC-2, AC-3)
-  - [ ] Komponen destructive-action-confirmation plus verifikasi confirmName server plus audit (AC-3, AC-4)
+  - [x] DatabasePort create drop properties di kedua provider (AC-1, AC-2, AC-3)
+  - [x] Komponen destructive-action-confirmation plus verifikasi confirmName server plus audit (AC-3, AC-4)
   - [ ] Halaman properti dan form create data driven plus e2e (AC-2, AC-5, AC-6)
 - [ ] [Verify it](../specs/0039-database-management/verify.md): /check verify database-management
 - [ ] [Test it](../specs/0039-database-management/test.md): /test database-management

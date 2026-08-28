@@ -89,6 +89,8 @@ function categoryFor(
     return 'permission_denied';
   }
   if (code === 1049 || code === 1146 || namedCode === 'ER_BAD_DB_ERROR') return 'not_found';
+  if (code === 1007) return 'conflict';
+  if (code === 1008) return 'not_found';
   if (code === 1062 || code === 1451 || code === 1452 || code === 3819) {
     return 'constraint_violation';
   }
@@ -114,6 +116,8 @@ function messageFor(category: DbErrorCategory, message: string, secret?: string)
       return 'MySQL database object was not found';
     case 'constraint_violation':
       return 'MySQL constraint was violated';
+    case 'conflict':
+      return 'MySQL operation conflicts with existing state';
     case 'syntax_error':
       return `MySQL syntax error${safe ? `: ${safe.slice(0, 240)}` : ''}`;
     case 'cancelled':

@@ -160,6 +160,15 @@ function providerFor(
         void name;
         return unsupported();
       },
+      properties: async (context: ProviderContext, name: string) => {
+        void context;
+        void name;
+        return unsupported();
+      },
+      createOptions: async (context: ProviderContext) => {
+        void context;
+        return {};
+      },
       create: async (context: ProviderContext, database: DatabaseDefinition) => {
         void context;
         createdTargets.push(database.name);

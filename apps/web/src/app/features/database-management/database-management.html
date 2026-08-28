@@ -1,0 +1,244 @@
+<main
+  class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:px-8"
+  aria-labelledby="database-title"
+>
+  <section class="flex flex-wrap items-end justify-between gap-6">
+    <div class="max-w-3xl space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <Badge>Database workspace</Badge>
+        <span class="font-mono text-sm text-muted-foreground">/database</span>
+      </div>
+      <h1 id="database-title" class="text-4xl font-semibold tracking-tight">Database properties</h1>
+      <p class="text-lg leading-relaxed text-muted-foreground">
+        Inspect provider supplied details, then create or remove a database with an exact target
+        confirmation.
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button Button type="button" variant="outline" (click)="refresh()">Refresh</button>
+      <button Button type="button" (click)="openCreate()" [disabled]="!selectedConnection()">
+        Create database
+      </button>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <Card role="status"
+      ><CardContent class="flex items-center gap-3 p-6"
+        ><Spinner aria-label="Loading database" />Loading database workspace…</CardContent
+      ></Card
+    >
+  } @else if (error(); as message) {
+    <Alert variant="destructive"
+      ><AlertTitle>Database could not be loaded</AlertTitle
+      ><AlertDescription>{{ message }}</AlertDescription></Alert
+    >
+  } @else {
+    <section class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+      <Card>
+        <CardHeader
+          ><CardTitle>Target</CardTitle
+          ><CardDescription>Choose the connected saved connection.</CardDescription></CardHeader
+        >
+        <CardContent class="space-y-4">
+          <label class="grid gap-2 text-sm font-medium" for="database-connection"
+            >Connection
+            <select
+              id="database-connection"
+              class="h-10 rounded-md border border-input bg-background px-3 font-normal"
+              [value]="selectedConnectionId()"
+              (change)="onConnectionChange($event)"
+            >
+              @for (connection of connections(); track connection.id) {
+                <option [value]="connection.id">
+                  {{ connection.label }} ({{ connection.engine }})
+                </option>
+              }
+            </select>
+          </label>
+          <div class="rounded-md border border-border bg-muted/20 p-4 text-sm">
+            <p class="font-medium">{{ databaseName() || 'No database selected' }}</p>
+            @if (selectedConnection(); as connection) {
+              <p class="mt-1 text-muted-foreground">
+                {{ connection.label }} · {{ connection.engine }}
+              </p>
+            }
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader
+          ><CardTitle>{{ database()?.name || databaseName() || 'Database' }}</CardTitle
+          ><CardDescription
+            >Only fields exposed by the provider are shown.</CardDescription
+          ></CardHeader
+        >
+        <CardContent>
+          @if (database(); as details) {
+            <dl class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <dt class="text-xs uppercase tracking-wide text-muted-foreground">Name</dt>
+                <dd class="mt-1 font-mono text-sm">{{ details.name }}</dd>
+              </div>
+              @if (details.owner) {
+                <div>
+                  <dt class="text-xs uppercase tracking-wide text-muted-foreground">Owner</dt>
+                  <dd class="mt-1 text-sm">{{ details.owner }}</dd>
+                </div>
+              }
+              @if (details.encoding) {
+                <div>
+                  <dt class="text-xs uppercase tracking-wide text-muted-foreground">Encoding</dt>
+                  <dd class="mt-1 text-sm">{{ details.encoding }}</dd>
+                </div>
+              }
+              @if (details.charset) {
+                <div>
+                  <dt class="text-xs uppercase tracking-wide text-muted-foreground">Charset</dt>
+                  <dd class="mt-1 text-sm">{{ details.charset }}</dd>
+                </div>
+              }
+              @if (details.collation) {
+                <div>
+                  <dt class="text-xs uppercase tracking-wide text-muted-foreground">Collation</dt>
+                  <dd class="mt-1 text-sm">{{ details.collation }}</dd>
+                </div>
+              }
+              @if (details.sizeBytes !== undefined) {
+                <div>
+                  <dt class="text-xs uppercase tracking-wide text-muted-foreground">Size</dt>
+                  <dd class="mt-1 text-sm">{{ formatSize(details.sizeBytes) }}</dd>
+                </div>
+              }
+              @if (details.objectCount !== undefined) {
+                <div>
+                  <dt class="text-xs uppercase tracking-wide text-muted-foreground">Objects</dt>
+                  <dd class="mt-1 text-sm">{{ details.objectCount }}</dd>
+                </div>
+              }
+            </dl>
+            <div class="mt-6 flex justify-end">
+              <button
+                Button
+                type="button"
+                variant="destructive"
+                [disabled]="!selectedConnection()"
+                (click)="openDrop()"
+              >
+                Drop database
+              </button>
+            </div>
+          } @else {
+            <p class="text-sm text-muted-foreground">
+              Connect this connection and choose a database in the explorer to load properties.
+            </p>
+          }
+        </CardContent>
+      </Card>
+    </section>
+  }
+</main>
+
+@if (createOpen()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    role="presentation"
+    (click)="closeCreate()"
+  >
+    <section
+      class="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-database-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="space-y-2">
+        <h2 id="create-database-title" class="text-xl font-semibold">Create database</h2>
+        <p class="text-sm text-muted-foreground">Options come from the selected target server.</p>
+      </div>
+      <div class="mt-6 grid gap-4">
+        <label class="grid gap-2 text-sm font-medium" for="create-database-name"
+          >Name<input
+            id="create-database-name"
+            class="h-10 rounded-md border border-input bg-background px-3 font-mono font-normal"
+            [value]="createName()"
+            (input)="onInput('name', $event)"
+            autocomplete="off"
+        /></label>
+        @if (loadingOptions()) {
+          <p class="text-sm text-muted-foreground">Loading provider options…</p>
+        }
+        @for (field of createFields(); track field.key) {
+          <label class="grid gap-2 text-sm font-medium" [for]="'create-database-' + field.key"
+            >{{ field.label }}
+            <select
+              class="h-10 rounded-md border border-input bg-background px-3 font-normal"
+              [id]="'create-database-' + field.key"
+              [value]="fieldValue(field.key)"
+              (change)="onInput($any(field.key), $event)"
+            >
+              <option value="">Use provider default</option>
+              @for (value of field.values; track value) {
+                <option [value]="value">{{ value }}</option>
+              }
+            </select>
+          </label>
+        }
+      </div>
+      @if (createError(); as message) {
+        <p
+          class="mt-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+          role="alert"
+        >
+          {{ message }}
+        </p>
+      }
+      <div class="mt-6 flex justify-end gap-2">
+        <button
+          Button
+          type="button"
+          variant="outline"
+          (click)="closeCreate()"
+          [disabled]="creating()"
+        >
+          Cancel</button
+        ><button Button type="button" (click)="createDatabase()" [disabled]="!canCreate()">
+          {{ creating() ? 'Creating…' : 'Create database' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (dropOpen() && selectedConnection()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    role="presentation"
+    (click)="closeDrop()"
+  >
+    <section
+      class="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="destructive-action-title"
+      (click)="$event.stopPropagation()"
+    >
+      <app-destructive-action-confirmation
+        [targetName]="databaseName()"
+        [connectionLabel]="selectedConnection()!.label"
+        [engine]="selectedConnection()!.engine"
+        [busy]="dropping()"
+        (confirmed)="dropDatabase($event)"
+        (cancelled)="closeDrop()"
+      />
+      @if (dropError(); as message) {
+        <p
+          class="mt-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+          role="alert"
+        >
+          {{ message }}
+        </p>
+      }
+    </section>
+  </div>
+}

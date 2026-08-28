@@ -1,0 +1,50 @@
+delete:
+  operationId: dropDatabase
+  tags: [databases]
+  summary: Drop a database after exact name confirmation
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+    - name: db
+      in: path
+      required: true
+      schema:
+        type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/database.yaml#/DatabaseDropRequest
+  responses:
+    '204':
+      description: Database dropped and audit recorded.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The request failed CSRF or ownership checks.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Confirmation was wrong, or the database is in use.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The request body is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

@@ -41,6 +41,7 @@ export interface ExplorerAction {
     | 'edit-connection'
     | 'test-connection'
     | 'browse-database'
+    | 'drop-database'
     | 'browse-data'
     | 'design-table'
     | 'open-definition'
@@ -50,7 +51,7 @@ export interface ExplorerAction {
   readonly reason?: string;
 }
 
-const DEFAULT_INSTALLED_FEATURES: readonly ExplorerFeatureId[] = ['connections'];
+const DEFAULT_INSTALLED_FEATURES: readonly ExplorerFeatureId[] = ['connections', 'database'];
 
 function connected(status: ConnectionStatus | null): boolean {
   return status?.status === 'connected';
@@ -99,7 +100,10 @@ export class ExplorerActionRegistry {
     }
 
     const state = connectionRequired(status);
-    if (node.kind === 'database') add('browse-database', 'Browse database', 'database', state);
+    if (node.kind === 'database') {
+      add('browse-database', 'Browse database', 'database', state);
+      add('drop-database', 'Drop database', 'database', state);
+    }
     if (node.kind === 'object' && node.ref?.type === 'table')
       add('browse-data', 'Browse data', 'data-browser', state);
     if (node.kind === 'object' && node.ref?.type === 'table')

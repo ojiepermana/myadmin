@@ -72,6 +72,8 @@ import { registerObjectExplorerRoutes } from './object-explorer/routes';
 import { PrincipalSecurityService } from './security/security';
 import { registerSecurityRoutes } from './security/routes';
 import { QueryHistoryService } from './query/query-history';
+import { DatabaseManagementService } from './database-management/database-management';
+import { registerDatabaseManagementRoutes } from './database-management/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -104,6 +106,7 @@ export interface ServerStartOptions {
   canSubscribeQuery?: (userId: string, executionId: string) => boolean;
   queryExecutionService?: QueryExecutionService;
   queryHistoryService?: QueryHistoryService;
+  databaseManagementService?: DatabaseManagementService;
   observability?: ObservabilityOptions;
 }
 
@@ -137,6 +140,7 @@ export interface ServerAppOptions {
   canSubscribeQuery?: (userId: string, executionId: string) => boolean;
   queryExecutionService?: QueryExecutionService;
   queryHistoryService?: QueryHistoryService;
+  databaseManagementService?: DatabaseManagementService;
   observability?: ObservabilityOptions;
 }
 
@@ -1404,6 +1408,15 @@ export function createServerApp(options: ServerAppOptions = {}) {
           publish: (event) => realtimeHub.publish(event),
         })
       : undefined;
+  const databaseManagementService =
+    options.databaseManagementService ??
+    (runtimeStore && connectionManager
+      ? new DatabaseManagementService({
+          store: runtimeStore,
+          connectionManager,
+          activeTabs: queryExecutionService,
+        })
+      : undefined);
 
   let application: AnyElysia = installObservability(
     new Elysia({
@@ -1510,6 +1523,14 @@ export function createServerApp(options: ServerAppOptions = {}) {
         securityService: new PrincipalSecurityService(connectionManager, auditRepository),
       });
     }
+    if (databaseManagementService) {
+      application = registerDatabaseManagementRoutes(application, '/api/v1', {
+        authService,
+        setupService,
+        service: databaseManagementService,
+        secureCookies,
+      });
+    }
   }
   if (queryExecutionService && authService) {
     application = registerQueryRoutes(application, '/api/v1', {
@@ -1601,6 +1622,11 @@ export function createApp(
     connectionRepository: store.connections,
     retentionLimit: () => store.settingsService.getSetting('history.maxEntriesPerUser'),
   });
+  const databaseManagementService = new DatabaseManagementService({
+    store,
+    connectionManager,
+    activeTabs: queryExecutionService,
+  });
 
   let application: AnyElysia = installObservability(
     new Elysia(),
@@ -1666,6 +1692,12 @@ export function createApp(
     authService,
     setupService,
     securityService: new PrincipalSecurityService(connectionManager, store.audit),
+  });
+  application = registerDatabaseManagementRoutes(application, '', {
+    authService,
+    setupService,
+    service: databaseManagementService,
+    secureCookies: false,
   });
   const backupService =
     options.backupService ??
@@ -1735,6 +1767,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       canSubscribeQuery: options.canSubscribeQuery,
       queryExecutionService: options.queryExecutionService,
       queryHistoryService: options.queryHistoryService,
+      databaseManagementService: options.databaseManagementService,
       observability: options.observability,
     });
     serverApp.listen({ hostname: options.host ?? host, port: options.port ?? port });

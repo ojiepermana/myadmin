@@ -50,3 +50,52 @@ get:
         application/json:
           schema:
             $ref: ../components/schemas/api-error.yaml
+post:
+  operationId: createDatabase
+  tags: [databases]
+  summary: Create a database using provider supplied options
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/database.yaml#/DatabaseCreateRequest
+  responses:
+    '201':
+      description: Database created and audit recorded.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/database.yaml#/Database
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The request failed CSRF or ownership checks.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The database already exists or the connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The request body is invalid or a provider option is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

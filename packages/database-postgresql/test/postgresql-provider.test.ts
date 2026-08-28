@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { ConnectionContext, DbError } from '@myadmin/database-core';
 import {
   PostgresqlConnectionAdapter,
+  PostgresqlDatabasePort,
   PostgresqlProvider,
   createPostgresqlCapabilities,
   mapPostgresqlError,
@@ -54,6 +55,10 @@ function fakeClient(state: Partial<FakeClientState> = {}): {
     }
     if (query.includes('server_version')) return resolvedQuery([{ version: '16.4' }]);
     if (query.includes('pg_cancel_backend')) return resolvedQuery([{ cancelled: true }]);
+    if (query.includes('generate_series')) return resolvedQuery([{ encoding: 'UTF8' }]);
+    if (query.includes('pg_collation')) return resolvedQuery([{ collation: 'C' }]);
+    if (query.includes('datistemplate')) return resolvedQuery([{ template: 'template0' }]);
+    if (query.includes('pg_roles')) return resolvedQuery([{ owner: 'admin' }]);
     return resolvedQuery([{ ok: 1 }]);
   }) as BunSqlClient;
   client.connect = async () => {
@@ -91,6 +96,8 @@ describe('PostgreSQL error mapping', () => {
     ['3D000', 'not_found'],
     ['42P01', 'not_found'],
     ['42501', 'permission_denied'],
+    ['42P04', 'conflict'],
+    ['55006', 'conflict'],
     ['23505', 'constraint_violation'],
     ['42601', 'syntax_error'],
     ['57014', 'cancelled'],
@@ -266,5 +273,39 @@ describe('PostgreSQL capabilities', () => {
     });
     expect(current.capabilities.materializedViews).toBe(false);
     expect(current.reasons?.backupRestore).toBe('belum tersedia');
+  });
+});
+
+describe('PostgreSQL database administration', () => {
+  test('validates and quotes database identifiers for create and drop', async () => {
+    const { client, state } = fakeClient();
+    const connection = new PostgresqlConnectionAdapter({ sqlFactory: () => client });
+    const port = new PostgresqlDatabasePort(connection);
+    const handle = await connection.open(context());
+
+    await port.create(handle, { name: 'safe"name', encoding: 'UTF8' });
+    await port.drop(handle, 'safe"name');
+
+    expect(state.queries).toContain('CREATE DATABASE "safe""name" ENCODING \'UTF8\'');
+    expect(state.queries).toContain('DROP DATABASE "safe""name"');
+    await expect(port.drop(handle, 'bad\u0000name')).rejects.toMatchObject({
+      category: 'syntax_error',
+    });
+    await connection.close(handle);
+  });
+
+  test('returns provider supplied creation options', async () => {
+    const { client } = fakeClient();
+    const connection = new PostgresqlConnectionAdapter({ sqlFactory: () => client });
+    const port = new PostgresqlDatabasePort(connection);
+    const handle = await connection.open(context());
+
+    await expect(port.createOptions(handle)).resolves.toEqual({
+      encodings: ['UTF8'],
+      collations: ['C'],
+      templates: ['template0'],
+      owners: ['admin'],
+    });
+    await connection.close(handle);
   });
 });

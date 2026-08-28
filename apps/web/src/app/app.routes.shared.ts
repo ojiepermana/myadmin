@@ -74,52 +74,59 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
         : definition.id === 'connections'
           ? () =>
               import('./features/connections/connections').then(({ Connections }) => Connections)
-          : definition.id === 'explorer'
+          : definition.id === 'database'
             ? () =>
-                import('./features/object-explorer/object-explorer').then(
-                  ({ ObjectExplorer }) => ObjectExplorer,
+                import('./features/database-management/database-management').then(
+                  ({ DatabaseManagement }) => DatabaseManagement,
                 )
-            : definition.id === 'settings'
-              ? () => import('./features/settings/settings').then(({ Settings }) => Settings)
-              : definition.id === 'monitoring'
-                ? () =>
-                    import('./features/monitoring/monitoring').then(({ Monitoring }) => Monitoring)
-                : definition.id === 'audit'
-                  ? () => import('./features/audit/audit').then(({ Audit }) => Audit)
-                  : definition.id === 'backup-restore'
-                    ? () =>
-                        import('./features/backup-restore/backup-restore').then(
-                          ({ BackupRestore }) => BackupRestore,
-                        )
-                    : definition.id === 'change-password'
+            : definition.id === 'explorer'
+              ? () =>
+                  import('./features/object-explorer/object-explorer').then(
+                    ({ ObjectExplorer }) => ObjectExplorer,
+                  )
+              : definition.id === 'settings'
+                ? () => import('./features/settings/settings').then(({ Settings }) => Settings)
+                : definition.id === 'monitoring'
+                  ? () =>
+                      import('./features/monitoring/monitoring').then(
+                        ({ Monitoring }) => Monitoring,
+                      )
+                  : definition.id === 'audit'
+                    ? () => import('./features/audit/audit').then(({ Audit }) => Audit)
+                    : definition.id === 'backup-restore'
                       ? () =>
-                          import('./features/change-password/change-password').then(
-                            ({ ChangePassword }) => ChangePassword,
+                          import('./features/backup-restore/backup-restore').then(
+                            ({ BackupRestore }) => BackupRestore,
                           )
-                      : definition.id === 'users'
+                      : definition.id === 'change-password'
                         ? () =>
-                            import('./features/user-management/user-management').then(
-                              ({ UserManagement }) => UserManagement,
+                            import('./features/change-password/change-password').then(
+                              ({ ChangePassword }) => ChangePassword,
                             )
-                        : definition.id === 'security'
+                        : definition.id === 'users'
                           ? () =>
-                              import('./features/security/security').then(
-                                ({ Security }) => Security,
+                              import('./features/user-management/user-management').then(
+                                ({ UserManagement }) => UserManagement,
                               )
-                          : definition.id === 'query-editor'
+                          : definition.id === 'security'
                             ? () =>
-                                import('./features/query-editor/query-editor').then(
-                                  ({ QueryEditor }) => QueryEditor,
+                                import('./features/security/security').then(
+                                  ({ Security }) => Security,
                                 )
-                            : definition.id === 'query-history'
+                            : definition.id === 'query-editor'
                               ? () =>
-                                  import('./features/query-history/query-history').then(
-                                    ({ QueryHistory }) => QueryHistory,
+                                  import('./features/query-editor/query-editor').then(
+                                    ({ QueryEditor }) => QueryEditor,
                                   )
-                              : () =>
-                                  import('./features/route-placeholder/route-placeholder').then(
-                                    ({ RoutePlaceholder }) => RoutePlaceholder,
-                                  ),
+                              : definition.id === 'query-history'
+                                ? () =>
+                                    import('./features/query-history/query-history').then(
+                                      ({ QueryHistory }) => QueryHistory,
+                                    )
+                                : () =>
+                                    import('./features/route-placeholder/route-placeholder').then(
+                                      ({ RoutePlaceholder }) => RoutePlaceholder,
+                                    ),
   }));
 
   const devRoutes: Routes = includeDevDemo

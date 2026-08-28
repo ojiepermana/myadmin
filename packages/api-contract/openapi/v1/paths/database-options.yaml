@@ -1,0 +1,43 @@
+get:
+  operationId: getDatabaseCreateOptions
+  tags: [databases]
+  summary: List provider supplied database creation options
+  parameters:
+    - $ref: ../components/parameters/connection-id.yaml
+  responses:
+    '200':
+      description: Engine specific options read from the target server.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/database.yaml#/DatabaseCreateOptions
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: The connection belongs to another user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The connection does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The connection is not connected.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '502':
+      description: The provider operation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

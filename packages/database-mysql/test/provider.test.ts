@@ -5,6 +5,7 @@ import {
   createMysqlCapabilityDescription,
   mapMysqlError,
   MysqlConnectionAdapter,
+  MysqlDatabasePort,
   MysqlProvider,
   parseMysqlVersion,
   supportsMysqlCheckConstraints,
@@ -59,6 +60,12 @@ class FakeMysqlClient implements MysqlSqlClient {
         if (statement.includes('VERSION')) {
           return [{ version: this.version }] as unknown as readonly T[];
         }
+        if (statement.includes('SHOW CHARACTER SET')) {
+          return [{ Charset: 'utf8mb4' }] as unknown as readonly T[];
+        }
+        if (statement.includes('SHOW COLLATION')) {
+          return [{ Collation: 'utf8mb4_0900_ai_ci' }] as unknown as readonly T[];
+        }
         return [] as readonly T[];
       },
       release: () => {
@@ -79,6 +86,8 @@ describe('MySQL error mapping', () => {
     [1142, 'permission_denied'],
     [1049, 'not_found'],
     [1146, 'not_found'],
+    [1007, 'conflict'],
+    [1008, 'not_found'],
     [1062, 'constraint_violation'],
     [1451, 'constraint_violation'],
     [1452, 'constraint_violation'],
@@ -230,5 +239,37 @@ describe('MySQL capabilities and connection lifecycle', () => {
     await provider.query.cancel(handle);
     expect(client.statements).toContain('KILL QUERY 42');
     await provider.connection.close(handle);
+  });
+});
+
+describe('MySQL database administration', () => {
+  test('returns provider supplied charset and collation options', async () => {
+    const client = new FakeMysqlClient();
+    const connection = new MysqlConnectionAdapter({ sqlFactory: () => client });
+    const port = new MysqlDatabasePort(connection);
+    const handle = await connection.open(context({ timeoutMs: undefined }));
+
+    await expect(port.createOptions(handle)).resolves.toEqual({
+      charsets: ['utf8mb4'],
+      collations: ['utf8mb4_0900_ai_ci'],
+    });
+    await connection.close(handle);
+  });
+
+  test('validates and quotes database identifiers for create and drop', async () => {
+    const client = new FakeMysqlClient();
+    const connection = new MysqlConnectionAdapter({ sqlFactory: () => client });
+    const port = new MysqlDatabasePort(connection);
+    const handle = await connection.open(context({ timeoutMs: undefined }));
+
+    await port.create(handle, { name: 'safe`name' });
+    await port.drop(handle, 'safe`name');
+
+    expect(client.statements).toContain('CREATE DATABASE `safe``name`');
+    expect(client.statements).toContain('DROP DATABASE `safe``name`');
+    await expect(port.drop(handle, 'bad\u0000name')).rejects.toMatchObject({
+      category: 'syntax_error',
+    });
+    await connection.close(handle);
   });
 });

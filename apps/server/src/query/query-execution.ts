@@ -576,6 +576,16 @@ export class QueryExecutionService {
     }
   }
 
+  /** Used by destructive database operations to protect databases open in a tab. */
+  public isDatabaseActive(userId: string, connectionId: string, database: string): boolean {
+    return [...this.sessions.values()].some(
+      (session) =>
+        session.ownerUserId === userId &&
+        session.connectionId === connectionId &&
+        session.database === database,
+    );
+  }
+
   public async autocomplete(
     actor: ConnectionActor,
     rawInput: QueryAutocompleteInput,

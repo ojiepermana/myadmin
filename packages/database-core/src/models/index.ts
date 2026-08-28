@@ -97,6 +97,27 @@ export interface DatabaseDefinition {
   encoding?: string;
   charset?: string;
   collation?: string;
+  objectCount?: number;
+}
+
+/** Provider validated inputs for creating a database. */
+export interface DatabaseCreateInput {
+  name: string;
+  owner?: string;
+  encoding?: string;
+  template?: string;
+  charset?: string;
+  collation?: string;
+}
+
+/** Engine supplied values shown by the database creation form. */
+export interface DatabaseCreateOptions {
+  engine?: DatabaseEngine;
+  encodings?: string[];
+  charsets?: string[];
+  collations?: string[];
+  templates?: string[];
+  owners?: string[];
 }
 
 export interface SchemaDefinition {
