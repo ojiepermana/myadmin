@@ -1,2 +1,3 @@
-export {};
-await import('../packages/api-contract/scripts/bundle-contract');
+import { bundleContract } from '../packages/api-contract/scripts/bundle-contract';
+
+bundleContract();
