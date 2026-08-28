@@ -1,7 +1,7 @@
 # Myadmin — Feature Specification V1
 
 > Status: baseline V1 untuk disetujui sebelum coding  
-> Companion document: [Struktur Monorepo dan Aturan Arsitektur](myadmin-monorepo-structure.md)  
+> Companion document: [Struktur Monorepo dan Aturan Arsitektur](struktur.md)  
 > Target stack: Angular 22.1+, Bun 1.4+, SQLite internal, PostgreSQL dan MySQL  
 > UI foundation wajib: @ojiepermana/angular
 

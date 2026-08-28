@@ -19,7 +19,7 @@ myadmin serve
 
 ## 1. Keputusan struktur yang sudah dikunci
 
-- Monorepo memakai Bun workspaces dan Angular CLI; tidak menambah Nx atau Turborepo pada V1 tanpa kebutuhan yang terbukti.
+- Repo memakai tepat satu package.json di akar (tanpa Bun workspaces, tanpa package.json per folder) plus Angular CLI; folder apps/* dan packages/* adalah modul source TypeScript yang di resolve lewat alias tsconfig @myadmin/*; tidak menambah Nx atau Turborepo pada V1 tanpa kebutuhan yang terbukti. (Diperbarui 2026-08-28 atas keputusan pemilik proyek; semula Bun workspaces.)
 - Angular hanya berada di aplikasi web. Backend Bun dan entrypoint executable dipisahkan agar packaging tidak mencemari kode server.
 - OpenAPI adalah source of truth API. Angular SDK dihasilkan dari kontrak, sehingga tipe dan endpoint tidak ditulis dua kali.
 - @ojiepermana/angular adalah UI foundation satu-satunya untuk theme, navigation primitive, generic components, form, dialog, table/data-grid, feedback, dan infrastructure Angular SDK yang tersedia dari package tersebut.
@@ -223,7 +223,6 @@ myadmin/
 │   │   │   │   ├── styles.scss
 │   │   │   │   └── myadmin-overrides.scss
 │   │   │   └── main.ts
-│   │   ├── project.json
 │   │   ├── tsconfig.app.json
 │   │   └── tsconfig.spec.json
 │   │
@@ -561,7 +560,7 @@ myadmin/
 │       │   ├── factories/
 │       │   ├── fakes/
 │       │   └── fixtures/
-│       └── package.json
+│       └── (tanpa package.json; batas "hanya test" ditegakkan boundary check)
 │
 ├── tests/
 │   ├── contract/                               # contract ↔ server ↔ SDK
@@ -1086,7 +1085,7 @@ windows-x64
 
 ## 7. Urutan implementasi yang mengikuti struktur ini
 
-1. Foundation: root workspace, TypeScript, Angular app, Bun server, CLI app, lint/format, unit-test runner, Playwright, CI dasar.
+1. Foundation: root project dengan satu `package.json`, TypeScript, Angular app, Bun server, CLI app, lint/format, unit-test runner, Playwright, CI dasar.
 2. Contract foundation: OpenAPI v1, error model, generated contract types, SDK Angular, contract verification.
 3. UI foundation: instalasi/integrasi @ojiepermana/angular, theme configuration, light/dark/system, app shell, sidebar, workspace/tab/status bar, notification/dialog.
 4. Internal platform: data directory, SQLite migration, crypto/key provider, initial admin, auth/session, Admin/User authorization, settings, preferences, audit.
