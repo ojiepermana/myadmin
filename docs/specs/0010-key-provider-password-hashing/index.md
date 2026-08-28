@@ -1,7 +1,7 @@
 # 0010. Key provider dan password hashing
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ Bagian 8.2 v1-feature-specification mewajibkan: password memakai hash modern yan
 ## Requirements
 
 **User stories**:
+
 - Sebagai operator, saya ingin enkripsi credential bekerja tanpa setup manual, dan bisa saya perkuat dengan memisahkan lokasi key bila mau.
 - Sebagai pemilik proyek, saya ingin password user tidak pernah bisa dipulihkan dari data yang bocor.
 
@@ -39,25 +40,31 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Keyfile otomatis plus override env (dipilih)
 
 **Pros**:
+
 - Bekerja headless tanpa interaksi; operator bisa memperkuat dengan memindah key ke mount terpisah atau env dari secret manager; doctor bisa memeriksanya.
 
 **Cons**:
+
 - Default nya key berada di mesin yang sama dengan ciphertext (folder sama, file berbeda); perlindungan utamanya permission OS. Ini dinyatakan jujur di dokumentasi operator.
 
 ### Option 2: OS keychain dengan fallback keyfile
 
 **Pros**:
+
 - Di desktop, key dilindungi keychain OS.
 
 **Cons**:
+
 - Tiga integrasi platform berbeda (Keychain, Credential Manager, libsecret) di V1, gagal di server headless yang justru target utama; kompleksitas melebihi nilai untuk rilis pertama. Menjadi V2.
 
 ### Option 3: Passphrase wajib saat start
 
 **Pros**:
+
 - Key tidak pernah tersimpan di disk.
 
 **Cons**:
+
 - Mematikan pemakaian sebagai service headless; ditolak oleh konteks operasional.
 
 ## Decision
@@ -76,21 +83,23 @@ Konteks headless mengalahkan keamanan teoretis maksimal: Option 3 paling kuat di
 
 **API surface**: tidak ada endpoint; permukaan berupa modul `KeyProvider` dan `PasswordHasher`.
 
-~~~text
+```text
 KeyProvider.load(): { key: Uint8Array(32), keyId: string, source: 'env' | 'file' }
 PasswordHasher.hash(plain): string        (string PHC argon2id)
 PasswordHasher.verify(plain, hash): { ok: boolean, needsRehash: boolean }
-~~~
+```
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| load key | key 32 byte | env `MYADMIN_MASTER_KEY` atau isi keyfile |
-| load key | keyId | turunan hash SHA-256 pendek dari key (8 byte hex), dihitung, tidak disimpan terpisah |
-| hash password | parameter argon2id | konstanta di `password-hasher.ts` |
-| policy | panjang minimum | konstanta policy; V1 tidak dapat dikonfigurasi |
+
+| Action        | Value produced / displayed | Source                                                                               |
+| ------------- | -------------------------- | ------------------------------------------------------------------------------------ |
+| load key      | key 32 byte                | env `MYADMIN_MASTER_KEY` atau isi keyfile                                            |
+| load key      | keyId                      | turunan hash SHA-256 pendek dari key (8 byte hex), dihitung, tidak disimpan terpisah |
+| hash password | parameter argon2id         | konstanta di `password-hasher.ts`                                                    |
+| policy        | panjang minimum            | konstanta policy; V1 tidak dapat dikonfigurasi                                       |
 
 **Key invariants**:
+
 - Key hanya hidup sebagai `Uint8Array` di memori proses; tidak pernah di serialize, di log, atau dikirim lewat WebSocket.
 - Satu key aktif per proses V1; rotasi kunci adalah pekerjaan V2 (key_id sudah menyiapkannya).
 - Password hash memakai format PHC standar sehingga parameter tersimpan bersama hash.
@@ -98,6 +107,7 @@ PasswordHasher.verify(plain, hash): { ok: boolean, needsRehash: boolean }
 **Security model**: modul ini adalah pemilik tunggal primitif keamanan (struktur.md: crypto adalah satu satunya pemilik password hashing, key provider, vault, redaction). Package lain dilarang mengimpor primitif crypto langsung dari runtime; boundary check menegakkan.
 
 **Configuration required**:
+
 - `MYADMIN_MASTER_KEY`: master key eksplisit (base64/hex), opsional.
 - `MYADMIN_KEY_FILE`: path keyfile custom, opsional.
 
@@ -107,21 +117,24 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Bangun `key-management/key-provider.ts` (resolusi sumber, first run atomik, permission check, keyId) dan `passphrase.ts` untuk parsing env, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-4**.
-2. Bangun `password/password-hasher.ts` (argon2id eksplisit, verify, needsRehash) dan `password-policy.ts`, memenuhi **AC-6**, **AC-7**, **AC-8**.
-3. Daftarkan doctor check keyfile (lewat registry spec 0007), memenuhi **AC-4**.
-4. Pastikan redaction awal menutup nilai key dan hash di logger sementara (lengkap di spec 0011), memenuhi **AC-5**.
-5. Unit test menyeluruh di `packages/crypto/test/` dan test keamanan di `tests/security/crypto/`, memenuhi **AC-9**.
+- [x] Bangun `key-management/key-provider.ts` (resolusi sumber, first run atomik, permission check, keyId) dan `passphrase.ts` untuk parsing env, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-4**.
+- [x] Bangun `password/password-hasher.ts` (argon2id eksplisit, verify, needsRehash) dan `password-policy.ts`, memenuhi **AC-6**, **AC-7**, **AC-8**.
+- [ ] Daftarkan doctor check keyfile (lewat registry spec 0007), memenuhi **AC-4**.
+- [ ] Pastikan redaction awal menutup nilai key dan hash di logger sementara (lengkap di spec 0011), memenuhi **AC-5**.
+- [ ] Unit test menyeluruh di `packages/crypto/test/` dan test keamanan di `tests/security/crypto/`, memenuhi **AC-9**.
 
 ## Consequences
 
 **Positive**:
+
 - ADR keamanan yang menahan fitur credential (butir 13.1 v1-feature-specification) selesai; vault (spec 0011) tinggal memakai key ini.
 
 **Negative / tradeoffs**:
+
 - Default satu mesin: pencuri yang membawa seluruh data directory plus keyfile bisa mendekripsi credential; dinyatakan di dokumentasi operator beserta mitigasi (pindahkan key lewat `MYADMIN_KEY_FILE` atau env).
 
 **Neutral**:
+
 - Rotasi key tertunda ke V2 dengan key_id sudah tersedia sebagai pijakan.
 
 ## Follow-up
@@ -132,11 +145,14 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md bagian 8.2 butir 1, 2 dan FR-INT-03, FR-INT-04; struktur.md pohon packages/crypto dan aturan 4.4.
 - Keputusan key provider sesi desain 2026-08-28.
 
 **Practices & standards**:
+
 - argon2id untuk password; authenticated encryption dengan key di luar penyimpanan ciphertext; least privilege permission file.
 
 **Links** (terverifikasi web 2026-08-28):
+
 - Bun.password argon2id default: https://bun.com/guides/util/hash-a-password

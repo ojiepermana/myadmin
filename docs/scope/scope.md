@@ -183,8 +183,8 @@ ADR keamanan: keyfile plus override env, argon2id. Done when: first run menghasi
 
 - [x] Design it (spec): [0010](../specs/0010-key-provider-password-hashing/index.md)
 - [ ] Build it: /develop key-provider-password-hashing
-  - [ ] Key provider (first run atomik, permission check, keyId, override) (AC-1 sampai AC-4)
-  - [ ] Password hasher argon2id, policy, needsRehash (AC-6, AC-7, AC-8)
+  - [x] Key provider (first run atomik, permission check, keyId, override) (AC-1 sampai AC-4)
+  - [x] Password hasher argon2id, policy, needsRehash (AC-6, AC-7, AC-8)
   - [ ] Doctor check keyfile dan test keamanan (AC-4, AC-5, AC-9)
 - [ ] [Verify it](../specs/0010-key-provider-password-hashing/verify.md): /check verify key-provider-password-hashing
 - [ ] [Test it](../specs/0010-key-provider-password-hashing/test.md): /test key-provider-password-hashing
