@@ -1,7 +1,7 @@
 # 0009. Internal repositories
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ Arah dependency yang dikunci memisahkan model dari persistence: `internal-domain
 ## Requirements
 
 **User stories**:
+
 - Sebagai developer use case, saya ingin port repository yang bertipe dan sempit supaya use case bisa diuji dengan fake tanpa SQLite.
 - Sebagai developer, saya ingin operasi multi tabel berjalan atomik lewat unit of work.
 
@@ -38,17 +39,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Repository per agregat dengan SQL tulisan tangan (dipilih)
 
 **Pros**:
+
 - Sesuai struktur.md; SQL kecil dan bisa dibaca; tanpa ORM di jalur binary.
 
 **Cons**:
+
 - Boilerplate mapper per tabel.
 
 ### Option 2: ORM ringan (Drizzle)
 
 **Pros**:
+
 - Skema bertipe dan query builder mengurangi boilerplate.
 
 **Cons**:
+
 - Menduplikasi definisi skema yang sudah hidup di migrasi; menambah dependency dan konsep pada lapisan yang justru ingin bodoh sederhana; migrasi kami sudah tulisan tangan.
 
 ## Decision
@@ -68,13 +73,15 @@ Sebelas tabel dengan operasi sempit tidak butuh ORM; yang dibutuhkan adalah port
 **API surface**: tidak ada endpoint; permukaan berupa port TypeScript.
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| create entity | id | generator UUIDv7 kernel, dipanggil use case, bukan database |
-| create/update | created_at, updated_at | jam sistem lewat `kernel/time` (bisa di fake di test) |
-| enforceRetention | batas maksimum | settings key `history.maxEntriesPerUser`, default 1000 |
+
+| Action           | Value produced / displayed | Source                                                      |
+| ---------------- | -------------------------- | ----------------------------------------------------------- |
+| create entity    | id                         | generator UUIDv7 kernel, dipanggil use case, bukan database |
+| create/update    | created_at, updated_at     | jam sistem lewat `kernel/time` (bisa di fake di test)       |
+| enforceRetention | batas maksimum             | settings key `history.maxEntriesPerUser`, default 1000      |
 
 **Key invariants**:
+
 - Semua SQL parameterized; mapper tidak pernah menyalin kolom secret ke entity descriptor (credential punya port terpisah).
 - AuditRepository append only di tingkat tipe (AC-6).
 - Entity `Connection` (descriptor) tidak pernah memuat ciphertext; `CredentialRepository` mengembalikan tipe terpisah `EncryptedCredential`.
@@ -89,22 +96,25 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Definisikan entity, value object, dan port di `internal-domain` (termasuk tipe `EncryptedCredential` terpisah), memenuhi **AC-1**, **AC-2**.
-2. Implementasikan repository SQLite plus mapper untuk users, sessions, server_groups, connections, connection_credentials, memenuhi **AC-3**.
-3. Implementasikan repository workspaces, query_history (dengan retention), saved_queries, settings, preferences, audit_logs, memenuhi **AC-3**, **AC-5**, **AC-6**.
-4. Bangun unit of work di atas helper transaksi spec 0008, memenuhi **AC-4**.
-5. Tulis fake in memory di `testkit/fakes/`, memenuhi **AC-8**.
-6. Integration test lengkap di `tests/integration/internal-sqlite/`, memenuhi **AC-7**.
+1. [x] Definisikan entity, value object, dan port di `internal-domain` (termasuk tipe `EncryptedCredential` terpisah), memenuhi **AC-1**, **AC-2**.
+2. [x] Implementasikan repository SQLite plus mapper untuk users, sessions, server_groups, connections, connection_credentials, memenuhi **AC-3**.
+3. [x] Implementasikan repository workspaces, query_history (dengan retention), saved_queries, settings, preferences, audit_logs, memenuhi **AC-3**, **AC-5**, **AC-6**.
+4. [x] Bangun unit of work di atas helper transaksi spec 0008, memenuhi **AC-4**.
+5. [x] Tulis fake in memory di `testkit/fakes/`, memenuhi **AC-8**.
+6. [x] Integration test lengkap di `tests/integration/internal-sqlite/`, memenuhi **AC-7**.
 
 ## Consequences
 
 **Positive**:
+
 - Use case di semua spec berikutnya bisa lahir dengan unit test cepat memakai fake; bukti FR-INT-02 selesai sekali di sini.
 
 **Negative / tradeoffs**:
+
 - Boilerplate mapper; diterima demi kejelasan dan nol dependency.
 
 **Neutral**:
+
 - Penambahan kolom di masa depan berarti migrasi baru plus perubahan mapper; checksum migrasi menjaga urutannya.
 
 ## Follow-up
@@ -114,10 +124,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-INT-02, FR-INT-03; struktur.md bagian 3 (lima package platform internal) dan bagian 5 (arah dependency).
 - Spec 0008 (skema), data model terkonfirmasi sesi desain 2026-08-28.
 
 **Practices & standards**:
+
 - Ports and adapters; append only ditegakkan di tipe; fake untuk test cepat.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

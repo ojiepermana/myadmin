@@ -173,10 +173,11 @@ Penyimpanan internal: pragma benar, migrasi bernomor ber checksum, skema sebelas
 Port dan repository untuk semua tabel internal plus unit of work dan fake. Done when: round trip semua repository terbukti tanpa server eksternal.
 
 - [x] Design it (spec): [0009](../specs/0009-internal-repositories/index.md)
-- [ ] Build it: /develop internal-repositories
-  - [ ] Entity, port, dan tipe EncryptedCredential di internal-domain (AC-1, AC-2)
-  - [ ] Implementasi SQLite semua repository plus retensi history dan audit append only (AC-3, AC-5, AC-6)
-  - [ ] Unit of work, fake testkit, integration test (AC-4, AC-7, AC-8)
+- [x] Build it: /develop internal-repositories
+  - [x] Entity, port, dan tipe EncryptedCredential di internal-domain (AC-1, AC-2)
+  - [x] Implementasi SQLite semua repository plus retensi history dan audit append only (AC-3, AC-5, AC-6)
+  - [x] Unit of work, fake testkit, integration test (AC-4, AC-7, AC-8)
+  - code in `packages/internal-domain`, `packages/internal-sqlite`, `packages/testkit`, and `tests/integration/internal-sqlite/`
 - [ ] [Verify it](../specs/0009-internal-repositories/verify.md): /check verify internal-repositories
 - [ ] [Test it](../specs/0009-internal-repositories/test.md): /test internal-repositories
 
