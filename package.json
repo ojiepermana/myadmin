@@ -16,6 +16,7 @@
     "start": "bun run scripts/dev/start.ts",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "validate-contract": "bun run scripts/validate-contract.ts",
+    "test:database-core": "bun test packages/database-core/test",
     "version": "bun run apps/cli/src/main.ts version",
     "ng": "ng"
   },

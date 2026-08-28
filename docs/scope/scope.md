@@ -273,10 +273,10 @@ Jalur baca audit dengan filter dan pagination. Done when: Admin bisa menelusuri 
 ### 21. Kontrak database-core dan capability `in-progress`
 Port kecil per domain, capability model, registry, error ternormalisasi, context tak serializable. Done when: suite kontrak generik lulus atas provider fake referensi.
 - [x] Design it (spec): [0021](../specs/0021-database-core-contracts/index.md)
-- [ ] Build it: /develop database-core-contracts
-  - [ ] Model umum, DbError berkategori, seluruh port termasuk ViewPort (AC-1, AC-6, AC-7, AC-8)
-  - [ ] Capability model tertutup plus ConnectionContext aman plus registry (AC-2 sampai AC-5)
-  - [ ] Suite test kontrak generik plus provider fake (AC-9)
+- [x] Build it: /develop database-core-contracts
+  - [x] Model umum, DbError berkategori, seluruh port termasuk ViewPort (AC-1, AC-6, AC-7, AC-8)
+  - [x] Capability model tertutup plus ConnectionContext aman plus registry (AC-2 sampai AC-5)
+  - [x] Suite test kontrak generik plus provider fake (AC-9)
 - [ ] [Verify it](../specs/0021-database-core-contracts/verify.md): /check verify database-core-contracts
 - [ ] [Test it](../specs/0021-database-core-contracts/test.md): /test database-core-contracts
 
