@@ -35,7 +35,10 @@ module.exports = {
     {
       name: 'production-cannot-import-testkit',
       severity: 'error',
-      from: { path: '^(apps|packages)/', pathNot: '^packages/testkit/' },
+      from: {
+        path: '^(apps|packages)/',
+        pathNot: '(^packages/testkit/|(^|/)(test|tests)/)',
+      },
       to: { path: '^packages/testkit/' },
     },
     {
