@@ -39,6 +39,7 @@ components:
             - running
             - completed
             - failed
+            - cancelling
             - cancelled
     ConnectionStatusPayload:
       type: object
@@ -86,6 +87,8 @@ components:
         - type: object
           properties:
             type:
+              const: event
+            event:
               const: job.progress
             payload:
               $ref: '#/components/schemas/JobProgressPayload'
@@ -95,6 +98,8 @@ components:
         - type: object
           properties:
             type:
+              const: event
+            event:
               const: job.state
             payload:
               $ref: '#/components/schemas/JobStatePayload'
@@ -104,6 +109,8 @@ components:
         - type: object
           properties:
             type:
+              const: event
+            event:
               const: connection.status
             payload:
               $ref: '#/components/schemas/ConnectionStatusPayload'
@@ -113,6 +120,8 @@ components:
         - type: object
           properties:
             type:
+              const: event
+            event:
               const: query.execution
             payload:
               $ref: '#/components/schemas/QueryExecutionPayload'

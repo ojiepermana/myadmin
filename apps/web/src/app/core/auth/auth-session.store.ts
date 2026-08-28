@@ -30,9 +30,11 @@ export class AuthSessionStore {
     this.handlingExpiry = false;
     this.user.set(user);
     if (changedUser) void this.workspacePersistence.restore(user.id);
+    this.sdk.realtime.connect();
   }
 
   clear(): void {
+    this.sdk.realtime.disconnect();
     this.workspacePersistence.clear();
     this.user.set(null);
     this.workspace.reset();

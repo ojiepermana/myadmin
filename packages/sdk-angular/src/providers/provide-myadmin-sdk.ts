@@ -4,6 +4,7 @@ import { AuditClient } from '../facades/audit-client';
 import { ConnectionsClient } from '../facades/connections-client';
 import { HealthClient } from '../facades/health-client';
 import { JobsClient } from '../facades/jobs-client';
+import { MYADMIN_REALTIME_CLIENT, RealtimeClientService } from '../realtime/realtime-client';
 import { SetupClient } from '../facades/setup-client';
 import { SettingsClient } from '../facades/settings-client';
 import { UserClient } from '../facades/user-client';
@@ -22,13 +23,15 @@ export function provideMyadminSdk(
     SessionExpiredEvents,
     HealthClient,
     JobsClient,
+    RealtimeClientService,
+    { provide: MYADMIN_REALTIME_CLIENT, useExisting: RealtimeClientService },
     SetupClient,
     SettingsClient,
-  WorkspaceClient,
-  AuthClient,
-  AuditClient,
-  UserClient,
-  ConnectionsClient,
+    WorkspaceClient,
+    AuthClient,
+    AuditClient,
+    UserClient,
+    ConnectionsClient,
     MyadminSdk,
   ];
 }
@@ -48,5 +51,6 @@ export class MyadminSdk {
   public readonly settings = inject(SettingsClient);
   public readonly users = inject(UserClient);
   public readonly workspace = inject(WorkspaceClient);
+  public readonly realtime = inject(MYADMIN_REALTIME_CLIENT);
   public readonly sessionExpired = inject(SessionExpiredEvents).sessionExpired;
 }

@@ -38,6 +38,13 @@ import {
 } from '@myadmin/observability';
 import { JobManager, JobManagerError, serializeJob, type Job } from '@myadmin/jobs';
 import { Elysia, type AnyElysia } from 'elysia';
+import {
+  DEFAULT_REALTIME_HEARTBEAT_INTERVAL_MS,
+  RealtimeHub,
+  REALTIME_SESSION_CLOSE_CODE,
+  realtimeJobEvent,
+  type RealtimeSocket,
+} from './realtime/websocket';
 import packageManifest from '../../../package.json' with { type: 'json' };
 import {
   resolveAssetSource,
@@ -82,6 +89,9 @@ export interface ServerStartOptions {
   auditRepository?: AuditAdminRepository;
   websocketCheckIntervalMs?: number;
   workspaceService?: WorkspaceService;
+  websocketHeartbeatIntervalMs?: number;
+  realtimeHub?: RealtimeHub;
+  canSubscribeQuery?: (userId: string, executionId: string) => boolean;
   observability?: ObservabilityOptions;
 }
 
@@ -108,6 +118,9 @@ export interface ServerAppOptions {
   auditRepository?: AuditAdminRepository;
   websocketCheckIntervalMs?: number;
   workspaceService?: WorkspaceService;
+  websocketHeartbeatIntervalMs?: number;
+  realtimeHub?: RealtimeHub;
+  canSubscribeQuery?: (userId: string, executionId: string) => boolean;
   observability?: ObservabilityOptions;
 }
 
@@ -171,7 +184,7 @@ export const port = defaultPort;
 type Credentials = { username: string; password: string };
 
 const sessionCleanupStops = new WeakMap<object, () => void>();
-const websocketCleanupStops = new Map<object, () => void>();
+const realtimeCleanupStops = new WeakMap<object, () => void>();
 const jobManagerCleanupStops = new WeakMap<object, () => void>();
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
@@ -1185,55 +1198,56 @@ function registerWebSocketRoute(
   application: AnyElysia,
   prefix: string,
   authService: AuthService,
-  checkIntervalMs: number,
+  realtimeHub: RealtimeHub,
 ): AnyElysia {
   const websocketOptions = {
     beforeHandle(context: { request: Request }): Response | undefined {
       const { request } = context;
+      if (!sameOrigin(request)) return new Response('WebSocket origin rejected.', { status: 403 });
       const validation = authService.validateSession(sessionToken(request));
       if (!validation.authenticated) return new Response(validation.code, { status: 401 });
       return undefined;
     },
-    open(ws: { data: { request: Request }; close: (code?: number, reason?: string) => void }) {
+    open(ws: { data: { request: Request } } & RealtimeSocket) {
       const token = sessionToken(ws.data.request);
       const validation = authService.validateSession(token);
       if (!validation.authenticated) {
-        ws.close(4001, validation.code);
+        ws.close(REALTIME_SESSION_CLOSE_CODE, validation.code);
         return;
       }
 
-      const timer = setInterval(() => {
-        const current = authService.validateSession(token);
-        if (!current.authenticated) ws.close(4001, current.code);
-      }, checkIntervalMs);
-      (timer as { unref?: () => void }).unref?.();
-      websocketCleanupStops.set(ws, () => clearInterval(timer));
+      realtimeHub.open(
+        ws,
+        {
+          sessionId: validation.value.session.id,
+          userId: validation.value.user.id,
+        },
+        () => {
+          const current = authService.validateSession(token);
+          return current.authenticated ? { valid: true } : { valid: false, code: current.code };
+        },
+      );
     },
     message(
-      ws: {
-        data: { request: Request };
-        close: (code?: number, reason?: string) => void;
-        send: (message: string | ArrayBuffer | ArrayBufferView) => unknown;
-      },
-      message: string | ArrayBuffer | ArrayBufferView,
+      ws: { data: { request: Request } } & RealtimeSocket,
+      message: string | ArrayBuffer | ArrayBufferView | object,
     ) {
-      const validation = authService.validateSession(sessionToken(ws.data.request));
-      if (!validation.authenticated) {
-        ws.close(4001, validation.code);
-        return;
-      }
-      ws.send(message);
+      realtimeHub.receive(ws, message);
     },
-    close(ws: { data: { request: Request } }) {
-      websocketCleanupStops.get(ws)?.();
-      websocketCleanupStops.delete(ws);
+    pong(ws: { data: { request: Request } } & RealtimeSocket) {
+      realtimeHub.receivePong(ws);
+    },
+    close(ws: { data: { request: Request } } & RealtimeSocket) {
+      realtimeHub.close(ws);
     },
   } as unknown as Parameters<AnyElysia['ws']>[1];
 
   const websocketApplication = application as unknown as {
     ws(path: string, options: unknown): AnyElysia;
   };
-  return websocketApplication.ws(`${prefix}/ws`, websocketOptions);
+  const result = websocketApplication.ws(`${prefix}/ws`, websocketOptions);
+  realtimeCleanupStops.set(result, () => realtimeHub.dispose());
+  return result;
 }
 
 function scheduleSessionCleanup(application: AnyElysia, authService: AuthService): void {
@@ -1245,10 +1259,10 @@ function scheduleSessionCleanup(application: AnyElysia, authService: AuthService
 export function disposeServerApp(application: AnyElysia): void {
   sessionCleanupStops.get(application)?.();
   sessionCleanupStops.delete(application);
+  realtimeCleanupStops.get(application)?.();
+  realtimeCleanupStops.delete(application);
   jobManagerCleanupStops.get(application)?.();
   jobManagerCleanupStops.delete(application);
-  for (const stop of websocketCleanupStops.values()) stop();
-  websocketCleanupStops.clear();
 }
 
 export function createServerApp(options: ServerAppOptions = {}) {
@@ -1287,6 +1301,8 @@ export function createServerApp(options: ServerAppOptions = {}) {
     (options.database ? workspaceServiceForStore(storeForDatabase(options.database)) : undefined);
   const secureCookies = options.config?.security.secureCookies ?? false;
   const websocketCheckIntervalMs = options.websocketCheckIntervalMs ?? 60_000;
+  const websocketHeartbeatIntervalMs =
+    options.websocketHeartbeatIntervalMs ?? DEFAULT_REALTIME_HEARTBEAT_INTERVAL_MS;
   if (
     !Number.isInteger(websocketCheckIntervalMs) ||
     websocketCheckIntervalMs < 1 ||
@@ -1294,8 +1310,33 @@ export function createServerApp(options: ServerAppOptions = {}) {
   ) {
     throw new RangeError('WebSocket session check interval must be between 1 and 60000 ms');
   }
+  if (
+    !Number.isInteger(websocketHeartbeatIntervalMs) ||
+    websocketHeartbeatIntervalMs < 1 ||
+    websocketHeartbeatIntervalMs > DEFAULT_REALTIME_HEARTBEAT_INTERVAL_MS
+  ) {
+    throw new RangeError('WebSocket heartbeat interval must be between 1 and 30000 ms');
+  }
 
-  let application: AnyElysia = installObservability(new Elysia(), observabilityOptions(options))
+  const realtimeHub =
+    options.realtimeHub ??
+    new RealtimeHub({
+      heartbeatIntervalMs: websocketHeartbeatIntervalMs,
+      sessionCheckIntervalMs: websocketCheckIntervalMs,
+      canSubscribeJob: (userId, jobId) => jobManager.getForOwner(jobId, userId) !== undefined,
+      canSubscribeQuery: options.canSubscribeQuery,
+    });
+
+  let application: AnyElysia = installObservability(
+    new Elysia({
+      websocket: {
+        maxPayloadLength: 64 * 1024,
+        backpressureLimit: 1024 * 1024,
+        closeOnBackpressureLimit: true,
+      },
+    }),
+    observabilityOptions(options),
+  )
     .get('/health', () => ({ status: 'ok', version: packageManifest.version }))
     .get('/api/v1/health', () => ({ status: 'ok' as const, version: packageManifest.version }));
   application = registerSetupRoutes(application, '/api/v1', setupService, setupRateLimiter);
@@ -1362,12 +1403,15 @@ export function createServerApp(options: ServerAppOptions = {}) {
     });
   }
   if (authService) {
-    application = registerWebSocketRoute(
-      application,
-      '/api/v1',
-      authService,
-      websocketCheckIntervalMs,
-    );
+    application = registerWebSocketRoute(application, '/api/v1', authService, realtimeHub);
+    const stopJobEvents = jobManager.subscribe((event) => {
+      realtimeHub.publish(realtimeJobEvent(event));
+    });
+    const previousCleanup = realtimeCleanupStops.get(application);
+    realtimeCleanupStops.set(application, () => {
+      stopJobEvents();
+      previousCleanup?.();
+    });
   }
   application = registerProtectedApiGuard(
     application,
@@ -1488,6 +1532,9 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       connectionTestRateLimiter: options.connectionTestRateLimiter,
       websocketCheckIntervalMs: options.websocketCheckIntervalMs,
       workspaceService: options.workspaceService,
+      websocketHeartbeatIntervalMs: options.websocketHeartbeatIntervalMs,
+      realtimeHub: options.realtimeHub,
+      canSubscribeQuery: options.canSubscribeQuery,
       observability: options.observability,
     });
     serverApp.listen({ hostname: options.host ?? host, port: options.port ?? port });

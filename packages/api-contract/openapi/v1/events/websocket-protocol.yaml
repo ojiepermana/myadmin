@@ -17,8 +17,18 @@ components:
       properties:
         type:
           type: string
-          minLength: 1
-          description: Stable event name such as job.progress.
+          enum:
+            - event
+            - error
+          description: Message kind.
+        event:
+          type: string
+          enum:
+            - job.progress
+            - job.state
+            - connection.status
+            - query.execution
+          description: Event name for event messages.
         channel:
           type: string
           minLength: 1
@@ -29,3 +39,50 @@ components:
           type: string
           minLength: 1
           description: Correlation identifier for the originating request or event.
+    RealtimeSubscribeCommand:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - channel
+      properties:
+        type:
+          const: subscribe
+        channel:
+          type: string
+          minLength: 1
+        correlationId:
+          type: string
+          minLength: 1
+    RealtimeUnsubscribeCommand:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - channel
+      properties:
+        type:
+          const: unsubscribe
+        channel:
+          type: string
+          minLength: 1
+        correlationId:
+          type: string
+          minLength: 1
+    RealtimeClientCommand:
+      oneOf:
+        - $ref: '#/components/schemas/RealtimeSubscribeCommand'
+        - $ref: '#/components/schemas/RealtimeUnsubscribeCommand'
+    RealtimeErrorPayload:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1

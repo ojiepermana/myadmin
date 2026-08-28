@@ -501,9 +501,16 @@
     role="status"
     aria-label="Workspace status"
   >
-    <span class="flex items-center gap-2"
-      ><span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>Ready</span
-    >
+    <span class="flex items-center gap-2" aria-live="polite">
+      <span
+        class="size-1.5 rounded-full"
+        [class.bg-emerald-500]="realtimeState() === 'connected'"
+        [class.bg-amber-500]="realtimeState() === 'connecting'"
+        [class.bg-slate-400]="realtimeState() === 'disconnected'"
+        aria-hidden="true"
+      ></span>
+      {{ realtimeLabel() }}
+    </span>
     <span class="hidden sm:inline">Workspace state syncs to this account.</span>
     <span>{{ workspace.tabs().length }} {{ workspace.tabs().length === 1 ? 'tab' : 'tabs' }}</span>
   </footer>

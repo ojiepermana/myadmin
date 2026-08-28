@@ -6,7 +6,7 @@ import { TestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import type { components } from '@myadmin/api-contract';
 import { firstValueFrom, of, type Observable } from 'rxjs';
-import { afterEach, beforeEach, describe, expect, expectTypeOf, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import {
   MyadminSdk,
   MYADMIN_SDK_CONFIG,
@@ -14,6 +14,7 @@ import {
   provideMyadminSdkTransport,
   SdkError,
   mapHttpError,
+  MYADMIN_REALTIME_SOCKET_FACTORY,
 } from '../src';
 import type {
   AuthLoginRequest,
@@ -25,6 +26,7 @@ import type {
   JobPage,
   RealtimeClient,
   RealtimeConnectionState,
+  RealtimeSocketLike,
   RealtimeUnsubscribe,
   SdkTransport,
   SdkTransportRequest,
@@ -45,6 +47,43 @@ class CapabilityTransport implements SdkTransport {
   public request<TResponse>(request: SdkTransportRequest): Observable<TResponse> {
     this.requests.push(request);
     return of({ status: 'ok', version: 'capability' } as TResponse);
+  }
+}
+
+class FakeRealtimeSocket implements RealtimeSocketLike {
+  public static readonly instances: FakeRealtimeSocket[] = [];
+  public readonly sent: string[] = [];
+  public readyState = 0;
+  public onopen: ((event: Event) => void) | null = null;
+  public onmessage: ((event: MessageEvent<unknown>) => void) | null = null;
+  public onerror: ((event: Event) => void) | null = null;
+  public onclose: ((event: CloseEvent) => void) | null = null;
+
+  public constructor(public readonly url: string) {
+    FakeRealtimeSocket.instances.push(this);
+  }
+
+  public send(data: string): void {
+    this.sent.push(data);
+  }
+
+  public close(): void {
+    this.readyState = 3;
+    this.onclose?.(new CloseEvent('close'));
+  }
+
+  public open(): void {
+    this.readyState = 1;
+    this.onopen?.(new Event('open'));
+  }
+
+  public fail(): void {
+    this.readyState = 3;
+    this.onclose?.(new CloseEvent('close', { code: 1006 }));
+  }
+
+  public receive(message: unknown): void {
+    this.onmessage?.({ data: JSON.stringify(message) } as MessageEvent<unknown>);
   }
 }
 
@@ -362,5 +401,94 @@ describe('MyAdmin Angular SDK', () => {
     expect(listRequest.request.method).toBe('GET');
     listRequest.flush({ items: [], page: 2, pageSize: 10, total: 10 });
     await expect(users).resolves.toMatchObject({ page: 2, total: 10 });
+  });
+
+  it('AC-6 connects, sends subscriptions, dispatches typed events, and resubscribes after backoff', async () => {
+    vi.useFakeTimers();
+    FakeRealtimeSocket.instances.length = 0;
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideMyadminSdk(),
+        provideHttpClientTesting(),
+        {
+          provide: MYADMIN_REALTIME_SOCKET_FACTORY,
+          useValue: (url: string) => new FakeRealtimeSocket(url),
+        },
+      ],
+    });
+
+    const sdk = TestBed.inject(MyadminSdk);
+    const states: RealtimeConnectionState[] = [];
+    const stateSubscription = sdk.realtime.connectionState.subscribe((state) => states.push(state));
+    const payloads: unknown[] = [];
+    const unsubscribe = sdk.realtime.subscribe('jobs.job-1', (payload) => payloads.push(payload));
+    sdk.realtime.connect();
+    const first = FakeRealtimeSocket.instances[0];
+    if (!first) throw new Error('The fake realtime socket was not created');
+    expect(first.url).toBe('ws://localhost/api/v1/ws');
+    first.open();
+    expect(first.sent).toEqual([JSON.stringify({ type: 'subscribe', channel: 'jobs.job-1' })]);
+    first.receive({
+      type: 'event',
+      event: 'job.progress',
+      channel: 'jobs.job-1',
+      payload: { jobId: 'job-1', progress: 0.5 },
+    });
+    expect(payloads).toEqual([{ jobId: 'job-1', progress: 0.5 }]);
+
+    first.fail();
+    await vi.advanceTimersByTimeAsync(999);
+    expect(FakeRealtimeSocket.instances).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    const second = FakeRealtimeSocket.instances[1];
+    if (!second) throw new Error('The first reconnect socket was not created');
+    second.open();
+    expect(second.sent).toEqual([JSON.stringify({ type: 'subscribe', channel: 'jobs.job-1' })]);
+    second.fail();
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(FakeRealtimeSocket.instances).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(FakeRealtimeSocket.instances).toHaveLength(3);
+    expect(states).toContain('connecting');
+
+    unsubscribe();
+    sdk.realtime.disconnect();
+    stateSubscription.unsubscribe();
+    TestBed.resetTestingModule();
+    vi.useRealTimers();
+  });
+
+  it('AC-6 connects and disconnects the realtime client with the auth facade', async () => {
+    FakeRealtimeSocket.instances.length = 0;
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideMyadminSdk(),
+        provideHttpClientTesting(),
+        {
+          provide: MYADMIN_REALTIME_SOCKET_FACTORY,
+          useValue: (url: string) => new FakeRealtimeSocket(url),
+        },
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
+    const sdk = TestBed.inject(MyadminSdk);
+    const login = firstValueFrom(
+      sdk.auth.login({ username: 'admin', password: 'synthetic-password' }),
+    );
+    http.expectOne('/api/v1/auth/login').flush({
+      user: { id: 'user-1', role: 'admin', username: 'admin' },
+    });
+    await expect(login).resolves.toMatchObject({ user: { id: 'user-1' } });
+    expect(FakeRealtimeSocket.instances).toHaveLength(1);
+
+    const logout = firstValueFrom(sdk.auth.logout());
+    http.expectOne('/api/v1/auth/logout').flush(null, {
+      status: 204,
+      statusText: 'No Content',
+    });
+    await expect(logout).resolves.toBeUndefined();
+    expect(FakeRealtimeSocket.instances[0]?.readyState).toBe(3);
   });
 });

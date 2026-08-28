@@ -9,7 +9,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import {
@@ -127,6 +127,19 @@ export class AppShell {
   protected readonly isMobileViewport = this.mobileViewport.asReadonly();
   protected readonly shortcutsOpen = signal(false);
   protected readonly activeTabId = computed(() => this.workspace.activeTabId());
+  protected readonly realtimeState = toSignal(this.sdk.realtime.connectionState, {
+    initialValue: 'disconnected' as const,
+  });
+  protected readonly realtimeLabel = computed(() => {
+    switch (this.realtimeState()) {
+      case 'connected':
+        return 'Realtime connected';
+      case 'connecting':
+        return 'Realtime reconnecting';
+      default:
+        return 'Realtime offline';
+    }
+  });
   protected readonly mainPanelHeight = computed(() =>
     this.workspace.bottomCollapsed() ? 100 : 100 - this.workspace.bottomHeight(),
   );

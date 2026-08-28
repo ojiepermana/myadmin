@@ -424,10 +424,11 @@ Mesin pekerjaan panjang dalam proses: progress, cancel kooperatif, kepemilikan. 
 Kanal multiplexed berotorisasi plus klien SDK dengan reconnect. Done when: progress job dan status koneksi mengalir push dan pulih otomatis setelah putus.
 
 - [x] Design it (spec): [0029](../specs/0029-realtime-websocket/index.md)
-- [ ] Build it: /develop realtime-websocket
-  - [ ] Transport WS server: upgrade bersesi, protokol, otorisasi channel, heartbeat, batas (AC-1, AC-2, AC-3, AC-5)
-  - [ ] Penyambungan sumber event jobs dan status plus redaction jalur WS (AC-4, AC-7)
-  - [ ] RealtimeClient SDK dengan backoff dan resubscribe plus peralihan status ke push plus test (AC-6, AC-8)
+- [x] Build it: /develop realtime-websocket
+  - [x] Transport WS server: upgrade bersesi, protokol, otorisasi channel, heartbeat, batas (AC-1, AC-2, AC-3, AC-5)
+  - [x] Penyambungan sumber event jobs dan status plus redaction jalur WS (AC-4, AC-7)
+  - [x] RealtimeClient SDK dengan backoff dan resubscribe plus peralihan status ke push plus test (AC-6, AC-8)
+  - code in `apps/server/src/realtime`, `apps/server/src/app.ts`, `packages/api-contract`, `packages/sdk-angular/src/realtime`, `apps/web/src/app`, and `tests/`
 - [ ] [Verify it](../specs/0029-realtime-websocket/verify.md): /check verify realtime-websocket
 - [ ] [Test it](../specs/0029-realtime-websocket/test.md): /test realtime-websocket
 
