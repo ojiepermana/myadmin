@@ -33,6 +33,14 @@ paths:
     $ref: ./paths/export-by-id.yaml
   /export/{id}/download:
     $ref: ./paths/export-by-id-download.yaml
+  /import/upload:
+    $ref: ./paths/import-upload.yaml
+  /import/preview:
+    $ref: ./paths/import-preview.yaml
+  /import/sql:
+    $ref: ./paths/import-sql.yaml
+  /import/csv:
+    $ref: ./paths/import-csv.yaml
   /backup:
     $ref: ./paths/backup.yaml
   /backup/capability:
@@ -209,6 +217,22 @@ components:
       $ref: ./components/schemas/export.yaml#/ExportCreateResponse
     ExportArtifact:
       $ref: ./components/schemas/export.yaml#/ExportArtifact
+    ImportUpload:
+      $ref: ./components/schemas/import.yaml#/ImportUpload
+    CsvColumnMapping:
+      $ref: ./components/schemas/import.yaml#/CsvColumnMapping
+    CsvImportOptions:
+      $ref: ./components/schemas/import.yaml#/CsvImportOptions
+    ImportObjectRef:
+      $ref: ./components/schemas/import.yaml#/ImportObjectRef
+    ImportSqlRequest:
+      $ref: ./components/schemas/import.yaml#/ImportSqlRequest
+    ImportCsvRequest:
+      $ref: ./components/schemas/import.yaml#/ImportCsvRequest
+    ImportCreateResponse:
+      $ref: ./components/schemas/import.yaml#/ImportCreateResponse
+    ImportPreview:
+      $ref: ./components/schemas/import.yaml#/ImportPreview
     BackupScope:
       $ref: ./components/schemas/backup.yaml#/BackupScope
     BackupToolStatus:

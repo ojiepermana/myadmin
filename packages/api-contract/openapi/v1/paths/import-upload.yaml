@@ -1,0 +1,38 @@
+post:
+  operationId: uploadImport
+  tags: [imports]
+  summary: Stream an SQL or CSV import upload
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [file]
+          properties:
+            file: { type: string, format: binary }
+  responses:
+    '201':
+      description: Upload stored for one hour.
+      content:
+        { application/json: { schema: { $ref: ../components/schemas/import.yaml#/ImportUpload } } }
+    '401':
+      {
+        description: No valid session was provided.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: CSRF validation failed.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '413':
+      {
+        description: Upload exceeds the configured streaming limit.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '422':
+      {
+        description: Upload type or multipart data is invalid.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

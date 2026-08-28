@@ -451,10 +451,10 @@ export class JobManager {
       );
       const result = await execution;
       if (this.disposed || entry.disposed) return;
+      if (result !== undefined) entry.job.result = cloneValue(result);
       if (entry.job.state === 'cancelling') {
         this.transition(entry, 'cancelled');
       } else if (entry.job.state === 'running') {
-        if (result !== undefined) entry.job.result = cloneValue(result);
         this.transition(entry, 'completed');
       }
     } catch (error) {

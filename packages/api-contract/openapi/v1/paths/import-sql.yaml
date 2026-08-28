@@ -1,0 +1,47 @@
+post:
+  operationId: createImportSql
+  tags: [imports]
+  summary: Queue a streaming SQL import job
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/import.yaml#/ImportSqlRequest }
+  responses:
+    '202':
+      description: Import job queued.
+      content:
+        {
+          application/json:
+            { schema: { $ref: ../components/schemas/import.yaml#/ImportCreateResponse } },
+        }
+    '401':
+      {
+        description: No valid session was provided.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: CSRF validation failed.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '404':
+      {
+        description: Upload was not found.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '409':
+      {
+        description: Import job limit conflict.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '422':
+      {
+        description: Import request is invalid.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '501':
+      {
+        description: Provider import is unavailable.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

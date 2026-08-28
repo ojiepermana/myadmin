@@ -18,6 +18,7 @@ import { DataClient } from '../facades/data-client';
 import { ViewsClient } from '../facades/views-client';
 import { ExportClient } from '../facades/export-client';
 import { TableDesignerClient } from '../facades/table-designer-client';
+import { ImportClient } from '../facades/import-client';
 import { SessionExpiredEvents } from '../events/session-expired';
 import { provideHttpTransport } from '../transport/http-transport';
 import { MYADMIN_SDK_TRANSPORT_CAPABILITY, type SdkTransport } from '../transport/transport';
@@ -48,6 +49,7 @@ export function provideMyadminSdk(
     ViewsClient,
     ExportClient,
     TableDesignerClient,
+    ImportClient,
     ExplorerClient,
     DatabasesClient,
     MyadminSdk,
@@ -78,6 +80,7 @@ export class MyadminSdk {
   public readonly views = inject(ViewsClient);
   public readonly export = inject(ExportClient);
   public readonly tableDesigner = inject(TableDesignerClient);
+  public readonly import = inject(ImportClient);
   public readonly realtime = inject(MYADMIN_REALTIME_CLIENT);
   public readonly sessionExpired = inject(SessionExpiredEvents).sessionExpired;
 }

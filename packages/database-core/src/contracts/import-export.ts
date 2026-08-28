@@ -1,10 +1,39 @@
-import type { DataFilter, DataRow, DataSort, JobHandle, ObjectRef } from '../models';
+import type {
+  DataFilter,
+  DataRow,
+  DataSort,
+  JobHandle,
+  MutationResult,
+  ObjectRef,
+} from '../models';
 import type { ProviderContext } from './metadata';
+import type { QueryStatement } from './query';
 
 export interface ImportRequest {
   target?: ObjectRef;
   format: 'sql' | 'csv';
   input: AsyncIterable<Uint8Array>;
+}
+
+export type ImportTransactionMode = 'single' | 'per-statement';
+
+export interface CsvColumnMapping {
+  readonly source: string;
+  readonly target: string;
+}
+
+export interface CsvImportOptions {
+  readonly delimiter?: ',' | ';' | '\t';
+  readonly header?: boolean;
+  readonly mapping?: readonly CsvColumnMapping[];
+  readonly nullLiteral?: string;
+  readonly batchSize?: number;
+}
+
+export interface ImportBatchRequest {
+  readonly table: ObjectRef;
+  readonly columns: readonly string[];
+  readonly rows: readonly (readonly unknown[])[];
 }
 
 export interface ExportRequest {
@@ -49,4 +78,12 @@ export interface ImportExportPort {
   ): Promise<readonly ObjectRef[]>;
   quoteIdentifier(identifier: string): string;
   quoteValue(value: unknown): string;
+  /** Provider primitives used by the V1 streaming import executor. */
+  splitStatements?(sql: string): QueryStatement[];
+  executeStatement?(context: ProviderContext, sql: string): Promise<MutationResult>;
+  insertBatch?(context: ProviderContext, request: ImportBatchRequest): Promise<MutationResult>;
+  beginTransaction?(context: ProviderContext): Promise<void>;
+  commitTransaction?(context: ProviderContext): Promise<void>;
+  rollbackTransaction?(context: ProviderContext): Promise<void>;
+  truncate?(context: ProviderContext, table: ObjectRef): Promise<void>;
 }

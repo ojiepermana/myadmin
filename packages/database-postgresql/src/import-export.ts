@@ -3,15 +3,18 @@ import type {
   DataRow,
   ExportRequest,
   ExportRowStream,
+  ImportBatchRequest,
   ImportExportPort,
   ObjectRef,
   ProviderContext,
+  ConnectionHandle,
 } from '@myadmin/database-core';
 import { DbError } from '@myadmin/database-core';
 import type { PostgresqlConnectionAdapter } from './connection';
 import type { PostgresqlDataAdapter } from './data';
 import type { PostgresqlMetadataAdapter } from './metadata';
 import { quotePostgresqlIdentifier } from './metadata/quoting';
+import { splitPostgresqlStatements } from './query';
 
 const PAGE_SIZE = 500;
 
@@ -136,6 +139,44 @@ export class PostgresqlImportExportAdapter implements ImportExportPort {
     return quotePostgresqlIdentifier(identifier);
   }
 
+  public splitStatements(sql: string) {
+    return splitPostgresqlStatements(sql);
+  }
+
+  public async executeStatement(context: ProviderContext, sql: string) {
+    const result = await this.executeQuery(context, sql);
+    return { affectedRows: affectedRows(result) };
+  }
+
+  public async insertBatch(context: ProviderContext, request: ImportBatchRequest) {
+    if (request.rows.length === 0) return { affectedRows: 0 };
+    const sql = `INSERT INTO ${tableName(request.table)} (${request.columns.map(quotePostgresqlIdentifier).join(', ')}) VALUES ${request.rows.map((row) => `(${row.map(() => '?').join(', ')})`).join(', ')}`;
+    const result = await this.withHandle(context, (handle) =>
+      this.connection.executeParameterized(
+        handle,
+        sql.split('?'),
+        request.rows.flatMap((row) => [...row]),
+      ),
+    );
+    return { affectedRows: affectedRows(result) || request.rows.length };
+  }
+
+  public beginTransaction(context: ProviderContext): Promise<void> {
+    return this.executeCommand(context, 'BEGIN');
+  }
+
+  public commitTransaction(context: ProviderContext): Promise<void> {
+    return this.executeCommand(context, 'COMMIT');
+  }
+
+  public rollbackTransaction(context: ProviderContext): Promise<void> {
+    return this.executeCommand(context, 'ROLLBACK');
+  }
+
+  public truncate(context: ProviderContext, table: ObjectRef): Promise<void> {
+    return this.executeCommand(context, `TRUNCATE TABLE ${tableName(table)}`);
+  }
+
   public async listTables(
     context: ProviderContext,
     database: string,
@@ -193,4 +234,28 @@ export class PostgresqlImportExportAdapter implements ImportExportPort {
       await this.connection.close(handle);
     }
   }
+
+  private async withHandle<T>(
+    context: ProviderContext,
+    operation: (handle: ConnectionHandle) => Promise<T>,
+  ): Promise<T> {
+    if ('id' in context && 'openedAt' in context) return operation(context);
+    const handle = await this.connection.open(context);
+    try {
+      return await operation(handle);
+    } finally {
+      await this.connection.close(handle);
+    }
+  }
+
+  private async executeCommand(context: ProviderContext, sql: string): Promise<void> {
+    await this.executeQuery(context, sql);
+  }
+}
+
+function affectedRows(value: unknown): number {
+  if (typeof value !== 'object' || value === null) return 0;
+  const candidate = value as Record<string, unknown>;
+  const count = candidate['count'] ?? candidate['affectedRows'] ?? candidate['rowCount'];
+  return typeof count === 'number' && Number.isSafeInteger(count) && count >= 0 ? count : 0;
 }

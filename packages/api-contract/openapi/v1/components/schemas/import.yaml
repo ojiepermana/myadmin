@@ -1,0 +1,80 @@
+ImportUpload:
+  type: object
+  additionalProperties: false
+  required: [uploadId, fileName, format, sizeBytes, createdAt, expiresAt]
+  properties:
+    uploadId: { type: string, minLength: 1 }
+    fileName: { type: string, minLength: 1 }
+    format: { type: string, enum: [sql, csv] }
+    sizeBytes: { type: integer, minimum: 1 }
+    createdAt: { type: string, format: date-time }
+    expiresAt: { type: string, format: date-time }
+
+CsvColumnMapping:
+  type: object
+  additionalProperties: false
+  required: [source, target]
+  properties:
+    source: { type: string, minLength: 1 }
+    target: { type: string, minLength: 1 }
+
+CsvImportOptions:
+  type: object
+  additionalProperties: false
+  properties:
+    delimiter: { type: string, enum: [',', ';', '\t'] }
+    header: { type: boolean }
+    mapping: { type: array, maxItems: 200, items: { $ref: '#/CsvColumnMapping' } }
+    nullLiteral: { type: string }
+    batchSize: { type: integer, minimum: 1, maximum: 1000 }
+
+ImportObjectRef:
+  type: object
+  additionalProperties: false
+  required: [database, name, type]
+  properties:
+    database: { type: string, minLength: 1 }
+    schema: { type: [string, 'null'] }
+    name: { type: string, minLength: 1 }
+    type: { const: table }
+
+ImportSqlRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, database, uploadId]
+  properties:
+    connectionId: { type: string, minLength: 1 }
+    database: { type: string, minLength: 1 }
+    uploadId: { type: string, minLength: 1 }
+    transactionMode: { type: string, enum: [single, per-statement], default: single }
+
+ImportCsvRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, ref, uploadId]
+  properties:
+    connectionId: { type: string, minLength: 1 }
+    ref: { $ref: '#/ImportObjectRef' }
+    uploadId: { type: string, minLength: 1 }
+    options: { $ref: '#/CsvImportOptions' }
+    truncateFirst: { type: boolean, default: false }
+    confirmName: { type: string }
+
+ImportCreateResponse:
+  type: object
+  additionalProperties: false
+  required: [jobId]
+  properties:
+    jobId: { type: string, minLength: 1 }
+
+ImportPreview:
+  type: object
+  additionalProperties: false
+  required: [uploadId, format, truncated]
+  properties:
+    uploadId: { type: string, minLength: 1 }
+    format: { type: string, enum: [sql, csv] }
+    columns: { type: array, items: { type: string } }
+    rows: { type: array, maxItems: 20, items: { type: array, items: { type: string } } }
+    statement: { type: string }
+    truncated: { type: boolean }

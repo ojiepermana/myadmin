@@ -1,5 +1,5 @@
 <main
-  class="import-export-page mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-6 overflow-auto p-5 sm:p-7"
+  class="import-export-page mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-6 overflow-auto p-5 sm:p-7"
   aria-labelledby="import-export-title"
 >
   <header>
@@ -7,9 +7,9 @@
     <h1 id="import-export-title" class="mt-1 text-2xl font-semibold tracking-tight">
       Import and export
     </h1>
-    <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
-      Background exports keep large tables responsive. Jobs are owned by your session and artifacts
-      expire automatically.
+    <p class="mt-2 max-w-3xl text-sm text-muted-foreground">
+      Upload a bounded SQL or CSV file, preview only what the server exposes, then run the import as
+      an owned background job.
     </p>
   </header>
   @if (message()) {
@@ -20,36 +20,241 @@
       {{ message() }}
     </p>
   }
-  <section class="rounded-xl border border-border bg-card" aria-labelledby="export-jobs-title">
+
+  <section
+    class="grid gap-5 rounded-xl border border-border bg-card p-5"
+    aria-labelledby="import-title"
+  >
+    <div>
+      <h2 id="import-title" class="text-sm font-semibold">Start an import</h2>
+      <p class="mt-1 text-xs text-muted-foreground">
+        Files are streamed to temporary storage and expire after one hour.
+      </p>
+    </div>
+    <label
+      class="grid min-h-32 cursor-pointer place-items-center rounded-lg border border-dashed border-primary/50 bg-primary/5 p-5 text-center"
+      [class.bg-primary/10]="dropActive()"
+      (dragover)="$event.preventDefault(); dropActive.set(true)"
+      (dragleave)="dropActive.set(false)"
+      (drop)="onDrop($event)"
+    >
+      <input
+        class="sr-only"
+        type="file"
+        accept=".sql,.csv,text/csv,application/sql"
+        (change)="onFileInput($event)"
+      />
+      <span class="text-sm font-medium">{{
+        uploading() ? 'Uploading…' : file()?.name || 'Drop an SQL or CSV file here, or browse'
+      }}</span>
+      <span class="mt-1 text-xs text-muted-foreground"
+        >{{ upload()?.sizeBytes?.toLocaleString() || 0 }} bytes stored on the server</span
+      >
+    </label>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      <label class="grid gap-2 text-sm font-medium"
+        >Connection
+        <select
+          class="rounded-md border border-border bg-background p-2"
+          [value]="selectedConnectionId()"
+          (change)="setConnection($any($event.target).value)"
+          aria-label="Import connection"
+        >
+          @for (connection of connections(); track connection.id) {
+            <option [value]="connection.id">
+              {{ connection.label }} ({{ connection.engine }})
+            </option>
+          }
+        </select>
+      </label>
+      <label class="grid gap-2 text-sm font-medium"
+        >Format
+        <select
+          class="rounded-md border border-border bg-background p-2"
+          [value]="format()"
+          (change)="setFormat($any($event.target).value)"
+        >
+          <option value="csv">CSV</option>
+          <option value="sql">SQL</option>
+        </select>
+      </label>
+      <label class="grid gap-2 text-sm font-medium"
+        >Database
+        <input
+          class="rounded-md border border-border bg-background p-2"
+          [value]="database()"
+          (input)="database.set($any($event.target).value)"
+          placeholder="target database"
+        />
+      </label>
+    </div>
+
+    @if (format() === 'sql') {
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="grid gap-2 text-sm font-medium"
+          >Transaction mode
+          <select
+            class="rounded-md border border-border bg-background p-2"
+            [value]="transactionMode()"
+            (change)="transactionMode.set($any($event.target).value)"
+          >
+            <option value="single">Single transaction</option>
+            <option value="per-statement">Per statement</option>
+          </select>
+        </label>
+        <div class="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+          {{ preview()?.statement || 'The first SQL statement will appear here after upload.' }}
+        </div>
+      </div>
+    } @else {
+      <div class="grid gap-4 md:grid-cols-4">
+        <label class="grid gap-2 text-sm font-medium"
+          >Schema<input
+            class="rounded-md border border-border bg-background p-2"
+            [value]="schema()"
+            (input)="schema.set($any($event.target).value)"
+        /></label>
+        <label class="grid gap-2 text-sm font-medium"
+          >Table<input
+            class="rounded-md border border-border bg-background p-2"
+            [value]="table()"
+            (input)="table.set($any($event.target).value)"
+            placeholder="target table"
+        /></label>
+        <label class="grid gap-2 text-sm font-medium"
+          >Delimiter<select
+            class="rounded-md border border-border bg-background p-2"
+            [value]="delimiter()"
+            (change)="delimiter.set($any($event.target).value); loadPreview()"
+          >
+            <option value=",">Comma</option>
+            <option value=";">Semicolon</option>
+            <option value="\t">Tab</option>
+          </select></label
+        >
+        <label class="grid gap-2 text-sm font-medium"
+          >Batch size<input
+            class="rounded-md border border-border bg-background p-2"
+            type="number"
+            min="1"
+            max="1000"
+            [value]="batchSize()"
+            (input)="batchSize.set(+$any($event.target).value)"
+        /></label>
+      </div>
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="grid gap-2 text-sm font-medium"
+          >Column mapping
+          <span class="text-xs font-normal text-muted-foreground"
+            >one source=target pair per line</span
+          ><textarea
+            class="min-h-20 rounded-md border border-border bg-background p-2 font-mono text-xs"
+            [value]="mappingText()"
+            (input)="mappingText.set($any($event.target).value)"
+            placeholder="id=id&#10;full name=name"
+          ></textarea>
+        </label>
+        <div class="grid gap-3 text-sm">
+          <label class="flex items-center gap-2"
+            ><input
+              type="checkbox"
+              [checked]="header()"
+              (change)="header.set($any($event.target).checked); loadPreview()"
+            />
+            First row is a header</label
+          ><label class="grid gap-2 font-medium"
+            >NULL literal<input
+              class="rounded-md border border-border bg-background p-2"
+              [value]="nullLiteral()"
+              (input)="nullLiteral.set($any($event.target).value)" /></label
+          ><label class="flex items-center gap-2"
+            ><input
+              type="checkbox"
+              [checked]="truncateFirst()"
+              (change)="truncateFirst.set($any($event.target).checked)"
+            />
+            Empty table before import</label
+          >
+          @if (truncateFirst()) {
+            <label class="grid gap-2 font-medium"
+              >Type table name to confirm<input
+                class="rounded-md border border-border bg-background p-2"
+                [value]="confirmName()"
+                (input)="confirmName.set($any($event.target).value)"
+                [placeholder]="table()"
+            /></label>
+          }
+        </div>
+      </div>
+      @if (preview(); as currentPreview) {
+        <div class="overflow-auto rounded-md border border-border">
+          <table class="w-full text-left text-xs">
+            <caption class="sr-only">
+              Server bounded CSV preview
+            </caption>
+            <thead>
+              <tr>
+                @for (column of currentPreview.columns || []; track column) {
+                  <th class="border-b border-border p-2 font-semibold">{{ column }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of previewRows(); track $index) {
+                <tr>
+                  @for (cell of row; track $index) {
+                    <td class="border-b border-border p-2">{{ cell }}</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+    <div>
+      <button
+        Button
+        type="button"
+        size="sm"
+        [disabled]="!upload() || importing()"
+        (click)="startImport()"
+      >
+        {{ importing() ? 'Starting…' : 'Start import job' }}
+      </button>
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-border bg-card" aria-labelledby="jobs-title">
     <div class="flex items-center justify-between border-b border-border px-5 py-4">
       <div>
-        <h2 id="export-jobs-title" class="text-sm font-semibold">Export jobs</h2>
+        <h2 id="jobs-title" class="text-sm font-semibold">Import and export jobs</h2>
         <p class="mt-1 text-xs text-muted-foreground">
-          Progress updates refresh while this page is open.
+          Progress refreshes while this page is open.
         </p>
       </div>
       <span class="text-xs text-muted-foreground">{{ jobs().length }} job(s)</span>
     </div>
     @if (loading()) {
-      <p class="p-5 text-sm text-muted-foreground" role="status">Loading export jobs…</p>
+      <p class="p-5 text-sm text-muted-foreground" role="status">Loading jobs…</p>
     } @else if (jobs().length === 0) {
-      <p class="p-5 text-sm text-muted-foreground" role="status">
-        No export jobs yet. Start one from a data browser or result grid.
-      </p>
+      <p class="p-5 text-sm text-muted-foreground" role="status">No import or export jobs yet.</p>
     } @else {
       <div class="divide-y divide-border">
         @for (job of jobs(); track job.id) {
           <article class="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto]">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <strong class="text-sm">{{ job.id }}</strong
+                <strong class="text-sm"
+                  >{{ isImport(job) ? 'Import' : 'Export' }} · {{ job.id }}</strong
                 ><span
                   class="rounded-full border border-border px-2 py-0.5 text-[0.7rem] text-muted-foreground"
                   >{{ job.state }}</span
                 >
               </div>
               <p class="mt-1 text-xs text-muted-foreground">
-                {{ job.progress.phase }} · {{ progress(job) }}
+                {{ job.progress.phase }} · {{ progress(job) }} · {{ job.progress.message || '' }}
               </p>
               <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
@@ -64,26 +269,16 @@
                 ></div>
               </div>
             </div>
-            <div class="flex items-center gap-2 md:self-center">
-              <button
-                Button
-                type="button"
-                variant="outline"
-                size="sm"
-                [disabled]="!isActive(job)"
-                (click)="cancel(job)"
-              >
-                Cancel</button
-              ><button
-                Button
-                type="button"
-                size="sm"
-                [disabled]="job.state !== 'completed'"
-                (click)="download(job)"
-              >
-                Download
-              </button>
-            </div>
+            <button
+              Button
+              type="button"
+              variant="outline"
+              size="sm"
+              [disabled]="!isActive(job)"
+              (click)="cancel(job)"
+            >
+              Cancel
+            </button>
           </article>
         }
       </div>

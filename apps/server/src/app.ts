@@ -20,6 +20,7 @@ import { AuditAdminReader, AuditWriter, isAuditAction } from '@myadmin/audit';
 import { CredentialVault, createKeyProvider } from '@myadmin/crypto';
 import { BackupService, RestoreService } from '@myadmin/backup';
 import { ExportService } from '@myadmin/export';
+import { ImportService } from '@myadmin/import';
 import { MysqlProvider } from '@myadmin/database-mysql';
 import { ProviderRegistry } from '@myadmin/database-core';
 import { createPostgresqlProvider } from '@myadmin/database-postgresql';
@@ -82,6 +83,7 @@ import { registerSchemaManagementRoutes } from './schema-management/routes';
 import { registerExportRoutes } from './export/routes';
 import { TableDesignerService } from './table-designer/table-designer';
 import { registerTableDesignerRoutes } from './table-designer/routes';
+import { registerImportRoutes } from './import/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -102,6 +104,7 @@ export interface ServerStartOptions {
   backupService?: BackupService;
   restoreService?: RestoreService;
   exportService?: ExportService;
+  importService?: ImportService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
@@ -139,6 +142,7 @@ export interface ServerAppOptions {
   backupService?: BackupService;
   restoreService?: RestoreService;
   exportService?: ExportService;
+  importService?: ImportService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
@@ -208,6 +212,7 @@ const jobManagerCleanupStops = new WeakMap<object, () => void>();
 const connectionManagerCleanupStops = new WeakMap<object, () => Promise<void>>();
 const queryExecutionCleanupStops = new WeakMap<object, () => Promise<void>>();
 const exportCleanupStops = new WeakMap<object, () => void>();
+const importCleanupStops = new WeakMap<object, () => void>();
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
   return new Response(JSON.stringify(value), {
@@ -1292,6 +1297,8 @@ export function disposeServerApp(application: AnyElysia): void {
   jobManagerCleanupStops.delete(application);
   exportCleanupStops.get(application)?.();
   exportCleanupStops.delete(application);
+  importCleanupStops.get(application)?.();
+  importCleanupStops.delete(application);
   const disposeConnections = connectionManagerCleanupStops.get(application);
   connectionManagerCleanupStops.delete(application);
   if (disposeConnections) void disposeConnections();
@@ -1309,6 +1316,8 @@ export async function disposeServerAppAsync(application: AnyElysia): Promise<voi
   jobManagerCleanupStops.delete(application);
   exportCleanupStops.get(application)?.();
   exportCleanupStops.delete(application);
+  importCleanupStops.get(application)?.();
+  importCleanupStops.delete(application);
   const disposeConnections = connectionManagerCleanupStops.get(application);
   connectionManagerCleanupStops.delete(application);
   if (disposeConnections) await disposeConnections();
@@ -1543,6 +1552,17 @@ export function createServerApp(options: ServerAppOptions = {}) {
           dataDirectory,
         })
       : undefined);
+  const importService =
+    options.importService ??
+    (runtimeStore && connectionManager
+      ? new ImportService({
+          store: runtimeStore,
+          jobs: jobManager,
+          connectionManager,
+          dataDirectory,
+          uploadMaxBytes: options.config?.limits.uploadMaxBytes,
+        })
+      : undefined);
   if (connectionManager && authService) {
     application = registerConnectionRoutes(application, '/api/v1', {
       authService,
@@ -1631,6 +1651,17 @@ export function createServerApp(options: ServerAppOptions = {}) {
     (cleanupTimer as { unref?: () => void }).unref?.();
     exportCleanupStops.set(application, () => clearInterval(cleanupTimer));
   }
+  if (importService && authService) {
+    application = registerImportRoutes(application, '/api/v1', {
+      authService,
+      setupService,
+      service: importService,
+      secureCookies,
+    });
+    const cleanupTimer = setInterval(() => void importService.cleanup(), 60_000);
+    (cleanupTimer as { unref?: () => void }).unref?.();
+    importCleanupStops.set(application, () => clearInterval(cleanupTimer));
+  }
   if (authService) {
     application = registerWebSocketRoute(application, '/api/v1', authService, realtimeHub);
     const stopJobEvents = jobManager.subscribe((event) => {
@@ -1675,6 +1706,7 @@ export function createApp(
     providerRegistry?: ProviderRegistry;
     restoreService?: RestoreService;
     exportService?: ExportService;
+    importService?: ImportService;
   } = {},
 ) {
   const database = new Database(':memory:', { create: true, readwrite: true, strict: true });
@@ -1809,6 +1841,21 @@ export function createApp(
     authService,
     setupService,
     service: exportService,
+    secureCookies: false,
+  });
+  const importService =
+    options.importService ??
+    new ImportService({
+      store,
+      jobs: jobManager,
+      connectionManager,
+      dataDirectory,
+      uploadMaxBytes: 512 * 1024 * 1024,
+    });
+  application = registerImportRoutes(application, '', {
+    authService,
+    setupService,
+    service: importService,
     secureCookies: false,
   });
   application = registerViewRoutes(application, '', {

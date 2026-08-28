@@ -3,15 +3,18 @@ import type {
   DataRow,
   ExportRequest,
   ExportRowStream,
+  ImportBatchRequest,
   ImportExportPort,
   ObjectRef,
   ProviderContext,
+  ConnectionHandle,
 } from '@myadmin/database-core';
 import { DbError } from '@myadmin/database-core';
 import type { MysqlConnectionAdapter } from './driver/mysql-connection';
 import type { MysqlDataAdapter } from './data';
 import type { MysqlMetadataAdapter } from './metadata/mysql-metadata';
 import { quoteMysqlIdentifier } from './metadata/quoting';
+import { splitMysqlStatements } from './query';
 
 const PAGE_SIZE = 500;
 
@@ -126,6 +129,44 @@ export class MysqlImportExportAdapter implements ImportExportPort {
     return quoteMysqlIdentifier(identifier);
   }
 
+  public splitStatements(sql: string) {
+    return splitMysqlStatements(sql);
+  }
+
+  public async executeStatement(context: ProviderContext, sql: string) {
+    const result = await this.executeQuery(context, sql);
+    return { affectedRows: affectedRows(result) };
+  }
+
+  public async insertBatch(context: ProviderContext, request: ImportBatchRequest) {
+    if (request.rows.length === 0) return { affectedRows: 0 };
+    const sql = `INSERT INTO ${tableName(request.table)} (${request.columns.map(quoteMysqlIdentifier).join(', ')}) VALUES ${request.rows.map((row) => `(${row.map(() => '?').join(', ')})`).join(', ')}`;
+    const result = await this.withHandle(context, (handle) =>
+      this.connection.execute(
+        handle,
+        sql,
+        request.rows.flatMap((row) => [...row]),
+      ),
+    );
+    return { affectedRows: affectedRows(result) || request.rows.length };
+  }
+
+  public beginTransaction(context: ProviderContext): Promise<void> {
+    return this.executeCommand(context, 'START TRANSACTION');
+  }
+
+  public commitTransaction(context: ProviderContext): Promise<void> {
+    return this.executeCommand(context, 'COMMIT');
+  }
+
+  public rollbackTransaction(context: ProviderContext): Promise<void> {
+    return this.executeCommand(context, 'ROLLBACK');
+  }
+
+  public truncate(context: ProviderContext, table: ObjectRef): Promise<void> {
+    return this.executeCommand(context, `TRUNCATE TABLE ${tableName(table)}`);
+  }
+
   public async listTables(
     context: ProviderContext,
     database: string,
@@ -171,4 +212,30 @@ export class MysqlImportExportAdapter implements ImportExportPort {
       await this.connection.close(handle);
     }
   }
+
+  private async withHandle<T>(
+    context: ProviderContext,
+    operation: (handle: ConnectionHandle) => Promise<T>,
+  ): Promise<T> {
+    if ('id' in context && 'openedAt' in context) return operation(context);
+    const handle = await this.connection.open(context);
+    try {
+      return await operation(handle);
+    } finally {
+      await this.connection.close(handle);
+    }
+  }
+
+  private async executeCommand(context: ProviderContext, sql: string): Promise<void> {
+    await this.executeQuery(context, sql);
+  }
+}
+
+function affectedRows(value: unknown): number {
+  if (!Array.isArray(value)) return 0;
+  const candidate = value[0];
+  if (!candidate || typeof candidate !== 'object') return 0;
+  const count = (candidate as Record<string, unknown>)['affected_rows'];
+  const result = typeof count === 'number' ? count : Number(count);
+  return Number.isSafeInteger(result) && result >= 0 ? result : 0;
 }
