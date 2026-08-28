@@ -1,11 +1,11 @@
-import {
-  createCapabilityDescription,
-  type CapabilityDescription,
-  type CapabilityPort,
-  type ConnectionContext,
-  type ConnectionHandle,
+import { createCapabilityDescription } from '@myadmin/database-core';
+import type {
+  CapabilityDescription,
+  CapabilityPort,
+  ConnectionContext,
+  ConnectionHandle,
 } from '@myadmin/database-core';
-import { MysqlConnectionAdapter } from '../driver/mysql-connection';
+import type { MysqlConnectionAdapter } from '../driver/mysql-connection';
 
 export interface MysqlServerVersion {
   major: number;

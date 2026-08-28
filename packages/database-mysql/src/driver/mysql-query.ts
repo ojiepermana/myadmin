@@ -1,12 +1,12 @@
-import {
-  type ConnectionContext,
-  type ConnectionHandle,
-  type ExplainResult,
-  type QueryPort,
-  type QueryRequest,
-  type QueryResult,
+import type {
+  ConnectionContext,
+  ConnectionHandle,
+  ExplainResult,
+  QueryPort,
+  QueryRequest,
+  QueryResult,
 } from '@myadmin/database-core';
-import { MysqlConnectionAdapter } from './mysql-connection';
+import type { MysqlConnectionAdapter } from './mysql-connection';
 
 /** Query port needed by the V1 cancel contract. Metadata remains out of scope. */
 export class MysqlQueryAdapter implements QueryPort {

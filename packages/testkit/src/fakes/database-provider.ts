@@ -61,12 +61,20 @@ export class FakeDatabaseProvider implements DatabaseProvider {
       assertValidSecret(context);
       return createHandle();
     },
-    close: async (_handle: ConnectionHandle): Promise<void> => undefined,
-    ping: async (_handle: ConnectionHandle): Promise<PingResult> => ({ latencyMs: 1 }),
-    serverInfo: async (_handle: ConnectionHandle): Promise<ServerInfo> => ({
+    close: async (handle: ConnectionHandle): Promise<void> => {
+      void handle;
+    },
+    ping: async (handle: ConnectionHandle): Promise<PingResult> => {
+      void handle;
+      return { latencyMs: 1 };
+    },
+    serverInfo: async (handle: ConnectionHandle): Promise<ServerInfo> => {
+      void handle;
+      return {
       engine: 'postgresql',
       version: capabilityDescription.version,
-    }),
+      };
+    },
     test: async (context: ConnectionContext): Promise<ConnectionTestResult> => {
       assertValidSecret(context);
       return { version: capabilityDescription.version, latencyMs: 1 };
@@ -75,11 +83,14 @@ export class FakeDatabaseProvider implements DatabaseProvider {
 
   public readonly capability = {
     describe: async (
-      _context: ConnectionContext | ConnectionHandle,
-    ): Promise<CapabilityDescription> => ({
-      ...capabilityDescription,
-      capabilities: { ...capabilityDescription.capabilities },
-    }),
+      context: ConnectionContext | ConnectionHandle,
+    ): Promise<CapabilityDescription> => {
+      void context;
+      return {
+        ...capabilityDescription,
+        capabilities: { ...capabilityDescription.capabilities },
+      };
+    },
   };
 }
 

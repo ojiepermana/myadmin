@@ -12,6 +12,7 @@ import {
 import { installSignalHandlers } from '../src/runtime/signal-handling';
 import { serveStaticAsset } from '../src/static-web/serve-assets';
 import { parseCliFlags } from '../src/main';
+import type { createServerApp } from '../../server/src/app';
 
 const temporaryDirectories: string[] = [];
 
@@ -233,7 +234,7 @@ describe('UT-0006-AC8 bootstrap order', () => {
         },
         composeApp: () => {
           order.push('compose');
-          return {} as ReturnType<typeof import('../../server/src/app').createServerApp>;
+          return {} as ReturnType<typeof createServerApp>;
         },
         listen: async () => {
           order.push('listen');

@@ -1,11 +1,11 @@
 import { describe, test } from 'bun:test';
-import { ConnectionContext, type TlsMode } from '@myadmin/database-core';
-import { MysqlProvider } from '@myadmin/database-mysql';
+import { ConnectionContext, type TlsMode } from '../../../packages/database-core/src';
+import { MysqlProvider } from '../../../packages/database-mysql/src';
 import { defineDatabaseProviderContractTests } from '../../../packages/database-core/test/contract-suite';
 
 const targets = [
-  ['8.0', Bun.env.MYSQL_8_0_URL],
-  ['latest', Bun.env.MYSQL_LATEST_URL],
+  ['8.0', Bun.env['MYSQL_8_0_URL']],
+  ['latest', Bun.env['MYSQL_LATEST_URL']],
 ] as const;
 
 const configuredTargets = targets.filter(([, url]) => url) as Array<readonly [string, string]>;
@@ -38,7 +38,10 @@ if (configuredTargets.length === targets.length) {
 }
 
 if (configuredTargets.length !== targets.length) {
-  test.skip('MySQL integration is skipped until MYSQL_8_0_URL and MYSQL_LATEST_URL are configured');
+  test.skip(
+    'MySQL integration is skipped until MYSQL_8_0_URL and MYSQL_LATEST_URL are configured',
+    () => undefined,
+  );
 }
 
 function contextFromUrl(value: string, secretOverride?: string): ConnectionContext {

@@ -1,6 +1,10 @@
 import { DOCUMENT } from '@angular/common';
-import { inject, Injectable, InjectionToken, Signal, signal } from '@angular/core';
-import { normalizeThemeMode, ThemeMode, ThemeModeService } from '@ojiepermana/angular/theme/styles';
+import { inject, Injectable, InjectionToken, signal, type Signal } from '@angular/core';
+import {
+  normalizeThemeMode,
+  ThemeModeService,
+  type ThemeMode,
+} from '@ojiepermana/angular/theme/styles';
 import { MYADMIN_THEME_CONFIG } from './theme.config';
 
 export const THEME_PREFERENCE_STORAGE_KEY = 'myadmin.theme';

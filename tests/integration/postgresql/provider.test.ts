@@ -1,20 +1,20 @@
 import { describe, expect, test } from 'bun:test';
-import { ConnectionContext } from '@myadmin/database-core';
+import { ConnectionContext } from '../../../packages/database-core/src';
 import { createPostgresqlProvider } from '../../../packages/database-postgresql/src';
 import { defineDatabaseProviderContractTests } from '../../../packages/database-core/test/contract-suite';
 
-const enabled = process.env.MYADMIN_POSTGRES_INTEGRATION === '1';
-const currentPort = Number(process.env.MYADMIN_POSTGRES_CURRENT_PORT ?? 55433);
-const previousPort = Number(process.env.MYADMIN_POSTGRES_PREVIOUS_PORT ?? 55432);
+const enabled = process.env['MYADMIN_POSTGRES_INTEGRATION'] === '1';
+const currentPort = Number(process.env['MYADMIN_POSTGRES_CURRENT_PORT'] ?? 55433);
+const previousPort = Number(process.env['MYADMIN_POSTGRES_PREVIOUS_PORT'] ?? 55432);
 
 function integrationContext(port: number, secret = 'myadmin_test_password'): ConnectionContext {
   return new ConnectionContext(
     {
       engine: 'postgresql',
-      host: process.env.MYADMIN_POSTGRES_HOST ?? '127.0.0.1',
+      host: process.env['MYADMIN_POSTGRES_HOST'] ?? '127.0.0.1',
       port,
-      user: process.env.MYADMIN_POSTGRES_USER ?? 'myadmin_test',
-      database: process.env.MYADMIN_POSTGRES_DATABASE ?? 'myadmin_test',
+      user: process.env['MYADMIN_POSTGRES_USER'] ?? 'myadmin_test',
+      database: process.env['MYADMIN_POSTGRES_DATABASE'] ?? 'myadmin_test',
       tls: { mode: 'disable' },
       timeoutMs: 5000,
     },

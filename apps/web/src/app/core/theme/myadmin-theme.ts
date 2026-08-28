@@ -1,8 +1,8 @@
 import {
-  EnvironmentProviders,
   inject,
   makeEnvironmentProviders,
   provideEnvironmentInitializer,
+  type EnvironmentProviders,
 } from '@angular/core';
 import { provideUiTheme } from '@ojiepermana/angular/theme/styles';
 import { MYADMIN_THEME_CONFIG } from './theme.config';

@@ -1,11 +1,11 @@
-import {
+import { DbError } from '@myadmin/database-core';
+import type {
   ConnectionContext,
-  DbError,
-  type ConnectionHandle,
-  type ConnectionPort,
-  type ConnectionTestResult,
-  type PingResult,
-  type ServerInfo,
+  ConnectionHandle,
+  ConnectionPort,
+  ConnectionTestResult,
+  PingResult,
+  ServerInfo,
 } from '@myadmin/database-core';
 import {
   createBunSqlClient,

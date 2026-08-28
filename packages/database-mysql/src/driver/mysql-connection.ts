@@ -1,12 +1,12 @@
-import {
+import { DbError } from '@myadmin/database-core';
+import type {
   ConnectionContext,
-  DbError,
-  type ConnectionHandle,
-  type ConnectionPort,
-  type ConnectionTestResult,
-  type PingResult,
-  type ServerInfo,
-  type TlsMode,
+  ConnectionHandle,
+  ConnectionPort,
+  ConnectionTestResult,
+  PingResult,
+  ServerInfo,
+  TlsMode,
 } from '@myadmin/database-core';
 import { mapMysqlError, type MysqlErrorContext } from '../mappers/mysql-errors';
 import {
