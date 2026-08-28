@@ -1,0 +1,24 @@
+get:
+  operationId: getCurrentUser
+  tags:
+    - auth
+  summary: Get the current application user
+  responses:
+    '200':
+      description: Current user and role.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/user.yaml#/User
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Current user could not be read.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

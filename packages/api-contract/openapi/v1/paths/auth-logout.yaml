@@ -1,0 +1,20 @@
+post:
+  operationId: logout
+  tags:
+    - auth
+  summary: End the current application session
+  responses:
+    '204':
+      description: Session ended.
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Session could not be ended.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

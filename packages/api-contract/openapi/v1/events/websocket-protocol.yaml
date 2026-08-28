@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Myadmin WebSocket protocol
+  version: 1.0.0
+  description: Shared envelope for Myadmin WebSocket events.
+paths: {}
+components:
+  schemas:
+    WebSocketMessage:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - channel
+        - payload
+        - correlationId
+      properties:
+        type:
+          type: string
+          minLength: 1
+          description: Stable event name such as job.progress.
+        channel:
+          type: string
+          minLength: 1
+          description: Logical subscription channel.
+        payload:
+          description: Event specific payload.
+        correlationId:
+          type: string
+          minLength: 1
+          description: Correlation identifier for the originating request or event.

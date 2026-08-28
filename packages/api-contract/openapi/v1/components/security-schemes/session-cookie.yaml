@@ -1,0 +1,4 @@
+type: apiKey
+in: cookie
+name: myadmin_session
+description: Opaque HttpOnly session cookie.

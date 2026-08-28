@@ -1,0 +1,124 @@
+openapi: 3.1.0
+info:
+  title: Myadmin WebSocket events
+  version: 1.0.0
+  description: Initial event schemas for the Myadmin WebSocket protocol.
+paths: {}
+components:
+  schemas:
+    JobProgressPayload:
+      type: object
+      additionalProperties: false
+      required:
+        - jobId
+        - progress
+      properties:
+        jobId:
+          type: string
+          minLength: 1
+        progress:
+          type: number
+          minimum: 0
+          maximum: 1
+        message:
+          type: string
+    JobStatePayload:
+      type: object
+      additionalProperties: false
+      required:
+        - jobId
+        - state
+      properties:
+        jobId:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          enum:
+            - queued
+            - running
+            - completed
+            - failed
+            - cancelled
+    ConnectionStatusPayload:
+      type: object
+      additionalProperties: false
+      required:
+        - connectionId
+        - status
+      properties:
+        connectionId:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          enum:
+            - connecting
+            - connected
+            - disconnected
+            - error
+        message:
+          type: string
+    QueryExecutionPayload:
+      type: object
+      additionalProperties: false
+      required:
+        - executionId
+        - state
+      properties:
+        executionId:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          enum:
+            - queued
+            - running
+            - completed
+            - failed
+            - cancelled
+        durationMs:
+          type: integer
+          minimum: 0
+    JobProgressEvent:
+      allOf:
+        - $ref: ./websocket-protocol.yaml#/components/schemas/WebSocketMessage
+        - type: object
+          properties:
+            type:
+              const: job.progress
+            payload:
+              $ref: '#/components/schemas/JobProgressPayload'
+    JobStateEvent:
+      allOf:
+        - $ref: ./websocket-protocol.yaml#/components/schemas/WebSocketMessage
+        - type: object
+          properties:
+            type:
+              const: job.state
+            payload:
+              $ref: '#/components/schemas/JobStatePayload'
+    ConnectionStatusEvent:
+      allOf:
+        - $ref: ./websocket-protocol.yaml#/components/schemas/WebSocketMessage
+        - type: object
+          properties:
+            type:
+              const: connection.status
+            payload:
+              $ref: '#/components/schemas/ConnectionStatusPayload'
+    QueryExecutionEvent:
+      allOf:
+        - $ref: ./websocket-protocol.yaml#/components/schemas/WebSocketMessage
+        - type: object
+          properties:
+            type:
+              const: query.execution
+            payload:
+              $ref: '#/components/schemas/QueryExecutionPayload'
+    WebSocketEvent:
+      oneOf:
+        - $ref: '#/components/schemas/JobProgressEvent'
+        - $ref: '#/components/schemas/JobStateEvent'
+        - $ref: '#/components/schemas/ConnectionStatusEvent'
+        - $ref: '#/components/schemas/QueryExecutionEvent'

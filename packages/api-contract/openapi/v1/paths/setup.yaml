@@ -1,0 +1,19 @@
+get:
+  operationId: getSetupStatus
+  tags:
+    - setup
+  summary: Get initial setup status
+  security: []
+  responses:
+    '200':
+      description: Whether the initial administrator has been created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/user.yaml#/SetupStatus
+    '500':
+      description: Setup status could not be read.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

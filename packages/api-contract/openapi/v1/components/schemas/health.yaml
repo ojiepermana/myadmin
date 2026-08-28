@@ -1,0 +1,14 @@
+type: object
+additionalProperties: false
+required:
+  - status
+  - version
+properties:
+  status:
+    type: string
+    enum:
+      - ok
+      - degraded
+  version:
+    type: string
+    minLength: 1

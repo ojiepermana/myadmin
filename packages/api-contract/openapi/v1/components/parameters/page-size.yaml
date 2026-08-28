@@ -1,0 +1,9 @@
+name: pageSize
+in: query
+required: false
+description: Number of items per page. The maximum is 100.
+schema:
+  type: integer
+  minimum: 1
+  maximum: 100
+  default: 20

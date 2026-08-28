@@ -1,0 +1,48 @@
+post:
+  operationId: login
+  tags:
+    - auth
+  summary: Start an application session
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/user.yaml#/LoginRequest
+  responses:
+    '200':
+      description: Login succeeded. The server sets the session cookie.
+      headers:
+        Set-Cookie:
+          schema:
+            type: string
+          description: HttpOnly session cookie set by the server.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/user.yaml#/AuthResponse
+    '401':
+      description: Credentials were not accepted.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Request validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '429':
+      description: Too many login attempts.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '500':
+      description: Login could not be completed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

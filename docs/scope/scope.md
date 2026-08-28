@@ -90,10 +90,10 @@ Lint, format, test runner, hook Git, boundary check, penjaga satu manifest, dan 
 ### 03. Struktur kontrak OpenAPI v1 `in-progress`
 Sumber kebenaran API: kontrak multi file, error model, security scheme, event WS. Done when: kontrak valid terbundel dengan enam path awal dan lint nya jalan di CI.
 - [x] Design it (spec): [0003](../specs/0003-openapi-contract-structure/index.md)
-- [ ] Build it: /develop openapi-contract-structure
-  - [ ] Kerangka kontrak, ApiError, pagination, Capability, security scheme (AC-3 sampai AC-6)
-  - [ ] Enam path awal dan skema event WebSocket (AC-7, AC-8)
-  - [ ] Redocly lint dan bundel di CI (AC-1, AC-2)
+- [x] Build it: /develop openapi-contract-structure
+  - [x] Kerangka kontrak, ApiError, pagination, Capability, security scheme (AC-3 sampai AC-6)
+  - [x] Enam path awal dan skema event WebSocket (AC-7, AC-8)
+  - [x] Redocly lint dan bundel di CI (AC-1, AC-2)
 - [ ] [Verify it](../specs/0003-openapi-contract-structure/verify.md): /check verify openapi-contract-structure
 - [ ] [Test it](../specs/0003-openapi-contract-structure/test.md): /test openapi-contract-structure
 

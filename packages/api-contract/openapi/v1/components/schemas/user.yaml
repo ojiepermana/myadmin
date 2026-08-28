@@ -1,0 +1,63 @@
+User:
+  type: object
+  additionalProperties: false
+  required:
+    - id
+    - username
+    - role
+  properties:
+    id:
+      type: string
+      minLength: 1
+    username:
+      type: string
+      minLength: 1
+    role:
+      type: string
+      enum:
+        - admin
+        - user
+SetupStatus:
+  type: object
+  additionalProperties: false
+  required:
+    - initialized
+  properties:
+    initialized:
+      type: boolean
+SetupAdminRequest:
+  type: object
+  additionalProperties: false
+  required:
+    - username
+    - password
+  properties:
+    username:
+      type: string
+      minLength: 1
+    password:
+      type: string
+      format: password
+      minLength: 1
+LoginRequest:
+  type: object
+  additionalProperties: false
+  required:
+    - username
+    - password
+  properties:
+    username:
+      type: string
+      minLength: 1
+    password:
+      type: string
+      format: password
+      minLength: 1
+AuthResponse:
+  type: object
+  additionalProperties: false
+  required:
+    - user
+  properties:
+    user:
+      $ref: '#/User'

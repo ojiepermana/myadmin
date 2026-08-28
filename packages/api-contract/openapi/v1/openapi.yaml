@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info:
+  title: Myadmin API
+  version: 1.0.0
+  description: Handwritten source of truth for the Myadmin HTTP API.
+servers:
+  - url: /api/v1
+    description: Myadmin API v1
+security:
+  - sessionCookie: []
+paths:
+  /health:
+    $ref: ./paths/health.yaml
+  /setup/status:
+    $ref: ./paths/setup.yaml
+  /setup/admin:
+    $ref: ./paths/setup-admin.yaml
+  /auth/login:
+    $ref: ./paths/auth-login.yaml
+  /auth/logout:
+    $ref: ./paths/auth-logout.yaml
+  /auth/me:
+    $ref: ./paths/auth-me.yaml
+components:
+  schemas:
+    ApiError:
+      $ref: ./components/schemas/api-error.yaml
+    Pagination:
+      $ref: ./components/schemas/pagination.yaml#/Pagination
+    PaginatedResponse:
+      $ref: ./components/schemas/pagination.yaml#/PaginatedResponse
+    Capability:
+      $ref: ./components/schemas/capability.yaml
+    User:
+      $ref: ./components/schemas/user.yaml#/User
+    SetupStatus:
+      $ref: ./components/schemas/user.yaml#/SetupStatus
+    SetupAdminRequest:
+      $ref: ./components/schemas/user.yaml#/SetupAdminRequest
+    LoginRequest:
+      $ref: ./components/schemas/user.yaml#/LoginRequest
+    AuthResponse:
+      $ref: ./components/schemas/user.yaml#/AuthResponse
+    Health:
+      $ref: ./components/schemas/health.yaml
+  parameters:
+    Page:
+      $ref: ./components/parameters/page.yaml
+    PageSize:
+      $ref: ./components/parameters/page-size.yaml
+  securitySchemes:
+    sessionCookie:
+      $ref: ./components/security-schemes/session-cookie.yaml

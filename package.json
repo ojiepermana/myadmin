@@ -6,6 +6,7 @@
   "packageManager": "bun@1.4.0",
   "scripts": {
     "build:web": "ng build web --configuration production",
+    "bundle:contract": "bun run scripts/bundle-contract.ts",
     "dev": "bun run scripts/dev/start.ts",
     "dev:server": "bun run scripts/dev/start-server.ts",
     "dev:web": "bun run scripts/dev/start-web.ts",
@@ -14,6 +15,7 @@
     "myadmin": "bun run apps/cli/src/main.ts",
     "start": "bun run scripts/dev/start.ts",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "validate-contract": "bun run scripts/validate-contract.ts",
     "version": "bun run apps/cli/src/main.ts version",
     "ng": "ng"
   },
@@ -32,8 +34,10 @@
     "@angular/build": "^22.1.0",
     "@angular/cli": "^22.1.6",
     "@angular/compiler-cli": "^22.1.0",
+    "@redocly/cli": "2.49.0",
     "@types/bun": "^1.2.20",
     "prettier": "^3.8.1",
-    "typescript": "~6.0.2"
+    "typescript": "~6.0.2",
+    "yaml": "2.9.0"
   }
 }
