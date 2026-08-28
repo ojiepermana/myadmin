@@ -1,0 +1,29 @@
+get:
+  operationId: downloadExport
+  tags: [exports]
+  summary: Download an owned export artifact
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+  responses:
+    '200':
+      description: CSV, JSON, or SQL export artifact.
+      content:
+        application/octet-stream: { schema: { type: string, format: binary } }
+    '401':
+      {
+        description: No valid session was provided.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '404':
+      {
+        description: Export was not found.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '410':
+      {
+        description: Export artifact expired.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

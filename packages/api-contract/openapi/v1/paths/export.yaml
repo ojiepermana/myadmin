@@ -1,0 +1,40 @@
+post:
+  operationId: createExport
+  tags: [exports]
+  summary: Queue a streaming export job
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/export.yaml#/ExportCreateRequest }
+  responses:
+    '202':
+      description: Export job queued.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/export.yaml#/ExportCreateResponse }
+    '401':
+      {
+        description: No valid session was provided.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: CSRF validation failed.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '409':
+      {
+        description: Connection or active job limit conflict.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '422':
+      {
+        description: Request validation failed.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '501':
+      {
+        description: Provider export is unavailable.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

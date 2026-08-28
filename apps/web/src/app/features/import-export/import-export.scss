@@ -1,0 +1,12 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+.import-export-page {
+  background: radial-gradient(
+    circle at 85% 0%,
+    color-mix(in srgb, var(--primary) 8%, transparent),
+    transparent 28rem
+  );
+}

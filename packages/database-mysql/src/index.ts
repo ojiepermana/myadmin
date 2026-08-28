@@ -12,6 +12,7 @@ import { MysqlDatabasePort } from './database';
 import { MysqlSecurityAdapter } from './security';
 import { MysqlDataAdapter } from './data';
 import { MysqlViewPort } from './view';
+import { MysqlImportExportAdapter } from './import-export';
 
 export const moduleName = '@myadmin/database-mysql' as const;
 
@@ -29,6 +30,7 @@ export * from './metadata/quoting';
 export * from './query';
 export * from './security';
 export * from './view';
+export * from './import-export';
 
 /** Composition of the connection and capability ports for MySQL V1. */
 export class MysqlProvider implements DatabaseProvider {
@@ -43,6 +45,7 @@ export class MysqlProvider implements DatabaseProvider {
   public readonly security: MysqlSecurityAdapter;
   public readonly data: MysqlDataAdapter;
   public readonly view: MysqlViewPort;
+  public readonly importExport: MysqlImportExportAdapter;
 
   public constructor(
     options: MysqlConnectionAdapterOptions & MysqlBackupToolPaths = {},
@@ -58,5 +61,6 @@ export class MysqlProvider implements DatabaseProvider {
     this.monitoring = new MysqlMonitoringAdapter(this.connection, { now: options.now });
     this.security = new MysqlSecurityAdapter(this.connection);
     this.view = new MysqlViewPort(this.connection, this.metadata);
+    this.importExport = new MysqlImportExportAdapter(this.connection, this.data, this.metadata);
   }
 }

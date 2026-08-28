@@ -535,6 +535,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Queue a streaming export job */
+        post: operations["createExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/export/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an owned export job */
+        get: operations["getExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/export/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download an owned export artifact */
+        get: operations["downloadExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1675,6 +1726,66 @@ export interface components {
             cursor: string | null;
             items: components["schemas"]["ExplorerObjectRef"][];
             total?: number;
+        };
+        ExportArtifact: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            fileName: string;
+            /** @enum {string} */
+            format: "sql" | "csv" | "json";
+            jobId: string;
+            rowCount: number;
+            sizeBytes: number;
+            sourceLabel: string;
+        };
+        ExportCreateRequest: {
+            connectionId: string;
+            /** @enum {string} */
+            format: "sql" | "csv" | "json";
+            options?: components["schemas"]["ExportOptions"];
+            source: components["schemas"]["ExportSource"];
+        };
+        ExportCreateResponse: {
+            jobId: string;
+        };
+        ExportObjectRef: {
+            database: string;
+            name: string;
+            schema?: string | null;
+            /** @enum {string} */
+            type: "table" | "view";
+        };
+        ExportOptions: {
+            /** @enum {string} */
+            delimiter?: "," | ";" | "\\t";
+            header?: boolean;
+            /** @enum {string} */
+            sqlScope?: "structure" | "data" | "both";
+        };
+        ExportSource: {
+            columns?: string[];
+            filters?: components["schemas"]["DataFilter"][];
+            /** @constant */
+            kind: "table";
+            ref: components["schemas"]["ExportObjectRef"];
+            sort?: components["schemas"]["DataSort"][];
+        } | {
+            /** @constant */
+            kind: "query";
+            sql: string;
+        } | {
+            columns?: string[];
+            keys: Record<string, never>[];
+            /** @constant */
+            kind: "selection";
+            ref: components["schemas"]["ExportObjectRef"];
+        } | {
+            database: string;
+            /** @constant */
+            kind: "database";
+            schema?: string;
         };
         GrantApplyResult: {
             statements: components["schemas"]["GrantApplyStatement"][];
@@ -4599,6 +4710,164 @@ export interface operations {
             };
             /** @description The provider failed to read the data. */
             502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    createExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Export job queued. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportCreateResponse"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection or active job limit conflict. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Provider export is unavailable. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    getExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Export job status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Export was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    downloadExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV, JSON, or SQL export artifact. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Export was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Export artifact expired. */
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };

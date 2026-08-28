@@ -307,6 +307,8 @@
                 <app-result-grid
                   [result]="statement.result"
                   [executionId]="execution()?.executionId ?? null"
+                  [fullExportEnabled]="true"
+                  (fullExportRequested)="exportResult($event)"
                 />
               } @else if (statement.error) {
                 <div class="query-result-error" role="alert">

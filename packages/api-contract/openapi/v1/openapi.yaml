@@ -27,6 +27,12 @@ paths:
     $ref: ./paths/job-by-id.yaml
   /jobs/{id}/cancel:
     $ref: ./paths/job-cancel.yaml
+  /export:
+    $ref: ./paths/export.yaml
+  /export/{id}:
+    $ref: ./paths/export-by-id.yaml
+  /export/{id}/download:
+    $ref: ./paths/export-by-id-download.yaml
   /backup:
     $ref: ./paths/backup.yaml
   /backup/capability:
@@ -181,6 +187,18 @@ components:
       $ref: ./components/schemas/jobs.yaml#/JobPage
     JobProgress:
       $ref: ./components/schemas/jobs.yaml#/JobProgress
+    ExportObjectRef:
+      $ref: ./components/schemas/export.yaml#/ExportObjectRef
+    ExportSource:
+      $ref: ./components/schemas/export.yaml#/ExportSource
+    ExportOptions:
+      $ref: ./components/schemas/export.yaml#/ExportOptions
+    ExportCreateRequest:
+      $ref: ./components/schemas/export.yaml#/ExportCreateRequest
+    ExportCreateResponse:
+      $ref: ./components/schemas/export.yaml#/ExportCreateResponse
+    ExportArtifact:
+      $ref: ./components/schemas/export.yaml#/ExportArtifact
     BackupScope:
       $ref: ./components/schemas/backup.yaml#/BackupScope
     BackupToolStatus:

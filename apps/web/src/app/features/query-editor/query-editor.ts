@@ -167,6 +167,7 @@ export class QueryEditor implements AfterViewInit {
   protected readonly savedTags = signal('');
   protected readonly overwriteTarget = signal<SavedQuery | null>(null);
   protected readonly saving = signal(false);
+  protected readonly exportMessage = signal<string | null>(null);
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -278,6 +279,29 @@ export class QueryEditor implements AfterViewInit {
       });
     } catch (error) {
       this.message.set(error instanceof Error ? error.message : 'The transaction command failed.');
+    }
+  }
+
+  protected async exportResult(request: {
+    executionId: string;
+    format: 'csv' | 'json' | 'tsv';
+  }): Promise<void> {
+    const execution = this.execution();
+    if (!execution || execution.executionId !== request.executionId || !this.connectionId()) return;
+    try {
+      await firstValueFrom(
+        this.sdk.export.create({
+          connectionId: this.connectionId(),
+          source: { kind: 'query', sql: execution.sql },
+          format: request.format === 'tsv' ? 'csv' : request.format,
+          options: { delimiter: request.format === 'tsv' ? '\\t' : ',' },
+        }),
+      );
+      this.exportMessage.set('The full result export was queued. Track it in Import and export.');
+    } catch (error) {
+      this.exportMessage.set(
+        error instanceof Error ? error.message : 'The export could not be started.',
+      );
     }
   }
 

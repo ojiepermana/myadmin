@@ -1,0 +1,92 @@
+<main
+  class="import-export-page mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-6 overflow-auto p-5 sm:p-7"
+  aria-labelledby="import-export-title"
+>
+  <header>
+    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Operations</p>
+    <h1 id="import-export-title" class="mt-1 text-2xl font-semibold tracking-tight">
+      Import and export
+    </h1>
+    <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+      Background exports keep large tables responsive. Jobs are owned by your session and artifacts
+      expire automatically.
+    </p>
+  </header>
+  @if (message()) {
+    <p
+      class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+      role="alert"
+    >
+      {{ message() }}
+    </p>
+  }
+  <section class="rounded-xl border border-border bg-card" aria-labelledby="export-jobs-title">
+    <div class="flex items-center justify-between border-b border-border px-5 py-4">
+      <div>
+        <h2 id="export-jobs-title" class="text-sm font-semibold">Export jobs</h2>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Progress updates refresh while this page is open.
+        </p>
+      </div>
+      <span class="text-xs text-muted-foreground">{{ jobs().length }} job(s)</span>
+    </div>
+    @if (loading()) {
+      <p class="p-5 text-sm text-muted-foreground" role="status">Loading export jobs…</p>
+    } @else if (jobs().length === 0) {
+      <p class="p-5 text-sm text-muted-foreground" role="status">
+        No export jobs yet. Start one from a data browser or result grid.
+      </p>
+    } @else {
+      <div class="divide-y divide-border">
+        @for (job of jobs(); track job.id) {
+          <article class="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto]">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <strong class="text-sm">{{ job.id }}</strong
+                ><span
+                  class="rounded-full border border-border px-2 py-0.5 text-[0.7rem] text-muted-foreground"
+                  >{{ job.state }}</span
+                >
+              </div>
+              <p class="mt-1 text-xs text-muted-foreground">
+                {{ job.progress.phase }} · {{ progress(job) }}
+              </p>
+              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  class="h-full bg-primary transition-all"
+                  [style.width.%]="
+                    job.progress.total
+                      ? (job.progress.current / job.progress.total) * 100
+                      : isActive(job)
+                        ? 35
+                        : 100
+                  "
+                ></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 md:self-center">
+              <button
+                Button
+                type="button"
+                variant="outline"
+                size="sm"
+                [disabled]="!isActive(job)"
+                (click)="cancel(job)"
+              >
+                Cancel</button
+              ><button
+                Button
+                type="button"
+                size="sm"
+                [disabled]="job.state !== 'completed'"
+                (click)="download(job)"
+              >
+                Download
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</main>

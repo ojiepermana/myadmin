@@ -43,6 +43,7 @@ export interface ExplorerAction {
     | 'browse-database'
     | 'drop-database'
     | 'browse-data'
+    | 'export-data'
     | 'create-view'
     | 'design-table'
     | 'open-definition'
@@ -112,6 +113,8 @@ export class ExplorerActionRegistry {
     }
     if (node.kind === 'object' && node.ref?.type === 'table')
       add('browse-data', 'Browse data', 'data-browser', state);
+    if (node.kind === 'object' && node.ref?.type === 'table')
+      add('export-data', 'Export data', 'data-browser', state);
     if (node.kind === 'object' && node.ref?.type === 'table')
       add('design-table', 'Design table', 'table-designer', state);
     if (node.kind === 'object' && node.ref?.type === 'view') {

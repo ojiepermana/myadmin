@@ -654,8 +654,8 @@ Export SQL CSV JSON streaming sebagai job dengan unduhan terautentikasi. Done wh
 
 - [x] Design it (spec): [0047](../specs/0047-export-jobs/index.md)
 - [ ] Build it: /develop export-jobs
-  - [ ] Penulis format streaming plus pembaca cursor dan quoting per engine (AC-1, AC-2, AC-3)
-  - [ ] Executor job export plus unduhan berkadaluarsa plus pembersih temp plus audit (AC-3, AC-4, AC-5, AC-7)
+  - [x] Penulis format streaming plus pembaca cursor dan quoting per engine (AC-1, AC-2, AC-3)
+  - [x] Executor job export plus unduhan berkadaluarsa plus pembersih temp plus audit (AC-3, AC-4, AC-5, AC-7)
   - [ ] Dialog export, integrasi tombol grid, panel jobs plus e2e skala (AC-6, AC-8)
 - [ ] [Verify it](../specs/0047-export-jobs/verify.md): /check verify export-jobs
 - [ ] [Test it](../specs/0047-export-jobs/test.md): /test export-jobs

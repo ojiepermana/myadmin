@@ -81,6 +81,10 @@ export const AuditEvents = {
     completed: required('restore.completed', 'restore'),
     failed: required('restore.failed', 'restore'),
   },
+  export: {
+    completed: required('export.completed', 'export'),
+    failed: required('export.failed', 'export'),
+  },
   settings: {
     changed: required('settings.changed', 'setting'),
   },

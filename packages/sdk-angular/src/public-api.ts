@@ -17,6 +17,7 @@ export * from './facades/query-client';
 export * from './facades/security-client';
 export * from './facades/data-client';
 export * from './facades/views-client';
+export * from './facades/export-client';
 export * from './providers/config';
 export * from './providers/provide-myadmin-sdk';
 export * from './realtime/realtime-client';

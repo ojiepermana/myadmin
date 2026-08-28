@@ -19,6 +19,7 @@ import {
 import { AuditAdminReader, AuditWriter, isAuditAction } from '@myadmin/audit';
 import { CredentialVault, createKeyProvider } from '@myadmin/crypto';
 import { BackupService, RestoreService } from '@myadmin/backup';
+import { ExportService } from '@myadmin/export';
 import { MysqlProvider } from '@myadmin/database-mysql';
 import { ProviderRegistry } from '@myadmin/database-core';
 import { createPostgresqlProvider } from '@myadmin/database-postgresql';
@@ -78,6 +79,7 @@ import { registerDataBrowserRoutes } from './data-browser/routes';
 import { registerViewRoutes } from './view-management/routes';
 import { SchemaManagementService } from './schema-management/schema-management';
 import { registerSchemaManagementRoutes } from './schema-management/routes';
+import { registerExportRoutes } from './export/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -97,6 +99,7 @@ export interface ServerStartOptions {
   credentialVault?: CredentialVault;
   backupService?: BackupService;
   restoreService?: RestoreService;
+  exportService?: ExportService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
@@ -132,6 +135,7 @@ export interface ServerAppOptions {
   credentialVault?: CredentialVault;
   backupService?: BackupService;
   restoreService?: RestoreService;
+  exportService?: ExportService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
@@ -199,6 +203,7 @@ const realtimeCleanupStops = new WeakMap<object, () => void>();
 const jobManagerCleanupStops = new WeakMap<object, () => void>();
 const connectionManagerCleanupStops = new WeakMap<object, () => Promise<void>>();
 const queryExecutionCleanupStops = new WeakMap<object, () => Promise<void>>();
+const exportCleanupStops = new WeakMap<object, () => void>();
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
   return new Response(JSON.stringify(value), {
@@ -1281,6 +1286,8 @@ export function disposeServerApp(application: AnyElysia): void {
   if (disposeQueries) void disposeQueries();
   jobManagerCleanupStops.get(application)?.();
   jobManagerCleanupStops.delete(application);
+  exportCleanupStops.get(application)?.();
+  exportCleanupStops.delete(application);
   const disposeConnections = connectionManagerCleanupStops.get(application);
   connectionManagerCleanupStops.delete(application);
   if (disposeConnections) void disposeConnections();
@@ -1296,6 +1303,8 @@ export async function disposeServerAppAsync(application: AnyElysia): Promise<voi
   if (disposeQueries) await disposeQueries();
   jobManagerCleanupStops.get(application)?.();
   jobManagerCleanupStops.delete(application);
+  exportCleanupStops.get(application)?.();
+  exportCleanupStops.delete(application);
   const disposeConnections = connectionManagerCleanupStops.get(application);
   connectionManagerCleanupStops.delete(application);
   if (disposeConnections) await disposeConnections();
@@ -1514,6 +1523,17 @@ export function createServerApp(options: ServerAppOptions = {}) {
           dataDirectory,
         })
       : undefined);
+  const exportService =
+    options.exportService ??
+    (runtimeStore && connectionManager
+      ? new ExportService({
+          store: runtimeStore,
+          providers,
+          jobs: jobManager,
+          connectionManager,
+          dataDirectory,
+        })
+      : undefined);
   if (connectionManager && authService) {
     application = registerConnectionRoutes(application, '/api/v1', {
       authService,
@@ -1582,6 +1602,17 @@ export function createServerApp(options: ServerAppOptions = {}) {
       secureCookies,
     });
   }
+  if (exportService && authService) {
+    application = registerExportRoutes(application, '/api/v1', {
+      authService,
+      setupService,
+      service: exportService,
+      secureCookies,
+    });
+    const cleanupTimer = setInterval(() => exportService.cleanup(), 60_000);
+    (cleanupTimer as { unref?: () => void }).unref?.();
+    exportCleanupStops.set(application, () => clearInterval(cleanupTimer));
+  }
   if (authService) {
     application = registerWebSocketRoute(application, '/api/v1', authService, realtimeHub);
     const stopJobEvents = jobManager.subscribe((event) => {
@@ -1625,6 +1656,7 @@ export function createApp(
     backupService?: BackupService;
     providerRegistry?: ProviderRegistry;
     restoreService?: RestoreService;
+    exportService?: ExportService;
   } = {},
 ) {
   const database = new Database(':memory:', { create: true, readwrite: true, strict: true });
@@ -1739,6 +1771,21 @@ export function createApp(
     authService,
     setupService,
     connectionManager,
+    secureCookies: false,
+  });
+  const exportService =
+    options.exportService ??
+    new ExportService({
+      store,
+      providers,
+      jobs: jobManager,
+      connectionManager,
+      dataDirectory,
+    });
+  application = registerExportRoutes(application, '', {
+    authService,
+    setupService,
+    service: exportService,
     secureCookies: false,
   });
   application = registerViewRoutes(application, '', {

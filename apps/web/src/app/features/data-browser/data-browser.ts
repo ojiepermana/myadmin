@@ -2,12 +2,22 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import {
   DataClient,
+  MyadminSdk,
   type DataReadRequest,
   type DataReadResponse,
   type QueryResult,
 } from '@myadmin/sdk-angular';
-import { type Subscription } from 'rxjs';
+import { firstValueFrom, type Subscription } from 'rxjs';
 import { WorkspaceStore } from '../../core/state/workspace.store';
+import {
+  DialogComponent,
+  DialogContentComponent,
+  DialogDescriptionComponent,
+  DialogFooterComponent,
+  DialogHeaderComponent,
+  DialogTitleComponent,
+} from '@ojiepermana/angular/component/dialog';
+import { ButtonComponent } from '@ojiepermana/angular/component/button';
 import {
   ResultGrid,
   type DataBrowserFilterChange,
@@ -48,13 +58,23 @@ function messageFor(reason: unknown): string {
 
 @Component({
   selector: 'app-data-browser',
-  imports: [ResultGrid],
+  imports: [
+    ResultGrid,
+    ButtonComponent,
+    DialogComponent,
+    DialogContentComponent,
+    DialogDescriptionComponent,
+    DialogFooterComponent,
+    DialogHeaderComponent,
+    DialogTitleComponent,
+  ],
   templateUrl: './data-browser.html',
   styleUrl: './data-browser.scss',
 })
 export class DataBrowser {
   private readonly route = inject(ActivatedRoute);
   private readonly data = inject(DataClient);
+  private readonly sdk = inject(MyadminSdk);
   private readonly workspace = inject(WorkspaceStore);
   private readonly destroyRef = inject(DestroyRef);
   private requestSubscription: Subscription | undefined;
@@ -75,6 +95,10 @@ export class DataBrowser {
   protected readonly canceled = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly columnPickerOpen = signal(false);
+  protected readonly exportOpen = signal(false);
+  protected readonly exportFormat = signal<'csv' | 'json' | 'sql'>('csv');
+  protected readonly exporting = signal(false);
+  protected readonly exportMessage = signal<string | null>(null);
   protected readonly gridResult = computed<QueryResult | null>(() => {
     const result = this.response();
     if (!result) return null;
@@ -98,7 +122,10 @@ export class DataBrowser {
 
   constructor() {
     this.destroyRef.onDestroy(() => this.requestSubscription?.unsubscribe());
-    if (this.connectionId && this.ref) this.read();
+    if (this.connectionId && this.ref) {
+      this.read();
+      if (this.route.snapshot.queryParamMap.get('export') === '1') this.exportOpen.set(true);
+    }
   }
 
   protected displayRef(): string {
@@ -190,6 +217,43 @@ export class DataBrowser {
   protected retry(): void {
     this.canceled.set(false);
     this.read();
+  }
+
+  protected async startExport(): Promise<void> {
+    if (!this.connectionId || !this.ref) return;
+    this.exporting.set(true);
+    this.exportMessage.set(null);
+    try {
+      const source = {
+        kind: 'table' as const,
+        ref: this.ref,
+        ...(this.selectedColumns() ? { columns: [...this.selectedColumns()!] } : {}),
+        ...(this.activeFilters().length
+          ? {
+              filters: this.activeFilters().map(([column, value]) => ({
+                column,
+                operator: 'contains' as const,
+                value,
+              })),
+            }
+          : {}),
+        ...(this.sort().length ? { sort: [...this.sort()] } : {}),
+      };
+      await firstValueFrom(
+        this.sdk.export.create({
+          connectionId: this.connectionId,
+          source,
+          format: this.exportFormat(),
+          options: { header: true },
+        }),
+      );
+      this.exportOpen.set(false);
+      this.exportMessage.set('The export was queued. Track progress in Import and export.');
+    } catch (reason) {
+      this.exportMessage.set(messageFor(reason));
+    } finally {
+      this.exporting.set(false);
+    }
   }
 
   protected read(): void {

@@ -1,0 +1,23 @@
+get:
+  operationId: getExport
+  tags: [exports]
+  summary: Get an owned export job
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+  responses:
+    '200':
+      description: Export job status.
+      content: { application/json: { schema: { $ref: ../components/schemas/jobs.yaml#/Job } } }
+    '401':
+      {
+        description: No valid session was provided.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '404':
+      {
+        description: Export was not found.,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

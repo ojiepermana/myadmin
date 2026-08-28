@@ -208,6 +208,15 @@ export class ObjectExplorer {
             queryParams: { connection: node.connectionId, ref: JSON.stringify(node.ref) },
           });
           break;
+        case 'export-data':
+          await this.router.navigate(['/data-browser'], {
+            queryParams: {
+              connection: node.connectionId,
+              ref: JSON.stringify(node.ref),
+              export: '1',
+            },
+          });
+          break;
         case 'create-view':
           await this.router.navigate(['/view-editor'], {
             queryParams: {

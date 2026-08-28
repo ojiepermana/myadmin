@@ -1,7 +1,7 @@
 # 0047. Export
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-IEX-02: export SQL/CSV/JSON dari database, table, query result, atau selected
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin mengekspor table besar ke CSV tanpa membekukan aplikasi, melihat progress nya, dan membatalkannya.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: File di temp lalu unduh (dipilih)
 
 **Pros**:
+
 - Job bisa berjalan tanpa koneksi browser hidup; unduhan bisa diulang; cancel dan pembersihan jelas.
 
 **Cons**:
+
 - Butuh ruang disk sementara; pembersih berkala menanganinya.
 
 ### Option 2: Stream langsung ke response HTTP
 
 **Pros**:
+
 - Tanpa file sementara.
 
 **Cons**:
+
 - Menutup tab membunuh export; tidak ada progress via WS; cancel dan resume unduhan rumit; bertabrakan dengan model job yang diminta FR-JOB-01.
 
 ## Decision
@@ -65,20 +70,23 @@ Model job plus file memenuhi ketiga janji sekaligus (tidak memblokir, progress, 
 **Data model sketch**: tidak ada tabel internal; file temp per job dengan manifest kecil (sumber, format, baris) di memori job.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /export | POST | source, format, options | jobId | pemilik, tersambung | 422, 409 NOT_CONNECTED |
-| /export/:jobId/download | GET | tidak ada | file stream | pemilik job | 404, 410 kadaluarsa |
+
+| Endpoint                | Method | Key inputs              | Key outputs | Auth                | Key errors             |
+| ----------------------- | ------ | ----------------------- | ----------- | ------------------- | ---------------------- |
+| /export                 | POST   | source, format, options | jobId       | pemilik, tersambung | 422, 409 NOT_CONNECTED |
+| /export/:jobId/download | GET    | tidak ada               | file stream | pemilik job         | 404, 410 kadaluarsa    |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| baris sumber | stream | cursor provider (table/query/selection dengan filter aktif) |
-| total progress | perkiraan | estimate metadata bila sumber table; tidak diketahui untuk query |
-| nama file unduhan | string | pola `<objek>-<timestamp>.<ext>` di server |
-| quoting nilai SQL | literal | provider engine sumber |
+
+| Action            | Value produced / displayed | Source                                                           |
+| ----------------- | -------------------------- | ---------------------------------------------------------------- |
+| baris sumber      | stream                     | cursor provider (table/query/selection dengan filter aktif)      |
+| total progress    | perkiraan                  | estimate metadata bila sumber table; tidak diketahui untuk query |
+| nama file unduhan | string                     | pola `<objek>-<timestamp>.<ext>` di server                       |
+| quoting nilai SQL | literal                    | provider engine sumber                                           |
 
 **Key invariants**:
+
 - Tidak ada jalur export yang membaca seluruh hasil ke memori (AC-3).
 - File export hanya bisa diunduh pemilik job nya; folder temp dibersihkan berkala.
 - Export membawa data pengguna, bukan rahasia aplikasi; tetap tidak pernah menyertakan credential.
@@ -103,12 +111,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Export kelas produksi dengan UX job yang menjadi pola untuk import, backup, restore; panel jobs lahir.
 
 **Negative / tradeoffs**:
+
 - Ruang disk temp dipakai; kebijakan kadaluarsa dan pembersih menahannya.
 
 **Neutral**:
+
 - Scheduled export adalah V2 sesuai matriks scope.
 
 ## Follow-up
@@ -118,9 +129,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-IEX-02, FR-JOB-01, NFR-01; keputusan streaming V1 sesi desain 2026-08-28; feature.md opsi structure/data; spec 0028, 0029, 0037.
 
 **Practices & standards**:
+
 - Streaming cursor ke file; job dengan progress dan cancel; unduhan terautentikasi berkadaluarsa.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.
