@@ -147,10 +147,11 @@ Siklus hidup proses binary: serve, data directory, sinyal, SPA fallback. Done wh
 Diagnostik aman dan migrasi eksplisit. Done when: doctor melaporkan kesehatan tanpa secret dengan exit code benar dan migrate idempotent.
 
 - [x] Design it (spec): [0007](../specs/0007-doctor-migrate-commands/index.md)
-- [ ] Build it: /develop doctor-migrate-commands
-  - [ ] Registry DoctorCheck plus pemeriksaan dasar (AC-1, AC-2, AC-4)
-  - [ ] Presenter hasil dan mode json (AC-1, AC-3, AC-7)
-  - [ ] Perintah migrate dan migrate --status (AC-5, AC-6)
+- [x] Build it: /develop doctor-migrate-commands
+  - [x] Registry DoctorCheck plus pemeriksaan dasar (AC-1, AC-2, AC-4)
+  - [x] Presenter hasil dan mode json (AC-1, AC-3, AC-7)
+  - [x] Perintah migrate dan migrate --status (AC-5, AC-6)
+  - code in `apps/cli/src`, and `apps/cli/test/doctor.test.ts`
 - [ ] [Verify it](../specs/0007-doctor-migrate-commands/verify.md): /check verify doctor-migrate-commands
 - [ ] [Test it](../specs/0007-doctor-migrate-commands/test.md): /test doctor-migrate-commands
 

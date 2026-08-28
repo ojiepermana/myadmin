@@ -1,7 +1,7 @@
 # 0007. Perintah doctor dan migrate
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -88,12 +88,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Definisikan antarmuka `DoctorCheck` dan registry nya di runtime CLI, memenuhi **AC-4**.
-2. Implementasikan pemeriksaan dasar: data directory, subfolder, SQLite terbuka plus versi migrasi, aset web, memenuhi **AC-2**.
-3. Bangun presenter hasil (tabel terminal dan `--json`) dengan exit code benar, memenuhi **AC-1**, **AC-7**.
-4. Implementasikan `migrate` dan `migrate --status` di atas runner spec 0008, memenuhi **AC-5**, **AC-6**.
-5. Test: doctor pada instalasi sehat, rusak sebagian, dan output json snapshot; migrate idempotent, memenuhi **AC-1** sampai **AC-7**.
-6. Audit output terhadap redaction (tinjau semua string yang dicetak), memenuhi **AC-3**.
+1. [x] Definisikan antarmuka `DoctorCheck` dan registry nya di runtime CLI, memenuhi **AC-4**.
+2. [x] Implementasikan pemeriksaan dasar: data directory, subfolder, SQLite terbuka plus versi migrasi, aset web, memenuhi **AC-2**.
+3. [x] Bangun presenter hasil (tabel terminal dan `--json`) dengan exit code benar, memenuhi **AC-1**, **AC-7**.
+4. [x] Implementasikan `migrate` dan `migrate --status` di atas runner spec 0008, memenuhi **AC-5**, **AC-6**.
+5. [x] Test: doctor pada instalasi sehat, rusak sebagian, dan output json snapshot; migrate idempotent, memenuhi **AC-1** sampai **AC-7**.
+6. [x] Audit output terhadap redaction (tinjau semua string yang dicetak), memenuhi **AC-3**.
 
 ## Consequences
 
