@@ -1,3 +1,5 @@
+import { Redaction } from '@myadmin/crypto';
+
 export type MetricTagValue = string | number | boolean;
 export type MetricTags = Readonly<Record<string, MetricTagValue>>;
 
@@ -16,11 +18,12 @@ interface MetricEntry {
 }
 
 function metricKey(name: string, tags: MetricTags): string {
-  return `${name}:${JSON.stringify(Object.entries(tags).sort(([left], [right]) => left.localeCompare(right)))}`;
+  const safeTags = Redaction.redactObject(tags);
+  return `${name}:${JSON.stringify(Object.entries(safeTags).sort(([left], [right]) => left.localeCompare(right)))}`;
 }
 
 function copyTags(tags: MetricTags): MetricTags {
-  return Object.freeze({ ...tags });
+  return Object.freeze({ ...Redaction.redactObject(tags) });
 }
 
 export class Metrics {

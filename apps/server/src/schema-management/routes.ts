@@ -1,4 +1,5 @@
 import type { AuthService } from '@myadmin/auth';
+import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import type { ConnectionActor } from '../connections/connection-manager';
 import {
@@ -19,7 +20,7 @@ export interface SchemaManagementRouteOptions {
 }
 
 function jsonResponse(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json' },
   });

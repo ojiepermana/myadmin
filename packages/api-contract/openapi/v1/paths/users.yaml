@@ -1,5 +1,6 @@
 get:
   operationId: listUsers
+  x-myadmin-roles: [admin]
   tags:
     - users
   summary: List users for administrators
@@ -45,6 +46,7 @@ get:
             $ref: ../components/schemas/api-error.yaml
 post:
   operationId: createUser
+  x-myadmin-roles: [admin]
   tags:
     - users
   summary: Create a user for administrators

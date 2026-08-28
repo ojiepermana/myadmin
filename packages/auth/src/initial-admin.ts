@@ -1,6 +1,11 @@
 import type { AuditRepository, User, UserRepository } from '@myadmin/internal-domain';
 import { createUuidV7 } from '@myadmin/kernel';
-import { PasswordHasher, validatePassword, type PasswordPolicyViolation } from '@myadmin/crypto';
+import {
+  PasswordHasher,
+  redaction,
+  validatePassword,
+  type PasswordPolicyViolation,
+} from '@myadmin/crypto';
 
 export interface InitialAdminInput {
   readonly username: string;
@@ -131,7 +136,13 @@ export class InitialAdminService {
       );
     }
 
-    const passwordHash = await this.passwordHasher.hash(input.password);
+    const releasePassword = redaction.registerEphemeralSecret(input.password);
+    let passwordHash: string;
+    try {
+      passwordHash = await this.passwordHasher.hash(input.password);
+    } finally {
+      releasePassword();
+    }
     const createdAt = this.now();
     const user: User = {
       id: this.createId(),

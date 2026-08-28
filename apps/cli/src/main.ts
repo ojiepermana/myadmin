@@ -1,4 +1,5 @@
 import { parseConfigFlags } from '@myadmin/config';
+import { Redaction } from '@myadmin/crypto';
 import { runDoctorCommand } from './commands/doctor';
 import { runServeCommand } from './commands/serve';
 import { runVersionCommand } from './commands/version';
@@ -85,7 +86,7 @@ export async function runCli(args: string[] = process.argv.slice(2)): Promise<vo
         throw new CliArgumentError(`Unknown command: ${command}`);
     }
   } catch (error) {
-    console.error(error instanceof Error ? error.message : 'Command failed');
+    console.error(Redaction.redactText(error instanceof Error ? error.message : 'Command failed'));
     process.exitCode = 1;
   }
 }

@@ -1,5 +1,6 @@
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import { DbError } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import type { QueryHistoryFilter } from '@myadmin/internal-domain';
 import {
@@ -29,7 +30,7 @@ export interface QueryRouteOptions {
 }
 
 function jsonResponse(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json' },
   });

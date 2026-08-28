@@ -6,6 +6,7 @@ import {
   type SchemaDefinition,
   type SchemaPort,
 } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import type { InternalUnitOfWork, JsonObject } from '@myadmin/internal-domain';
 import {
   ConnectionManagerError,
@@ -247,7 +248,7 @@ export function schemaManagementErrorResponse(request: Request, error: unknown):
   const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
   if (error instanceof ConnectionManagerError) {
     return new Response(
-      JSON.stringify({
+      safeJson({
         code: error.code,
         message: error.message,
         correlationId,
@@ -257,13 +258,10 @@ export function schemaManagementErrorResponse(request: Request, error: unknown):
     );
   }
   if (error instanceof SchemaManagementError) {
-    return new Response(
-      JSON.stringify({ code: error.code, message: error.message, correlationId }),
-      {
-        status: error.status,
-        headers: { 'content-type': 'application/json' },
-      },
-    );
+    return new Response(safeJson({ code: error.code, message: error.message, correlationId }), {
+      status: error.status,
+      headers: { 'content-type': 'application/json' },
+    });
   }
   if (error instanceof DbError) {
     const status =
@@ -279,7 +277,7 @@ export function schemaManagementErrorResponse(request: Request, error: unknown):
                 ? 501
                 : 502;
     return new Response(
-      JSON.stringify({
+      safeJson({
         code: error.category === 'unsupported' ? 'SCHEMA_UNSUPPORTED' : 'DB_ERROR',
         message: error.message,
         correlationId,
@@ -289,7 +287,7 @@ export function schemaManagementErrorResponse(request: Request, error: unknown):
     );
   }
   return new Response(
-    JSON.stringify({
+    safeJson({
       code: 'SCHEMA_OPERATION_FAILED',
       message: 'The schema operation could not be completed.',
       correlationId,
@@ -299,4 +297,8 @@ export function schemaManagementErrorResponse(request: Request, error: unknown):
       headers: { 'content-type': 'application/json' },
     },
   );
+}
+
+function safeJson(value: unknown): string {
+  return JSON.stringify(Redaction.redactObject(value));
 }

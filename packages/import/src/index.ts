@@ -768,6 +768,16 @@ export class ImportService {
         destructive: normalized.truncateFirst ?? false,
       },
     });
+    if (normalized.truncateFirst) {
+      this.auditWriter.record({
+        action: AuditEvents.import.destructive_started.action,
+        result: 'success',
+        actorUserId: actor.id,
+        targetRef: jobId,
+        connectionId: normalized.connectionId,
+        details: { format: 'csv', table: normalized.table.name, operation: 'truncate' },
+      });
+    }
     return { jobId };
   }
 

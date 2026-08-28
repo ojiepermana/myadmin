@@ -14,6 +14,7 @@ import {
 import {
   CredentialVault,
   createKeyProvider,
+  redaction,
   type CredentialPayload,
   type EncryptedCredentialInput,
 } from '@myadmin/crypto';
@@ -27,10 +28,10 @@ import type {
   UserRole,
 } from '@myadmin/internal-domain';
 import { createUuidV7 } from '@myadmin/kernel';
-import { InMemoryRateLimiter } from '@myadmin/auth';
+import { createRateLimiter, RATE_LIMIT_POLICIES, type InMemoryRateLimiter } from '@myadmin/auth';
 
-export const CONNECTION_TEST_RATE_LIMIT = 10;
-export const CONNECTION_TEST_RATE_WINDOW_MS = 60_000;
+export const CONNECTION_TEST_RATE_LIMIT = RATE_LIMIT_POLICIES.connectionTest.limit;
+export const CONNECTION_TEST_RATE_WINDOW_MS = RATE_LIMIT_POLICIES.connectionTest.windowMs;
 
 export interface ConnectionActor {
   readonly id: string;
@@ -808,12 +809,7 @@ export class ConnectionManagerService {
     this.auditWriter = options.auditWriter ?? new AuditWriter(options.store.audit);
     this.createId = options.createId ?? createUuidV7;
     this.now = options.now ?? (() => new Date());
-    this.testRateLimiter =
-      options.testRateLimiter ??
-      new InMemoryRateLimiter({
-        limit: CONNECTION_TEST_RATE_LIMIT,
-        windowMs: CONNECTION_TEST_RATE_WINDOW_MS,
-      });
+    this.testRateLimiter = options.testRateLimiter ?? createRateLimiter('connectionTest');
     this.activeSessions = options.activeSessions;
     this.lifecycleSessions =
       options.activeSessions instanceof ConnectionSessionRegistry
@@ -1209,7 +1205,7 @@ export class ConnectionManagerService {
     const connection = this.toConnection(id, actor.id, normalized, now);
     const credential =
       saveSecret && secret !== undefined
-        ? await this.options.vault.encrypt(connection.id, { password: secret })
+        ? await this.encryptWithRedaction(connection.id, secret)
         : undefined;
 
     try {
@@ -1283,7 +1279,7 @@ export class ConnectionManagerService {
     const credential =
       patch.secret === undefined || patch.clearSecret
         ? undefined
-        : await this.options.vault.encrypt(connection.id, { password: patch.secret });
+        : await this.encryptWithRedaction(connection.id, patch.secret);
     const secretChanged = patch.secret !== undefined || patch.clearSecret === true;
 
     try {
@@ -1446,9 +1442,17 @@ export class ConnectionManagerService {
       );
     }
     const normalized = validateConnectionInput(input);
-    return this.testProvider(this.toConnection('transient', actor.id, normalized, this.now()), {
-      password: secret,
-    });
+    const disposeSecret = redaction.registerEphemeralSecret(secret);
+    try {
+      return await this.testProvider(
+        this.toConnection('transient', actor.id, normalized, this.now()),
+        {
+          password: secret,
+        },
+      );
+    } finally {
+      disposeSecret();
+    }
   }
 
   public createGroup(actor: ConnectionActor, input: ServerGroupInput): ServerGroupView {
@@ -1520,6 +1524,13 @@ export class ConnectionManagerService {
           connections.update({ ...connection, groupId: null, updatedAt: this.now() });
       }
       serverGroups.delete(group.id);
+      this.auditWriter.record({
+        action: AuditEvents.server_group.deleted.action,
+        result: 'success',
+        actorUserId: actor.id,
+        targetRef: group.id,
+        details: { name: group.name },
+      });
     });
   }
 
@@ -1661,6 +1672,15 @@ export class ConnectionManagerService {
       this.vaultCredential(encrypted),
       (payload) => this.options.vault.encrypt(newConnectionId, payload),
     );
+  }
+
+  private async encryptWithRedaction(connectionId: string, secret: string) {
+    const disposeSecret = redaction.registerEphemeralSecret(secret);
+    try {
+      return await this.options.vault.encrypt(connectionId, { password: secret });
+    } finally {
+      disposeSecret();
+    }
   }
 
   private vaultCredential(

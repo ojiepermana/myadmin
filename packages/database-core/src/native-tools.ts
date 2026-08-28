@@ -1,4 +1,5 @@
 import { stat } from 'node:fs/promises';
+import { Redaction } from '@myadmin/crypto';
 import type { NativeToolStatus } from './contracts/backup-restore';
 
 export interface NativeToolProbeOptions {
@@ -18,7 +19,9 @@ async function defaultVersion(path: string): Promise<string> {
     process.exited,
   ]);
   if (exitCode !== 0) {
-    throw new Error((stderr || stdout || `Tool exited with code ${exitCode}`).trim());
+    throw new Error(
+      Redaction.redactText((stderr || stdout || `Tool exited with code ${exitCode}`).trim()),
+    );
   }
   return (stdout || stderr).trim();
 }

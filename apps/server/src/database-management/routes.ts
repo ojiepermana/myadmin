@@ -1,5 +1,6 @@
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import type { DatabaseCreateInput } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import type { ConnectionActor } from '../connections/connection-manager';
 import { databaseManagementErrorResponse } from './database-management';
@@ -17,7 +18,7 @@ export interface DatabaseManagementRouteOptions {
 }
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json', ...headers },
   });

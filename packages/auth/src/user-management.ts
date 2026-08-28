@@ -1,5 +1,10 @@
 import { AuditEvents, AuditWriter } from '@myadmin/audit';
-import { PasswordHasher, validatePassword, type PasswordPolicyViolation } from '@myadmin/crypto';
+import {
+  PasswordHasher,
+  redaction,
+  validatePassword,
+  type PasswordPolicyViolation,
+} from '@myadmin/crypto';
 import type {
   InternalUnitOfWork,
   Page,
@@ -167,7 +172,13 @@ export class UserManagementService {
       );
     }
 
-    const passwordHash = await this.passwordHasher.hash(input.password);
+    const releasePassword = redaction.registerEphemeralSecret(input.password);
+    let passwordHash: string;
+    try {
+      passwordHash = await this.passwordHasher.hash(input.password);
+    } finally {
+      releasePassword();
+    }
     const createdAt = this.now();
     const user: User = {
       id: this.createId(),
@@ -273,7 +284,13 @@ export class UserManagementService {
       );
     }
 
-    const passwordHash = await this.passwordHasher.hash(input.newPassword);
+    const releasePassword = redaction.registerEphemeralSecret(input.newPassword);
+    let passwordHash: string;
+    try {
+      passwordHash = await this.passwordHasher.hash(input.newPassword);
+    } finally {
+      releasePassword();
+    }
     this.store.transaction(({ users, sessions }) => {
       const current = users.findById(targetUserId);
       if (!current) throw new UserManagementError('USER_NOT_FOUND', 'The user was not found.');

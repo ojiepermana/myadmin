@@ -1,5 +1,6 @@
 get:
   operationId: getSettings
+  x-myadmin-roles: [admin]
   tags:
     - settings
   summary: Get application settings for an administrator

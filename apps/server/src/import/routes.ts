@@ -1,5 +1,12 @@
-import { SESSION_COOKIE_NAME, type AuthService, type SessionValidation } from '@myadmin/auth';
+import {
+  createRateLimiter,
+  SESSION_COOKIE_NAME,
+  type AuthService,
+  type InMemoryRateLimiter,
+  type SessionValidation,
+} from '@myadmin/auth';
 import type { CsvImportOptions, ObjectRef } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import {
   ImportServiceError,
   type ImportCsvInput,
@@ -17,19 +24,27 @@ export interface ImportRouteOptions {
   readonly setupService: SetupService | undefined;
   readonly service: ImportService;
   readonly secureCookies: boolean;
+  readonly uploadRateLimiter?: InMemoryRateLimiter;
 }
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json', ...headers },
   });
 }
 
-function error(request: Request, status: number, code: string, message: string): Response {
+function error(
+  request: Request,
+  status: number,
+  code: string,
+  message: string,
+  headers?: HeadersInit,
+): Response {
   const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
   return jsonResponse({ code, message, correlationId }, status, {
     'x-correlation-id': correlationId,
+    ...headers,
   });
 }
 
@@ -50,6 +65,11 @@ function csrf(request: Request): boolean {
     (site === null || site === 'same-origin') &&
     (origin === null || origin === new URL(request.url).origin)
   );
+}
+
+function clientIp(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  return forwarded || request.headers.get('x-real-ip')?.trim() || 'unknown';
 }
 
 function session(
@@ -314,8 +334,15 @@ export function registerImportRoutes(
   options: ImportRouteOptions,
 ): AnyElysia {
   const path = (suffix: string) => `${prefix}${suffix}`;
+  const limiter = options.uploadRateLimiter ?? createRateLimiter('importUpload');
   return application
     .post(path('/import/upload'), async ({ request }) => {
+      const rateLimit = limiter.consume(clientIp(request));
+      if (!rateLimit.allowed) {
+        return error(request, 429, 'RATE_LIMITED', 'Too many import uploads. Try again later.', {
+          'retry-after': String(rateLimit.retryAfterSeconds),
+        });
+      }
       const authorization = session(request, options);
       if (authorization instanceof Response) return authorization;
       if (!csrf(request)) return error(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');

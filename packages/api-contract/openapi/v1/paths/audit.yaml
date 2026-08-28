@@ -1,5 +1,6 @@
 get:
   operationId: queryAudit
+  x-myadmin-roles: [admin]
   tags:
     - audit
   summary: Query the administrator audit log

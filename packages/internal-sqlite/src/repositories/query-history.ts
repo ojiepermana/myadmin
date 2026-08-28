@@ -6,6 +6,7 @@ import type {
   QueryHistoryFilter,
   QueryHistoryRepository,
 } from '@myadmin/internal-domain';
+import { Redaction } from '@myadmin/crypto';
 import {
   changes,
   fromIso,
@@ -93,6 +94,7 @@ export class SqliteQueryHistoryRepository implements QueryHistoryRepository {
   }
 
   public append(entry: QueryHistoryEntry): void {
+    const sqlText = Redaction.redactText(entry.sqlText);
     this.database
       .prepare(
         `INSERT INTO query_history
@@ -105,7 +107,7 @@ export class SqliteQueryHistoryRepository implements QueryHistoryRepository {
         entry.connectionId,
         entry.database,
         entry.schema,
-        entry.sqlText,
+        sqlText,
         entry.status,
         entry.durationMs,
         entry.rowCount,

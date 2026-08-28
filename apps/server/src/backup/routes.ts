@@ -5,6 +5,7 @@ import {
   type SessionValidation,
 } from '@myadmin/auth';
 import { DbError } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import {
   BackupServiceError,
   RestoreServiceError,
@@ -29,7 +30,7 @@ export interface BackupRouteOptions {
 }
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json', ...headers },
   });

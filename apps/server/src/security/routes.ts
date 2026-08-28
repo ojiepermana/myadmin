@@ -7,6 +7,7 @@ import {
   type PrincipalAttribute,
   type PrincipalAttributeValue,
 } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import {
   SecurityServiceError,
@@ -25,7 +26,7 @@ export interface SecurityRouteOptions {
 }
 
 function jsonResponse(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json' },
   });

@@ -8,6 +8,7 @@ import {
   type TableDdlPreview,
   type TableDesignerPort,
 } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import type { InternalUnitOfWork, JsonObject } from '@myadmin/internal-domain';
 import {
   ConnectionManagerError,
@@ -295,7 +296,7 @@ export function tableDesignerErrorResponse(request: Request, error: unknown): Re
 }
 
 function json(value: unknown, status: number, correlationId: string): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json', 'x-correlation-id': correlationId },
   });

@@ -10,6 +10,7 @@ import type {
   TableIndexInput,
   TableReferentialAction,
 } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import type { ConnectionActor } from '../connections/connection-manager';
 import { tableDesignerErrorResponse, type TableDesignerService } from './table-designer';
@@ -25,7 +26,7 @@ export interface TableDesignerRouteOptions {
 }
 
 function response(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json' },
   });

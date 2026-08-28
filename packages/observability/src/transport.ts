@@ -18,6 +18,24 @@ import {
 export const INTERNAL_SERVER_ERROR_CODE = 'INTERNAL_SERVER_ERROR' as const;
 export const INTERNAL_SERVER_ERROR_MESSAGE = 'Internal server error.' as const;
 
+export const SECURITY_HEADERS = Object.freeze({
+  'content-security-policy':
+    "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'x-frame-options': 'DENY',
+});
+
+function applySecurityHeaders(
+  set: { headers: Record<string, string | number> },
+  request: Request,
+): void {
+  Object.assign(set.headers, SECURITY_HEADERS);
+  if (new URL(request.url).pathname.startsWith('/api/')) {
+    set.headers['cache-control'] = 'no-store';
+  }
+}
+
 export interface ApiErrorBody {
   readonly code: typeof INTERNAL_SERVER_ERROR_CODE;
   readonly message: typeof INTERNAL_SERVER_ERROR_MESSAGE;
@@ -95,10 +113,11 @@ export function installObservability(app: Elysia, options: ObservabilityOptions 
   const now = options.now ?? Date.now;
 
   const instrumented = app
-    .onRequest(({ set }) => {
+    .onRequest(({ request, set }) => {
       const correlationId = createCorrelationId();
       enterCorrelation(correlationId, now());
       set.headers[CORRELATION_HEADER] = correlationId;
+      applySecurityHeaders(set, request);
     })
     .derive(() => ({
       correlationId: getCorrelationId() ?? createCorrelationId(),

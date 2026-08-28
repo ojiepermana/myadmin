@@ -2,14 +2,15 @@ import { Database } from 'bun:sqlite';
 import {
   AuthError,
   AuthService,
+  createRateLimiter,
   InitialAdminError,
   InitialAdminService,
-  InMemoryRateLimiter,
   SESSION_CLEANUP_INTERVAL_MS,
   SESSION_COOKIE_NAME,
   type AuthenticatedSession,
   type AuthLoginInput,
   type AuthStore,
+  type InMemoryRateLimiter,
   type SessionValidation,
   UserManagementError,
   UserManagementService,
@@ -17,7 +18,7 @@ import {
   type UpdateUserRoleStatusInput,
 } from '@myadmin/auth';
 import { AuditAdminReader, AuditWriter, isAuditAction } from '@myadmin/audit';
-import { CredentialVault, createKeyProvider } from '@myadmin/crypto';
+import { CredentialVault, createKeyProvider, Redaction } from '@myadmin/crypto';
 import { BackupService, RestoreService } from '@myadmin/backup';
 import { ExportService } from '@myadmin/export';
 import { ImportService } from '@myadmin/import';
@@ -109,6 +110,7 @@ export interface ServerStartOptions {
   importService?: ImportService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
+  importUploadRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
   jobManager?: JobManager;
@@ -148,6 +150,7 @@ export interface ServerAppOptions {
   importService?: ImportService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
+  importUploadRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
   loginRateLimiter?: InMemoryRateLimiter;
   jobManager?: JobManager;
@@ -219,7 +222,7 @@ const exportCleanupStops = new WeakMap<object, () => void>();
 const importCleanupStops = new WeakMap<object, () => void>();
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json', ...headers },
   });
@@ -1359,8 +1362,8 @@ export function createServerApp(options: ServerAppOptions = {}) {
   const setupService =
     options.initialAdminService ??
     (runtimeStore ? new InitialAdminService({ store: runtimeStore }) : undefined);
-  const setupRateLimiter = options.setupRateLimiter ?? new InMemoryRateLimiter();
-  const loginRateLimiter = options.loginRateLimiter ?? new InMemoryRateLimiter();
+  const setupRateLimiter = options.setupRateLimiter ?? createRateLimiter('setup');
+  const loginRateLimiter = options.loginRateLimiter ?? createRateLimiter('login');
   const authService =
     options.authService ??
     (runtimeStore
@@ -1412,6 +1415,7 @@ export function createServerApp(options: ServerAppOptions = {}) {
           historyRepository: runtimeStore.queryHistory,
           savedQueryRepository: runtimeStore.savedQueries,
           connectionRepository: runtimeStore.connections,
+          auditWriter: new AuditWriter(runtimeStore.audit),
           retentionLimit: () =>
             runtimeStore.settingsService.getSetting('history.maxEntriesPerUser'),
         })
@@ -1674,6 +1678,7 @@ export function createServerApp(options: ServerAppOptions = {}) {
       setupService,
       service: importService,
       secureCookies,
+      uploadRateLimiter: options.importUploadRateLimiter,
     });
     const cleanupTimer = setInterval(() => void importService.cleanup(), 60_000);
     (cleanupTimer as { unref?: () => void }).unref?.();
@@ -1742,7 +1747,7 @@ export function createApp(
     providers,
     vault: credentialVault,
   });
-  const setupRateLimiter = new InMemoryRateLimiter();
+  const setupRateLimiter = createRateLimiter('setup');
   const queryExecutionService = new QueryExecutionService({
     connectionManager,
     historyRepository: store.queryHistory,
@@ -1751,6 +1756,7 @@ export function createApp(
     historyRepository: store.queryHistory,
     savedQueryRepository: store.savedQueries,
     connectionRepository: store.connections,
+    auditWriter: new AuditWriter(store.audit),
     retentionLimit: () => store.settingsService.getSetting('history.maxEntriesPerUser'),
   });
   const databaseManagementService = new DatabaseManagementService({
@@ -1878,6 +1884,7 @@ export function createApp(
     setupService,
     service: importService,
     secureCookies: false,
+    uploadRateLimiter: undefined,
   });
   application = registerViewRoutes(application, '', {
     auditWriter: new AuditWriter(store.audit),
@@ -1965,6 +1972,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       restoreService: options.restoreService,
       activeConnectionSessions: options.activeConnectionSessions,
       connectionTestRateLimiter: options.connectionTestRateLimiter,
+      importUploadRateLimiter: options.importUploadRateLimiter,
       websocketCheckIntervalMs: options.websocketCheckIntervalMs,
       workspaceService: options.workspaceService,
       websocketHeartbeatIntervalMs: options.websocketHeartbeatIntervalMs,

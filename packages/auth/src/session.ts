@@ -1,10 +1,15 @@
 import { randomBytes as cryptoRandomBytes, createHash } from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import { AuditEvents, AuditWriter } from '@myadmin/audit';
-import { PasswordHasher, validatePassword, type PasswordPolicyViolation } from '@myadmin/crypto';
+import {
+  PasswordHasher,
+  redaction,
+  validatePassword,
+  type PasswordPolicyViolation,
+} from '@myadmin/crypto';
 import type { InternalUnitOfWork, Session, User } from '@myadmin/internal-domain';
 import { createUuidV7 } from '@myadmin/kernel';
-import { InMemoryRateLimiter } from './rate-limiter';
+import { createRateLimiter, type InMemoryRateLimiter } from './rate-limiter';
 import type { PublicUser } from './initial-admin';
 
 export const SESSION_COOKIE_NAME = 'myadmin_session';
@@ -153,7 +158,7 @@ export class AuthService {
   ) {
     this.passwordHasher = options.passwordHasher ?? new PasswordHasher();
     this.auditWriter = options.auditWriter ?? new AuditWriter(store.audit);
-    this.loginRateLimiter = options.loginRateLimiter ?? new InMemoryRateLimiter();
+    this.loginRateLimiter = options.loginRateLimiter ?? createRateLimiter('login');
     this.now = options.now ?? (() => new Date());
     this.createId = options.createId ?? createUuidV7;
     this.randomBytes = options.randomBytes ?? ((size) => cryptoRandomBytes(size));
@@ -191,10 +196,16 @@ export class AuthService {
     }
 
     const user = this.store.transaction(({ users }) => users.findByUsername(input.username));
-    const verification = await this.passwordHasher.verify(
-      input.password,
-      user?.passwordHash ?? DUMMY_PASSWORD_HASH,
-    );
+    const releasePassword = redaction.registerEphemeralSecret(input.password);
+    let verification: Awaited<ReturnType<PasswordHasher['verify']>>;
+    try {
+      verification = await this.passwordHasher.verify(
+        input.password,
+        user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+      );
+    } finally {
+      releasePassword();
+    }
     const reason = user?.isActive === false ? 'user_inactive' : 'credentials_invalid';
     if (!user || !user.isActive || !verification.ok) {
       this.store.transaction(() => {
@@ -213,7 +224,13 @@ export class AuthService {
     this.loginRateLimiter.reset(usernameKey);
 
     if (verification.needsRehash) {
-      const passwordHash = await this.passwordHasher.hash(input.password);
+      const releasePassword = redaction.registerEphemeralSecret(input.password);
+      let passwordHash: string;
+      try {
+        passwordHash = await this.passwordHasher.hash(input.password);
+      } finally {
+        releasePassword();
+      }
       const updatedAt = this.now();
       this.store.transaction(({ users }) => {
         const current = users.findById(user.id);
@@ -317,7 +334,13 @@ export class AuthService {
       throw new AuthError('AUTH_UNAUTHENTICATED', 'A valid session is required.');
     }
 
-    const verification = await this.passwordHasher.verify(input.currentPassword, user.passwordHash);
+    const releaseCurrentPassword = redaction.registerEphemeralSecret(input.currentPassword);
+    let verification: Awaited<ReturnType<PasswordHasher['verify']>>;
+    try {
+      verification = await this.passwordHasher.verify(input.currentPassword, user.passwordHash);
+    } finally {
+      releaseCurrentPassword();
+    }
     if (!verification.ok) {
       this.store.transaction(() => {
         this.auditWriter.record({
@@ -350,7 +373,13 @@ export class AuthService {
       );
     }
 
-    const passwordHash = await this.passwordHasher.hash(input.newPassword);
+    const releaseNewPassword = redaction.registerEphemeralSecret(input.newPassword);
+    let passwordHash: string;
+    try {
+      passwordHash = await this.passwordHasher.hash(input.newPassword);
+    } finally {
+      releaseNewPassword();
+    }
     this.store.transaction(({ users, sessions }) => {
       const current = users.findById(user.id);
       if (!current || !current.isActive) {

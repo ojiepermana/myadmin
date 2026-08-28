@@ -730,10 +730,10 @@ Registry key tertutup: preferensi per user dan pengaturan aplikasi Admin. Done w
 Standar redaction, header keamanan, matriks otorisasi, gerbang security.yml. Done when: seluruh suite keamanan hijau dan menjadi prasyarat rilis.
 
 - [x] Design it (spec): [0053](../specs/0053-security-hardening/index.md)
-- [ ] Build it: /develop security-hardening
-  - [ ] Sweep redaction plus test suntik per saluran plus pemindai fixture (AC-1, AC-2)
-  - [ ] Header keamanan plus konsolidasi rate limiter (AC-3, AC-4)
-  - [ ] Matriks otorisasi dari kontrak, test at rest, kelengkapan audit destructive, security.yml (AC-5 sampai AC-8)
+- [x] Build it: /develop security-hardening
+  - [x] Sweep redaction plus test suntik per saluran plus pemindai fixture (AC-1, AC-2)
+  - [x] Header keamanan plus konsolidasi rate limiter (AC-3, AC-4)
+  - [x] Matriks otorisasi dari kontrak, test at rest, kelengkapan audit destructive, security.yml (AC-5 sampai AC-8)
 - [ ] [Verify it](../specs/0053-security-hardening/verify.md): /check verify security-hardening
 - [ ] [Test it](../specs/0053-security-hardening/test.md): /test security-hardening
 

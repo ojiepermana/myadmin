@@ -1,5 +1,6 @@
 get:
   operationId: getAuditActions
+  x-myadmin-roles: [admin]
   tags:
     - audit
   summary: List registered audit actions

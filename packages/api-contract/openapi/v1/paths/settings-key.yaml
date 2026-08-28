@@ -1,5 +1,6 @@
 put:
   operationId: updateSetting
+  x-myadmin-roles: [admin]
   tags:
     - settings
   summary: Update one application setting as an administrator

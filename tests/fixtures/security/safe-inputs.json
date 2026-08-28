@@ -1,0 +1,6 @@
+{
+  "username": "synthetic-security-user",
+  "password": "synthetic-password-only",
+  "apiToken": "synthetic-token-only",
+  "connection": "postgresql://db-user:synthetic-password@db.example.test/app"
+}

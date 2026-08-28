@@ -1,4 +1,5 @@
 import type { TerminalPresenter } from './terminal-presenter';
+import { Redaction } from '@myadmin/crypto';
 import type { DoctorCheckReport, DoctorDetail, DoctorStatus } from '../runtime/doctor';
 
 export interface DoctorSummary {
@@ -19,7 +20,7 @@ const sensitiveKeyPattern =
   /(?:password|passphrase|secret|token|credential|authorization|cookie|private[_ -]?key|master[_ -]?key|connection[_ -]?string|dsn|sql|query)/i;
 
 export function sanitizeDiagnosticText(value: string): string {
-  return value
+  const locallySanitized = value
     .replace(/([a-z][a-z\d+.-]*:\/\/)[^/\s:@]+:[^@\s/]+@/gi, '$1[REDACTED]@')
     .replace(/\b(?:postgres(?:ql)?|mysql):\/\/[^\s,;]+/gi, '[REDACTED_CONNECTION_STRING]')
     .replace(/\b(connection string|dsn)\b(\s*[:=]\s*)[^\s,;]+/gi, '$1$2[REDACTED]')
@@ -28,6 +29,7 @@ export function sanitizeDiagnosticText(value: string): string {
       '$1$2[REDACTED]',
     )
     .replace(/\bBearer\s+[^\s,;]+/gi, 'Bearer [REDACTED]');
+  return Redaction.redactText(locallySanitized);
 }
 
 function sanitizeDetail(value: DoctorDetail, key?: string): DoctorDetail {
@@ -90,7 +92,9 @@ export function createDoctorOutput(reports: readonly DoctorCheckReport[]): Docto
 }
 
 function displayDetail(value: DoctorDetail): string {
-  return typeof value === 'string' ? value : JSON.stringify(value);
+  return typeof value === 'string'
+    ? Redaction.redactText(value)
+    : JSON.stringify(Redaction.redactObject(value));
 }
 
 export function formatDoctorText(output: DoctorOutput): string {

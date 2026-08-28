@@ -203,9 +203,14 @@ async function collectStderr(
       result = (result + decoder.decode(next.value, { stream: true })).slice(-64_000);
       const lines = result.split(/\r?\n/).filter(Boolean);
       const message = lines.at(-1);
-      if (message) reportProgress({ phase: 'dumping', current: 0, message: message.slice(0, 240) });
+      if (message)
+        reportProgress({
+          phase: 'dumping',
+          current: 0,
+          message: Redaction.redactText(message).slice(0, 240),
+        });
     }
-    return result + decoder.decode();
+    return Redaction.redactText(result + decoder.decode());
   } finally {
     reader.releaseLock();
   }

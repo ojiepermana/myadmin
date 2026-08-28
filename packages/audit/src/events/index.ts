@@ -28,6 +28,9 @@ export const AuditEvents = {
     opened: required('connection.opened', 'connection'),
     closed: required('connection.closed', 'connection'),
   },
+  server_group: {
+    deleted: required('servergroup.deleted', 'server_group'),
+  },
   user: {
     created: required('user.created', 'user'),
     role_changed: required('user.role_changed', 'user'),
@@ -46,6 +49,10 @@ export const AuditEvents = {
   },
   data: {
     rows_deleted: required('data.rows_deleted', 'table'),
+  },
+  query: {
+    history_deleted: required('query.history_deleted', 'query_history'),
+    saved_deleted: required('query.saved_deleted', 'saved_query'),
   },
   schema: {
     created: required('schema.created', 'schema'),
@@ -73,6 +80,7 @@ export const AuditEvents = {
   },
   import: {
     started: required('import.started', 'import'),
+    destructive_started: required('import.destructive_started', 'import'),
     completed: required('import.completed', 'import'),
     failed: required('import.failed', 'import'),
   },
@@ -80,6 +88,7 @@ export const AuditEvents = {
     started: required('backup.started', 'backup'),
     completed: required('backup.completed', 'backup'),
     failed: required('backup.failed', 'backup'),
+    deleted: required('backup.deleted', 'backup'),
   },
   restore: {
     started: required('restore.started', 'restore'),

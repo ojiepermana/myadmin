@@ -1,3 +1,4 @@
+import { AuditEvents, type AuditWriter } from '@myadmin/audit';
 import type {
   Connection,
   EntityId,
@@ -85,6 +86,7 @@ export interface QueryHistoryServiceOptions {
   readonly retentionLimit?: () => number;
   readonly now?: () => Date;
   readonly createId?: () => string;
+  readonly auditWriter?: AuditWriter;
 }
 
 export type QueryHistoryServiceErrorCode =
@@ -177,11 +179,13 @@ export class QueryHistoryService {
   private readonly now: () => Date;
   private readonly createId: () => string;
   private readonly retentionLimit: () => number;
+  private readonly auditWriter: AuditWriter | undefined;
 
   public constructor(private readonly options: QueryHistoryServiceOptions) {
     this.now = options.now ?? (() => new Date());
     this.createId = options.createId ?? createUuidV7;
     this.retentionLimit = options.retentionLimit ?? (() => DEFAULT_QUERY_HISTORY_RETENTION);
+    this.auditWriter = options.auditWriter;
   }
 
   public listHistory(
@@ -203,10 +207,26 @@ export class QueryHistoryService {
     const entry = this.options.historyRepository.findById(id);
     if (!entry || entry.userId !== userId) this.historyNotFound();
     this.options.historyRepository.delete(id);
+    this.auditWriter?.record({
+      action: AuditEvents.query.history_deleted.action,
+      result: 'success',
+      actorUserId: userId,
+      targetRef: id,
+    });
   }
 
   public deleteHistory(userId: EntityId): number {
-    return this.options.historyRepository.deleteByUser(userId);
+    const deleted = this.options.historyRepository.deleteByUser(userId);
+    if (deleted > 0) {
+      this.auditWriter?.record({
+        action: AuditEvents.query.history_deleted.action,
+        result: 'success',
+        actorUserId: userId,
+        targetRef: userId,
+        details: { count: deleted },
+      });
+    }
+    return deleted;
   }
 
   public listSaved(userId: EntityId, page?: PageRequest): SavedQueryPage {
@@ -288,6 +308,12 @@ export class QueryHistoryService {
   public deleteSaved(userId: EntityId, id: EntityId): void {
     this.ownedSaved(userId, id);
     this.options.savedQueryRepository.delete(id);
+    this.auditWriter?.record({
+      action: AuditEvents.query.saved_deleted.action,
+      result: 'success',
+      actorUserId: userId,
+      targetRef: id,
+    });
   }
 
   private historyItem(userId: EntityId, entry: QueryHistoryEntry): QueryHistoryItem {

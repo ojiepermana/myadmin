@@ -12,6 +12,7 @@ import {
   type QueryCell,
   type ObjectRef,
 } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import {
   ConnectionManagerError,
@@ -36,7 +37,7 @@ export interface DataBrowserRouteOptions {
 }
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json', ...headers },
   });

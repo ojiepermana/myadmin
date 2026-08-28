@@ -4,6 +4,23 @@ export interface RateLimiterOptions {
   readonly now?: () => number;
 }
 
+/** Public endpoint policies are kept together so callers cannot drift apart. */
+export const RATE_LIMIT_POLICIES = Object.freeze({
+  setup: Object.freeze({ limit: 5, windowMs: 60_000 }),
+  login: Object.freeze({ limit: 5, windowMs: 60_000 }),
+  connectionTest: Object.freeze({ limit: 10, windowMs: 60_000 }),
+  importUpload: Object.freeze({ limit: 10, windowMs: 60_000 }),
+});
+
+export type RateLimitPolicy = keyof typeof RATE_LIMIT_POLICIES;
+
+export function createRateLimiter(
+  policy: RateLimitPolicy,
+  options: Omit<RateLimiterOptions, 'limit' | 'windowMs'> = {},
+): InMemoryRateLimiter {
+  return new InMemoryRateLimiter({ ...RATE_LIMIT_POLICIES[policy], ...options });
+}
+
 export interface RateLimitResult {
   readonly allowed: boolean;
   readonly remaining: number;

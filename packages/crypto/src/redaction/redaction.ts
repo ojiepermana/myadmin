@@ -117,7 +117,11 @@ class RedactionEngine {
 
     const output: Record<string, unknown> = {};
     for (const [key, child] of Object.entries(value)) {
-      output[key] = this.isSensitiveField(key) ? REDACTED_VALUE : this.redactValue(child, seen);
+      output[key] =
+        this.isSensitiveField(key) &&
+        (typeof child === 'string' || (typeof child === 'object' && child !== null))
+          ? REDACTED_VALUE
+          : this.redactValue(child, seen);
     }
     return output;
   }

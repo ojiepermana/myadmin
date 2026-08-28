@@ -1,5 +1,6 @@
 import { SESSION_COOKIE_NAME, type AuthService, type SessionValidation } from '@myadmin/auth';
 import type { DataFilter, DataSort, ObjectRef } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import {
   ExportServiceError,
   type ExportCreateInput,
@@ -20,7 +21,7 @@ export interface ExportRouteOptions {
 }
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json', ...headers },
   });

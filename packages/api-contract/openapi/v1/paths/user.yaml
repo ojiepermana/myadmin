@@ -1,5 +1,6 @@
 patch:
   operationId: updateUser
+  x-myadmin-roles: [admin]
   tags:
     - users
   summary: Change a user's role or active status

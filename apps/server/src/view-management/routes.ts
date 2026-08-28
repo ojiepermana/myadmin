@@ -1,5 +1,6 @@
 import type { AuditWriter } from '@myadmin/audit';
 import { DbError, type ObjectRef } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import type { AnyElysia } from 'elysia';
 import {
@@ -27,7 +28,7 @@ export interface ViewRouteOptions {
 }
 
 function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(value), {
+  return new Response(JSON.stringify(Redaction.redactObject(value)), {
     status,
     headers: { 'content-type': 'application/json', ...headers },
   });

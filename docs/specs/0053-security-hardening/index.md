@@ -1,7 +1,7 @@
 # 0053. Hardening keamanan lintas fitur
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ Setiap spec sebelumnya membawa kewajiban keamanannya sendiri; menjelang rilis di
 ## Requirements
 
 **User stories**:
+
 - Sebagai pemilik proyek, saya ingin bukti tersistem bahwa janji keamanan dokumen benar benar dipegang kode sebelum rilis pertama.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Standar plus suite gerbang CI (dipilih)
 
 **Pros**:
+
 - Janji keamanan menjadi properti yang diperiksa mesin setiap perubahan, bukan audit sekali jalan.
 
 **Cons**:
+
 - Suite lintas menambah waktu CI; dijalankan sebagai workflow terpisah.
 
 ### Option 2: Audit keamanan manual menjelang rilis
 
 **Pros**:
+
 - Tanpa kerja infrastruktur test.
 
 **Cons**:
+
 - Sekali jalan lalu membusuk; regresi keamanan berikutnya tidak tertangkap.
 
 ## Decision
@@ -62,23 +67,27 @@ Semua kewajiban di sini sudah menjadi aturan sejak spec awal; nilai spec ini ada
 
 **Canonical pattern** (saluran keluar):
 
-~~~typescript
+```typescript
 // Setiap saluran keluar proses memanggil redaction tepat sebelum menulis.
 // Contoh: logger (spec 0013), presenter ApiError, AuditWriter, pengirim event WS.
-write(redact(payload))
+write(redact(payload));
 // Dilarang: menulis payload mentah ke saluran mana pun, atau menyensor manual per pemanggil.
-~~~
+```
 
 **Replaces**:
+
 - Sensor ad hoc per fitur; console langsung; penerusan stderr subprocess mentah.
 
 **Enforcement**:
+
 - Test suntik secret per saluran (AC-1) di `tests/security/redaction/`; lint larangan console; pemindai fixture di CI; matriks otorisasi digenerate dari kontrak; semuanya di `security.yml` sebagai gerbang.
 
 **Rollout**:
+
 - Segera untuk semua kode yang ada (sweep satu kali di build plan), lalu berlaku untuk semua kode baru lewat CI.
 
 **Exceptions**:
+
 - Tidak ada. Saluran keluar baru wajib mendaftar ke test suntik secret.
 
 ## Feature design
@@ -88,13 +97,15 @@ write(redact(payload))
 **API surface**: tidak menambah endpoint; menambah header pada semuanya.
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| matriks otorisasi | daftar operasi plus auth harapan | bundel kontrak (anotasi security per operasi) |
-| daftar destructive | operasi wajib audit | taksonomi audit (spec 0019) plus daftar FR |
-| pola pemindai secret | regex penanda | modul redaction (satu sumber) |
+
+| Action               | Value produced / displayed       | Source                                        |
+| -------------------- | -------------------------------- | --------------------------------------------- |
+| matriks otorisasi    | daftar operasi plus auth harapan | bundel kontrak (anotasi security per operasi) |
+| daftar destructive   | operasi wajib audit              | taksonomi audit (spec 0019) plus daftar FR    |
+| pola pemindai secret | regex penanda                    | modul redaction (satu sumber)                 |
 
 **Key invariants**:
+
 - `security.yml` hijau adalah prasyarat artefak rilis.
 - Matriks otorisasi selalu lengkap terhadap kontrak (test gagal bila ada operasi tak tercakup).
 
@@ -119,12 +130,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Definition of Done butir 5, 6, 8 punya bukti mekanis yang bertahan setelah V1.
 
 **Negative / tradeoffs**:
+
 - CI lebih lama; keamanan produk ini memang intinya.
 
 **Neutral**:
+
 - Suite ini menjadi rumah alami test keamanan fitur V2.
 
 ## Follow-up
@@ -134,9 +148,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md bagian 8.2, NFR-03, NFR-07, Definition of Done butir 5, 6, 8; spec 0011, 0013, 0017, 0019.
 
 **Practices & standards**:
+
 - Defense in depth; properti keamanan sebagai test; matriks otorisasi digenerate dari kontrak.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

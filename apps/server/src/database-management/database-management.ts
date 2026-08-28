@@ -5,6 +5,7 @@ import {
   type DatabaseCreateOptions,
   type DatabaseDefinition,
 } from '@myadmin/database-core';
+import { Redaction } from '@myadmin/crypto';
 import type { InternalUnitOfWork, JsonObject } from '@myadmin/internal-domain';
 import {
   ConnectionManagerError,
@@ -202,7 +203,7 @@ export class DatabaseManagementService {
 export function databaseManagementErrorResponse(request: Request, error: unknown): Response {
   if (error instanceof ConnectionManagerError) {
     return new Response(
-      JSON.stringify({
+      safeJson({
         code: error.code,
         message: error.message,
         correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
@@ -213,7 +214,7 @@ export function databaseManagementErrorResponse(request: Request, error: unknown
   }
   if (error instanceof DatabaseManagementError) {
     return new Response(
-      JSON.stringify({
+      safeJson({
         code: error.code,
         message: error.message,
         correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
@@ -235,7 +236,7 @@ export function databaseManagementErrorResponse(request: Request, error: unknown
                 ? 501
                 : 502;
     return new Response(
-      JSON.stringify({
+      safeJson({
         code: 'DB_ERROR',
         message: error.message,
         correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
@@ -245,11 +246,15 @@ export function databaseManagementErrorResponse(request: Request, error: unknown
     );
   }
   return new Response(
-    JSON.stringify({
+    safeJson({
       code: 'DATABASE_MANAGEMENT_FAILED',
       message: 'The database operation could not be completed.',
       correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
     }),
     { status: 500, headers: { 'content-type': 'application/json' } },
   );
+}
+
+function safeJson(value: unknown): string {
+  return JSON.stringify(Redaction.redactObject(value));
 }

@@ -1,11 +1,13 @@
+import { Redaction } from '@myadmin/crypto';
+
 export interface TerminalPresenter {
   info(message: string): void;
   error(message: string): void;
 }
 
 export const consoleTerminalPresenter: TerminalPresenter = {
-  info: (message) => console.log(message),
-  error: (message) => console.error(message),
+  info: (message) => console.log(Redaction.redactText(message)),
+  error: (message) => console.error(Redaction.redactText(message)),
 };
 
 export function presentServing(
@@ -24,6 +26,6 @@ export function presentBootstrapFailure(
   stage: string,
   error: unknown,
 ): void {
-  const message = error instanceof Error ? error.message : 'unknown error';
+  const message = error instanceof Error ? Redaction.redactText(error.message) : 'unknown error';
   presenter.error(`MyAdmin boot failed during ${stage}: ${message}`);
 }

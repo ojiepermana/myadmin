@@ -1,6 +1,6 @@
 import { mkdir, readFile, readdir, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
-import { AuditEvents, AuditWriter } from '@myadmin/audit';
+import { AuditEvents, AuditWriter, withAudit } from '@myadmin/audit';
 import type { CredentialPayload, CredentialVault } from '@myadmin/crypto';
 import {
   ConnectionContext,
@@ -351,7 +351,19 @@ export class BackupService {
   }
 
   public delete(actor: BackupActor, id: string, confirmation: string): Promise<void> {
-    return this.artifactStore.delete(actor.id, id, confirmation);
+    return this.artifactStore.get(actor.id, id).then(({ artifact }) =>
+      withAudit(
+        this.auditWriter,
+        {
+          action: AuditEvents.backup.deleted.action,
+          actorUserId: actor.id,
+          targetRef: artifact.id,
+          connectionId: artifact.connectionId,
+          details: { fileName: artifact.fileName },
+        },
+        () => this.artifactStore.delete(actor.id, id, confirmation),
+      ),
+    );
   }
 
   public jobs(actor: BackupActor, page = 1, pageSize = 20): JobPage {
