@@ -1,0 +1,89 @@
+get:
+  operationId: listSecurityPrincipals
+  tags: [security]
+  summary: List database principals
+  parameters:
+    - name: connectionId
+      in: query
+      required: true
+      schema: { type: string, minLength: 1 }
+    - name: page
+      in: query
+      schema: { type: string, pattern: '^[0-9]+$' }
+    - name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+    - name: q
+      in: query
+      schema: { type: string }
+  responses:
+    '200':
+      description: A page of engine neutral principals without credentials.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/security.yaml#/PrincipalPage }
+    '401':
+      {
+        description: Authentication required,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: Connection ownership or provider permission failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '409':
+      {
+        description: Connection is not connected,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '422':
+      {
+        description: Query validation failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '501':
+      {
+        description: Principal capability is unavailable,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+post:
+  operationId: createSecurityPrincipal
+  tags: [security]
+  summary: Create a database principal
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/security.yaml#/PrincipalCreateRequest }
+  responses:
+    '201':
+      description: Principal created without credentials.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/security.yaml#/Principal }
+    '401':
+      {
+        description: Authentication required,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: CSRF or provider permission failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '409':
+      {
+        description: Principal name conflict,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '422':
+      {
+        description: Validation failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '501':
+      {
+        description: Principal capability is unavailable,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

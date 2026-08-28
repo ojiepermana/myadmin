@@ -12,6 +12,7 @@ import { SettingsClient } from '../facades/settings-client';
 import { UserClient } from '../facades/user-client';
 import { WorkspaceClient } from '../facades/workspace-client';
 import { QueryClient } from '../facades/query-client';
+import { SecurityClient } from '../facades/security-client';
 import { SessionExpiredEvents } from '../events/session-expired';
 import { provideHttpTransport } from '../transport/http-transport';
 import { MYADMIN_SDK_TRANSPORT_CAPABILITY, type SdkTransport } from '../transport/transport';
@@ -37,6 +38,7 @@ export function provideMyadminSdk(
     UserClient,
     ConnectionsClient,
     QueryClient,
+    SecurityClient,
     ExplorerClient,
     MyadminSdk,
   ];
@@ -60,6 +62,7 @@ export class MyadminSdk {
   public readonly users = inject(UserClient);
   public readonly workspace = inject(WorkspaceClient);
   public readonly query = inject(QueryClient);
+  public readonly security = inject(SecurityClient);
   public readonly realtime = inject(MYADMIN_REALTIME_CLIENT);
   public readonly sessionExpired = inject(SessionExpiredEvents).sessionExpired;
 }

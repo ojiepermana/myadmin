@@ -1,7 +1,7 @@
 # 0045. Security database target: principal
 
 **Date**: 2026-08-28
-**Status**: Proposed
+**Status**: In Progress
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-SEC-01 dan FR-SEC-02: browse principal sesuai capability dengan model aman (t
 ## Requirements
 
 **User stories**:
+
 - Sebagai DBA, saya ingin melihat dan mengelola user database dari GUI dengan batas yang jelas: yang bisa saya lakukan adalah yang hak credential koneksi saya izinkan.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Form dinamis dari deklarasi atribut provider (dipilih)
 
 **Pros**:
+
 - Satu UI untuk dua model principal yang berbeda tajam; atribut baru di masa depan tidak mengubah UI; sesuai larangan cabang engine di fitur.
 
 **Cons**:
+
 - Form generik butuh deklarasi metadata yang dirancang baik di kontrak.
 
 ### Option 2: Form khusus per engine di UI
 
 **Pros**:
+
 - Penataan paling presisi per engine.
 
 **Cons**:
+
 - Meletakkan pengetahuan engine di UI, melanggar FR-PROV-04 dan pola seluruh produk.
 
 ## Decision
@@ -63,24 +68,27 @@ Principal adalah titik perbedaan engine paling dalam di V1; deklarasi form dari 
 **Data model sketch**: tidak ada tabel internal; model `Principal`, `PrincipalAttribute`, `PrincipalFormField` di kontrak (spec 0021 diperluas seperlunya).
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /security/principals | GET | connectionId, page, q? | items, total | pemilik, tersambung, capability | unsupported |
-| /security/principals/form | GET | connectionId | deklarasi field create/edit | sama | |
-| /security/principals | POST | fields (dinamis), password? | principal | sama | 409 nama, 422, DbError |
-| /security/principals/:name | PATCH | perubahan atribut | principal | sama | 422, DbError |
-| /security/principals/:name/reset-password | POST | newPassword | kosong | sama | DbError |
-| /security/principals/:name | DELETE | confirmName | kosong | sama | 409, DbError |
+
+| Endpoint                                  | Method | Key inputs                  | Key outputs                 | Auth                            | Key errors             |
+| ----------------------------------------- | ------ | --------------------------- | --------------------------- | ------------------------------- | ---------------------- |
+| /security/principals                      | GET    | connectionId, page, q?      | items, total                | pemilik, tersambung, capability | unsupported            |
+| /security/principals/form                 | GET    | connectionId                | deklarasi field create/edit | sama                            |                        |
+| /security/principals                      | POST   | fields (dinamis), password? | principal                   | sama                            | 409 nama, 422, DbError |
+| /security/principals/:name                | PATCH  | perubahan atribut           | principal                   | sama                            | 422, DbError           |
+| /security/principals/:name/reset-password | POST   | newPassword                 | kosong                      | sama                            | DbError                |
+| /security/principals/:name                | DELETE | confirmName                 | kosong                      | sama                            | 409, DbError           |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| daftar dan atribut | nilai | katalog engine (pg_roles; mysql.user lewat information_schema yang diizinkan) |
-| deklarasi form | field per engine | modul provider `security/` |
-| pratinjau | DDL | kompilator provider |
-| hasil reset | tidak ada nilai dikembalikan | disengaja; hanya status sukses |
+
+| Action             | Value produced / displayed   | Source                                                                        |
+| ------------------ | ---------------------------- | ----------------------------------------------------------------------------- |
+| daftar dan atribut | nilai                        | katalog engine (pg_roles; mysql.user lewat information_schema yang diizinkan) |
+| deklarasi form     | field per engine             | modul provider `security/`                                                    |
+| pratinjau          | DDL                          | kompilator provider                                                           |
+| hasil reset        | tidak ada nilai dikembalikan | disengaja; hanya status sukses                                                |
 
 **Key invariants**:
+
 - Response tidak pernah memuat password, hash, atau string auth (FR-SEC-01); test menyisir bentuk response.
 - Semua mutasi lewat pratinjau DDL kecuali reset password (dialog khusus, tetap dikompilasi provider).
 - Gerbang capability di server (AC-6).
@@ -104,12 +112,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Pengelolaan user database dari GUI dengan model aman; fondasi untuk privilege (spec 0046).
 
 **Negative / tradeoffs**:
+
 - Form dinamis menuntut deklarasi yang dirawat provider; harga dari UI engine netral.
 
 **Neutral**:
+
 - Role membership PostgreSQL read only di V1; pengelolaannya bagian dari grants lanjutan V2.
 
 ## Follow-up
@@ -119,9 +130,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-SEC-01, FR-SEC-02, bagian 8.2 butir 6; spec 0021, 0031, 0039 (pola konfirmasi), 0019.
 
 **Practices & standards**:
+
 - UI data driven dari deklarasi adapter; tidak ada rahasia di response; pratinjau DDL.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

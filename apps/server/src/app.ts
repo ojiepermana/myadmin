@@ -69,6 +69,8 @@ import { registerBackupRoutes } from './backup/routes';
 import { QueryExecutionService } from './query/query-execution';
 import { registerQueryRoutes } from './query/routes';
 import { registerObjectExplorerRoutes } from './object-explorer/routes';
+import { PrincipalSecurityService } from './security/security';
+import { registerSecurityRoutes } from './security/routes';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -1487,6 +1489,13 @@ export function createServerApp(options: ServerAppOptions = {}) {
       connectionManager,
       secureCookies,
     });
+    if (auditRepository) {
+      application = registerSecurityRoutes(application, '/api/v1', {
+        authService,
+        setupService,
+        securityService: new PrincipalSecurityService(connectionManager, auditRepository),
+      });
+    }
   }
   if (queryExecutionService && authService) {
     application = registerQueryRoutes(application, '/api/v1', {
@@ -1630,6 +1639,11 @@ export function createApp(
     setupService,
     connectionManager,
     secureCookies: false,
+  });
+  application = registerSecurityRoutes(application, '', {
+    authService,
+    setupService,
+    securityService: new PrincipalSecurityService(connectionManager, store.audit),
   });
   const backupService =
     options.backupService ??

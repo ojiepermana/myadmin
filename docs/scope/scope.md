@@ -624,9 +624,10 @@ Kelola role dan account database target lewat form dinamis. Done when: create, e
 
 - [x] Design it (spec): [0045](../specs/0045-database-security-principals/index.md)
 - [ ] Build it: /develop database-security-principals
-  - [ ] SecurityPort principal di kedua provider plus deklarasi form (AC-1, AC-2, AC-3)
-  - [ ] Reset password aman plus drop berkonfirmasi plus audit plus gerbang (AC-4 sampai AC-7)
+  - [x] SecurityPort principal di kedua provider plus deklarasi form (AC-1, AC-2, AC-3)
+  - [x] Reset password aman plus drop berkonfirmasi plus audit plus gerbang (AC-4 sampai AC-7)
   - [ ] UI daftar dan form dinamis plus e2e dan test kebersihan rahasia (AC-2, AC-8)
+  - code in `packages/database-core/src/contracts/security.ts`, `packages/database-postgresql/src/security/`, `packages/database-mysql/src/security/`, `apps/server/src/security/`, `packages/api-contract/openapi/v1/`, `packages/sdk-angular/src/facades/security-client.ts`, and `apps/web/src/app/features/security/`
 - [ ] [Verify it](../specs/0045-database-security-principals/verify.md): /check verify database-security-principals
 - [ ] [Test it](../specs/0045-database-security-principals/test.md): /test database-security-principals
 

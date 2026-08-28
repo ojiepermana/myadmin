@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+.security-page {
+  min-height: 100%;
+}
+.connection-choice {
+  border-color: hsl(var(--border));
+  background: hsl(var(--card) / 0.7);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+.connection-choice:hover,
+.connection-choice-active {
+  border-color: hsl(var(--primary) / 0.55);
+  background: hsl(var(--primary) / 0.08);
+}
+@media (prefers-reduced-motion: reduce) {
+  .connection-choice {
+    transition: none;
+  }
+}

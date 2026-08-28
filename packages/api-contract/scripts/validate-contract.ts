@@ -62,6 +62,10 @@ const initialPaths = {
   '/connections/{id}/databases/{db}/children': 'paths/explorer-database-children.yaml',
   '/connections/{id}/schemas/{schema}/objects': 'paths/explorer-schema-objects.yaml',
   '/connections/{id}/objects/describe': 'paths/explorer-describe.yaml',
+  '/security/principals': 'paths/security-principals.yaml',
+  '/security/principals/form': 'paths/security-principal-form.yaml',
+  '/security/principals/{name}': 'paths/security-principal.yaml',
+  '/security/principals/{name}/reset-password': 'paths/security-principal-reset.yaml',
 } as const;
 
 const publicOperations = new Set(['/health', '/setup/status', '/setup/admin', '/auth/login']);
@@ -204,6 +208,13 @@ async function assertContractRules(): Promise<void> {
     'BackupCreateResponse',
     'BackupArtifact',
     'BackupArtifactPage',
+    'Principal',
+    'PrincipalPage',
+    'PrincipalForm',
+    'PrincipalCreateRequest',
+    'PrincipalChangeRequest',
+    'PrincipalResetPasswordRequest',
+    'PrincipalDropRequest',
   ]) {
     if (!(schemaName in schemas)) {
       throw new Error(`components.schemas.${schemaName} is missing`);

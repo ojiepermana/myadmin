@@ -107,6 +107,14 @@ paths:
     $ref: ./paths/explorer-schema-objects.yaml
   /connections/{id}/objects/describe:
     $ref: ./paths/explorer-describe.yaml
+  /security/principals:
+    $ref: ./paths/security-principals.yaml
+  /security/principals/form:
+    $ref: ./paths/security-principal-form.yaml
+  /security/principals/{name}:
+    $ref: ./paths/security-principal.yaml
+  /security/principals/{name}/reset-password:
+    $ref: ./paths/security-principal-reset.yaml
 components:
   schemas:
     ApiError:
@@ -223,6 +231,20 @@ components:
       $ref: ./components/schemas/connection.yaml#/ConnectionStatusResponse
     ConnectionStatusInfo:
       $ref: ./components/schemas/connection.yaml#/ConnectionStatusInfo
+    Principal:
+      $ref: ./components/schemas/security.yaml#/Principal
+    PrincipalPage:
+      $ref: ./components/schemas/security.yaml#/PrincipalPage
+    PrincipalForm:
+      $ref: ./components/schemas/security.yaml#/PrincipalForm
+    PrincipalCreateRequest:
+      $ref: ./components/schemas/security.yaml#/PrincipalCreateRequest
+    PrincipalChangeRequest:
+      $ref: ./components/schemas/security.yaml#/PrincipalChangeRequest
+    PrincipalResetPasswordRequest:
+      $ref: ./components/schemas/security.yaml#/PrincipalResetPasswordRequest
+    PrincipalDropRequest:
+      $ref: ./components/schemas/security.yaml#/PrincipalDropRequest
     ConnectionPage:
       $ref: ./components/schemas/connection.yaml#/ConnectionPage
     ServerGroupInput:

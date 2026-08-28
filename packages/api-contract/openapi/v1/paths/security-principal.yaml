@@ -1,0 +1,84 @@
+patch:
+  operationId: updateSecurityPrincipal
+  tags: [security]
+  summary: Update provider permitted principal attributes
+  parameters:
+    - name: name
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    - name: connectionId
+      in: query
+      required: true
+      schema: { type: string, minLength: 1 }
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/security.yaml#/PrincipalChangeRequest }
+  responses:
+    '200':
+      description: Principal updated without credentials.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/security.yaml#/Principal }
+    '401':
+      {
+        description: Authentication required,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: CSRF or provider permission failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '422':
+      {
+        description: Validation failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '501':
+      {
+        description: Principal capability is unavailable,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+delete:
+  operationId: dropSecurityPrincipal
+  tags: [security]
+  summary: Drop a database principal
+  parameters:
+    - name: name
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    - name: connectionId
+      in: query
+      required: true
+      schema: { type: string, minLength: 1 }
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/security.yaml#/PrincipalDropRequest }
+  responses:
+    '204': { description: Principal dropped. }
+    '401':
+      {
+        description: Authentication required,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: CSRF or provider permission failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '409':
+      {
+        description: Confirmation or provider conflict failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '501':
+      {
+        description: Principal capability is unavailable,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

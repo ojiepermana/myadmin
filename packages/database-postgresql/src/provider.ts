@@ -6,6 +6,7 @@ import { PostgresqlBackupPort, type PostgresqlBackupToolPaths } from './backup';
 import { PostgresqlMonitoringAdapter } from './monitoring';
 import { PostgresqlQueryAdapter } from './query-adapter';
 import { PostgresqlDatabasePort } from './database';
+import { PostgresqlSecurityAdapter } from './security';
 
 export class PostgresqlProvider implements DatabaseProvider {
   public readonly engine = 'postgresql' as const;
@@ -16,6 +17,7 @@ export class PostgresqlProvider implements DatabaseProvider {
   public readonly backup: PostgresqlBackupPort;
   public readonly monitoring: PostgresqlMonitoringAdapter;
   public readonly database: PostgresqlDatabasePort;
+  public readonly security: PostgresqlSecurityAdapter;
 
   public constructor(options: PostgresqlConnectionOptions & PostgresqlBackupToolPaths = {}) {
     this.connection = new PostgresqlConnectionAdapter(options);
@@ -25,6 +27,7 @@ export class PostgresqlProvider implements DatabaseProvider {
     this.metadata = new PostgresqlMetadataAdapter(this.connection);
     this.monitoring = new PostgresqlMonitoringAdapter(this.connection, { now: options.now });
     this.query = new PostgresqlQueryAdapter(this.connection);
+    this.security = new PostgresqlSecurityAdapter(this.connection);
   }
 }
 

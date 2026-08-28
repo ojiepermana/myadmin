@@ -1,0 +1,112 @@
+PrincipalAttributeValue:
+  oneOf:
+    - type: string
+    - type: number
+    - type: boolean
+    - type: 'null'
+
+PrincipalAttribute:
+  type: object
+  additionalProperties: false
+  required: [key, value]
+  properties:
+    key:
+      type: string
+      minLength: 1
+    value:
+      $ref: '#/PrincipalAttributeValue'
+
+Principal:
+  type: object
+  additionalProperties: false
+  required: [name, type, attributes, memberOf]
+  properties:
+    name: { type: string, minLength: 1 }
+    type: { type: string, enum: [user, role, account, other] }
+    user: { type: string }
+    host: { type: string }
+    attributes:
+      type: array
+      items: { $ref: '#/PrincipalAttribute' }
+    memberOf:
+      type: array
+      items: { type: string }
+
+PrincipalPage:
+  type: object
+  additionalProperties: false
+  required: [items, total]
+  properties:
+    items:
+      type: array
+      items: { $ref: '#/Principal' }
+    cursor: { type: string }
+    total: { type: integer, minimum: 0 }
+
+PrincipalFormField:
+  type: object
+  additionalProperties: false
+  required: [key, label, type]
+  properties:
+    key: { type: string, minLength: 1 }
+    label: { type: string, minLength: 1 }
+    type: { type: string, enum: [text, password, boolean, number, datetime] }
+    required: { type: boolean }
+    secret: { type: boolean }
+    min: { type: number }
+    max: { type: number }
+    options:
+      type: array
+      items: { type: string }
+
+PrincipalForm:
+  type: object
+  additionalProperties: false
+  required: [create, edit]
+  properties:
+    create:
+      type: array
+      items: { $ref: '#/PrincipalFormField' }
+    edit:
+      type: array
+      items: { $ref: '#/PrincipalFormField' }
+
+PrincipalCreateRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, name, attributes]
+  properties:
+    connectionId: { type: string, minLength: 1 }
+    name: { type: string, minLength: 1 }
+    attributes:
+      type: array
+      items: { $ref: '#/PrincipalAttribute' }
+    credential:
+      type: string
+      writeOnly: true
+
+PrincipalChangeRequest:
+  type: object
+  additionalProperties: false
+  required: [changes]
+  properties:
+    changes:
+      type: array
+      items: { $ref: '#/PrincipalAttribute' }
+
+PrincipalResetPasswordRequest:
+  type: object
+  additionalProperties: false
+  required: [newPassword]
+  properties:
+    newPassword:
+      type: string
+      minLength: 1
+      writeOnly: true
+
+PrincipalDropRequest:
+  type: object
+  additionalProperties: false
+  required: [confirmName]
+  properties:
+    confirmName: { type: string, minLength: 1 }

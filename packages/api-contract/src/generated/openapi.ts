@@ -684,6 +684,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/security/principals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List database principals */
+        get: operations["listSecurityPrincipals"];
+        put?: never;
+        /** Create a database principal */
+        post: operations["createSecurityPrincipal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/security/principals/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Drop a database principal */
+        delete: operations["dropSecurityPrincipal"];
+        options?: never;
+        head?: never;
+        /** Update provider permitted principal attributes */
+        patch: operations["updateSecurityPrincipal"];
+        trace?: never;
+    };
+    "/security/principals/{name}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset a database principal password */
+        post: operations["resetSecurityPrincipalPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/security/principals/form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Describe the provider principal form */
+        get: operations["describeSecurityPrincipalForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/server-groups": {
         parameters: {
             query?: never;
@@ -1253,6 +1323,55 @@ export interface components {
         };
         PreferenceUpdate: {
             value: ("system" | "light" | "dark") | number | boolean;
+        };
+        Principal: {
+            attributes: components["schemas"]["PrincipalAttribute"][];
+            host?: string;
+            memberOf: string[];
+            name: string;
+            /** @enum {string} */
+            type: "user" | "role" | "account" | "other";
+            user?: string;
+        };
+        PrincipalAttribute: {
+            key: string;
+            value: components["schemas"]["PrincipalAttributeValue"];
+        };
+        PrincipalAttributeValue: string | number | boolean | null;
+        PrincipalChangeRequest: {
+            changes: components["schemas"]["PrincipalAttribute"][];
+        };
+        PrincipalCreateRequest: {
+            attributes: components["schemas"]["PrincipalAttribute"][];
+            connectionId: string;
+            credential?: string;
+            name: string;
+        };
+        PrincipalDropRequest: {
+            confirmName: string;
+        };
+        PrincipalForm: {
+            create: components["schemas"]["PrincipalFormField"][];
+            edit: components["schemas"]["PrincipalFormField"][];
+        };
+        PrincipalFormField: {
+            key: string;
+            label: string;
+            max?: number;
+            min?: number;
+            options?: string[];
+            required?: boolean;
+            secret?: boolean;
+            /** @enum {string} */
+            type: "text" | "password" | "boolean" | "number" | "datetime";
+        };
+        PrincipalPage: {
+            cursor?: string;
+            items: components["schemas"]["Principal"][];
+            total: number;
+        };
+        PrincipalResetPasswordRequest: {
+            newPassword: string;
         };
         QueryAutocompleteItem: {
             detail?: string;
@@ -4053,6 +4172,391 @@ export interface operations {
             };
             /** @description The artifact is not a supported SQL or gzip SQL dump. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    listSecurityPrincipals: {
+        parameters: {
+            query: {
+                connectionId: string;
+                page?: string;
+                pageSize?: number;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of engine neutral principals without credentials. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrincipalPage"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection ownership or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection is not connected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Query validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Principal capability is unavailable */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    createSecurityPrincipal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrincipalCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Principal created without credentials. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Principal"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Principal name conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Principal capability is unavailable */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    dropSecurityPrincipal: {
+        parameters: {
+            query: {
+                connectionId: string;
+            };
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrincipalDropRequest"];
+            };
+        };
+        responses: {
+            /** @description Principal dropped. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Confirmation or provider conflict failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Principal capability is unavailable */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    updateSecurityPrincipal: {
+        parameters: {
+            query: {
+                connectionId: string;
+            };
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrincipalChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Principal updated without credentials. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Principal"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Principal capability is unavailable */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    resetSecurityPrincipalPassword: {
+        parameters: {
+            query: {
+                connectionId: string;
+            };
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrincipalResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password reset, no credential returned. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description CSRF or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Principal capability is unavailable */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    describeSecurityPrincipalForm: {
+        parameters: {
+            query: {
+                connectionId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider declared create and edit fields. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrincipalForm"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection ownership or provider permission failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection is not connected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Principal capability is unavailable */
+            501: {
                 headers: {
                     [name: string]: unknown;
                 };

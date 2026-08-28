@@ -1,0 +1,35 @@
+get:
+  operationId: describeSecurityPrincipalForm
+  tags: [security]
+  summary: Describe the provider principal form
+  parameters:
+    - name: connectionId
+      in: query
+      required: true
+      schema: { type: string, minLength: 1 }
+  responses:
+    '200':
+      description: Provider declared create and edit fields.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/security.yaml#/PrincipalForm }
+    '401':
+      {
+        description: Authentication required,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: Connection ownership or provider permission failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '409':
+      {
+        description: Connection is not connected,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '501':
+      {
+        description: Principal capability is unavailable,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

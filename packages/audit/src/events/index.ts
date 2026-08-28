@@ -57,6 +57,8 @@ export const AuditEvents = {
     principal_updated: required('security.principal_updated', 'principal'),
     principal_password_reset: required('security.principal_password_reset', 'principal'),
     principal_deleted: required('security.principal_deleted', 'principal'),
+    credential_reset: required('security.credential_reset', 'principal'),
+    principal_dropped: required('security.principal_dropped', 'principal'),
     privilege_granted: required('security.privilege_granted', 'privilege'),
     privilege_revoked: required('security.privilege_revoked', 'privilege'),
   },

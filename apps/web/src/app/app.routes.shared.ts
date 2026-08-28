@@ -101,15 +101,20 @@ export function createAppRoutes(includeDevDemo: boolean): Routes {
                             import('./features/user-management/user-management').then(
                               ({ UserManagement }) => UserManagement,
                             )
-                        : definition.id === 'query-editor'
+                        : definition.id === 'security'
                           ? () =>
-                              import('./features/query-editor/query-editor').then(
-                                ({ QueryEditor }) => QueryEditor,
+                              import('./features/security/security').then(
+                                ({ Security }) => Security,
                               )
-                          : () =>
-                              import('./features/route-placeholder/route-placeholder').then(
-                                ({ RoutePlaceholder }) => RoutePlaceholder,
-                              ),
+                          : definition.id === 'query-editor'
+                            ? () =>
+                                import('./features/query-editor/query-editor').then(
+                                  ({ QueryEditor }) => QueryEditor,
+                                )
+                            : () =>
+                                import('./features/route-placeholder/route-placeholder').then(
+                                  ({ RoutePlaceholder }) => RoutePlaceholder,
+                                ),
   }));
 
   const devRoutes: Routes = includeDevDemo

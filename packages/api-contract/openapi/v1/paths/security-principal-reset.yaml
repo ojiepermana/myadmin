@@ -1,0 +1,40 @@
+post:
+  operationId: resetSecurityPrincipalPassword
+  tags: [security]
+  summary: Reset a database principal password
+  parameters:
+    - name: name
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    - name: connectionId
+      in: query
+      required: true
+      schema: { type: string, minLength: 1 }
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/security.yaml#/PrincipalResetPasswordRequest }
+  responses:
+    '204': { description: 'Password reset, no credential returned.' }
+    '401':
+      {
+        description: Authentication required,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '403':
+      {
+        description: CSRF or provider permission failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '422':
+      {
+        description: Validation failed,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }
+    '501':
+      {
+        description: Principal capability is unavailable,
+        content: { application/json: { schema: { $ref: ../components/schemas/api-error.yaml } } },
+      }

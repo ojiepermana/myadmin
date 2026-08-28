@@ -1,0 +1,382 @@
+<main
+  class="security-page mx-auto flex w-full max-w-[112rem] flex-col gap-8 px-5 py-8 sm:px-8 lg:py-10"
+  aria-labelledby="security-title"
+>
+  <header
+    class="flex flex-col gap-5 border-b border-border/70 pb-7 lg:flex-row lg:items-end lg:justify-between"
+  >
+    <div class="max-w-3xl space-y-3">
+      <div
+        class="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em]"
+      >
+        <Badge variant="secondary">Database security</Badge
+        ><span class="font-mono font-normal tracking-normal text-muted-foreground">/security</span>
+      </div>
+      <h1
+        id="security-title"
+        class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
+      >
+        Principals, with clear boundaries
+      </h1>
+      <p class="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+        Manage database roles and accounts through the credential already connected to each
+        database. MyAdmin never reads back a password or authentication hash.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <Badge variant="secondary">{{ principals().length }} principals</Badge
+      ><span
+        class="rounded-full border border-border bg-muted/35 px-3 py-2 text-sm text-muted-foreground"
+        >{{ connections().length }} connections</span
+      >
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <div
+      class="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      role="alert"
+    >
+      <span>{{ message }}</span
+      ><button
+        Button
+        type="button"
+        variant="outline"
+        size="sm"
+        (click)="selectedConnection() && selectConnection(selectedConnection()!)"
+      >
+        Try again
+      </button>
+    </div>
+  }
+  @if (message(); as notice) {
+    <p
+      class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700"
+      role="status"
+    >
+      {{ notice }}
+    </p>
+  }
+
+  @if (loading() && connections().length === 0) {
+    <div class="rounded-xl border border-border bg-card/70 p-8" role="status">
+      Loading database security surfaces…
+    </div>
+  } @else if (connections().length === 0) {
+    <Card
+      ><CardContent class="flex flex-col gap-3 py-12"
+        ><h2 class="text-xl font-semibold">No saved connections</h2>
+        <p class="max-w-xl text-sm leading-relaxed text-muted-foreground">
+          Add and connect a database before managing its principals.
+        </p></CardContent
+      ></Card
+    >
+  } @else {
+    <section
+      class="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]"
+      aria-label="Database principal management"
+    >
+      <Card class="h-fit bg-card/80"
+        ><CardHeader
+          ><CardTitle>Connections</CardTitle
+          ><CardDescription
+            >Choose a connected target. Permissions come from its database
+            credential.</CardDescription
+          ></CardHeader
+        ><CardContent class="space-y-2">
+          @for (connection of connections(); track connection.id) {
+            <button
+              type="button"
+              class="connection-choice w-full rounded-lg border px-3 py-3 text-left"
+              [class.connection-choice-active]="selectedConnection()?.id === connection.id"
+              (click)="selectConnection(connection)"
+            >
+              <span class="block truncate font-medium">{{ connection.label }}</span
+              ><span
+                class="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground"
+                ><span>{{ engineLabel(connection) }}</span
+                ><span>{{
+                  statusFor(connection)?.status === 'connected' ? 'Connected' : 'Not connected'
+                }}</span></span
+              >
+            </button>
+          }
+        </CardContent></Card
+      >
+      <div class="min-w-0 space-y-6">
+        @if (selectedConnection(); as connection) {
+          <section class="rounded-xl border border-primary/25 bg-card/90 p-5 shadow-lg sm:p-7">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                  {{ engineLabel(connection) }}
+                </p>
+                <h2 class="mt-2 text-2xl font-semibold">{{ connection.label }}</h2>
+                <p class="mt-2 text-sm text-muted-foreground">
+                  {{ connection.username }} · {{ connection.host }}:{{ connection.port }}
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <Badge [variant]="capabilityEnabled(connection) ? 'secondary' : 'outline'">{{
+                  capabilityEnabled(connection) ? 'Principal management available' : 'Unavailable'
+                }}</Badge>
+                @if (capabilityEnabled(connection)) {
+                  <button Button type="button" (click)="openCreate()">New principal</button>
+                }
+              </div>
+            </div>
+            @if (!capabilityEnabled(connection)) {
+              <p
+                class="mt-5 rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground"
+              >
+                {{ capabilityReason(connection) }} Connect this target with a credential that can
+                administer roles or accounts.
+              </p>
+            }
+          </section>
+        }
+        @if (editorOpen() && form(); as formDescription) {
+          <section
+            class="rounded-xl border border-border bg-card p-5 sm:p-7"
+            aria-labelledby="principal-editor-title"
+          >
+            <div class="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                  {{ editingName() ? 'Edit principal' : 'Create principal' }}
+                </p>
+                <h2 id="principal-editor-title" class="mt-2 text-2xl font-semibold">
+                  {{ editingName() || 'New database identity' }}
+                </h2>
+                <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+                  Fields come from the connected provider. Password fields are write only.
+                </p>
+              </div>
+              <button Button type="button" variant="ghost" (click)="closeEditor()">Close</button>
+            </div>
+            <form class="grid gap-5 md:grid-cols-2" (submit)="$event.preventDefault(); save()">
+              @for (
+                field of editingName() ? formDescription.edit : formDescription.create;
+                track field.key
+              ) {
+                @if (field.key !== 'credential' || !editingName()) {
+                  <label
+                    class="grid gap-2 text-sm font-medium"
+                    [class.md:col-span-2]="field.type === 'text' && field.key === 'name'"
+                    ><span
+                      >{{ field.label }}
+                      @if (field.required) {
+                        <span class="text-destructive" aria-hidden="true">*</span>
+                      }
+                    </span>
+                    @if (field.type === 'boolean') {
+                      <span class="flex items-center gap-3 rounded-md border border-input px-3 py-2"
+                        ><input
+                          type="checkbox"
+                          [checked]="fieldValue(field.key) === true"
+                          (change)="setValue(field.key, $any($event.target).checked)"
+                        /><span class="font-normal text-muted-foreground">Enabled</span></span
+                      >
+                    } @else {
+                      <input
+                        class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        [type]="fieldType(field.type)"
+                        [value]="fieldValue(field.key)"
+                        [required]="field.required === true"
+                        [attr.min]="field.min"
+                        [attr.max]="field.max"
+                        (input)="
+                          setValue(
+                            field.key,
+                            field.type === 'number'
+                              ? +$any($event.target).value
+                              : $any($event.target).value
+                          )
+                        "
+                        [autocomplete]="field.secret ? 'new-password' : 'off'"
+                      />
+                    }
+                  </label>
+                }
+              }
+              <div class="flex flex-wrap justify-end gap-3 md:col-span-2">
+                <button Button type="submit" [disabled]="busy()">
+                  {{ busy() ? 'Saving…' : editingName() ? 'Save changes' : 'Create principal' }}
+                </button>
+              </div>
+            </form>
+          </section>
+        }
+        <section class="rounded-xl border border-border bg-card">
+          <div
+            class="flex flex-col gap-4 border-b border-border/70 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7"
+          >
+            <div>
+              <h2 class="text-2xl font-semibold">Database principals</h2>
+              <p class="mt-1 text-sm text-muted-foreground">
+                Membership is shown as provider data and remains read only in this release.
+              </p>
+            </div>
+            <label class="grid gap-2 text-sm font-medium"
+              >Search principals<input
+                class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [value]="search()"
+                (input)="setSearch($any($event.target).value)"
+                placeholder="Name or account"
+            /></label>
+          </div>
+          @if (loading()) {
+            <div class="p-7 text-sm text-muted-foreground" role="status">Loading principals…</div>
+          } @else if (filteredPrincipals().length === 0) {
+            <div
+              class="m-5 rounded-lg border border-dashed border-border px-6 py-12 text-center sm:m-7"
+            >
+              <p class="font-medium">No principals found</p>
+              <p class="mt-2 text-sm text-muted-foreground">
+                Try another search, or create the first identity when the provider allows it.
+              </p>
+            </div>
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <caption class="sr-only">
+                  Database principals and safe provider attributes
+                </caption>
+                <thead
+                  class="border-b border-border/70 text-xs uppercase tracking-[0.12em] text-muted-foreground"
+                >
+                  <tr>
+                    <th scope="col" class="px-5 py-3 sm:px-7">Principal</th>
+                    <th scope="col" class="px-5 py-3 sm:px-7">Attributes</th>
+                    <th scope="col" class="px-5 py-3 sm:px-7">Membership</th>
+                    <th scope="col" class="px-5 py-3 sm:px-7">
+                      <span class="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (principal of filteredPrincipals(); track principal.name) {
+                    <tr class="border-b border-border/60 last:border-0">
+                      <th scope="row" class="px-5 py-4 align-top font-medium sm:px-7">
+                        <span class="block max-w-64 truncate">{{ principal.name }}</span
+                        ><span
+                          class="mt-1 block text-xs font-normal uppercase tracking-[0.12em] text-muted-foreground"
+                          >{{ principal.type }}</span
+                        >
+                      </th>
+                      <td class="px-5 py-4 align-top sm:px-7">
+                        <div class="flex max-w-xl flex-wrap gap-2">
+                          @for (item of principal.attributes; track item.key) {
+                            <span
+                              class="rounded-full border border-border bg-muted/35 px-2.5 py-1 text-xs"
+                              ><span class="text-muted-foreground"
+                                >{{ fieldLabel(item.key) }}:</span
+                              >
+                              {{ item.value === null ? 'None' : item.value }}</span
+                            >
+                          }
+                        </div>
+                      </td>
+                      <td class="px-5 py-4 align-top text-muted-foreground sm:px-7">
+                        {{
+                          principal.memberOf.length
+                            ? principal.memberOf.join(', ')
+                            : 'None reported'
+                        }}
+                      </td>
+                      <td class="px-5 py-4 align-top sm:px-7">
+                        <div class="flex flex-wrap justify-end gap-2">
+                          <button
+                            Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            (click)="openEdit(principal)"
+                          >
+                            Edit</button
+                          ><button
+                            Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            (click)="startReset(principal.name)"
+                          >
+                            Reset password</button
+                          ><button
+                            Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            (click)="startDrop(principal.name)"
+                          >
+                            Drop
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+        @if (resetTarget(); as name) {
+          <section
+            class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5"
+            aria-labelledby="reset-title"
+          >
+            <h2 id="reset-title" class="font-semibold">Reset password for {{ name }}</h2>
+            <p class="mt-1 text-sm text-muted-foreground">
+              The new password is sent once, never displayed again, and excluded from audit details.
+            </p>
+            <div class="mt-4 flex flex-wrap items-end gap-3">
+              <label class="grid gap-2 text-sm font-medium"
+                >New password<input
+                  class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  type="password"
+                  autocomplete="new-password"
+                  [value]="resetPassword()"
+                  (input)="setResetPassword($any($event.target).value)" /></label
+              ><button
+                Button
+                type="button"
+                [disabled]="busy() || !resetPassword()"
+                (click)="reset()"
+              >
+                Apply reset</button
+              ><button Button type="button" variant="ghost" (click)="cancelReset()">Cancel</button>
+            </div>
+          </section>
+        }
+        @if (dropTarget(); as name) {
+          <section
+            class="rounded-xl border border-destructive/30 bg-destructive/10 p-5"
+            aria-labelledby="drop-title"
+          >
+            <h2 id="drop-title" class="font-semibold">Drop {{ name }}?</h2>
+            <p class="mt-1 text-sm text-muted-foreground">
+              This never cascades object ownership or grants. Engine errors are preserved for
+              review.
+            </p>
+            <div class="mt-4 flex flex-wrap items-end gap-3">
+              <label class="grid gap-2 text-sm font-medium"
+                >Type the principal name<input
+                  class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  [value]="confirmName()"
+                  (input)="setConfirmName($any($event.target).value)" /></label
+              ><button
+                Button
+                type="button"
+                variant="destructive"
+                [disabled]="busy() || confirmName() !== name"
+                (click)="drop()"
+              >
+                Drop principal</button
+              ><button Button type="button" variant="ghost" (click)="cancelDrop()">Cancel</button>
+            </div>
+          </section>
+        }
+      </div>
+    </section>
+  }
+</main>

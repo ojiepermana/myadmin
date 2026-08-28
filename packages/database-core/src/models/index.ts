@@ -65,11 +65,22 @@ export interface ConstraintDefinition {
 
 export type PrincipalType = 'user' | 'role' | 'account' | 'other';
 
+export type PrincipalAttributeValue = string | number | boolean | null;
+
+export interface PrincipalAttribute {
+  key: string;
+  value: PrincipalAttributeValue;
+}
+
+/** Engine neutral database identity. Secrets and authentication material are never included. */
 export interface Principal {
   name: string;
   type: PrincipalType;
-  canLogin?: boolean;
-  disabled?: boolean;
+  attributes: PrincipalAttribute[];
+  memberOf: string[];
+  /** MySQL keeps the account user and host separate even though name is user@host. */
+  user?: string;
+  host?: string;
 }
 
 export interface Grant {
