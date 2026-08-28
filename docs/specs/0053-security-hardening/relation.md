@@ -24,7 +24,7 @@ Dokumen ini mencatat relasi yang memengaruhi urutan build, kontrak yang dikonsum
 
 Tidak ada dependency spec bernomor yang menjadi gerbang langsung.
 
-Dependency kelompok dari indeks: `seluruh fitur P0`. Definisi canonical P0 berada di [v1-feature-specification.md](../../plan/v1-feature-specification.md#tingkat-prioritas); ini tetap diperlakukan sebagai gate kelompok, bukan synthetic numbered edge.
+Dependency kelompok dari indeks: `seluruh fitur P0`. Definisi canonical P0 berada di [v1-feature-specification.md](../../../plan/v1-feature-specification.md#tingkat-prioritas); ini tetap diperlakukan sebagai gate kelompok, bukan synthetic numbered edge.
 
 ## Konteks prasyarat dari spec utama
 

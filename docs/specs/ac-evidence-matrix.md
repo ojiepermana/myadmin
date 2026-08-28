@@ -7,7 +7,7 @@
 - AC fully evidenced: **135**
 - AC partially evidenced: **105**
 - AC blocked: **194**
-- `PASS` means the matching source test ID was found and its command gate passed.
+- `PASS` means the planned ID has a matching source test with a passing command gate, or an explicit recorded evidence document.
 - `BLOCKED` means the planned ID is missing, or its proof type/environment was not executed. A source file alone is not acceptance evidence.
 - The baseline root suite had 8 environment-dependent skips; recorded PostgreSQL/MySQL runs are linked from docs/specs/evidence/2026-08-29-database.md, and unmatched environment-dependent IDs remain blocked.
 
