@@ -596,6 +596,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Queue a native database restore */
+        post: operations["createRestore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/restore/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate an owned backup artifact or uploaded SQL dump */
+        post: operations["validateRestore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/server-groups": {
         parameters: {
             query?: never;
@@ -842,6 +876,9 @@ export interface components {
         BackupCapability: {
             backupTool: components["schemas"]["BackupToolStatus"];
             reason?: string;
+            restoreReason?: string;
+            restoreSqlTool?: components["schemas"]["BackupToolStatus"];
+            restoreSupported?: boolean;
             restoreTool: components["schemas"]["BackupToolStatus"];
             serverVersion?: string;
             supported: boolean;
@@ -1264,6 +1301,36 @@ export interface components {
         ResetPasswordRequest: {
             /** Format: password */
             newPassword: string;
+        };
+        RestoreRequest: {
+            artifactId?: string;
+            confirmName: string;
+            connectionId: string;
+            /** @default false */
+            createNew: boolean;
+            targetDatabase: string;
+            uploadId?: string;
+        };
+        RestoreResponse: {
+            jobId: string;
+        };
+        RestoreValidateRequest: {
+            artifactId?: string;
+            connectionId?: string;
+            uploadId?: string;
+        };
+        RestoreValidation: {
+            /** @enum {string|null} */
+            detectedEngine: "postgresql" | "mysql" | null;
+            fileName: string;
+            /** @enum {string} */
+            format: "sql" | "sql.gz";
+            sizeBytes: number;
+            sourceId: string;
+            /** @enum {string} */
+            sourceType: "artifact" | "upload";
+            /** @constant */
+            valid: true;
         };
         SerializedDataRow: {
             [key: string]: components["schemas"]["QueryCell"];
@@ -3511,6 +3578,158 @@ export interface operations {
             };
             /** @description CSRF or origin validation failed. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    createRestore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Restore job queued. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreResponse"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Connection or source ownership failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The owned source artifact or target connection was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Confirmation or engine compatibility failed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Target, source, or saved credential validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Native restore tooling is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+        };
+    };
+    validateRestore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreValidateRequest"];
+                "multipart/form-data": {
+                    connectionId?: string;
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Validated source metadata. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreValidation"];
+                };
+            };
+            /** @description No valid session was provided. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description Source or connection ownership failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The owned source artifact was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The dump engine does not match the target connection. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["api-error"];
+                };
+            };
+            /** @description The artifact is not a supported SQL or gzip SQL dump. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

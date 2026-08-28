@@ -5,7 +5,15 @@ import {
   type SessionValidation,
 } from '@myadmin/auth';
 import { DbError } from '@myadmin/database-core';
-import { BackupServiceError, type BackupCreateInput, type BackupService } from '@myadmin/backup';
+import {
+  BackupServiceError,
+  RestoreServiceError,
+  type BackupCreateInput,
+  type BackupService,
+  type RestoreCreateInput,
+  type RestoreService,
+  type RestoreValidateInput,
+} from '@myadmin/backup';
 import type { AnyElysia } from 'elysia';
 
 interface SetupService {
@@ -16,6 +24,7 @@ export interface BackupRouteOptions {
   readonly authService: AuthService;
   readonly setupService: SetupService | undefined;
   readonly backupService: BackupService;
+  readonly restoreService?: RestoreService;
   readonly secureCookies: boolean;
 }
 
@@ -116,6 +125,67 @@ function createInput(value: unknown): BackupCreateInput | undefined {
   };
 }
 
+function restoreSourceInput(value: unknown): RestoreValidateInput | undefined {
+  if (!record(value)) return undefined;
+  const keys = Object.keys(value);
+  if (keys.some((key) => !['artifactId', 'uploadId', 'connectionId'].includes(key))) {
+    return undefined;
+  }
+  const artifactId = value['artifactId'];
+  const uploadId = value['uploadId'];
+  const connectionId = value['connectionId'];
+  if (artifactId !== undefined && typeof artifactId !== 'string') return undefined;
+  if (uploadId !== undefined && typeof uploadId !== 'string') return undefined;
+  if (connectionId !== undefined && typeof connectionId !== 'string') return undefined;
+  if ((artifactId === undefined) === (uploadId === undefined)) return undefined;
+  return {
+    ...(artifactId === undefined ? {} : { artifactId }),
+    ...(uploadId === undefined ? {} : { uploadId }),
+    ...(connectionId === undefined ? {} : { connectionId }),
+  };
+}
+
+function restoreCreateInput(value: unknown): RestoreCreateInput | undefined {
+  if (!record(value)) return undefined;
+  const keys = Object.keys(value);
+  if (
+    keys.some(
+      (key) =>
+        ![
+          'artifactId',
+          'uploadId',
+          'connectionId',
+          'targetDatabase',
+          'createNew',
+          'confirmName',
+        ].includes(key),
+    )
+  ) {
+    return undefined;
+  }
+  const source = restoreSourceInput({
+    artifactId: value['artifactId'],
+    uploadId: value['uploadId'],
+    connectionId: value['connectionId'],
+  });
+  if (
+    !source ||
+    typeof value['connectionId'] !== 'string' ||
+    typeof value['targetDatabase'] !== 'string' ||
+    typeof value['confirmName'] !== 'string' ||
+    (value['createNew'] !== undefined && typeof value['createNew'] !== 'boolean')
+  ) {
+    return undefined;
+  }
+  return {
+    ...source,
+    connectionId: value['connectionId'],
+    targetDatabase: value['targetDatabase'],
+    confirmName: value['confirmName'],
+    ...(value['createNew'] === undefined ? {} : { createNew: value['createNew'] }),
+  };
+}
+
 function pageParameter(
   value: string | null,
   fallback: number,
@@ -128,6 +198,9 @@ function pageParameter(
 }
 
 function errorResponse(request: Request, error: unknown): Response {
+  if (error instanceof RestoreServiceError) {
+    return apiError(request, error.status, error.code, error.message, error.details);
+  }
   if (error instanceof BackupServiceError) {
     return apiError(request, error.status, error.code, error.message, error.details);
   }
@@ -146,7 +219,7 @@ function actor(value: AuthenticatedSession['user']) {
   return { id: value.id, username: value.username, role: value.role } as const;
 }
 
-/** HTTP surface for backup artifacts. Restore endpoints are intentionally absent until spec 0050. */
+/** HTTP surface for backup artifacts and their owner-authorized restore workflow. */
 export function registerBackupRoutes(
   application: AnyElysia,
   prefix: string,
@@ -230,6 +303,67 @@ export function registerBackupRoutes(
           body['confirmName'],
         );
         return new Response(null, { status: 204 });
+      } catch (error) {
+        return errorResponse(request, error);
+      }
+    })
+    .post(path('/restore/validate'), async ({ request }) => {
+      const current = session(request, options);
+      if (current instanceof Response) return current;
+      if (!options.restoreService) {
+        return apiError(request, 503, 'RESTORE_UNSUPPORTED', 'Restore is unavailable.');
+      }
+      if (!csrfAllowed(request))
+        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      try {
+        if (request.headers.get('content-type')?.startsWith('multipart/form-data')) {
+          const form = await request.formData();
+          const file = form.get('file');
+          if (!(file instanceof Blob)) {
+            return apiError(request, 422, 'VALIDATION_ERROR', 'A restore file is required.');
+          }
+          const connectionId = form.get('connectionId');
+          if (connectionId !== null && typeof connectionId !== 'string') {
+            return apiError(request, 422, 'VALIDATION_ERROR', 'connectionId is invalid.');
+          }
+          const validation = await options.restoreService.upload(
+            actor(current.value.user),
+            file as Blob & { readonly name?: string },
+          );
+          return jsonResponse(
+            connectionId === null
+              ? validation
+              : await options.restoreService.validate(actor(current.value.user), {
+                  uploadId: validation.sourceId,
+                  connectionId,
+                }),
+          );
+        }
+        const input = restoreSourceInput(await readJson(request));
+        if (!input)
+          return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+        return jsonResponse(
+          await options.restoreService.validate(actor(current.value.user), input),
+        );
+      } catch (error) {
+        return errorResponse(request, error);
+      }
+    })
+    .post(path('/restore'), async ({ request }) => {
+      const current = session(request, options);
+      if (current instanceof Response) return current;
+      if (!options.restoreService) {
+        return apiError(request, 503, 'RESTORE_UNSUPPORTED', 'Restore is unavailable.');
+      }
+      if (!csrfAllowed(request))
+        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      const input = restoreCreateInput(await readJson(request));
+      if (!input) return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+      try {
+        return jsonResponse(
+          await options.restoreService.create(actor(current.value.user), input),
+          202,
+        );
       } catch (error) {
         return errorResponse(request, error);
       }

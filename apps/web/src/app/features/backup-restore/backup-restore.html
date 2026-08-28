@@ -12,13 +12,24 @@
         </h1>
         <p class="max-w-2xl text-lg leading-relaxed text-muted-foreground">
           Backups run through the configured native PostgreSQL or MySQL tools and stay in this
-          instance's backup directory. Restore will arrive in the next specification.
+          instance's backup directory. Restore is validated before a native job can change a target.
         </p>
       </div>
     </div>
-    <button Button type="button" (click)="openCreate()" [disabled]="connections().length === 0">
-      Create backup
-    </button>
+    <div class="flex flex-wrap gap-2">
+      <button
+        Button
+        type="button"
+        variant="outline"
+        (click)="openRestore()"
+        [disabled]="connections().length === 0"
+      >
+        Restore backup
+      </button>
+      <button Button type="button" (click)="openCreate()" [disabled]="connections().length === 0">
+        Create backup
+      </button>
+    </div>
   </section>
 
   @if (loading()) {
@@ -90,6 +101,15 @@
                     type="button"
                     variant="outline"
                     size="sm"
+                    (click)="openRestore(artifact)"
+                  >
+                    Restore
+                  </button>
+                  <button
+                    Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     [disabled]="actionId() === artifact.id"
                     (click)="download(artifact)"
                   >
@@ -114,9 +134,10 @@
 
       <Card>
         <CardHeader
-          ><CardTitle>Backup jobs</CardTitle
+          ><CardTitle>Backup and restore jobs</CardTitle
           ><CardDescription
-            >Progress and cancellation are managed by the shared jobs service.</CardDescription
+            >Native operations report progress and may leave a target partially restored when
+            cancelled.</CardDescription
           ></CardHeader
         >
         <CardContent class="space-y-3">
@@ -130,7 +151,8 @@
             @for (job of jobs(); track job.id) {
               <div class="rounded-md border border-border bg-muted/20 p-4">
                 <div class="flex items-center justify-between gap-3">
-                  <span class="font-mono text-xs text-muted-foreground">{{ job.id }}</span
+                  <span class="font-mono text-xs text-muted-foreground"
+                    >{{ isRestoreJob(job) ? 'Restore' : 'Backup' }} · {{ job.id }}</span
                   ><Badge [variant]="job.state === 'failed' ? 'destructive' : 'secondary'">{{
                     job.state
                   }}</Badge>
@@ -168,7 +190,7 @@
                     [disabled]="actionId() === job.id"
                     (click)="cancelJob(job)"
                   >
-                    Cancel backup
+                    Cancel {{ isRestoreJob(job) ? 'restore' : 'backup' }}
                   </button>
                 }
               </div>
@@ -296,6 +318,174 @@
           Cancel</button
         ><button Button type="button" (click)="createBackup()" [disabled]="!canCreate()">
           {{ creating() ? 'Starting…' : 'Start backup' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (restoreOpen()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    role="presentation"
+    (click)="closeRestore()"
+  >
+    <section
+      class="w-full max-w-2xl rounded-lg border border-border bg-background p-6 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="restore-dialog-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="space-y-2">
+        <h2 id="restore-dialog-title" class="text-xl font-semibold">Restore a backup</h2>
+        <p class="text-sm text-muted-foreground">
+          Choose an owned artifact or upload a plain SQL dump. The server checks the dump engine,
+          target capability, and your typed confirmation before it queues the native restore job.
+        </p>
+      </div>
+      <div class="mt-6 grid gap-5">
+        <div class="grid gap-2">
+          <label for="restore-artifact" class="text-sm font-medium">Backup artifact</label>
+          <select
+            id="restore-artifact"
+            class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            [value]="restoreArtifactId()"
+            (change)="onRestoreArtifactChange($event)"
+          >
+            <option value="">Choose an owned artifact…</option>
+            @for (artifact of artifacts(); track artifact.id) {
+              <option [value]="artifact.id">
+                {{ artifact.fileName }} · {{ artifact.database }}
+              </option>
+            }
+          </select>
+          <p class="text-xs text-muted-foreground">Or upload a new .sql or .sql.gz file.</p>
+          <input
+            id="restore-upload"
+            type="file"
+            accept=".sql,.gz,application/sql,application/gzip"
+            class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            (change)="onRestoreFileChange($event)"
+          />
+          @if (restoreUploadName()) {
+            <p class="font-mono text-xs text-muted-foreground">{{ restoreUploadName() }}</p>
+          }
+        </div>
+        <div class="grid gap-2">
+          <label for="restore-connection" class="text-sm font-medium">Target connection</label>
+          <select
+            id="restore-connection"
+            class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            [value]="selectedConnectionId()"
+            (change)="selectConnection(($event.target as HTMLSelectElement).value)"
+          >
+            @for (connection of connections(); track connection.id) {
+              <option [value]="connection.id">
+                {{ connection.label }} ({{ connection.engine }})
+              </option>
+            }
+          </select>
+        </div>
+        <div class="grid gap-2">
+          <label for="restore-database" class="text-sm font-medium">Target database</label>
+          <input
+            Input
+            id="restore-database"
+            [value]="restoreTargetDatabase()"
+            (input)="onRestoreTargetInput($event)"
+            placeholder="database name"
+          />
+        </div>
+        <label class="flex items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            class="size-4 accent-[hsl(var(--primary))]"
+            [checked]="restoreCreateNew()"
+            (change)="onRestoreCreateNewChange($event)"
+          />
+          Create a new target database (recommended; existing databases are never dropped
+          automatically)
+        </label>
+      </div>
+      @if (restoreValidation(); as validation) {
+        <div class="mt-5 rounded-md border border-emerald-500/30 p-4 text-sm">
+          <p class="font-medium text-emerald-700 dark:text-emerald-300">Artifact validated</p>
+          <p class="mt-1 text-muted-foreground">
+            {{ validation.format }} · {{ formatSize(validation.sizeBytes) }} ·
+            {{ validation.detectedEngine || 'engine not identified' }}
+          </p>
+        </div>
+      } @else if (restoreUploading()) {
+        <p class="mt-5 text-sm text-muted-foreground">Uploading and validating the dump…</p>
+      } @else {
+        <p class="mt-5 text-sm text-muted-foreground">Select or upload a source to validate it.</p>
+      }
+      @if (capability(); as currentCapability) {
+        <div
+          class="mt-4 rounded-md border p-4 text-sm"
+          [class.border-emerald-500/30]="currentCapability.restoreSupported === true"
+          [class.border-amber-500/30]="currentCapability.restoreSupported !== true"
+        >
+          @if (currentCapability.restoreSupported === true) {
+            <p class="font-medium text-emerald-700 dark:text-emerald-300">
+              Native restore is ready with
+              {{
+                currentCapability.restoreSqlTool?.command || currentCapability.restoreTool.command
+              }}.
+            </p>
+          } @else {
+            <p class="font-medium text-amber-700 dark:text-amber-300">Restore is unavailable.</p>
+            <p class="mt-1 text-muted-foreground">
+              {{
+                currentCapability.restoreReason ||
+                  'Install and configure the native restore tool, then run myadmin doctor.'
+              }}
+            </p>
+            <a routerLink="/settings" class="mt-2 inline-block text-primary underline"
+              >Review configuration and doctor guidance</a
+            >
+          }
+        </div>
+      } @else {
+        <p class="mt-4 text-sm text-muted-foreground">Checking native restore tooling…</p>
+      }
+      @if (restoreValidation(); as validation) {
+        <div class="mt-5 rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+          <p class="font-medium text-foreground">Confirm destructive restore</p>
+          <p class="mt-1 text-muted-foreground">
+            This queues {{ validation.fileName }} for {{ selectedConnection()?.label }} on
+            <span class="font-mono">{{
+              restoreTargetDatabase().trim() || 'the target database'
+            }}</span
+            >. Existing objects may be overwritten; the target database will not be dropped
+            automatically.
+          </p>
+          <label for="restore-confirm" class="mt-4 block text-sm font-medium">
+            Type the target database name to continue
+          </label>
+          <input
+            Input
+            id="restore-confirm"
+            class="mt-2"
+            [value]="restoreConfirmName()"
+            (input)="onRestoreConfirmInput($event)"
+            [placeholder]="restoreTargetDatabase().trim() || 'target database name'"
+          />
+        </div>
+      }
+      <div class="mt-6 flex justify-end gap-2">
+        <button
+          Button
+          type="button"
+          variant="outline"
+          (click)="closeRestore()"
+          [disabled]="restoring() || restoreUploading()"
+        >
+          Cancel
+        </button>
+        <button Button type="button" (click)="startRestore()" [disabled]="!canRestore()">
+          {{ restoring() ? 'Starting…' : 'Start restore' }}
         </button>
       </div>
     </section>

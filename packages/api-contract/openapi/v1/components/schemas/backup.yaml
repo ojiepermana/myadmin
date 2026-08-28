@@ -38,6 +38,12 @@ BackupCapability:
       $ref: '#/BackupToolStatus'
     reason:
       type: string
+    restoreSqlTool:
+      $ref: '#/BackupToolStatus'
+    restoreSupported:
+      type: boolean
+    restoreReason:
+      type: string
 
 BackupCreateRequest:
   type: object
@@ -132,3 +138,76 @@ BackupArtifactPage:
     total:
       type: integer
       minimum: 0
+
+RestoreValidateRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    artifactId:
+      type: string
+      minLength: 1
+    uploadId:
+      type: string
+      minLength: 1
+    connectionId:
+      type: string
+      minLength: 1
+
+RestoreValidation:
+  type: object
+  additionalProperties: false
+  required: [sourceType, sourceId, fileName, format, sizeBytes, detectedEngine, valid]
+  properties:
+    sourceType:
+      type: string
+      enum: [artifact, upload]
+    sourceId:
+      type: string
+      minLength: 1
+    fileName:
+      type: string
+      minLength: 1
+    format:
+      type: string
+      enum: [sql, sql.gz]
+    sizeBytes:
+      type: integer
+      minimum: 1
+    detectedEngine:
+      type: [string, 'null']
+      enum: [postgresql, mysql, null]
+    valid:
+      const: true
+
+RestoreRequest:
+  type: object
+  additionalProperties: false
+  required: [connectionId, targetDatabase, confirmName]
+  properties:
+    artifactId:
+      type: string
+      minLength: 1
+    uploadId:
+      type: string
+      minLength: 1
+    connectionId:
+      type: string
+      minLength: 1
+    targetDatabase:
+      type: string
+      minLength: 1
+    createNew:
+      type: boolean
+      default: false
+    confirmName:
+      type: string
+      minLength: 1
+
+RestoreResponse:
+  type: object
+  additionalProperties: false
+  required: [jobId]
+  properties:
+    jobId:
+      type: string
+      minLength: 1

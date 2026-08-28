@@ -85,12 +85,18 @@ export class PostgresqlCapabilityAdapter {
     backup: BackupCapability | undefined,
   ): CapabilityDescription {
     if (!backup) return description;
+    const supported = backup.supported && backup.restoreSupported !== false;
     return {
       ...description,
-      capabilities: { ...description.capabilities, backupRestore: backup.supported },
+      capabilities: { ...description.capabilities, backupRestore: supported },
       reasons: {
         ...description.reasons,
-        ...(backup.supported ? {} : { backupRestore: backup.reason ?? 'Backup is unavailable.' }),
+        ...(supported
+          ? {}
+          : {
+              backupRestore:
+                backup.restoreReason ?? backup.reason ?? 'Backup and restore are unavailable.',
+            }),
       },
     };
   }

@@ -10,7 +10,9 @@ import {
   type BackupRequest,
   type ConnectionHandle,
   type PreparedBackupCommand,
+  type PreparedRestoreCommand,
   type ProviderContext,
+  type RestoreRequest,
 } from '@myadmin/database-core';
 import type { MysqlConnectionAdapter } from './driver/mysql-connection';
 
@@ -21,6 +23,11 @@ export interface MysqlBackupToolPaths {
 
 function unsupported(message: string): DbError {
   return new DbError({ category: 'unsupported', message });
+}
+
+function majorVersion(version: string): number | undefined {
+  const value = Number(/^\s*(\d+)/.exec(version)?.[1]);
+  return Number.isSafeInteger(value) ? value : undefined;
 }
 
 function isHandle(value: ProviderContext): value is ConnectionHandle {
@@ -57,6 +64,8 @@ export class MysqlBackupPort implements BackupPort {
       supported: dump.available,
       backupTool: dump,
       restoreTool: restore,
+      restoreSupported: restore.available,
+      ...(restore.available ? {} : { restoreReason: restore.reason ?? 'mysql is unavailable.' }),
       ...(dump.available ? {} : { reason: dump.reason ?? 'mysqldump is unavailable.' }),
     };
   }
@@ -66,7 +75,27 @@ export class MysqlBackupPort implements BackupPort {
     const version = isHandle(context)
       ? (await this.connection.serverInfo(context)).version
       : (await this.connection.test(context)).version;
-    return { ...capability, serverVersion: version };
+    const serverMajor = majorVersion(version);
+    const restoreMajor = capability.restoreTool.major;
+    const restoreSupported =
+      capability.restoreTool.available &&
+      serverMajor !== undefined &&
+      restoreMajor !== undefined &&
+      restoreMajor >= serverMajor;
+    return {
+      ...capability,
+      serverVersion: version,
+      restoreSupported,
+      ...(restoreSupported
+        ? {}
+        : {
+            restoreReason: !capability.restoreTool.available
+              ? (capability.restoreTool.reason ?? 'mysql is unavailable.')
+              : serverMajor === undefined || restoreMajor === undefined
+                ? 'MySQL restore tool and server versions could not be compared.'
+                : `mysql major version ${restoreMajor} is older than server major version ${serverMajor}.`,
+          }),
+    };
   }
 
   public async prepare(
@@ -120,6 +149,61 @@ export class MysqlBackupPort implements BackupPort {
       executable: capability.backupTool.path,
       args,
       toolVersion: capability.backupTool.version ?? 'unknown',
+      format: 'mysql-sql',
+      cleanup: () => rm(optionDirectory, { recursive: true, force: true }),
+    };
+  }
+
+  public async prepareRestore(
+    context: ProviderContext,
+    request: RestoreRequest,
+  ): Promise<PreparedRestoreCommand> {
+    if (!(context instanceof ConnectionContext)) {
+      throw new DbError({
+        category: 'internal',
+        message: 'MySQL restore requires a connection context.',
+      });
+    }
+    if (request.format !== undefined && request.format !== 'plain') {
+      throw unsupported('MySQL restore only supports plain SQL dumps.');
+    }
+    if (!request.database.trim()) throw unsupported('A MySQL database is required.');
+
+    const capability = await this.describe(context);
+    const restoreTool = capability.restoreTool;
+    if (!capability.restoreSupported || !restoreTool.path) {
+      throw unsupported(capability.restoreReason ?? 'MySQL restore is unavailable.');
+    }
+
+    const descriptor = context.descriptor;
+    const optionDirectory = await mkdtemp(join(tmpdir(), 'myadmin-mysql-'));
+    const optionPath = join(optionDirectory, 'client.cnf');
+    const optionFile = [
+      '[client]',
+      ...(context.secret === undefined ? [] : [`password=${escapeOptionValue(context.secret)}`]),
+      '',
+    ].join('\n');
+    try {
+      await writeFile(optionPath, optionFile, { mode: 0o600, flag: 'wx' });
+    } catch (error) {
+      await rm(optionDirectory, { recursive: true, force: true });
+      throw error;
+    }
+
+    return {
+      executable: restoreTool.path,
+      args: [
+        `--defaults-extra-file=${optionPath}`,
+        '--host',
+        descriptor.host,
+        '--port',
+        String(descriptor.port),
+        '--user',
+        descriptor.user,
+        '--database',
+        request.database,
+      ],
+      toolVersion: restoreTool.version ?? 'unknown',
       format: 'mysql-sql',
       cleanup: () => rm(optionDirectory, { recursive: true, force: true }),
     };

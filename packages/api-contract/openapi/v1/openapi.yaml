@@ -37,6 +37,10 @@ paths:
     $ref: ./paths/backup-by-id.yaml
   /backups/{id}/download:
     $ref: ./paths/backup-by-id-download.yaml
+  /restore/validate:
+    $ref: ./paths/restore-validate.yaml
+  /restore:
+    $ref: ./paths/restore.yaml
   /preferences:
     $ref: ./paths/preferences.yaml
   /preferences/{key}:
@@ -139,6 +143,14 @@ components:
       $ref: ./components/schemas/backup.yaml#/BackupArtifact
     BackupArtifactPage:
       $ref: ./components/schemas/backup.yaml#/BackupArtifactPage
+    RestoreValidateRequest:
+      $ref: ./components/schemas/backup.yaml#/RestoreValidateRequest
+    RestoreValidation:
+      $ref: ./components/schemas/backup.yaml#/RestoreValidation
+    RestoreRequest:
+      $ref: ./components/schemas/backup.yaml#/RestoreRequest
+    RestoreResponse:
+      $ref: ./components/schemas/backup.yaml#/RestoreResponse
     Preferences:
       $ref: ./components/schemas/settings.yaml#/Preferences
     PreferenceUpdate:

@@ -11,7 +11,7 @@ export interface BackupRequest {
 
 export interface RestoreRequest {
   database: string;
-  input: AsyncIterable<Uint8Array>;
+  format?: 'plain';
 }
 
 export interface NativeToolStatus {
@@ -28,6 +28,9 @@ export interface BackupCapability {
   readonly serverVersion?: string;
   readonly backupTool: NativeToolStatus;
   readonly restoreTool: NativeToolStatus;
+  readonly restoreSqlTool?: NativeToolStatus;
+  readonly restoreSupported?: boolean;
+  readonly restoreReason?: string;
   readonly reason?: string;
 }
 
@@ -40,14 +43,27 @@ export interface PreparedBackupCommand {
   readonly cleanup: () => Promise<void>;
 }
 
-/** Native backup preparation. Restore remains owned by spec 0050. */
+export interface PreparedRestoreCommand {
+  readonly executable: string;
+  readonly args: readonly string[];
+  readonly env?: Readonly<Record<string, string>>;
+  readonly toolVersion: string;
+  readonly format: 'postgresql-sql' | 'mysql-sql';
+  readonly cleanup: () => Promise<void>;
+}
+
+/** Native backup and restore command preparation. */
 export interface BackupPort {
   inspect(): Promise<BackupCapability>;
   describe(context: ProviderContext): Promise<BackupCapability>;
   prepare(context: ProviderContext, request: BackupRequest): Promise<PreparedBackupCommand>;
+  prepareRestore?(
+    context: ProviderContext,
+    request: RestoreRequest,
+  ): Promise<PreparedRestoreCommand>;
 }
 
-/** Existing restore seam retained for the downstream restore specification. */
+/** Existing asynchronous provider seam retained for future job integrations. */
 export interface BackupRestorePort {
   backup(context: ProviderContext, request: BackupRequest): Promise<JobHandle>;
   restore(context: ProviderContext, request: RestoreRequest): Promise<JobHandle>;

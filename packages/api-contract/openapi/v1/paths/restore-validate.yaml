@@ -1,0 +1,57 @@
+post:
+  operationId: validateRestore
+  tags: [backups]
+  summary: Validate an owned backup artifact or uploaded SQL dump
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/backup.yaml#/RestoreValidateRequest
+      multipart/form-data:
+        schema:
+          type: object
+          required: [file]
+          properties:
+            file:
+              type: string
+              format: binary
+            connectionId:
+              type: string
+  responses:
+    '200':
+      description: Validated source metadata.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/backup.yaml#/RestoreValidation
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: Source or connection ownership failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The owned source artifact was not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: The dump engine does not match the target connection.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: The artifact is not a supported SQL or gzip SQL dump.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

@@ -1,0 +1,53 @@
+post:
+  operationId: createRestore
+  tags: [backups]
+  summary: Queue a native database restore
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/backup.yaml#/RestoreRequest
+  responses:
+    '202':
+      description: Restore job queued.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/backup.yaml#/RestoreResponse
+    '401':
+      description: No valid session was provided.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '403':
+      description: Connection or source ownership failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '404':
+      description: The owned source artifact or target connection was not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '409':
+      description: Confirmation or engine compatibility failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '422':
+      description: Target, source, or saved credential validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml
+    '503':
+      description: Native restore tooling is unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/api-error.yaml

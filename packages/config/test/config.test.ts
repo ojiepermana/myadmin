@@ -59,6 +59,7 @@ describe('UT-0012-AC1 configuration schema and defaults', () => {
       'history.maxEntriesPerUser',
       'tools.pgDumpPath',
       'tools.pgRestorePath',
+      'tools.psqlPath',
       'tools.mysqldumpPath',
       'tools.mysqlPath',
     ]);

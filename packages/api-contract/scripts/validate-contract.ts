@@ -27,6 +27,8 @@ const initialPaths = {
   '/backups': 'paths/backups.yaml',
   '/backups/{id}': 'paths/backup-by-id.yaml',
   '/backups/{id}/download': 'paths/backup-by-id-download.yaml',
+  '/restore/validate': 'paths/restore-validate.yaml',
+  '/restore': 'paths/restore.yaml',
   '/preferences': 'paths/preferences.yaml',
   '/preferences/{key}': 'paths/preferences-key.yaml',
   '/settings': 'paths/settings.yaml',

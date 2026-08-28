@@ -48,6 +48,8 @@ const flagPaths: Readonly<Record<string, string>> = {
   '--tools.pgDumpPath': 'tools.pgDumpPath',
   '--pg-restore-path': 'tools.pgRestorePath',
   '--tools.pgRestorePath': 'tools.pgRestorePath',
+  '--psql-path': 'tools.psqlPath',
+  '--tools.psqlPath': 'tools.psqlPath',
   '--mysqldump-path': 'tools.mysqldumpPath',
   '--tools.mysqldumpPath': 'tools.mysqldumpPath',
   '--mysql-path': 'tools.mysqlPath',

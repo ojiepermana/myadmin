@@ -535,7 +535,7 @@ function unsupportedCapability(engine: string): BackupCapability {
     restoreTool: {
       command: restore,
       available: false,
-      reason: 'Restore is reserved for spec 0050.',
+      reason: 'The provider does not expose native restore.',
     },
     reason: 'The database provider does not support backup.',
   };
@@ -592,7 +592,10 @@ function isManifest(value: unknown): value is BackupManifest {
   return (
     candidate['manifestVersion'] === BACKUP_MANIFEST_VERSION &&
     typeof candidate['id'] === 'string' &&
+    /^[A-Za-z0-9._-]+\.sql(?:\.gz)?$/.test(candidate['id']) &&
     typeof candidate['fileName'] === 'string' &&
+    /^[A-Za-z0-9._-]+\.sql(?:\.gz)?$/.test(candidate['fileName']) &&
+    candidate['id'] === candidate['fileName'] &&
     typeof candidate['ownerUserId'] === 'string' &&
     typeof candidate['connectionId'] === 'string' &&
     typeof candidate['connectionLabel'] === 'string' &&
@@ -600,6 +603,8 @@ function isManifest(value: unknown): value is BackupManifest {
     ['structure', 'data', 'both'].includes(candidate['scope'] as string) &&
     typeof candidate['compress'] === 'boolean' &&
     typeof candidate['sizeBytes'] === 'number' &&
+    Number.isSafeInteger(candidate['sizeBytes']) &&
+    candidate['sizeBytes'] > 0 &&
     typeof candidate['createdAt'] === 'string' &&
     typeof candidate['toolVersion'] === 'string'
   );
@@ -627,3 +632,4 @@ function isAbortError(error: unknown): boolean {
 
 export { BackupExecutor } from './executor';
 export type { BackupExecutionOptions, BackupProcessFactory } from './executor';
+export * from './restore';

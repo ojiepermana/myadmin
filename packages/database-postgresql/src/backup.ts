@@ -10,13 +10,16 @@ import {
   type BackupRequest,
   type ConnectionHandle,
   type PreparedBackupCommand,
+  type PreparedRestoreCommand,
   type ProviderContext,
+  type RestoreRequest,
 } from '@myadmin/database-core';
 import type { PostgresqlConnectionAdapter } from './connection';
 
 export interface PostgresqlBackupToolPaths {
   readonly pgDumpPath?: string;
   readonly pgRestorePath?: string;
+  readonly psqlPath?: string;
 }
 
 function serverMajor(version: string): number | undefined {
@@ -52,14 +55,16 @@ export class PostgresqlBackupPort implements BackupPort {
   }
 
   public async inspect(): Promise<BackupCapability> {
-    const [dump, restore] = await Promise.all([
+    const [dump, restore, sqlRestore] = await Promise.all([
       detectNativeTool('pg_dump', this.paths.pgDumpPath),
       detectNativeTool('pg_restore', this.paths.pgRestorePath),
+      detectNativeTool('psql', this.paths.psqlPath),
     ]);
     return {
       supported: dump.available,
       backupTool: dump,
       restoreTool: restore,
+      restoreSqlTool: sqlRestore,
       ...(dump.available ? {} : { reason: dump.reason ?? 'pg_dump is unavailable.' }),
     };
   }
@@ -76,6 +81,12 @@ export class PostgresqlBackupPort implements BackupPort {
       requiredMajor !== undefined &&
       dumpMajor !== undefined &&
       dumpMajor >= requiredMajor;
+    const restoreMajor = capability.restoreSqlTool?.major;
+    const restoreSupported =
+      capability.restoreSqlTool?.available === true &&
+      requiredMajor !== undefined &&
+      restoreMajor !== undefined &&
+      restoreMajor >= requiredMajor;
     const reason = !capability.supported
       ? capability.reason
       : requiredMajor === undefined || dumpMajor === undefined
@@ -83,11 +94,20 @@ export class PostgresqlBackupPort implements BackupPort {
         : compatible
           ? undefined
           : `pg_dump major version ${dumpMajor} is older than server major version ${requiredMajor}.`;
+    const restoreReason = !capability.restoreSqlTool?.available
+      ? 'The psql tool is unavailable.'
+      : requiredMajor === undefined || restoreMajor === undefined
+        ? 'PostgreSQL restore tool and server versions could not be compared.'
+        : restoreSupported
+          ? undefined
+          : `psql major version ${restoreMajor} is older than server major version ${requiredMajor}.`;
     return {
       ...capability,
       supported: compatible,
       serverVersion: version,
       ...(reason === undefined ? {} : { reason }),
+      restoreSupported,
+      ...(restoreReason === undefined ? {} : { restoreReason }),
     };
   }
 
@@ -139,6 +159,68 @@ export class PostgresqlBackupPort implements BackupPort {
       args,
       env,
       toolVersion: capability.backupTool.version ?? 'unknown',
+      format: 'postgresql-sql',
+      cleanup: async () => {
+        if (certificateDirectory) await rm(certificateDirectory, { recursive: true, force: true });
+      },
+    };
+  }
+
+  public async prepareRestore(
+    context: ProviderContext,
+    request: RestoreRequest,
+  ): Promise<PreparedRestoreCommand> {
+    if (!(context instanceof ConnectionContext)) {
+      throw new DbError({
+        category: 'internal',
+        message: 'PostgreSQL restore requires a connection context.',
+      });
+    }
+    if (request.format !== undefined && request.format !== 'plain') {
+      throw unsupported('PostgreSQL restore only supports plain SQL dumps.');
+    }
+    if (!request.database.trim()) throw unsupported('A PostgreSQL database is required.');
+
+    const capability = await this.describe(context);
+    const restoreTool = capability.restoreSqlTool;
+    if (!capability.restoreSupported || !restoreTool?.path) {
+      throw unsupported(capability.restoreReason ?? 'PostgreSQL restore is unavailable.');
+    }
+
+    const descriptor = context.descriptor;
+    const args = [
+      '--no-password',
+      '--set',
+      'ON_ERROR_STOP=1',
+      '--single-transaction',
+      '--host',
+      descriptor.host,
+      '--port',
+      String(descriptor.port),
+      '--username',
+      descriptor.user,
+      '--dbname',
+      request.database,
+      '--file=-',
+    ];
+    const env: Record<string, string> = {};
+    if (context.secret !== undefined) env['PGPASSWORD'] = context.secret;
+    if (descriptor.tls) env['PGSSLMODE'] = descriptor.tls.mode;
+
+    let certificateDirectory: string | undefined;
+    if (descriptor.tls?.ca) {
+      certificateDirectory = join(tmpdir(), `myadmin-pg-ca-${crypto.randomUUID()}`);
+      await mkdir(certificateDirectory, { recursive: true, mode: 0o700 });
+      const certificatePath = join(certificateDirectory, 'root.crt');
+      await writeFile(certificatePath, descriptor.tls.ca, { mode: 0o600, flag: 'wx' });
+      env['PGSSLROOTCERT'] = certificatePath;
+    }
+
+    return {
+      executable: restoreTool.path,
+      args,
+      env,
+      toolVersion: restoreTool.version ?? 'unknown',
       format: 'postgresql-sql',
       cleanup: async () => {
         if (certificateDirectory) await rm(certificateDirectory, { recursive: true, force: true });

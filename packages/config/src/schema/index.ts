@@ -65,6 +65,7 @@ export const configSchema = Type.Object(
         pgRestorePath: Type.Optional(
           Type.String({ minLength: 1, pattern: '\\S', sensitive: false }),
         ),
+        psqlPath: Type.Optional(Type.String({ minLength: 1, pattern: '\\S', sensitive: false })),
         mysqldumpPath: Type.Optional(
           Type.String({ minLength: 1, pattern: '\\S', sensitive: false }),
         ),
@@ -145,6 +146,7 @@ export const configKeys = [
   'history.maxEntriesPerUser',
   'tools.pgDumpPath',
   'tools.pgRestorePath',
+  'tools.psqlPath',
   'tools.mysqldumpPath',
   'tools.mysqlPath',
 ] as const;
@@ -182,6 +184,7 @@ export const configFieldMetadata: Readonly<Record<ConfigKey, ConfigFieldMetadata
   },
   'tools.pgDumpPath': { env: ['MYADMIN_TOOLS_PG_DUMP_PATH'], sensitive: false },
   'tools.pgRestorePath': { env: ['MYADMIN_TOOLS_PG_RESTORE_PATH'], sensitive: false },
+  'tools.psqlPath': { env: ['MYADMIN_TOOLS_PSQL_PATH'], sensitive: false },
   'tools.mysqldumpPath': { env: ['MYADMIN_TOOLS_MYSQLDUMP_PATH'], sensitive: false },
   'tools.mysqlPath': { env: ['MYADMIN_TOOLS_MYSQL_PATH'], sensitive: false },
 };

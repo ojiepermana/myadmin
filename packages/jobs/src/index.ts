@@ -483,7 +483,12 @@ export class JobManager {
   }
 
   private reportProgress(entry: JobEntry, progress: JobProgressInput): void {
-    if (this.disposed || entry.disposed || entry.job.state !== 'running') return;
+    if (
+      this.disposed ||
+      entry.disposed ||
+      (entry.job.state !== 'running' && entry.job.state !== 'cancelling')
+    )
+      return;
     entry.job.progress = normalizedProgress(progress);
     const currentTime = this.now().getTime();
     if (currentTime - entry.lastProgressEmittedAt >= this.progressThrottleMs) {
@@ -501,7 +506,12 @@ export class JobManager {
     entry.progressTimer = setTimeout(
       () => {
         entry.progressTimer = undefined;
-        if (this.disposed || entry.disposed || entry.job.state !== 'running') return;
+        if (
+          this.disposed ||
+          entry.disposed ||
+          (entry.job.state !== 'running' && entry.job.state !== 'cancelling')
+        )
+          return;
         const currentTime = this.now().getTime();
         if (currentTime - entry.lastProgressEmittedAt >= this.progressThrottleMs) {
           this.emitProgress(entry, currentTime);

@@ -18,7 +18,7 @@ import {
 } from '@myadmin/auth';
 import { AuditAdminReader, isAuditAction } from '@myadmin/audit';
 import { CredentialVault, createKeyProvider } from '@myadmin/crypto';
-import { BackupService } from '@myadmin/backup';
+import { BackupService, RestoreService } from '@myadmin/backup';
 import { MysqlProvider } from '@myadmin/database-mysql';
 import { ProviderRegistry } from '@myadmin/database-core';
 import { createPostgresqlProvider } from '@myadmin/database-postgresql';
@@ -87,6 +87,7 @@ export interface ServerStartOptions {
   providerRegistry?: ProviderRegistry;
   credentialVault?: CredentialVault;
   backupService?: BackupService;
+  restoreService?: RestoreService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
@@ -118,6 +119,7 @@ export interface ServerAppOptions {
   providerRegistry?: ProviderRegistry;
   credentialVault?: CredentialVault;
   backupService?: BackupService;
+  restoreService?: RestoreService;
   activeConnectionSessions?: ActiveConnectionSessionRegistry;
   connectionTestRateLimiter?: InMemoryRateLimiter;
   setupRateLimiter?: InMemoryRateLimiter;
@@ -1461,6 +1463,17 @@ export function createServerApp(options: ServerAppOptions = {}) {
           dataDirectory,
         })
       : undefined);
+  const restoreService =
+    options.restoreService ??
+    (runtimeStore && credentialVault
+      ? new RestoreService({
+          store: runtimeStore,
+          providers,
+          vault: credentialVault,
+          jobs: jobManager,
+          dataDirectory,
+        })
+      : undefined);
   if (connectionManager && authService) {
     application = registerConnectionRoutes(application, '/api/v1', {
       authService,
@@ -1488,6 +1501,7 @@ export function createServerApp(options: ServerAppOptions = {}) {
       authService,
       setupService,
       backupService,
+      restoreService,
       secureCookies,
     });
   }
@@ -1533,6 +1547,7 @@ export function createApp(
     jobManager?: JobManager;
     backupService?: BackupService;
     providerRegistry?: ProviderRegistry;
+    restoreService?: RestoreService;
   } = {},
 ) {
   const database = new Database(':memory:', { create: true, readwrite: true, strict: true });
@@ -1596,6 +1611,7 @@ export function createApp(
     workspaceServiceForStore(store),
   );
   const jobManager = options.jobManager ?? new JobManager();
+  const dataDirectory = `/tmp/myadmin-contract-${crypto.randomUUID()}`;
   application = registerJobsRoutes(application, '', setupService, authService, false, jobManager);
   application = registerConnectionRoutes(application, '', {
     authService,
@@ -1622,12 +1638,22 @@ export function createApp(
       providers,
       vault: credentialVault,
       jobs: jobManager,
-      dataDirectory: `/tmp/myadmin-contract-${crypto.randomUUID()}`,
+      dataDirectory,
+    });
+  const restoreService =
+    options.restoreService ??
+    new RestoreService({
+      store,
+      providers,
+      vault: credentialVault,
+      jobs: jobManager,
+      dataDirectory,
     });
   return registerBackupRoutes(application, '', {
     authService,
     setupService,
     backupService,
+    restoreService,
     secureCookies: false,
   });
 }
@@ -1663,6 +1689,7 @@ export async function startServer(options: ServerStartOptions = {}): Promise<Run
       providerRegistry: options.providerRegistry,
       credentialVault: options.credentialVault,
       backupService: options.backupService,
+      restoreService: options.restoreService,
       activeConnectionSessions: options.activeConnectionSessions,
       connectionTestRateLimiter: options.connectionTestRateLimiter,
       websocketCheckIntervalMs: options.websocketCheckIntervalMs,

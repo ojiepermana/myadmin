@@ -372,6 +372,7 @@ export async function runBackupToolsCheck(
     const statuses = await Promise.all([
       detectNativeTool('pg_dump', config.tools.pgDumpPath),
       detectNativeTool('pg_restore', config.tools.pgRestorePath),
+      detectNativeTool('psql', config.tools.psqlPath),
       detectNativeTool('mysqldump', config.tools.mysqldumpPath),
       detectNativeTool('mysql', config.tools.mysqlPath),
     ]);
