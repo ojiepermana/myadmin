@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { parse } from 'yaml';
@@ -134,19 +133,35 @@ async function loadYaml(path: string): Promise<YamlRecord> {
   return record(parse(await readFile(path, 'utf8')), path);
 }
 
-function runRedoclyLint(): void {
+async function runRedoclyLint(): Promise<void> {
   const redocly = resolve(repositoryRoot, 'node_modules/.bin/redocly');
-  const result = spawnSync(
-    redocly,
-    ['lint', openApiDocument, protocolDocument, eventsDocument, '--config', redoclyConfig],
-    { cwd: repositoryRoot, stdio: 'inherit' },
+  const detached = process.platform !== 'win32';
+  const child = Bun.spawn(
+    [redocly, 'lint', openApiDocument, protocolDocument, eventsDocument, '--config', redoclyConfig],
+    {
+      cwd: repositoryRoot,
+      detached,
+      stdin: 'ignore',
+      stdout: 'inherit',
+      stderr: 'inherit',
+    },
   );
 
-  if (result.error) {
-    throw new Error(`Redocly lint could not start: ${result.error.message}`);
-  }
-  if (result.status !== 0) {
-    throw new Error(`Redocly lint failed with exit code ${result.status ?? 'unknown'}`);
+  try {
+    const exitCode = await child.exited;
+    if (exitCode !== 0) {
+      throw new Error(`Redocly lint failed with exit code ${exitCode}`);
+    }
+  } finally {
+    if (detached) {
+      try {
+        process.kill(-child.pid, 'SIGTERM');
+      } catch {
+        // The process group may already have exited with the direct child.
+      }
+    } else if (!child.killed) {
+      child.kill('SIGTERM');
+    }
   }
 }
 
@@ -366,7 +381,7 @@ async function assertContractRules(): Promise<void> {
 }
 
 export async function validateContract(): Promise<void> {
-  runRedoclyLint();
+  await runRedoclyLint();
   await assertContractRules();
   console.log(
     'Contract validation passed: OpenAPI, ApiError, security, pagination, capability, paths, and WebSocket events.',
