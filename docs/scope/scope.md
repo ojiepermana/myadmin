@@ -76,8 +76,8 @@ Kerangka repo: tepat satu `package.json` di akar, tiga aplikasi, modul source in
   - [x] Manifest akar tunggal, tsconfig, dan seluruh skeleton modul source tanpa manifest nested (AC-1, AC-2, AC-7, AC-8)
   - [x] Tiga aplikasi hidup: web Angular, server Elysia /health, CLI version (AC-3, AC-4, AC-5)
   - [x] Dev scripts, resolusi source dari konfigurasi akar, dan dokumentasi mulai cepat (AC-6, AC-9)
-- [ ] [Verify it](../specs/0001-root-manifest-source-modules/verify.md): /check verify root-manifest-source-modules
-- [ ] [Test it](../specs/0001-root-manifest-source-modules/test.md): /test root-manifest-source-modules
+- [x] [Verify it](../specs/0001-root-manifest-source-modules/verify.md): /check verify root-manifest-source-modules
+- [x] [Test it](../specs/0001-root-manifest-source-modules/test.md): /test root-manifest-source-modules
 
 ### 02. Quality tooling dan CI `in-progress`
 
@@ -88,8 +88,8 @@ Lint, format, test runner, hook Git, boundary check, penjaga satu manifest, dan 
   - [x] ESLint, Prettier, husky, commitlint, Bun test, Playwright (AC-1 sampai AC-5)
   - [x] Boundary check dependency-cruiser dan penjaga satu manifest dari aturan struktur.md (AC-6, AC-9)
   - [x] Workflow ci.yml dan dependabot (AC-7, AC-8)
-- [ ] [Verify it](../specs/0002-quality-tooling-ci/verify.md): /check verify quality-tooling-ci
-- [ ] [Test it](../specs/0002-quality-tooling-ci/test.md): /test quality-tooling-ci
+- [x] [Verify it](../specs/0002-quality-tooling-ci/verify.md): /check verify quality-tooling-ci
+- [x] [Test it](../specs/0002-quality-tooling-ci/test.md): /test quality-tooling-ci
 
 ### 03. Struktur kontrak OpenAPI v1 `in-progress`
 
