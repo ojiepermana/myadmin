@@ -42,7 +42,7 @@ describe('dependency boundary verification', () => {
     try {
       await writeFile(fixture, "import '@myadmin/database-postgresql';\n");
 
-      expect(await runBoundaryCheck()).not.toBe(0);
+      expect(await runBoundaryCheck(process.cwd(), { stdio: 'ignore' })).not.toBe(0);
     } finally {
       await unlink(fixture);
     }

@@ -68,7 +68,10 @@ function statSafe(path: string) {
   }
 }
 
-export async function runBoundaryCheck(root = process.cwd()): Promise<number> {
+export async function runBoundaryCheck(
+  root = process.cwd(),
+  options: { readonly stdio?: 'inherit' | 'ignore' } = {},
+): Promise<number> {
   const webViolations = findWebBoundaryViolations(root);
   if (webViolations.length > 0) {
     console.error('Web network boundary check failed. Use @myadmin/sdk-angular for API calls.');
@@ -94,7 +97,7 @@ export async function runBoundaryCheck(root = process.cwd()): Promise<number> {
         'none',
         ...sourcePaths,
       ],
-      { cwd: root, stdio: 'inherit' },
+      { cwd: root, stdio: options.stdio ?? 'inherit' },
     );
 
     child.once('error', () => resolveExitCode(1));
