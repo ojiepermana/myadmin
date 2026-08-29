@@ -106,12 +106,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Definisikan operasi eksekusi plus bentuk hasil sel berlabel tipe di kontrak, regenerasi, contract test, memenuhi **AC-4**, **AC-6**, **AC-8**.
-2. Bangun pemecah statement di masing masing provider (`query/` package provider) dengan test dialek menyeluruh, memenuhi **AC-4**.
-3. Bangun use case eksekusi di modul server query: sesi per tab, eksekusi berurutan, state, event WS, history, memenuhi **AC-4**, **AC-5**, **AC-7**.
-4. Bangun editor CodeMirror (dialek, keymap, pencarian) di feature query-editor plus tab context header dan pemilih konteks, memenuhi **AC-1**, **AC-2**.
-5. Bangun autocomplete berbasis cache metadata malas, memenuhi **AC-3**.
-6. Render hasil sementara (tabel sederhana; grid penuh di spec 0034), pemetaan posisi error ke editor, indikator transaksi, memenuhi **AC-6**.
+1. [x] Definisikan operasi eksekusi plus bentuk hasil sel berlabel tipe di kontrak, regenerasi, contract test, memenuhi **AC-4**, **AC-6**, **AC-8**.
+2. [x] Bangun pemecah statement di masing masing provider (`query/` package provider) dengan test dialek menyeluruh, memenuhi **AC-4**.
+3. [x] Bangun use case eksekusi di modul server query: sesi per tab, eksekusi berurutan, state, event WS, history, memenuhi **AC-4**, **AC-5**, **AC-7**.
+4. [x] Bangun editor CodeMirror (dialek, keymap, pencarian) di feature query-editor plus tab context header dan pemilih konteks, memenuhi **AC-1**, **AC-2**.
+5. [x] Bangun autocomplete berbasis cache metadata malas, memenuhi **AC-3**.
+6. [x] Render hasil sementara (tabel sederhana; grid penuh di spec 0034), pemetaan posisi error ke editor, indikator transaksi, memenuhi **AC-6**.
 7. E2e dua engine, memenuhi **AC-9**.
 
 ## Consequences

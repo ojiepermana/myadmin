@@ -16,15 +16,15 @@
 | 07  | Perintah doctor dan migrate                 | A    | in-progress |
 | 08  | SQLite core dan migration runner            | A    | in-progress |
 | 09  | Internal repositories                       | A    | in-progress |
-| 10  | Key provider dan password hashing           | A    | in-progress |
-| 11  | Credential vault dan redaction              | A    | in-progress |
+| 10  | Key provider dan password hashing           | A    | done        |
+| 11  | Credential vault dan redaction              | A    | done        |
 | 12  | Package config                              | A    | in-progress |
 | 13  | Package observability                       | A    | in-progress |
 | 14  | UI foundation dan theme                     | A    | in-progress |
 | 15  | App shell dan navigation                    | A    | in-progress |
 | 16  | Initial setup end to end                    | B    | in-progress |
 | 17  | Login, logout, dan session                  | B    | in-progress |
-| 18  | User management dan change password         | B    | in-progress |
+| 18  | User management dan change password         | B    | done        |
 | 19  | Subsistem audit append only                 | B    | in-progress |
 | 20  | Halaman audit Admin                         | B    | in-progress |
 | 21  | Kontrak database-core dan capability        | C    | in-progress |
@@ -32,11 +32,11 @@
 | 23  | PostgreSQL metadata                         | C    | in-progress |
 | 24  | MySQL koneksi dan capability                | C    | in-progress |
 | 25  | MySQL metadata                              | C    | in-progress |
-| 26  | Connection manager CRUD dan vault           | C    | in-progress |
-| 27  | Connection lifecycle dan status             | C    | in-progress |
-| 28  | Jobs infrastructure                         | C    | in-progress |
-| 29  | Realtime WebSocket                          | C    | in-progress |
-| 30  | Workspace persistence                       | C    | in-progress |
+| 26  | Connection manager CRUD dan vault           | C    | done        |
+| 27  | Connection lifecycle dan status             | C    | done        |
+| 28  | Jobs infrastructure                         | C    | done        |
+| 29  | Realtime WebSocket                          | C    | done        |
+| 30  | Workspace persistence                       | C    | done        |
 | 31  | Object explorer                             | D    | in-progress |
 | 32  | Object search                               | D    | in-progress |
 | 33  | Query editor tab dan eksekusi               | D    | in-progress |
@@ -101,7 +101,7 @@ Sumber kebenaran API: kontrak multi file, error model, security scheme, event WS
   - [x] Enam path awal dan skema event WebSocket (AC-7, AC-8)
   - [x] Redocly lint dan bundel di CI (AC-1, AC-2)
 - [ ] [Verify it](../specs/0003-openapi-contract-structure/verify.md): /check verify openapi-contract-structure
-- [ ] [Test it](../specs/0003-openapi-contract-structure/test.md): /test openapi-contract-structure
+- [x] [Test it](../specs/0003-openapi-contract-structure/test.md): /test openapi-contract-structure
 
 ### 04. Pipeline codegen dan contract test `in-progress`
 
@@ -114,7 +114,7 @@ Tipe dari kontrak, drift check, harness kesesuaian server. Done when: drift kont
   - [x] Workflow contract.yml (AC-7)
   - code in `scripts/codegen/generate-contract-types.ts`, `tests/contract/`, dan `apps/server/src/app.ts`
 - [ ] [Verify it](../specs/0004-codegen-pipeline-contract-tests/verify.md): /check verify codegen-pipeline-contract-tests
-- [ ] [Test it](../specs/0004-codegen-pipeline-contract-tests/test.md): /test codegen-pipeline-contract-tests
+- [x] [Test it](../specs/0004-codegen-pipeline-contract-tests/test.md): /test codegen-pipeline-contract-tests
 
 ### 05. SDK Angular core `in-progress`
 
@@ -126,7 +126,7 @@ Satu satunya jalur network Angular: transport, provider, SdkError. Done when: fi
   - [x] Facade health, setup, auth di atas tipe generated plus event sessionExpired (AC-1, AC-4, AC-7)
   - [x] Aturan boundary anti raw fetch dan unit test (AC-6, AC-8)
   - code in `packages/sdk-angular/src`, `scripts/verify/check-boundaries.ts`, and `packages/sdk-angular/test/sdk.test.ts`
-- [ ] [Verify it](../specs/0005-sdk-angular-core/verify.md): /check verify sdk-angular-core
+- [x] [Verify it](../specs/0005-sdk-angular-core/verify.md): /check verify sdk-angular-core
 - [x] [Test it](../specs/0005-sdk-angular-core/test.md): /test sdk-angular-core
 
 ### 06. CLI runtime dan data directory `in-progress`
@@ -139,8 +139,8 @@ Siklus hidup proses binary: serve, data directory, sinyal, SPA fallback. Done wh
   - [x] Perintah serve dan version, flag dan env, keluaran terminal (AC-1, AC-6, AC-7, AC-8)
   - [x] Graceful shutdown dan penyajian aset dengan SPA fallback (AC-4, AC-5)
   - code in `apps/cli/src`, `apps/server/src`, and `apps/cli/test/runtime.test.ts`
-- [ ] [Verify it](../specs/0006-cli-runtime-data-directory/verify.md): /check verify cli-runtime-data-directory
-- [ ] [Test it](../specs/0006-cli-runtime-data-directory/test.md): /test cli-runtime-data-directory
+- [x] [Verify it](../specs/0006-cli-runtime-data-directory/verify.md): /check verify cli-runtime-data-directory
+- [x] [Test it](../specs/0006-cli-runtime-data-directory/test.md): /test cli-runtime-data-directory
 
 ### 07. Perintah doctor dan migrate `in-progress`
 
@@ -152,8 +152,8 @@ Diagnostik aman dan migrasi eksplisit. Done when: doctor melaporkan kesehatan ta
   - [x] Presenter hasil dan mode json (AC-1, AC-3, AC-7)
   - [x] Perintah migrate dan migrate --status (AC-5, AC-6)
   - code in `apps/cli/src`, and `apps/cli/test/doctor.test.ts`
-- [ ] [Verify it](../specs/0007-doctor-migrate-commands/verify.md): /check verify doctor-migrate-commands
-- [ ] [Test it](../specs/0007-doctor-migrate-commands/test.md): /test doctor-migrate-commands
+- [x] [Verify it](../specs/0007-doctor-migrate-commands/verify.md): /check verify doctor-migrate-commands
+- [x] [Test it](../specs/0007-doctor-migrate-commands/test.md): /test doctor-migrate-commands
 
 ### 08. SQLite core dan migration runner `in-progress`
 
@@ -165,8 +165,8 @@ Penyimpanan internal: pragma benar, migrasi bernomor ber checksum, skema sebelas
   - [x] Runner migrasi ber checksum plus integrasi boot (AC-2, AC-3, AC-5)
   - [x] Migrasi 0001 sebelas tabel plus generator UUIDv7 dan integration test (AC-4, AC-8)
   - code in `packages/internal-sqlite`, `packages/kernel/ids`, `apps/cli/src`, and `tests/integration/internal-sqlite/`
-- [ ] [Verify it](../specs/0008-sqlite-core-migrations/verify.md): /check verify sqlite-core-migrations
-- [ ] [Test it](../specs/0008-sqlite-core-migrations/test.md): /test sqlite-core-migrations
+- [x] [Verify it](../specs/0008-sqlite-core-migrations/verify.md): /check verify sqlite-core-migrations
+- [x] [Test it](../specs/0008-sqlite-core-migrations/test.md): /test sqlite-core-migrations
 
 ### 09. Internal repositories `in-progress`
 
@@ -179,9 +179,9 @@ Port dan repository untuk semua tabel internal plus unit of work dan fake. Done 
   - [x] Unit of work, fake testkit, integration test (AC-4, AC-7, AC-8)
   - code in `packages/internal-domain`, `packages/internal-sqlite`, `packages/testkit`, and `tests/integration/internal-sqlite/`
 - [ ] [Verify it](../specs/0009-internal-repositories/verify.md): /check verify internal-repositories
-- [ ] [Test it](../specs/0009-internal-repositories/test.md): /test internal-repositories
+- [x] [Test it](../specs/0009-internal-repositories/test.md): /test internal-repositories
 
-### 10. Key provider dan password hashing `in-progress`
+### 10. Key provider dan password hashing `done`
 
 ADR keamanan: keyfile plus override env, argon2id. Done when: first run menghasilkan keyfile 0600, override bekerja, hash dan verify teruji.
 
@@ -191,10 +191,10 @@ ADR keamanan: keyfile plus override env, argon2id. Done when: first run menghasi
   - [x] Password hasher argon2id, policy, needsRehash (AC-6, AC-7, AC-8)
   - [x] Doctor check keyfile dan test keamanan (AC-4, AC-5, AC-9)
   - code in `apps/cli/src/commands/doctor.ts`, `apps/cli/src/bootstrap/runtime-lifecycle.ts`, `packages/auth/src/session.ts`, `packages/crypto/src/redaction/`, and `tests/security/crypto/`
-- [ ] [Verify it](../specs/0010-key-provider-password-hashing/verify.md): /check verify key-provider-password-hashing
-- [ ] [Test it](../specs/0010-key-provider-password-hashing/test.md): /test key-provider-password-hashing
+- [x] [Verify it](../specs/0010-key-provider-password-hashing/verify.md): /check verify key-provider-password-hashing
+- [x] [Test it](../specs/0010-key-provider-password-hashing/test.md): /test key-provider-password-hashing
 
-### 11. Credential vault dan redaction `in-progress`
+### 11. Credential vault dan redaction `done`
 
 AES-256-GCM dengan AAD plus modul sensor tiga lapis. Done when: file db terbukti bebas plaintext dan tiga saluran keluaran tersensor.
 
@@ -203,8 +203,8 @@ AES-256-GCM dengan AAD plus modul sensor tiga lapis. Done when: file db terbukti
   - [x] Vault encrypt decrypt dengan AAD, key_id check, API use (AC-1 sampai AC-4)
   - [x] Modul redaction tiga mekanisme plus integrasi saluran keluar (AC-5, AC-6)
   - [x] Test keamanan termasuk pemindaian byte file db (AC-7)
-- [ ] [Verify it](../specs/0011-credential-vault-redaction/verify.md): /check verify credential-vault-redaction
-- [ ] [Test it](../specs/0011-credential-vault-redaction/test.md): /test credential-vault-redaction
+- [x] [Verify it](../specs/0011-credential-vault-redaction/verify.md): /check verify credential-vault-redaction
+- [x] [Test it](../specs/0011-credential-vault-redaction/test.md): /test credential-vault-redaction
 
 ### 12. Package config `in-progress`
 
@@ -216,8 +216,8 @@ Loader konfigurasi tunggal tervalidasi. Done when: prioritas flag env file defau
   - [x] Loader berprioritas dengan metadata sumber plus redaction dump (AC-2 sampai AC-5)
   - [x] Integrasi CLI dan doctor check plus unit test (AC-6, AC-7)
   - code in `packages/config/`, `apps/cli/src/`, `apps/server/src/`, and `packages/config/test/config.test.ts`
-- [ ] [Verify it](../specs/0012-config-package/verify.md): /check verify config-package
-- [ ] [Test it](../specs/0012-config-package/test.md): /test config-package
+- [x] [Verify it](../specs/0012-config-package/verify.md): /check verify config-package
+- [x] [Test it](../specs/0012-config-package/test.md): /test config-package
 
 ### 13. Package observability `in-progress`
 
@@ -229,8 +229,8 @@ Log JSON terstruktur, correlation ID, error handler tunggal. Done when: setiap e
   - [x] Correlation AsyncLocalStorage plus middleware plus error handler ApiError 500 (AC-2, AC-3, AC-5)
   - [x] Redaction wajib di jalur tulis dan metric dasar (AC-4, AC-6)
   - code in `packages/observability/`, `apps/server/src/`, `apps/cli/src/bootstrap/runtime-lifecycle.ts`, and `tooling/eslint/eslint.config.mjs`
-- [ ] [Verify it](../specs/0013-observability-package/verify.md): /check verify observability-package
-- [ ] [Test it](../specs/0013-observability-package/test.md): /test observability-package
+- [x] [Verify it](../specs/0013-observability-package/verify.md): /check verify observability-package
+- [x] [Test it](../specs/0013-observability-package/test.md): /test observability-package
 
 ### 14. UI foundation dan theme `in-progress`
 
@@ -243,7 +243,7 @@ Log JSON terstruktur, correlation ID, error handler tunggal. Done when: setiap e
   - [x] Aturan lint larangan design system kedua (AC-7)
   - code in `apps/web/src/app/core/theme/`, `apps/web/src/app/features/ui-foundation-demo/`, and `scripts/quality/check-ui-boundary.ts`
 - [ ] [Verify it](../specs/0014-ui-foundation-theme/verify.md): /check verify ui-foundation-theme
-- [ ] [Test it](../specs/0014-ui-foundation-theme/test.md): /test ui-foundation-theme
+- [x] [Test it](../specs/0014-ui-foundation-theme/test.md): /test ui-foundation-theme
 
 ### 15. App shell dan navigation `in-progress`
 
@@ -256,7 +256,7 @@ Shell aplikasi: top bar, sidebar, tab host, panel, status bar, context menu, err
   - [x] Error presenter dan boundary plus baseline aksesibilitas (AC-6, AC-7, AC-8)
   - code in `apps/web/src/app/layout/app-shell/`, `apps/web/src/app/core/state/`, `apps/web/src/app/core/context-menu/`, `apps/web/src/app/core/errors/`, and `apps/web/src/app/app.routes.shared.ts`
 - [ ] [Verify it](../specs/0015-app-shell-navigation/verify.md): /check verify app-shell-navigation
-- [ ] [Test it](../specs/0015-app-shell-navigation/test.md): /test app-shell-navigation
+- [x] [Test it](../specs/0015-app-shell-navigation/test.md): /test app-shell-navigation
 
 ## Fase B. Auth dan audit
 
@@ -284,7 +284,7 @@ Sesi opaque server side dengan cookie HttpOnly, expiry ganda, CSRF. Done when: s
 - [x] [Verify it](../specs/0017-login-session/verify.md): /check verify login-session
 - [x] [Test it](../specs/0017-login-session/test.md): /test login-session
 
-### 18. User management dan change password `in-progress`
+### 18. User management dan change password `done`
 
 Ganti password sendiri plus kelola user oleh Admin dengan invariant Admin terakhir. Done when: dua peran ditegakkan dua lapis dan deactivate memutus sesi seketika.
 
@@ -293,8 +293,8 @@ Ganti password sendiri plus kelola user oleh Admin dengan invariant Admin terakh
   - [x] Use case change password, create user, role status, reset password (AC-1, AC-3 sampai AC-6)
   - [x] Endpoint admin only plus kontrak plus audit (AC-2, AC-8)
   - [x] Halaman ganti password dan manajemen user plus e2e otorisasi (AC-7, AC-9)
-- [ ] [Verify it](../specs/0018-user-management-change-password/verify.md): /check verify user-management-change-password
-- [ ] [Test it](../specs/0018-user-management-change-password/test.md): /test user-management-change-password
+- [x] [Verify it](../specs/0018-user-management-change-password/verify.md): /check verify user-management-change-password
+- [x] [Test it](../specs/0018-user-management-change-password/test.md): /test user-management-change-password
 
 ### 19. Subsistem audit append only `in-progress`
 
@@ -306,7 +306,7 @@ Taksonomi event, writer tersensor, sukses menunggu audit. Done when: aksi wajib 
   - [x] Helper withAudit dengan semantik urutan (AC-3)
   - [x] Migrasi penulisan audit fitur sebelumnya plus doctor check ukuran plus test (AC-6, AC-7, AC-8)
 - [ ] [Verify it](../specs/0019-audit-subsystem/verify.md): /check verify audit-subsystem
-- [ ] [Test it](../specs/0019-audit-subsystem/test.md): /test audit-subsystem
+- [x] [Test it](../specs/0019-audit-subsystem/test.md): /test audit-subsystem
 
 ### 20. Halaman audit Admin `in-progress`
 
@@ -318,7 +318,7 @@ Jalur baca audit dengan filter dan pagination. Done when: Admin bisa menelusuri 
   - [x] Halaman grid dengan panel filter dan baris expandable plus e2e (AC-5, AC-7)
   - code in `apps/server/src/app.ts`, `packages/internal-sqlite/src/repositories/audit.ts`, `packages/sdk-angular/src/facades/audit-client.ts`, and `apps/web/src/app/features/audit/`
 - [ ] [Verify it](../specs/0020-audit-admin-page/verify.md): /check verify audit-admin-page
-- [ ] [Test it](../specs/0020-audit-admin-page/test.md): /test audit-admin-page
+- [x] [Test it](../specs/0020-audit-admin-page/test.md): /test audit-admin-page
 
 ## Fase C. Provider dan koneksi
 
@@ -332,7 +332,7 @@ Port kecil per domain, capability model, registry, error ternormalisasi, context
   - [x] Capability model tertutup plus ConnectionContext aman plus registry (AC-2 sampai AC-5)
   - [x] Suite test kontrak generik plus provider fake (AC-9)
 - [ ] [Verify it](../specs/0021-database-core-contracts/verify.md): /check verify database-core-contracts
-- [ ] [Test it](../specs/0021-database-core-contracts/test.md): /test database-core-contracts
+- [x] [Test it](../specs/0021-database-core-contracts/test.md): /test database-core-contracts
 
 ### 22. PostgreSQL koneksi dan capability `in-progress`
 
@@ -343,8 +343,8 @@ Bun.sql, TLS tegas, capability, mapping SQLSTATE, infrastruktur cancel. Done whe
   - [x] Driver adaptor, registry sesi, timeout, lingkungan test dua versi (AC-1, AC-3, AC-8)
   - [x] Mode TLS lengkap plus mapper SQLSTATE plus capability per versi (AC-2, AC-5, AC-6)
   - [x] test() dan cancel ganda plus boundary antar provider (AC-4, AC-7, AC-9)
-- [ ] [Verify it](../specs/0022-postgresql-connection-capability/verify.md): /check verify postgresql-connection-capability
-- [ ] [Test it](../specs/0022-postgresql-connection-capability/test.md): /test postgresql-connection-capability
+- [x] [Verify it](../specs/0022-postgresql-connection-capability/verify.md): /check verify postgresql-connection-capability
+- [x] [Test it](../specs/0022-postgresql-connection-capability/test.md): /test postgresql-connection-capability
 
 ### 23. PostgreSQL metadata `in-progress`
 
@@ -356,8 +356,8 @@ Introspeksi pg_catalog lazy dan paginated. Done when: describeTable cukup untuk 
   - [x] describeTable lengkap, definisi view, routine (AC-3, AC-4)
   - [x] Pencarian object plus ukuran malas plus test performa (AC-5, AC-7, AC-8)
   - code in `packages/database-postgresql/src/metadata/`, `packages/database-postgresql/test/postgresql-metadata.test.ts`, and `tests/integration/postgresql/metadata.test.ts`
-- [ ] [Verify it](../specs/0023-postgresql-metadata/verify.md): /check verify postgresql-metadata
-- [ ] [Test it](../specs/0023-postgresql-metadata/test.md): /test postgresql-metadata
+- [x] [Verify it](../specs/0023-postgresql-metadata/verify.md): /check verify postgresql-metadata
+- [x] [Test it](../specs/0023-postgresql-metadata/test.md): /test postgresql-metadata
 
 ### 24. MySQL koneksi dan capability `in-progress`
 
@@ -368,8 +368,8 @@ Cermin feature 22 untuk MySQL dengan KILL QUERY. Done when: suite kontrak lulus 
   - [x] Driver adaptor plus connection_id plus lingkungan test (AC-1, AC-7)
   - [x] TLS lengkap plus mapper kode error plus capability dengan reasons (AC-2, AC-4, AC-5)
   - [x] test() dan cancel KILL QUERY plus boundary (AC-3, AC-6, AC-8)
-- [ ] [Verify it](../specs/0024-mysql-connection-capability/verify.md): /check verify mysql-connection-capability
-- [ ] [Test it](../specs/0024-mysql-connection-capability/test.md): /test mysql-connection-capability
+- [x] [Verify it](../specs/0024-mysql-connection-capability/verify.md): /check verify mysql-connection-capability
+- [x] [Test it](../specs/0024-mysql-connection-capability/test.md): /test mysql-connection-capability
 
 ### 25. MySQL metadata `in-progress`
 
@@ -381,10 +381,10 @@ Introspeksi information_schema dengan hierarki datar. Done when: bentuk hasil id
   - [x] describeTable lengkap plus definisi view dan routine (AC-3, AC-4)
   - [x] Pencarian plus test bentuk lintas provider dan performa (AC-5, AC-7, AC-8)
   - code in `packages/database-mysql/src/metadata/`, `packages/database-mysql/test/metadata.test.ts`, and `packages/database-core/src/models/index.ts`
-- [ ] [Verify it](../specs/0025-mysql-metadata/verify.md): /check verify mysql-metadata
-- [ ] [Test it](../specs/0025-mysql-metadata/test.md): /test mysql-metadata
+- [x] [Verify it](../specs/0025-mysql-metadata/verify.md): /check verify mysql-metadata
+- [x] [Test it](../specs/0025-mysql-metadata/test.md): /test mysql-metadata
 
-### 26. Connection manager CRUD dan vault `in-progress`
+### 26. Connection manager CRUD dan vault `done`
 
 Kelola koneksi tersimpan dengan credential terenkripsi dan batas Admin yang jelas. Done when: alur buat, test, ubah, duplikasi, hapus bekerja dua engine tanpa satu pun secret bocor.
 
@@ -393,10 +393,10 @@ Kelola koneksi tersimpan dengan credential terenkripsi dan batas Admin yang jela
   - [x] Use case CRUD koneksi plus vault plus policies otorisasi plus audit (AC-1, AC-2, AC-4 sampai AC-9)
   - [x] Endpoint test dengan secret transient plus rate limit (AC-3)
   - [x] Halaman connections lengkap plus server group plus e2e dan test keamanan (AC-7, AC-10)
-- [ ] [Verify it](../specs/0026-connection-manager-crud/verify.md): /check verify connection-manager-crud
+- [x] [Verify it](../specs/0026-connection-manager-crud/verify.md): /check verify connection-manager-crud
 - [x] [Test it](../specs/0026-connection-manager-crud/test.md): /test connection-manager-crud
 
-### 27. Connection lifecycle dan status `in-progress`
+### 27. Connection lifecycle dan status `done`
 
 Connect eksplisit, registry sesi aktif, status jujur di sidebar dan status bar. Done when: status yang tampil selalu sama dengan kenyataan server dan reconnect memulihkan error.
 
@@ -405,10 +405,10 @@ Connect eksplisit, registry sesi aktif, status jujur di sidebar dan status bar. 
   - [x] Registry sesi aktif plus transisi plus idle timeout plus pembersihan (AC-2, AC-5, AC-6, AC-9)
   - [x] Endpoint connect disconnect reconnect status plus audit (AC-1, AC-3, AC-4, AC-8)
   - [x] UI status sidebar dan status bar plus dialog password transient plus e2e (AC-4, AC-7)
-- [ ] [Verify it](../specs/0027-connection-lifecycle-status/verify.md): /check verify connection-lifecycle-status
-- [ ] [Test it](../specs/0027-connection-lifecycle-status/test.md): /test connection-lifecycle-status
+- [x] [Verify it](../specs/0027-connection-lifecycle-status/verify.md): /check verify connection-lifecycle-status
+- [x] [Test it](../specs/0027-connection-lifecycle-status/test.md): /test connection-lifecycle-status
 
-### 28. Jobs infrastructure `in-progress`
+### 28. Jobs infrastructure `done`
 
 Mesin pekerjaan panjang dalam proses: progress, cancel kooperatif, kepemilikan. Done when: job berjalan berbatas konkurensi, bisa dibatalkan, dan tidak pernah merobohkan proses.
 
@@ -418,10 +418,10 @@ Mesin pekerjaan panjang dalam proses: progress, cancel kooperatif, kepemilikan. 
   - [x] Cancellation AbortSignal plus progress throttled plus normalisasi error (AC-3, AC-4, AC-7)
   - [x] API jobs berkepemilikan plus unit test lengkap (AC-5, AC-8)
   - code in `packages/jobs/src`, `apps/server/src/app.ts`, `packages/api-contract/openapi/v1`, `packages/sdk-angular/src`, and `tests/`
-- [ ] [Verify it](../specs/0028-jobs-infrastructure/verify.md): /check verify jobs-infrastructure
-- [ ] [Test it](../specs/0028-jobs-infrastructure/test.md): /test jobs-infrastructure
+- [x] [Verify it](../specs/0028-jobs-infrastructure/verify.md): /check verify jobs-infrastructure
+- [x] [Test it](../specs/0028-jobs-infrastructure/test.md): /test jobs-infrastructure
 
-### 29. Realtime WebSocket `in-progress`
+### 29. Realtime WebSocket `done`
 
 Kanal multiplexed berotorisasi plus klien SDK dengan reconnect. Done when: progress job dan status koneksi mengalir push dan pulih otomatis setelah putus.
 
@@ -431,10 +431,10 @@ Kanal multiplexed berotorisasi plus klien SDK dengan reconnect. Done when: progr
   - [x] Penyambungan sumber event jobs dan status plus redaction jalur WS (AC-4, AC-7)
   - [x] RealtimeClient SDK dengan backoff dan resubscribe plus peralihan status ke push plus test (AC-6, AC-8)
   - code in `apps/server/src/realtime`, `apps/server/src/app.ts`, `packages/api-contract`, `packages/sdk-angular/src/realtime`, `apps/web/src/app`, and `tests/`
-- [ ] [Verify it](../specs/0029-realtime-websocket/verify.md): /check verify realtime-websocket
-- [ ] [Test it](../specs/0029-realtime-websocket/test.md): /test realtime-websocket
+- [x] [Verify it](../specs/0029-realtime-websocket/verify.md): /check verify realtime-websocket
+- [x] [Test it](../specs/0029-realtime-websocket/test.md): /test realtime-websocket
 
-### 30. Workspace persistence `in-progress`
+### 30. Workspace persistence `done`
 
 Tab, panel, dan konteks bertahan lintas login. Done when: susunan pulih setelah login dan referensi mati dibuang dengan pemberitahuan.
 
@@ -443,8 +443,8 @@ Tab, panel, dan konteks bertahan lintas login. Done when: susunan pulih setelah 
   - [x] Kontrak dan endpoint workspace dengan schema berversi dan batas ukuran (AC-1, AC-2, AC-6)
   - [x] Sinkronisasi store klien: debounce, flush, restore tersanitasi (AC-3, AC-4, AC-5)
   - [x] E2e restore dua skenario (AC-7)
-- [ ] [Verify it](../specs/0030-workspace-persistence/verify.md): /check verify workspace-persistence
-- [ ] [Test it](../specs/0030-workspace-persistence/test.md): /test workspace-persistence
+- [x] [Verify it](../specs/0030-workspace-persistence/verify.md): /check verify workspace-persistence
+- [x] [Test it](../specs/0030-workspace-persistence/test.md): /test workspace-persistence
 
 ## Fase D. Fitur database inti
 
@@ -453,25 +453,25 @@ Tab, panel, dan konteks bertahan lintas login. Done when: susunan pulih setelah 
 Pohon lazy data driven dengan context menu bergerbang capability. Done when: telusur dua engine bekerja tanpa satu pun cabang nama engine di UI.
 
 - [x] Design it (spec): [0031](../specs/0031-object-explorer/index.md)
-- [ ] Build it: /develop object-explorer
-  - [ ] Endpoint metadata generik plus pemeriksaan koneksi (AC-1)
-  - [ ] Pohon virtualized lazy dengan halaman berikutnya dan error per node (AC-2, AC-3, AC-4, AC-7)
-  - [ ] Registry aksi context menu plus refresh per node plus e2e (AC-5, AC-6, AC-8)
+- [x] Build it: /develop object-explorer
+  - [x] Endpoint metadata generik plus pemeriksaan koneksi (AC-1)
+  - [x] Pohon virtualized lazy dengan halaman berikutnya dan error per node (AC-2, AC-3, AC-4, AC-7)
+  - [x] Registry aksi context menu plus refresh per node plus e2e (AC-5, AC-6, AC-8)
 - [ ] [Verify it](../specs/0031-object-explorer/verify.md): /check verify object-explorer
-- [ ] [Test it](../specs/0031-object-explorer/test.md): /test object-explorer
+- [x] [Test it](../specs/0031-object-explorer/test.md): /test object-explorer
 
 ### 32. Object search `in-progress`
 
 Pencarian nama object server side dari panel explorer. Done when: pencarian pada 2000 table cepat dan hasil bisa dilompati ke node.
 
 - [x] Design it (spec): [0032](../specs/0032-object-search/index.md)
-- [ ] Build it: /develop object-search
+- [x] Build it: /develop object-search
   - [x] Endpoint search paginated (AC-1, AC-2)
   - [x] UI pencarian dengan debounce, abort, dan lompat ke node (AC-3, AC-4, AC-5)
   - [x] E2e pada fixture besar (AC-6)
   - code in `apps/server/src/object-explorer`, `apps/web/src/app/features/object-explorer`, `packages/database-core/src/contracts/metadata.ts`, `packages/database-postgresql/src/metadata`, `packages/database-mysql/src/metadata`, and `packages/sdk-angular/src/facades/explorer-client.ts`
 - [ ] [Verify it](../specs/0032-object-search/verify.md): /check verify object-search
-- [ ] [Test it](../specs/0032-object-search/test.md): /test object-search
+- [x] [Test it](../specs/0032-object-search/test.md): /test object-search
 
 ### 33. Query editor tab dan eksekusi `in-progress`
 
@@ -479,12 +479,12 @@ Inti produk: tab CodeMirror berkonteks, sesi per tab, eksekusi asinkron, autocom
 
 - [x] Design it (spec): [0033](../specs/0033-query-editor-execution/index.md)
 - [ ] Build it: /develop query-editor-execution
-  - [ ] Kontrak eksekusi plus bentuk sel berlabel tipe plus pemecah statement per engine (AC-4, AC-6, AC-8)
-  - [ ] Use case eksekusi: sesi per tab, urutan statement, event WS, history (AC-4, AC-5, AC-7)
-  - [ ] Editor CodeMirror, konteks tab, autocomplete malas, render hasil dan error berposisi (AC-1, AC-2, AC-3, AC-6)
+  - [x] Kontrak eksekusi plus bentuk sel berlabel tipe plus pemecah statement per engine (AC-4, AC-6, AC-8)
+  - [x] Use case eksekusi: sesi per tab, urutan statement, event WS, history (AC-4, AC-5, AC-7)
+  - [x] Editor CodeMirror, konteks tab, autocomplete malas, render hasil dan error berposisi (AC-1, AC-2, AC-3, AC-6)
   - [ ] E2e dua engine termasuk transaksi manual (AC-9)
 - [ ] [Verify it](../specs/0033-query-editor-execution/verify.md): /check verify query-editor-execution
-- [ ] [Test it](../specs/0033-query-editor-execution/test.md): /test query-editor-execution
+- [x] [Test it](../specs/0033-query-editor-execution/test.md): /test query-editor-execution
 
 ### 34. Result grid dan export result `in-progress`
 
@@ -508,7 +508,7 @@ Membatalkan eksekusi berjalan dan rencana eksekusi teks. Done when: query tidur 
   - [x] EXPLAIN per engine plus endpoint (AC-5, AC-6, AC-7)
   - [ ] UI tombol cancel bergerbang, aksi darurat, panel explain plus test (AC-3, AC-8)
 - [ ] [Verify it](../specs/0035-query-cancel-explain/verify.md): /check verify query-cancel-explain
-- [ ] [Test it](../specs/0035-query-cancel-explain/test.md): /test query-cancel-explain
+- [x] [Test it](../specs/0035-query-cancel-explain/test.md): /test query-cancel-explain
 
 ### 36. Query history dan saved queries `in-progress`
 
@@ -521,7 +521,7 @@ Riwayat otomatis dan query bernama, privat per user. Done when: pencarian riwaya
   - [ ] E2e dan test otorisasi (AC-3, AC-8)
   - code in `apps/server/src/query`, `packages/internal-sqlite`, `packages/sdk-angular/src`, `apps/web/src/app/features/query-history`, and `tests/integration/query-history/`
 - [ ] [Verify it](../specs/0036-query-history-saved-queries/verify.md): /check verify query-history-saved-queries
-- [ ] [Test it](../specs/0036-query-history-saved-queries/test.md): /test query-history-saved-queries
+- [x] [Test it](../specs/0036-query-history-saved-queries/test.md): /test query-history-saved-queries
 
 ### 37. Data browser jalur baca `in-progress`
 
@@ -533,7 +533,7 @@ Browse table berhalaman dengan filter terstruktur aman. Done when: table sejuta 
   - [x] Tab data dengan grid mode browser, filter kolom, pemilih kolom (AC-6, AC-7)
   - [ ] Test NFR-01, injeksi, dan e2e (AC-8, AC-9)
 - [ ] [Verify it](../specs/0037-data-browser-read/verify.md): /check verify data-browser-read
-- [ ] [Test it](../specs/0037-data-browser-read/test.md): /test data-browser-read
+- [x] [Test it](../specs/0037-data-browser-read/test.md): /test data-browser-read
 
 ### 38. Data browser jalur tulis `in-progress`
 
@@ -541,11 +541,11 @@ Insert, edit, delete berbasis identitas baris aman. Done when: konflik terdeteks
 
 - [x] Design it (spec): [0038](../specs/0038-data-browser-write/index.md)
 - [ ] Build it: /develop data-browser-write
-  - [ ] Penentuan rowIdentity plus mutasi berparameter dengan semantik affected dan transaksi (AC-1, AC-2, AC-3, AC-6, AC-8)
-  - [ ] Delete dan bulk delete berkonfirmasi berjumlah plus audit (AC-4, AC-7)
+  - [x] Penentuan rowIdentity plus mutasi berparameter dengan semantik affected dan transaksi (AC-1, AC-2, AC-3, AC-6, AC-8)
+  - [x] Delete dan bulk delete berkonfirmasi berjumlah plus audit (AC-4, AC-7)
   - [ ] Editor sel bertipe termasuk NULL dan JSON plus e2e konflik (AC-5, AC-9)
 - [ ] [Verify it](../specs/0038-data-browser-write/verify.md): /check verify data-browser-write
-- [ ] [Test it](../specs/0038-data-browser-write/test.md): /test data-browser-write
+- [x] [Test it](../specs/0038-data-browser-write/test.md): /test data-browser-write
 
 ### 39. Manajemen database `in-progress`
 
@@ -557,7 +557,7 @@ Properti, create data driven per engine, drop ketik nama. Done when: pola konfir
   - [x] Komponen destructive-action-confirmation plus verifikasi confirmName server plus audit (AC-3, AC-4)
   - [ ] Halaman properti dan form create data driven plus e2e (AC-2, AC-5, AC-6)
 - [ ] [Verify it](../specs/0039-database-management/verify.md): /check verify database-management
-- [ ] [Test it](../specs/0039-database-management/test.md): /test database-management
+- [x] [Test it](../specs/0039-database-management/test.md): /test database-management
 
 ### 40. Manajemen schema `in-progress`
 
@@ -569,7 +569,7 @@ Schema PostgreSQL bergerbang capability, absen total di MySQL. Done when: gerban
   - [x] Endpoint bergerbang tegas plus audit (AC-2, AC-3, AC-5)
   - [ ] UI form dan peringatan rename plus e2e dua arah (AC-4, AC-6)
 - [ ] [Verify it](../specs/0040-schema-management/verify.md): /check verify schema-management
-- [ ] [Test it](../specs/0040-schema-management/test.md): /test schema-management
+- [x] [Test it](../specs/0040-schema-management/test.md): /test schema-management
 
 ### 41. Table designer kolom `in-progress`
 
@@ -583,7 +583,7 @@ Create dan alter kolom lewat change set dengan pratinjau DDL wajib. Done when: y
   - [ ] E2e dua engine lewat fixture database/browser (AC-8)
   - code in `apps/server/src/table-designer/`, `packages/database-mysql/src/table-designer.ts`, `packages/database-postgresql/src/table-designer.ts`, and `apps/web/src/app/features/table-designer/`
 - [ ] [Verify it](../specs/0041-table-designer-columns/verify.md): /check verify table-designer-columns
-- [ ] [Test it](../specs/0041-table-designer-columns/test.md): /test table-designer-columns
+- [x] [Test it](../specs/0041-table-designer-columns/test.md): /test table-designer-columns
 
 ### 42. Table designer index dan constraint `in-progress`
 
@@ -648,7 +648,7 @@ Grant dan revoke level database dan table lewat matriks berpratinjau. Done when:
   - [ ] UI matriks privilege plus e2e efek nyata (AC-3, AC-7)
   - code in `packages/database-core/src/models/index.ts`, `packages/database-core/src/contracts/security.ts`, `packages/database-postgresql/src/security/`, `packages/database-mysql/src/security/`, `apps/server/src/security/`, `packages/api-contract/openapi/v1/`, `packages/sdk-angular/src/facades/security-client.ts`, and `apps/web/src/app/features/security/`
 - [ ] [Verify it](../specs/0046-database-security-privileges/verify.md): /check verify database-security-privileges
-- [ ] [Test it](../specs/0046-database-security-privileges/test.md): /test database-security-privileges
+- [x] [Test it](../specs/0046-database-security-privileges/test.md): /test database-security-privileges
 
 ## Fase E. Operasi data
 
@@ -662,7 +662,7 @@ Export SQL CSV JSON streaming sebagai job dengan unduhan terautentikasi. Done wh
   - [x] Executor job export plus unduhan berkadaluarsa plus pembersih temp plus audit (AC-3, AC-4, AC-5, AC-7)
   - [ ] Dialog export, integrasi tombol grid, panel jobs plus e2e skala (AC-6, AC-8)
 - [ ] [Verify it](../specs/0047-export-jobs/verify.md): /check verify export-jobs
-- [ ] [Test it](../specs/0047-export-jobs/test.md): /test export-jobs
+- [x] [Test it](../specs/0047-export-jobs/test.md): /test export-jobs
 
 ### 48. Import `in-progress`
 
@@ -670,8 +670,8 @@ Import SQL dan CSV sebagai job dengan unggah streaming dan pemetaan kolom. Done 
 
 - [x] Design it (spec): [0048](../specs/0048-import-jobs/index.md)
 - [ ] Build it: /develop import-jobs
-  - [ ] Unggah streaming berbatas plus pratinjau server (AC-1, AC-7)
-  - [ ] Executor SQL (mode transaksi, posisi error) dan CSV (pemetaan, batch, ambang gagal) (AC-2, AC-3, AC-5)
+  - [x] Unggah streaming berbatas plus pratinjau server (AC-1, AC-7)
+  - [x] Executor SQL (mode transaksi, posisi error) dan CSV (pemetaan, batch, ambang gagal) (AC-2, AC-3, AC-5)
   - [ ] Truncate first berkonfirmasi plus audit plus UI alur import plus e2e roundtrip (AC-4, AC-6, AC-8)
 - [ ] [Verify it](../specs/0048-import-jobs/verify.md): /check verify import-jobs
 - [ ] [Test it](../specs/0048-import-jobs/test.md): /test import-jobs
@@ -694,8 +694,8 @@ Pemulihan dari artefak dengan konfirmasi paling ketat. Done when: roundtrip back
 
 - [x] Design it (spec): [0050](../specs/0050-restore/index.md)
 - [ ] Build it: /develop restore
-  - [ ] Validasi artefak (format, engine) plus endpoint validate (AC-1)
-  - [ ] Executor restore (database baru opsional, subprocess, parsial jujur) plus audit started completed (AC-2, AC-4, AC-5)
+  - [x] Validasi artefak (format, engine) plus endpoint validate (AC-1)
+  - [x] Executor restore (database baru opsional, subprocess, parsial jujur) plus audit started completed (AC-2, AC-4, AC-5)
   - [ ] Konfirmasi ketik nama terverifikasi plus UI alur plus e2e roundtrip (AC-3, AC-6, AC-7)
 - [ ] [Verify it](../specs/0050-restore/verify.md): /check verify restore
 - [ ] [Test it](../specs/0050-restore/test.md): /test restore
@@ -710,7 +710,7 @@ Kartu kesehatan per koneksi, event driven, batas V1 dinyatakan. Done when: kartu
   - [x] Halaman kartu status dengan riwayat latency klien dan uji sekarang (AC-1, AC-3, AC-6)
   - [x] E2e reaktivitas dan kebersihan network (AC-4, AC-5, AC-7)
 - [ ] [Verify it](../specs/0051-monitoring-status/verify.md): /check verify monitoring-status
-- [ ] [Test it](../specs/0051-monitoring-status/test.md): /test monitoring-status
+- [x] [Test it](../specs/0051-monitoring-status/test.md): /test monitoring-status
 
 ### 52. Settings dan preferences `in-progress`
 
@@ -723,7 +723,7 @@ Registry key tertutup: preferensi per user dan pengaturan aplikasi Admin. Done w
   - [x] Sambungan theme dan halaman settings dua bagian plus e2e (AC-2, AC-5, AC-7)
   - code in `packages/settings/`, `apps/server/src/app.ts`, `packages/sdk-angular/src/`, `apps/web/src/app/`, and `tests/`
 - [ ] [Verify it](../specs/0052-settings-preferences/verify.md): /check verify settings-preferences
-- [ ] [Test it](../specs/0052-settings-preferences/test.md): /test settings-preferences
+- [x] [Test it](../specs/0052-settings-preferences/test.md): /test settings-preferences
 
 ## Fase F. Penutup
 
@@ -749,7 +749,7 @@ Dari kode ke lima binary terverifikasi. Done when: artefak per target lahir dari
   - [x] Kompilasi lima target dengan injeksi versi plus checksum (AC-2, AC-3)
   - [x] Harness smoke lengkap plus release.yml bergerbang plus README rilis (AC-4 sampai AC-7)
 - [ ] [Verify it](../specs/0054-binary-packaging-smoke/verify.md): /check verify binary-packaging-smoke
-- [ ] [Test it](../specs/0054-binary-packaging-smoke/test.md): /test binary-packaging-smoke
+- [x] [Test it](../specs/0054-binary-packaging-smoke/test.md): /test binary-packaging-smoke
 
 ### 55. Distribusi dan release `in-progress`
 

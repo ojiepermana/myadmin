@@ -1,7 +1,7 @@
 # 0011. Credential vault dan redaction
 
 **Date**: 2026-08-28
-**Status**: In Progress
+**Status**: Accepted
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary

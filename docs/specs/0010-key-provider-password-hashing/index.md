@@ -1,7 +1,7 @@
 # 0010. Key provider dan password hashing
 
 **Date**: 2026-08-28
-**Status**: In Progress
+**Status**: Accepted
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary

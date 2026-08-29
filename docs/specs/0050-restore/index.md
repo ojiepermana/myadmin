@@ -98,9 +98,9 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Modul validasi artefak (sniff format, engine, gzip) plus endpoint validate, memenuhi **AC-1**.
-2. Executor job restore (opsional create database dulu, subprocess streaming, progress, cancel dengan pernyataan parsial, ringkasan), memenuhi **AC-2**, **AC-4**.
-3. Kontrak (confirmName wajib), endpoint restore, audit started/completed, regenerasi, contract test, memenuhi **AC-3**, **AC-5**.
+1. [x] Modul validasi artefak (sniff format, engine, gzip) plus endpoint validate, memenuhi **AC-1**.
+2. [x] Executor job restore (opsional create database dulu, subprocess streaming, progress, cancel dengan pernyataan parsial, ringkasan), memenuhi **AC-2**, **AC-4**.
+3. [x] Kontrak (confirmName wajib), endpoint restore, audit started/completed, regenerasi, contract test, memenuhi **AC-3**, **AC-5**.
 4. UI alur restore lengkap dengan gerbang capability, memenuhi **AC-6**.
 5. E2e roundtrip dan skenario gagal dua engine, memenuhi **AC-7**.
 
