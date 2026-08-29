@@ -1,10 +1,14 @@
 import { expect, test } from '../fixtures';
 
-test('E2E-0027-AC4 and E2E-0027-AC7 show server status and transient-password lifecycle controls', async ({
+test('E2E-0027-AC4, E2E-0027-AC7, E2E-0029-AC4, and VIS-0027-AC7 show server status and transient-password lifecycle controls', async ({
   page,
   request,
 }) => {
   let connected = false;
+  let realtimeOpened = false;
+  page.on('websocket', () => {
+    realtimeOpened = true;
+  });
 
   await page.route('**/api/v1/connections/status', async (route) => {
     const response = await route.fetch();
@@ -81,6 +85,7 @@ test('E2E-0027-AC4 and E2E-0027-AC7 show server status and transient-password li
   await page.getByLabel('Password').fill('synthetic-browser-password');
   await page.getByLabel('Password').press('Enter');
   await expect(page).toHaveURL(/\/workspace$/);
+  await expect.poll(() => realtimeOpened).toBe(true);
   const connections = await page.request.get('/api/v1/connections');
   if (((await connections.json()) as { items: unknown[] }).items.length === 0) {
     const created = await page.request.post('/api/v1/connections', {
@@ -120,4 +125,5 @@ test('E2E-0027-AC4 and E2E-0027-AC7 show server status and transient-password li
 
   await connection.getByRole('button', { name: 'Disconnect', exact: true }).click();
   await expect(connection.getByText('Disconnected', { exact: true })).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual-0027-ac7.png', fullPage: true });
 });

@@ -1,7 +1,7 @@
 # 0029. Realtime WebSocket dan klien SDK
 
-**Date**: 2026-08-28
-**Status**: In Progress
+**Date**: 2026-08-29
+**Status**: Accepted
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ Skema protokol dan event sudah didefinisikan di kontrak (spec 0003): envelope `{
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin progress job dan perubahan status koneksi muncul seketika tanpa memuat ulang.
 
 **Acceptance criteria**:
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Satu koneksi WS multiplexed berkanal (dipilih)
 
 **Pros**:
+
 - Satu koneksi per tab aplikasi, murah dan sederhana; otorisasi per channel di satu tempat; sesuai skema event kontrak.
 
 **Cons**:
+
 - Perlu disiplin protokol subscribe; ditutup dengan tipe dari kontrak.
 
 ### Option 2: Server Sent Events per fitur
 
 **Pros**:
+
 - Lebih sederhana dari WS untuk satu arah.
 
 **Cons**:
+
 - Kontrak dan struktur.md sudah menetapkan WebSocket (event dua arah dan cancel query kelak); dua mekanisme realtime lebih buruk dari satu.
 
 ## Decision
@@ -65,19 +70,22 @@ Semua konsumen realtime V1 (jobs, status, query) adalah aliran server ke klien p
 **Data model sketch**: tidak ada tabel; registry koneksi WS di server `{ sessionId, userId, socket, subscriptions: Set<channel> }`.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /ws | GET upgrade | cookie sesi | aliran pesan protokol | sesi | 401 saat upgrade; close code sesi berakhir |
+
+| Endpoint | Method      | Key inputs  | Key outputs           | Auth | Key errors                                 |
+| -------- | ----------- | ----------- | --------------------- | ---- | ------------------------------------------ |
+| /ws      | GET upgrade | cookie sesi | aliran pesan protokol | sesi | 401 saat upgrade; close code sesi berakhir |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| event job | payload progress/state | event internal JobManager (spec 0028) |
-| event status koneksi | payload status | registry spec 0027 |
-| otorisasi channel | pemilik resource | JobManager (ownerUserId), registry koneksi (userId) |
-| correlationId event | nilai | correlation operasi asal bila ada |
+
+| Action               | Value produced / displayed | Source                                              |
+| -------------------- | -------------------------- | --------------------------------------------------- |
+| event job            | payload progress/state     | event internal JobManager (spec 0028)               |
+| event status koneksi | payload status             | registry spec 0027                                  |
+| otorisasi channel    | pemilik resource           | JobManager (ownerUserId), registry koneksi (userId) |
+| correlationId event  | nilai                      | correlation operasi asal bila ada                   |
 
 **Key invariants**:
+
 - Tidak ada event yang dikirim ke koneksi yang tidak berhak atas channel nya (AC-3).
 - Semua payload keluar tersensor (AC-7).
 - Klien tidak pernah menganggap WS sebagai sumber kebenaran satu satunya; state bisa diambil ulang lewat HTTP (status, job by id) setelah reconnect.
@@ -101,12 +109,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Semua fitur panjang mendapat aliran progress seketika dengan satu pola; polling menyusut.
 
 **Negative / tradeoffs**:
+
 - WS menambah permukaan operasional (proxy, timeout infra operator); didokumentasikan di panduan operator.
 
 **Neutral**:
+
 - Hook `query.<executionId>` menganggur sampai spec 0033 memakainya.
 
 ## Follow-up
@@ -116,9 +127,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - Spec 0003 (skema event), 0017 (sesi WS), 0027, 0028; struktur.md transport/websocket; v1-feature-specification.md FR-JOB-01, bagian 8.2 butir 5.
 
 **Practices & standards**:
+
 - Multiplexed channel dengan otorisasi subscribe; reconnect dengan backoff dan resubscribe; state recoverable lewat HTTP.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

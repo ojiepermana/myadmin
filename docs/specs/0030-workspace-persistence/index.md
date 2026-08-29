@@ -1,7 +1,7 @@
 # 0030. Workspace persistence
 
 **Date**: 2026-08-28
-**Status**: In Progress
+**Status**: Complete
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-UI-03 menuntut state dasar workspace dapat dipulihkan setelah login kembali; 
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin kembali ke susunan tab dan panel yang sama setelah login lagi.
 
 **Acceptance criteria**:
@@ -36,17 +37,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Satu dokumen state JSON per user (dipilih)
 
 **Pros**:
+
 - Sesuai tabel yang dikunci; restore dan simpan atomik; sederhana.
 
 **Cons**:
+
 - Penyimpanan seluruh dokumen tiap perubahan; ukuran dibatasi dan debounce menekan frekuensi.
 
 ### Option 2: Normalisasi tab ke tabel sendiri
 
 **Pros**:
+
 - Perubahan granular.
 
 **Cons**:
+
 - Kompleksitas skema untuk data yang dibaca sebagai satu kesatuan saja; tidak ada query per tab yang dibutuhkan.
 
 ## Decision
@@ -64,19 +69,22 @@ State workspace dibaca dan ditulis sebagai keseluruhan; dokumen tunggal berversi
 **Data model sketch**: memakai `workspaces` (spec 0008): user_id unique, state TEXT JSON, updated_at.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /workspace | GET | tidak ada | state | sesi | |
-| /workspace | PUT | state (versi, tabs, panels) | kosong | sesi | 422 schema/ukuran |
+
+| Endpoint   | Method | Key inputs                  | Key outputs | Auth | Key errors        |
+| ---------- | ------ | --------------------------- | ----------- | ---- | ----------------- |
+| /workspace | GET    | tidak ada                   | state       | sesi |                   |
+| /workspace | PUT    | state (versi, tabs, panels) | kosong      | sesi | 422 schema/ukuran |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| restore | daftar tab valid | state tersimpan disaring terhadap daftar koneksi milik user kini |
-| restore | pemberitahuan tab dilewati | selisih hasil penyaringan |
-| simpan | state | `workspace.store` klien (spec 0015) |
+
+| Action  | Value produced / displayed | Source                                                           |
+| ------- | -------------------------- | ---------------------------------------------------------------- |
+| restore | daftar tab valid           | state tersimpan disaring terhadap daftar koneksi milik user kini |
+| restore | pemberitahuan tab dilewati | selisih hasil penyaringan                                        |
+| simpan  | state                      | `workspace.store` klien (spec 0015)                              |
 
 **Key invariants**:
+
 - Context tab selalu memuat connectionId eksplisit; restore tidak pernah menebak koneksi (FR-EXP-04).
 - Restore tidak membuka koneksi apa pun otomatis.
 - State per user, tidak ada berbagi workspace.
@@ -99,12 +107,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Aplikasi terasa seperti alat kerja yang mengingat; syarat restore FR-UI-03 selesai.
 
 **Negative / tradeoffs**:
+
 - Draft SQL di state menambah ukuran; batas 256 KB memadai untuk puluhan tab wajar.
 
 **Neutral**:
+
 - Migrasi bentuk state di masa depan lewat field version.
 
 ## Follow-up
@@ -114,9 +125,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-UI-03, FR-EXP-04, FR-QRY-01; spec 0008, 0015.
 
 **Practices & standards**:
+
 - State UI sebagai dokumen berversi; restore yang menjelaskan, bukan menebak.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

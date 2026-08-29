@@ -1,7 +1,7 @@
 # 0026. Connection manager: CRUD dan vault
 
-**Date**: 2026-08-28
-**Status**: In Progress
+**Date**: 2026-08-29
+**Status**: Accepted
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary
@@ -17,6 +17,7 @@ FR-CONN-01 sampai FR-CONN-04 mendefinisikan form, test, CRUD, dan group. Keamana
 ## Requirements
 
 **User stories**:
+
 - Sebagai user, saya ingin menyimpan koneksi dengan atau tanpa password nya, mengelompokkannya, dan mengujinya sebelum menyimpan.
 - Sebagai Admin, saya ingin bisa membersihkan koneksi milik user yang sudah pergi tanpa bisa membaca rahasianya.
 
@@ -40,17 +41,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Admin melihat descriptor dan menghapus, tanpa akses credential (dipilih)
 
 **Pros**:
+
 - Memenuhi "Admin mengelola state aplikasi" untuk kebersihan data tanpa membuat Admin bisa menyamar memakai kredensial database orang; sesuai semangat privasi bagian 6.
 
 **Cons**:
+
 - Admin tidak bisa memperbaiki koneksi user secara langsung; harus lewat pemiliknya.
 
 ### Option 2: Admin penuh termasuk memakai credential
 
 **Pros**:
+
 - Operasional paling fleksibel.
 
 **Cons**:
+
 - Menjadikan akun Admin aplikasi setara pemegang semua kredensial database organisasi; memperbesar ledakan bila akun Admin bocor. Bertentangan dengan "private terhadap pemiliknya secara default".
 
 ## Decision
@@ -68,25 +73,28 @@ Pemisahan descriptor/credential sudah menjadi struktur data (spec 0008); spec in
 **Data model sketch**: memakai `connections`, `connection_credentials`, `server_groups` (spec 0008).
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /connections | GET | page? | daftar descriptor | sesi | |
-| /connections | POST | descriptor, secret?, saveSecret | descriptor | sesi | 409 label, 422 |
-| /connections/:id | PATCH | descriptor sebagian, secret?, clearSecret? | descriptor | pemilik | 403, 404, 409 |
-| /connections/:id | DELETE | tidak ada | kosong | pemilik atau admin | 403, 404 |
-| /connections/test | POST | descriptor plus secret transient, atau connectionId | hasil test | sesi (pemilik bila by id) | 403, kategori DbError |
-| /connections/:id/duplicate | POST | newLabel, copySecret? | descriptor | pemilik | 403, 409 |
-| /server-groups | GET/POST/PATCH/DELETE | name, color, sortOrder | group | pemilik | 409 nama |
+
+| Endpoint                   | Method                | Key inputs                                          | Key outputs       | Auth                      | Key errors            |
+| -------------------------- | --------------------- | --------------------------------------------------- | ----------------- | ------------------------- | --------------------- |
+| /connections               | GET                   | page?                                               | daftar descriptor | sesi                      |                       |
+| /connections               | POST                  | descriptor, secret?, saveSecret                     | descriptor        | sesi                      | 409 label, 422        |
+| /connections/:id           | PATCH                 | descriptor sebagian, secret?, clearSecret?          | descriptor        | pemilik                   | 403, 404, 409         |
+| /connections/:id           | DELETE                | tidak ada                                           | kosong            | pemilik atau admin        | 403, 404              |
+| /connections/test          | POST                  | descriptor plus secret transient, atau connectionId | hasil test        | sesi (pemilik bila by id) | 403, kategori DbError |
+| /connections/:id/duplicate | POST                  | newLabel, copySecret?                               | descriptor        | pemilik                   | 403, 409              |
+| /server-groups             | GET/POST/PATCH/DELETE | name, color, sortOrder                              | group             | pemilik                   | 409 nama              |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| test | versi server, latency | provider `test()` (spec 0022, 0024) |
-| simpan secret | ciphertext, nonce, key_id | vault (spec 0011) |
-| daftar admin | penanda pemilik | kolom owner_user_id plus join username |
-| delete | sesi provider yang diputus | registry koneksi aktif (spec 0027) |
+
+| Action        | Value produced / displayed | Source                                 |
+| ------------- | -------------------------- | -------------------------------------- |
+| test          | versi server, latency      | provider `test()` (spec 0022, 0024)    |
+| simpan secret | ciphertext, nonce, key_id  | vault (spec 0011)                      |
+| daftar admin  | penanda pemilik            | kolom owner_user_id plus join username |
+| delete        | sesi provider yang diputus | registry koneksi aktif (spec 0027)     |
 
 **Key invariants**:
+
 - Tidak ada response yang memuat secret, ciphertext, atau metadata enkripsi (hanya boolean `hasSavedSecret`).
 - Hapus koneksi berarti credential ikut mati saat itu juga (cascade plus putus sesi aktif).
 - Semua mutasi diaudit sebelum response sukses (jalur `withAudit`).
@@ -111,12 +119,15 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## Consequences
 
 **Positive**:
+
 - Alur nilai inti produk (kelola banyak koneksi dengan aman) hidup end to end; pola secret transient terbentuk untuk dipakai fitur lain.
 
 **Negative / tradeoffs**:
+
 - Admin tidak bisa memperbaiki credential user; keputusan sadar demi batas kepercayaan yang jelas.
 
 **Neutral**:
+
 - Connect/disconnect dan status hidup di spec 0027; endpoint test di sini menjadi fondasinya.
 
 ## Follow-up
@@ -126,9 +137,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-CONN-01 sampai FR-CONN-04, bagian 6, 8.1; spec 0011, 0022, 0024.
 
 **Practices & standards**:
+
 - Pemisahan descriptor dan secret; least privilege untuk Admin; konfirmasi destructive menyebut target.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

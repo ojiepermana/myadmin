@@ -538,7 +538,7 @@ describe('MyAdmin Angular SDK', () => {
     await expect(deleteSaved).resolves.toBeUndefined();
   });
 
-  it('AC-6 connects, sends subscriptions, dispatches typed events, and resubscribes after backoff', async () => {
+  it('UT-0029-AC6 and IT-0029-AC6 connect, send subscriptions, dispatch typed events, and resubscribe after backoff', async () => {
     jest.useFakeTimers();
     FakeRealtimeSocket.instances.length = 0;
     TestBed.resetTestingModule();
@@ -602,7 +602,7 @@ describe('MyAdmin Angular SDK', () => {
     jest.useRealTimers();
   });
 
-  it('AC-6 connects and disconnects the realtime client with the auth facade', async () => {
+  it('UT-0029-AC6 connects and disconnects the realtime client with the auth facade', async () => {
     FakeRealtimeSocket.instances.length = 0;
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({

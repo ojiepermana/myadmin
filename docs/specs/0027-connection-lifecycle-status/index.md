@@ -1,7 +1,7 @@
 # 0027. Connection manager: lifecycle dan status
 
-**Date**: 2026-08-28
-**Status**: In Progress
+**Date**: 2026-08-29
+**Status**: Accepted
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
 
 ## Summary

@@ -344,7 +344,7 @@ describe('API contract', () => {
     );
   });
 
-  test('CT-0026 validates connection manager response schemas', async () => {
+  test('CT-0026-AC1 validates connection manager response schemas', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
     const connection = {

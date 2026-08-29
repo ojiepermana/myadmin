@@ -1,7 +1,8 @@
 import { expect, test } from '../fixtures';
 
-test('E2E-0026-AC5, E2E-0026-AC6, E2E-0026-AC7, and E2E-0026-AC10 create, test, edit, duplicate, group, and delete a connection', async ({
+test('E2E-0026-AC5, E2E-0026-AC6, E2E-0026-AC7, E2E-0026-AC10, and VIS-0026-AC10 create, test, edit, duplicate, group, and delete a connection', async ({
   page,
+  request,
 }) => {
   await page.route('**/api/v1/connections/test', async (route) => {
     const body = route.request().postDataJSON() as { secret?: string; connectionId?: string };
@@ -13,6 +14,14 @@ test('E2E-0026-AC5, E2E-0026-AC6, E2E-0026-AC7, and E2E-0026-AC10 create, test, 
       body: JSON.stringify({ success: true, version: 'fixture-16', latencyMs: 2 }),
     });
   });
+
+  const setupStatus = await request.get('/api/v1/setup/status');
+  if (!(await setupStatus.json()).initialized) {
+    const setup = await request.post('/api/v1/setup/admin', {
+      data: { username: 'browser-admin', password: 'synthetic-browser-password' },
+    });
+    expect(setup.status()).toBe(201);
+  }
 
   await page.goto('/connections');
   await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
@@ -67,6 +76,30 @@ test('E2E-0026-AC5, E2E-0026-AC6, E2E-0026-AC7, and E2E-0026-AC10 create, test, 
     page.getByRole('article').filter({ hasText: 'Browser connection copy' }),
   ).toBeVisible();
 
+  await page.getByRole('button', { name: 'Create a new connection' }).click();
+  await page.getByLabel('Label').fill('Browser MySQL connection');
+  await page.getByLabel('Engine').selectOption('mysql');
+  await page.getByLabel('Host').fill('127.0.0.1');
+  await page.getByLabel('Username').fill('fixture');
+  await page.getByLabel('Server group', { exact: true }).selectOption({ label: 'Browser group' });
+  await page
+    .getByRole('textbox', { name: 'Password' })
+    .fill('synthetic-browser-connection-password');
+  await page.getByRole('checkbox', { name: /Save password in the vault/ }).uncheck();
+  await page.getByRole('button', { name: 'Test connection' }).click();
+  await expect(page.getByText(/Connection succeeded\. Server version fixture-16/)).toBeVisible();
+  await page.getByRole('button', { name: 'Save connection' }).click();
+  const mysql = page
+    .getByRole('article')
+    .filter({ has: page.getByRole('heading', { name: 'Browser MySQL connection', exact: true }) });
+  await expect(mysql).toContainText('MySQL');
+  await mysql.getByRole('button', { name: 'Delete Browser MySQL connection' }).click();
+  await page
+    .getByRole('dialog', { name: 'Delete Browser MySQL connection?' })
+    .getByRole('button', { name: 'Delete connection' })
+    .click();
+  await expect(mysql).toHaveCount(0);
+
   await page.getByRole('button', { name: 'Delete Browser group' }).click();
   const deleteGroupDialog = page.getByRole('dialog', { name: 'Delete Browser group?' });
   await expect(deleteGroupDialog).toBeVisible();
@@ -75,4 +108,5 @@ test('E2E-0026-AC5, E2E-0026-AC6, E2E-0026-AC7, and E2E-0026-AC10 create, test, 
   await expect(
     page.getByRole('article').filter({ hasText: 'Browser connection copy' }),
   ).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual-0026-ac10.png', fullPage: true });
 });

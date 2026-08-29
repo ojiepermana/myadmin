@@ -8,9 +8,15 @@ const sourceRoots = ['apps', 'packages', 'scripts', 'tests'].map((directory) =>
   join(repositoryRoot, directory),
 );
 const e2eEvidencePath = join(specsRoot, 'evidence/2026-08-29-e2e.md');
+const followupEvidencePath = join(specsRoot, 'evidence/2026-08-29-infrastructure-followup.md');
 const databaseEvidencePath = join(specsRoot, 'evidence/2026-08-29-database.md');
 const externalEvidencePath = join(specsRoot, 'evidence/2026-08-29-external.md');
-const explicitEvidencePaths = [e2eEvidencePath, databaseEvidencePath, externalEvidencePath];
+const explicitEvidencePaths = [
+  e2eEvidencePath,
+  followupEvidencePath,
+  databaseEvidencePath,
+  externalEvidencePath,
+];
 const testIdPattern = /\b(?:UT|IT|CT|E2E|SEC|PERF|VIS|SMOKE|MANUAL)-\d{4}-AC\d+\b/g;
 const acceptanceHeadingPattern = /^### AC-(\d+)\s*$/gm;
 
@@ -102,12 +108,14 @@ function indexSourceReferences(): Map<string, SourceReference[]> {
   return references;
 }
 
-function explicitEvidenceFor(id: string): string | undefined {
+function explicitEvidenceFor(
+  id: string,
+): { readonly detail: string; readonly path: string } | undefined {
   for (const path of explicitEvidencePaths) {
     const line = readFileSync(path, 'utf8')
       .split('\n')
       .find((candidate) => candidate.startsWith(`- \`${id}\`:`));
-    if (line) return line.slice(`- \`${id}\`:`.length).trim();
+    if (line) return { detail: line.slice(`- \`${id}\`:`.length).trim(), path };
   }
   return undefined;
 }
@@ -134,7 +142,7 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
     return {
       id,
       status: 'PASS',
-      message: `${explicitEvidence}; evidence: docs/specs/evidence/2026-08-29-external.md`,
+      message: `${explicitEvidence.detail}; evidence: ${relative(repositoryRoot, explicitEvidence.path)}`,
       references: sourceReferences,
     };
   }

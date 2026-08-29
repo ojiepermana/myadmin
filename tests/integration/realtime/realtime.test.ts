@@ -12,6 +12,7 @@ import {
   SqliteUnitOfWork,
 } from '../../../packages/internal-sqlite/src';
 import { createServerApp, disposeServerApp } from '../../../apps/server/src/app';
+import { RealtimeHub } from '../../../apps/server/src/realtime/websocket';
 
 const databases: Database[] = [];
 const directories: string[] = [];
@@ -35,6 +36,7 @@ async function fixture(): Promise<{
   cookie: string;
   token: string;
   userId: string;
+  realtimeHub: RealtimeHub;
 }> {
   const root = await mkdtemp(join(tmpdir(), 'myadmin-realtime-'));
   directories.push(root);
@@ -49,11 +51,17 @@ async function fixture(): Promise<{
     cleanupIntervalMs: 86_400_000,
     progressThrottleMs: 1,
   });
+  const realtimeHub = new RealtimeHub({
+    canSubscribeJob: (_ownerUserId, jobId) => !['pending', 'not-owned'].includes(jobId),
+    heartbeatIntervalMs: 30,
+    sessionCheckIntervalMs: 10,
+  });
   const app = createServerApp({
     database,
     initialAdminService: setup,
     authService: auth,
     jobManager: jobs,
+    realtimeHub,
     websocketCheckIntervalMs: 10,
     websocketHeartbeatIntervalMs: 30,
     observability: { stdout: () => undefined },
@@ -79,7 +87,7 @@ async function fixture(): Promise<{
   const cookie = loginResponse.headers.get('set-cookie')?.split(';')[0] ?? '';
   const token = cookie.split('=', 2)[1] ?? '';
   const userId = ((await loginResponse.json()) as { user: { id: string } }).user.id;
-  return { app, auth, jobs, cookie, token, userId };
+  return { app, auth, jobs, cookie, token, userId, realtimeHub };
 }
 
 function openSocket(port: number, cookie: string): Promise<WebSocket> {
@@ -109,7 +117,7 @@ function nextMessage(socket: WebSocket, timeoutMs = 1_000): Promise<Record<strin
 }
 
 describe('realtime WebSocket integration', () => {
-  test('IT-0029-AC4 and IT-0029-AC7 stream ordered owned job events with redacted payloads', async () => {
+  test('IT-0029-AC4, IT-0029-AC7, and SEC-0029-AC7 stream ordered owned job events with redacted payloads', async () => {
     const value = await fixture();
     value.app.listen({ hostname: '127.0.0.1', port: 0 });
     if (!value.app.server?.port) throw new Error('The realtime test server did not start');
@@ -186,7 +194,7 @@ describe('realtime WebSocket integration', () => {
     }
   });
 
-  test('IT-0029-AC2 returns protocol errors without exposing resource existence', async () => {
+  test('IT-0029-AC2, IT-0029-AC3, and SEC-0029-AC3 return protocol errors without exposing resource existence', async () => {
     const value = await fixture();
     value.app.listen({ hostname: '127.0.0.1', port: 0 });
     if (!value.app.server?.port) throw new Error('The realtime test server did not start');
@@ -208,6 +216,56 @@ describe('realtime WebSocket integration', () => {
       expect(socket.readyState).toBe(WebSocket.OPEN);
     } finally {
       socket.close();
+    }
+  });
+
+  test('IT-0029-AC5 rejects a fifth WebSocket for the same user', async () => {
+    const value = await fixture();
+    value.app.listen({ hostname: '127.0.0.1', port: 0 });
+    if (!value.app.server?.port) throw new Error('The realtime test server did not start');
+    const sockets: WebSocket[] = [];
+    try {
+      for (let index = 0; index < 4; index += 1) {
+        sockets.push(await openSocket(value.app.server.port, value.cookie));
+      }
+      const rejected = await openSocket(value.app.server.port, value.cookie);
+      const closed = new Promise<CloseEvent>((resolve) => {
+        rejected.onclose = resolve;
+      });
+      await expect(closed).resolves.toMatchObject({ code: 4008 });
+    } finally {
+      for (const socket of sockets) socket.close();
+    }
+  });
+
+  test('IT-0029-AC8 reconnects and resubscribes before the session is revoked', async () => {
+    const value = await fixture();
+    value.app.listen({ hostname: '127.0.0.1', port: 0 });
+    if (!value.app.server?.port) throw new Error('The realtime test server did not start');
+    const first = await openSocket(value.app.server.port, value.cookie);
+    first.close();
+    const reconnected = await openSocket(value.app.server.port, value.cookie);
+    try {
+      const event = nextMessage(reconnected);
+      reconnected.send(JSON.stringify({ type: 'subscribe', channel: 'connections.status' }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      value.realtimeHub.publish({
+        event: 'connection.status',
+        channel: 'connections.status',
+        userId: value.userId,
+        payload: { connectionId: 'reconnected', status: 'connected' },
+      });
+      await expect(event).resolves.toMatchObject({
+        type: 'event',
+        channel: 'connections.status',
+      });
+      const closed = new Promise<CloseEvent>((resolve) => {
+        reconnected.onclose = resolve;
+      });
+      value.auth.logout(value.token);
+      await expect(closed).resolves.toMatchObject({ code: 4001 });
+    } finally {
+      reconnected.close();
     }
   });
 

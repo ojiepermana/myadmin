@@ -48,6 +48,7 @@ export class ImportExport {
   protected readonly importing = signal(false);
   protected readonly dropActive = signal(false);
   private readonly realtimeStops = new Map<string, () => void>();
+  private readonly knownJobIds = new Set<string>();
 
   constructor() {
     const timer = setInterval(() => void this.load(), 750);
@@ -65,6 +66,12 @@ export class ImportExport {
       const importsAndExports = page.items.filter((job) =>
         ['database.export', 'database.import'].includes(job.type),
       );
+      const currentJobIds = new Set(importsAndExports.map((job) => job.id));
+      const missingJob = [...this.knownJobIds].find((jobId) => !currentJobIds.has(jobId));
+      if (missingJob) {
+        this.message.set('The job ended because the server restarted.');
+      }
+      for (const job of importsAndExports) this.knownJobIds.add(job.id);
       this.jobs.set(importsAndExports);
       this.syncRealtime(importsAndExports);
     } catch (error) {
