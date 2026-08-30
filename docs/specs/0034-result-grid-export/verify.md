@@ -68,9 +68,9 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Gap dan blocker
 
-| AC                     | Gap                                                                                                                       | Dampak                    | Tindak lanjut                                                   |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------- | --------------------------------------------------------------- |
-| AC-1, AC-3, AC-4, AC-8 | Helper ResultGrid dan sebagian E2E grid memiliki evidence lokal; performance, visual, dan accessibility belum dijalankan. | Acceptance tetap parsial. | Lengkapi browser, performance, visual, dan accessibility proof. |
+| AC                     | Gap                                                                                                                                                                                         | Dampak                    | Tindak lanjut                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------ |
+| AC-1, AC-3, AC-4, AC-8 | E2E dan performance ResultGrid lokal sudah tersedia, termasuk render 5.000 typed rows dan screenshot; formal visual/accessibility review serta acceptance lintas environment belum lengkap. | Acceptance tetap parsial. | Lengkapi review visual/accessibility dan benchmark atau proof environment yang ditetapkan. |
 
 ## Verdict akhir
 

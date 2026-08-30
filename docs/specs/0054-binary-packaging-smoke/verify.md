@@ -71,7 +71,7 @@ Rerun 2026-08-29: `bun test scripts/build/packaging.test.ts scripts/release/chan
 
 Rerun tambahan 2026-08-30: `bun test scripts/build/packaging.test.ts` lulus **7 test, 19 assertions**, termasuk size report deterministik untuk kelima target dan format singular/plural byte; quality gate format juga lulus.
 
-Evidence lokal belum membuktikan lima target release, tag workflow, upload artefak, atau hosted CI.
+Evidence lokal membuktikan kompilasi lima target release dan smoke database pada binary macOS ARM64 untuk PostgreSQL/MySQL; tag workflow, upload artefak, atau hosted CI belum terbukti.
 
 ## Catatan eksekusi
 

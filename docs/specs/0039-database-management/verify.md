@@ -67,9 +67,9 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Gap dan blocker
 
-| AC               | Gap                                                                                                                                                           | Dampak                    | Tindak lanjut                                         |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------- |
-| AC-1, AC-5, AC-6 | Backend, provider conflict, dan contract evidence tersedia; integration dua engine, halaman UI, E2E, dan security matrix penuh belum ditutup pada Verify ini. | Acceptance tetap parsial. | Lengkapi real-engine database flow dan browser proof. |
+| AC               | Gap                                                                                                                                                                                                | Dampak                    | Tindak lanjut                                       |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | --------------------------------------------------- |
+| AC-1, AC-5, AC-6 | Backend, provider conflict, contract, integration dua engine, halaman UI, dan real-browser database flow sudah tersedia; security matrix penuh dan seluruh acceptance mapping masih belum ditutup. | Acceptance tetap parsial. | Lengkapi security matrix dan proof AC yang tersisa. |
 
 ## Verdict akhir
 

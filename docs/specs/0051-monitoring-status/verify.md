@@ -68,9 +68,9 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Gap dan blocker
 
-| AC         | Gap                                                                                                          | Dampak                    | Tindak lanjut                      |
-| ---------- | ------------------------------------------------------------------------------------------------------------ | ------------------------- | ---------------------------------- |
-| AC-1, AC-3 | Local unit/contract evidence tersedia; full E2E, performance, visual, dan accessibility proof belum lengkap. | Acceptance tetap parsial. | Lengkapi browser dan NFR evidence. |
+| AC         | Gap                                                                                                                                                   | Dampak                    | Tindak lanjut                                                               |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------- |
+| AC-1, AC-3 | E2E, performance, dan visual artifact lokal sudah tersedia; formal accessibility/manual review dan acceptance penuh lintas environment belum lengkap. | Acceptance tetap parsial. | Lengkapi accessibility/manual review dan proof environment yang ditetapkan. |
 
 ## Verdict akhir
 
