@@ -57,6 +57,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Bun 1.4.0 local SQLite | Foundation/contract wave **44 pass, 0 fail, 321 assertions dalam 1,57 detik**; repository roundtrip, rollback, retention, dan append-only audit lulus. | [Foundation and contract evidence](../evidence/2026-08-30-foundation-contract-wave.md) |
+
 | Waktu      | Commit       | Environment                                         | Hasil                                                                                                                                                                         | Evidence                                                                                                           |
 | ---------- | ------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | 2026-08-29 | Working tree | Bun 1.4.0, SQLite integration                       | **16 pass, 62 assertions**; seluruh repository roundtrip, owner scoping, transaction rollback, retention/pagination, dan fake-port boundary lulus; manual AC-6 belum tersedia | `bun test tests/integration/internal-sqlite/sqlite.test.ts tests/integration/internal-sqlite/repositories.test.ts` |

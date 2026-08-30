@@ -58,6 +58,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Bun 1.4.0 contract suite | Foundation/contract wave **44 pass, 0 fail, 321 assertions dalam 1,57 detik**; provider-neutral ports, capability vocabulary, secret boundary, normalized errors, dan fake provider contract lulus. | [Foundation and contract evidence](../evidence/2026-08-30-foundation-contract-wave.md) |
+
 | Waktu      | Commit       | Environment                                             | Hasil                                                                                                                                                                                          | Evidence                                                       |
 | ---------- | ------------ | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | 2026-08-30 | Working tree | Bun 1.4.0, macOS arm64, provider-neutral contract suite | **23 pass, 224 assertions**; core ports, documented port contracts, closed capabilities, secret boundaries, normalized errors, provider registry, dan PostgreSQL/MySQL source boundaries lulus | `bun test tests/contract/database-provider-acceptance.test.ts` |

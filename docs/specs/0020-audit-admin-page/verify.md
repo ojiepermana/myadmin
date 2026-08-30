@@ -55,6 +55,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Bun 1.4.0 local SQLite/API | Foundation/contract wave **44 pass, 0 fail, 321 assertions dalam 1,57 detik**; filter, pagination, redaction, authorization, dan indexed 100k-row audit read lulus. | [Foundation and contract evidence](../evidence/2026-08-30-foundation-contract-wave.md) |
+
 | 2026-08-30 | working tree | Playwright local web server | Audit/admin E2E **1 passed dalam 7,5 detik** untuk review operasi nyata beserta audit detailnya. | [Audit/admin E2E evidence](../evidence/2026-08-30-audit-admin-e2e.md) |
 
 | Waktu      | Commit       | Environment                                                                | Hasil                                                                                                                                                                  | Evidence                                                                                                              |
