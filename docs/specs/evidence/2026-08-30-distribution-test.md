@@ -29,6 +29,17 @@ packaging invariants, conditional signing gates, Docker runtime/tools security
 invariants, service templates, operator documentation, and the security
 workflow gate.
 
+Latest rerun from the current checkout:
+
+```text
+22 pass
+0 fail
+105 expect() calls
+Ran 22 tests across 3 files. [311.00ms]
+```
+
+The rerun used the same three source suites and produced the same green result.
+
 ## Remaining acceptance boundary
 
 This local result supports the 0055 Test checklist, but Verify remains open:
