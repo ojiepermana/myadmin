@@ -226,7 +226,7 @@ describe('metrics', () => {
     expect(requestMetrics.snapshot()).toHaveLength(3);
   });
 
-  it('SEC-0053-AC1 redacts sensitive telemetry tags before keying and storing them', () => {
+  it('UT-0053-AC1 and SEC-0053-AC1 redact sensitive telemetry tags before keying and storing them', () => {
     const requestMetrics = new Metrics();
     const secret = 'synthetic-telemetry-secret';
     const release = registerEphemeralSecret(secret);
