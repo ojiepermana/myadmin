@@ -55,6 +55,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server | Audit/admin E2E **1 passed dalam 7,5 detik** untuk review operasi nyata beserta audit detailnya. | [Audit/admin E2E evidence](../evidence/2026-08-30-audit-admin-e2e.md) |
+
 | Waktu      | Commit       | Environment                                                                | Hasil                                                                                                                                                                  | Evidence                                                                                                              |
 | ---------- | ------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | 2026-08-29 | Working tree | Bun 1.4.0, audit integration                                               | 5 test lulus; 33 assertions; filter, pagination, redaction, authorization, dan 100k-row index benchmark                                                                | `bun test tests/integration/audit/audit-admin.test.ts`                                                                |
