@@ -26,7 +26,7 @@ const realE2eSuites = new Set([
 const testIdPattern = /\b(?:UT|IT|CT|E2E|SEC|PERF|VIS|SMOKE|MANUAL)-\d{4}-AC\d+\b/g;
 const acceptanceHeadingPattern = /^### AC-(\d+)\s*$/gm;
 
-type EvidenceStatus = 'PASS' | 'BLOCKED';
+type EvidenceStatus = 'PASS' | 'PARTIAL' | 'BLOCKED';
 
 interface SourceReference {
   readonly path: string;
@@ -211,6 +211,14 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
     };
   }
   if (type === 'MANUAL' || type === 'VIS' || type === 'PERF' || type === 'SMOKE') {
+    if (sourceReferences.length > 0) {
+      return {
+        id,
+        status: 'PARTIAL',
+        message: `local source evidence tersedia (${referenceText}), tetapi proof khusus yang diwajibkan belum lengkap`,
+        references: sourceReferences,
+      };
+    }
     return {
       id,
       status: 'BLOCKED',
@@ -255,7 +263,7 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
 }
 
 function renderEvidence(evidence: TestIdEvidence): string {
-  const label = evidence.status === 'PASS' ? 'PASS' : 'BLOCKED';
+  const label = evidence.status;
   return `<code>${evidence.id}</code> → ${label}: ${evidence.message}`;
 }
 
@@ -281,8 +289,9 @@ function generate(): void {
   ).length;
   const partialCount = evidenceRows.filter(
     ({ evidence }) =>
-      evidence.some((item) => item.status === 'PASS') &&
-      evidence.some((item) => item.status === 'BLOCKED'),
+      evidence.some((item) => item.status === 'PARTIAL') ||
+      (evidence.some((item) => item.status === 'PASS') &&
+        evidence.some((item) => item.status === 'BLOCKED')),
   ).length;
   const blockedCount = evidenceRows.length - passCount - partialCount;
 
@@ -297,6 +306,7 @@ function generate(): void {
     `- AC partially evidenced: **${partialCount}**`,
     `- AC blocked: **${blockedCount}**`,
     '- `PASS` means the planned ID has a matching source test with a passing command gate, or an explicit recorded evidence document.',
+    '- `PARTIAL` means local/source evidence exists, but the required proof type or environment is incomplete.',
     '- `BLOCKED` means the planned ID is missing, or its proof type/environment was not executed. A source file alone is not acceptance evidence.',
     '- The root suite records environment-dependent skips separately; recorded PostgreSQL/MySQL runs are linked from docs/specs/evidence/2026-08-29-database.md, and unmatched environment-dependent IDs remain blocked.',
     '',
@@ -307,7 +317,7 @@ function generate(): void {
   for (const { row, evidence } of evidenceRows) {
     const verdict = evidence.every((item) => item.status === 'PASS')
       ? 'PASS'
-      : evidence.some((item) => item.status === 'PASS')
+      : evidence.some((item) => item.status === 'PASS' || item.status === 'PARTIAL')
         ? 'PARTIAL'
         : 'BLOCKED';
     lines.push(
