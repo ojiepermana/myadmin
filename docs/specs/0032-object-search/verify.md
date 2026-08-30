@@ -56,6 +56,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Bun dengan PostgreSQL disposable | Provider performance **3 pass, 0 fail, 15 assertions dalam 2,39 detik**; metadata/search pada schema 2.000 tabel berada di bawah ambang lokal. | [Provider performance evidence](../evidence/2026-08-30-provider-performance.md) |
+
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real workflow E2E **4 passed dalam 2,6 menit** mencakup pencarian object pada katalog nyata. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
 
 | Waktu      | Commit       | Environment                                                                            | Hasil                                                                                                                                           | Evidence                                                                                                                                                                                                                                                               |

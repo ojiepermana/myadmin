@@ -58,6 +58,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Bun dengan PostgreSQL disposable | Provider performance **3 pass, 0 fail, 15 assertions dalam 2,39 detik**; sepuluh status call ringan lulus pada ambang lokal. | [Provider performance evidence](../evidence/2026-08-30-provider-performance.md) |
+
 | Waktu      | Commit       | Environment                                                                | Hasil                                                                                                                                                        | Evidence                                                                                                                                                   |
 | ---------- | ------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-08-29 | Working tree | Bun 1.4.0, monitoring unit dan contract tests                              | Unit bounded-history dan monitoring status contract lulus; full browser/performance/visual matrix belum dijalankan                                           | `apps/web/test/monitoring-status.test.ts`; `tests/contract/monitoring-status.test.ts`                                                                      |
