@@ -54,6 +54,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Bun 1.4.0, OpenAPI bundle lokal | **20 pass, 0 fail, 538 assertions**; bundle OpenAPI/WebSocket tervalidasi, enam path awal, ApiError, security, pagination, capability, dan event contract lulus. Ini bukti lokal; hosted CI belum dibuktikan. | `bun test --isolate tests/contract/foundation-acceptance.test.ts` |
+
 | Waktu      | Commit       | Environment            | Hasil                                                                                                                       | Evidence                                                                             |
 | ---------- | ------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | 2026-08-30 | Working tree | Bun 1.4.0, macOS arm64 | OpenAPI validation dan generated contract drift lulus; **71 contract test, 812 assertions** lulus; hosted CI belum terbukti | `bun run validate-contract`; `bun run check:contract-drift`; `bun run test:contract` |

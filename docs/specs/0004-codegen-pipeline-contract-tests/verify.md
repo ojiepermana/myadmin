@@ -66,6 +66,8 @@ Evidence di atas membuktikan jalur lokal. Hosted CI `contract.yml` belum memilik
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Bun 1.4.0, generated contract lokal | Test foundation **20 pass, 0 fail, 538 assertions**; `SMOKE-0004-AC2` drift check dan `SMOKE-0004-AC7` workflow wiring lulus secara lokal. Hosted `contract.yml` run tetap belum dibuktikan. | `bun test --isolate tests/contract/foundation-acceptance.test.ts` |
+
 | Waktu      | Commit       | Environment            | Hasil                                                                                                                                    | Evidence                                                                             |
 | ---------- | ------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | 2026-08-30 | working tree | Bun 1.4.0, macOS arm64 | **71 contract test, 812 assertions** lulus setelah validate, regenerate, drift check, bundle, dan contract run; hosted CI belum terbukti | `bun run validate-contract && bun run check:contract-drift && bun run test:contract` |
