@@ -9,6 +9,7 @@ Provider database memakai Bun SQL sebagai detail adapter, bukan sebagai kontrak 
 1. PostgreSQL dan MySQL driver adapter.
 2. Query, transaction, reserve, close, timeout, dan cancellation.
 3. Query execution serta provider capability yang dipakai spec 0033 dan 0035.
+4. Netralitas kontrak `database-core`: probe native tools (yang memakai subprocess dan filesystem) keluar dari core ke paket infrastruktur, field `format` backup menjadi nilai opaque yang dideklarasikan provider, dan `DatabaseEngine` memiliki satu definisi kanonik yang diturunkan paket lain.
 
 ## Standard definition
 
@@ -34,6 +35,7 @@ Parameter binding, reserved connection, backend pid, dan perbedaan PostgreSQL at
 2. Fabricated `TemplateStringsArray` untuk memaksa typed API.
 3. MySQL `unsafe` yang dipanggil di luar adapter dengan input yang belum dibatasi.
 4. `Promise.race` yang hanya membatasi penantian tanpa membatalkan kerja provider.
+5. I/O runtime di dalam `database-core` (probe native tools dengan subprocess dan filesystem) dan union format backup yang menyebut nama provider di kontrak core.
 
 **Enforcement**:
 

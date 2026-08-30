@@ -103,11 +103,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Perluas kontrak model principal dan deklarasi form; regenerasi; contract test.
-2. Implementasikan `SecurityPort` bagian principal di kedua provider (list, describe form, create, alter, reset, drop; kompilasi DDL) plus test integrasi, memenuhi **AC-1** sampai **AC-5**.
-3. Endpoint server bergerbang capability plus audit, memenuhi **AC-6**, **AC-7**.
-4. UI feature security: daftar principal, form dinamis, dialog reset, konfirmasi drop, memenuhi **AC-2** sampai **AC-5**.
-5. E2e dua engine dan test kebersihan rahasia, memenuhi **AC-8**.
+1. [x] Perluas kontrak model principal dan deklarasi form; regenerasi; contract test.
+2. [x] Implementasikan `SecurityPort` bagian principal di kedua provider (list, describe form, create, alter, reset, drop; kompilasi DDL) plus test integrasi, memenuhi **AC-1** sampai **AC-5**.
+3. [x] Endpoint server bergerbang capability plus audit, memenuhi **AC-6**, **AC-7**.
+4. [x] UI feature security: daftar principal, form dinamis, dialog reset, konfirmasi drop, memenuhi **AC-2** sampai **AC-5**.
+5. [x] E2e dua engine dan test kebersihan rahasia, memenuhi **AC-8**.
 
 ## Consequences
 

@@ -94,11 +94,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Tulis `build-web.ts` dan `embed-web-assets.ts` (manifest bertipe, MIME, hash) plus jalur penyajian release, memenuhi **AC-1**.
-2. Tulis `compile-binary.ts` lima target dengan injeksi versi, memenuhi **AC-2**.
-3. Tulis `checksums.ts` dan pin toolchain, memenuhi **AC-3**.
-4. Bangun harness smoke (proses nyata, data dir sementara, urutan Definition of Done butir 4, database test untuk langkah koneksi), memenuhi **AC-4**.
-5. Rakit `release.yml` dengan gerbang dan matriks runner, laporan ukuran, README rilis, memenuhi **AC-5**, **AC-6**, **AC-7**.
+1. [x] Tulis `build-web.ts` dan `embed-web-assets.ts` (manifest bertipe, MIME, hash) plus jalur penyajian release, memenuhi **AC-1**.
+2. [x] Tulis `compile-binary.ts` lima target dengan injeksi versi, memenuhi **AC-2**.
+3. [x] Tulis `checksums.ts` dan pin toolchain, memenuhi **AC-3**.
+4. [x] Bangun harness smoke (proses nyata, data dir sementara, urutan Definition of Done butir 4, database test untuk langkah koneksi), memenuhi **AC-4**.
+5. [x] Rakit `release.yml` dengan gerbang dan matriks runner, laporan ukuran, README rilis, memenuhi **AC-5**, **AC-6**, **AC-7**.
 
 ## Consequences
 
@@ -116,7 +116,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Follow-up
 
-- [ ] Spec 0055: signing, installer, service file, dan dokumentasi operator di atas artefak ini.
+- [x] Spec 0055: signing, installer, service file, dan dokumentasi operator di atas artefak ini.
 
 ## References
 

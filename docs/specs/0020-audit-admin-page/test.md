@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — audit integration/security, 100k-row index benchmark, dan browser audit flow lulus; hosted/manual review tetap belum tersedia.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -46,15 +46,15 @@ e2e: aksi destructive yang dilakukan di test (misal hapus koneksi) muncul di hal
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | n/a | `IT-0020-AC1` | n/a | n/a | `SEC-0020-AC1` | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | n/a | `IT-0020-AC2` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | n/a | `IT-0020-AC3` | n/a | n/a | `SEC-0020-AC3` | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | n/a | n/a | `E2E-0020-AC4` | `SEC-0020-AC4` | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | n/a | n/a | n/a | `E2E-0020-AC5` | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | n/a | n/a | n/a | n/a | `PERF-0020-AC6` | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | n/a | n/a | `E2E-0020-AC7` | n/a | n/a | n/a | n/a | n/a |
+| AC            | Unit | Integration   | Contract | E2E            | Security       | Performance     | Visual | Smoke | Manual atau external |
+| ------------- | ---- | ------------- | -------- | -------------- | -------------- | --------------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | n/a  | `IT-0020-AC1` | n/a      | n/a            | `SEC-0020-AC1` | n/a             | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | n/a  | `IT-0020-AC2` | n/a      | n/a            | n/a            | n/a             | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | n/a  | `IT-0020-AC3` | n/a      | n/a            | `SEC-0020-AC3` | n/a             | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | n/a  | n/a           | n/a      | `E2E-0020-AC4` | `SEC-0020-AC4` | n/a             | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | n/a  | n/a           | n/a      | `E2E-0020-AC5` | n/a            | n/a             | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | n/a  | n/a           | n/a      | n/a            | n/a            | `PERF-0020-AC6` | n/a    | n/a   | n/a                  |
+| [AC-7](#ac-7) | n/a  | n/a           | n/a      | `E2E-0020-AC7` | n/a            | n/a             | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
@@ -64,11 +64,11 @@ Tidak ada unit yang diwajibkan oleh acceptance criteria saat ini.
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0020-AC1` | [AC-1](#ac-1) | GET /audit (admin only) mendukung filter: rentang waktu (from, to), actorUserId, action (satu atau beberapa, dari taksonomi), connectionId, targetRef (pencoc... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
-| `IT-0020-AC2` | [AC-2](#ac-2) | hasil terurut occurred_at menurun dengan pagination server side (page, pageSize maksimum 100); total boleh berupa hitungan tepat karena query lokal. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
-| `IT-0020-AC3` | [AC-3](#ac-3) | response memuat baris audit apa adanya dari kolom yang aman (semua kolom audit_logs; details sudah tersensor sejak tulis); tidak ada proses un redact. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
+| `IT-0020-AC2` | [AC-2](#ac-2) | hasil terurut occurred_at menurun dengan pagination server side (page, pageSize maksimum 100); total boleh berupa hitungan tepat karena query lokal.             | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
+| `IT-0020-AC3` | [AC-3](#ac-3) | response memuat baris audit apa adanya dari kolom yang aman (semua kolom audit_logs; details sudah tersensor sejak tulis); tidak ada proses un redact.           | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 
 ## Test tambahan
 
@@ -78,24 +78,24 @@ Tidak ada contract yang diwajibkan oleh acceptance criteria saat ini.
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `E2E-0020-AC4` | [AC-4](#ac-4) | role user menjawab 403; guard web menyembunyikan menu audit dari non admin (dua lapis, server tetap penegak). | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `E2E-0020-AC4` | [AC-4](#ac-4) | role user menjawab 403; guard web menyembunyikan menu audit dari non admin (dua lapis, server tetap penegak).                                                    | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `E2E-0020-AC5` | [AC-5](#ac-5) | halaman audit: data grid foundation dengan kolom waktu, actor (username di join kan), action, target, koneksi, result, correlation ID; panel filter dengan pi... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `E2E-0020-AC7` | [AC-7](#ac-7) | e2e: aksi destructive yang dilakukan di test (misal hapus koneksi) muncul di halaman audit dengan filter action yang tepat. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `E2E-0020-AC7` | [AC-7](#ac-7) | e2e: aksi destructive yang dilakukan di test (misal hapus koneksi) muncul di halaman audit dengan filter action yang tepat.                                      | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0020-AC1` | [AC-1](#ac-1) | GET /audit (admin only) mendukung filter: rentang waktu (from, to), actorUserId, action (satu atau beberapa, dari taksonomi), connectionId, targetRef (pencoc... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
-| `SEC-0020-AC3` | [AC-3](#ac-3) | response memuat baris audit apa adanya dari kolom yang aman (semua kolom audit_logs; details sudah tersensor sejak tulis); tidak ada proses un redact. | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `SEC-0020-AC4` | [AC-4](#ac-4) | role user menjawab 403; guard web menyembunyikan menu audit dari non admin (dua lapis, server tetap penegak). | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| `SEC-0020-AC3` | [AC-3](#ac-3) | response memuat baris audit apa adanya dari kolom yang aman (semua kolom audit_logs; details sudah tersensor sejak tulis); tidak ada proses un redact.           | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
+| `SEC-0020-AC4` | [AC-4](#ac-4) | role user menjawab 403; guard web menyembunyikan menu audit dari non admin (dua lapis, server tetap penegak).                                                    | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 
 ### Performance
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID              | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| --------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `PERF-0020-AC6` | [AC-6](#ac-6) | query berfilter memakai index yang ada (occurred_at, actor_user_id); kombinasi filter umum tetap responsif pada 100 ribu baris (dibuktikan test performa ring... | Tetapkan dataset, baseline, ambang, pengulangan, dan toleransi sebelum eksekusi. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ### Visual dan accessibility
@@ -122,12 +122,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

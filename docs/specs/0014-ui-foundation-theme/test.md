@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — theme/settings browser flow lulus, termasuk light/dark/system mode dan screenshot artifact; UI boundary integration serta package/theme/dev-route smoke invariants lulus; clean smoke, visual/accessibility formal, dan manual review belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -46,15 +46,15 @@ aturan boundary/lint menolak import langsung design system lain di kode aplikasi
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `SMOKE-0014-AC1` | n/a |
-| [AC-2](#ac-2) | n/a | n/a | n/a | `E2E-0014-AC2` | n/a | n/a | `VIS-0014-AC2` | n/a | n/a |
-| [AC-3](#ac-3) | n/a | n/a | n/a | `E2E-0014-AC3` | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | n/a | n/a | n/a | n/a | n/a | `VIS-0014-AC4` | n/a | `MANUAL-0014-AC4` |
-| [AC-5](#ac-5) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `MANUAL-0014-AC5` |
-| [AC-6](#ac-6) | n/a | n/a | n/a | n/a | n/a | n/a | `VIS-0014-AC6` | `SMOKE-0014-AC6` | n/a |
-| [AC-7](#ac-7) | n/a | `IT-0014-AC7` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
+| AC            | Unit | Integration   | Contract | E2E            | Security | Performance | Visual         | Smoke            | Manual atau external |
+| ------------- | ---- | ------------- | -------- | -------------- | -------- | ----------- | -------------- | ---------------- | -------------------- |
+| [AC-1](#ac-1) | n/a  | n/a           | n/a      | n/a            | n/a      | n/a         | n/a            | `SMOKE-0014-AC1` | n/a                  |
+| [AC-2](#ac-2) | n/a  | n/a           | n/a      | `E2E-0014-AC2` | n/a      | n/a         | `VIS-0014-AC2` | n/a              | n/a                  |
+| [AC-3](#ac-3) | n/a  | n/a           | n/a      | `E2E-0014-AC3` | n/a      | n/a         | n/a            | n/a              | n/a                  |
+| [AC-4](#ac-4) | n/a  | n/a           | n/a      | n/a            | n/a      | n/a         | `VIS-0014-AC4` | n/a              | `MANUAL-0014-AC4`    |
+| [AC-5](#ac-5) | n/a  | n/a           | n/a      | n/a            | n/a      | n/a         | n/a            | `SMOKE-0014-AC5` | `MANUAL-0014-AC5`    |
+| [AC-6](#ac-6) | n/a  | n/a           | n/a      | n/a            | n/a      | n/a         | `VIS-0014-AC6` | `SMOKE-0014-AC6` | n/a                  |
+| [AC-7](#ac-7) | n/a  | `IT-0014-AC7` | n/a      | n/a            | n/a      | n/a         | n/a            | n/a              | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
@@ -64,8 +64,8 @@ Tidak ada unit yang diwajibkan oleh acceptance criteria saat ini.
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0014-AC7` | [AC-7](#ac-7) | aturan boundary/lint menolak import langsung design system lain di kode aplikasi (@angular/material, PrimeNG, Bootstrap) dan menolak pembuatan komponen berna... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ## Test tambahan
@@ -76,9 +76,9 @@ Tidak ada contract yang diwajibkan oleh acceptance criteria saat ini.
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `E2E-0014-AC2` | [AC-2](#ac-2) | mode light, dark, dan system bekerja: system mengikuti prefers-color-scheme dan berubah hidup saat OS berubah; perpindahan mode tidak memerlukan reload. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `E2E-0014-AC2` | [AC-2](#ac-2) | mode light, dark, dan system bekerja: system mengikuti prefers-color-scheme dan berubah hidup saat OS berubah; perpindahan mode tidak memerlukan reload.         | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `E2E-0014-AC3` | [AC-3](#ac-3) | preferensi theme tersimpan: sebelum login di localStorage; setelah spec 0052 tersambung ke preferences server per user; struktur store (theme-preference.stor... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 
 ### Security
@@ -91,23 +91,24 @@ Tidak ada performance yang diwajibkan oleh acceptance criteria saat ini.
 
 ### Visual dan accessibility
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `VIS-0014-AC2` | [AC-2](#ac-2) | mode light, dark, dan system bekerja: system mengikuti prefers-color-scheme dan berubah hidup saat OS berubah; perpindahan mode tidak memerlukan reload. | Kunci viewport, mode warna, state komponen, interaksi keyboard, dan bukti screenshot. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                    | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `VIS-0014-AC2` | [AC-2](#ac-2) | mode light, dark, dan system bekerja: system mengikuti prefers-color-scheme dan berubah hidup saat OS berubah; perpindahan mode tidak memerlukan reload.         | Kunci viewport, mode warna, state komponen, interaksi keyboard, dan bukti screenshot. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `VIS-0014-AC4` | [AC-4](#ac-4) | identitas Myadmin didefinisikan sebagai konfigurasi theme (warna aksen, radius, tipografi, spacing) lewat mekanisme extension paket foundation, bukan CSS yan... | Kunci viewport, mode warna, state komponen, interaksi keyboard, dan bukti screenshot. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `VIS-0014-AC6` | [AC-6](#ac-6) | satu halaman demo internal (route dev saja, tidak masuk build production) menampilkan komponen inti pada kedua mode untuk verifikasi visual cepat. | Kunci viewport, mode warna, state komponen, interaksi keyboard, dan bukti screenshot. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| `VIS-0014-AC6` | [AC-6](#ac-6) | satu halaman demo internal (route dev saja, tidak masuk build production) menampilkan komponen inti pada kedua mode untuk verifikasi visual cepat.               | Kunci viewport, mode warna, state komponen, interaksi keyboard, dan bukti screenshot. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ### Smoke dan operational acceptance
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `SMOKE-0014-AC1` | [AC-1](#ac-1) | @ojiepermana/angular terpasang dari npm publik pada versi 22.1.7 atau lebih baru dengan versi terkunci di lockfile, termasuk peer opsional @angular/material... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
-| `SMOKE-0014-AC6` | [AC-6](#ac-6) | satu halaman demo internal (route dev saja, tidak masuk build production) menampilkan komponen inti pada kedua mode untuk verifikasi visual cepat. | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| ID               | AC            | Fokus                                                                                                                                                           | Scenario terencana                                                                                              | Expected result                                                                                             |
+| ---------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `SMOKE-0014-AC1` | [AC-1](#ac-1) | @ojiepermana/angular terpasang dari npm publik pada versi 22.1.7 atau lebih baru dengan versi terkunci di lockfile, termasuk peer opsional @angular/material... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional.                            | Seluruh outcome dan failure boundary AC-1 terpenuhi.                                                        |
+| `SMOKE-0014-AC5` | [AC-5](#ac-5) | capability audit memuat seluruh kebutuhan generik V1, API atau gap untuk setiap kebutuhan, serta follow-up yang tidak membuat komponen generik lokal.           | Jalankan invariant test terhadap audit yang tersimpan di `docs/architecture/ui-foundation-capability-audit.md`. | Tidak ada kebutuhan V1 yang hilang; gap tree memiliki tindak lanjut foundation package dan aturan boundary. |
+| `SMOKE-0014-AC6` | [AC-6](#ac-6) | satu halaman demo internal (route dev saja, tidak masuk build production) menampilkan komponen inti pada kedua mode untuk verifikasi visual cepat.              | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional.                            | Seluruh outcome dan failure boundary AC-6 terpenuhi.                                                        |
 
 ### Manual atau external proof
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID                | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                               | Expected result                                      |
+| ----------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `MANUAL-0014-AC4` | [AC-4](#ac-4) | identitas Myadmin didefinisikan sebagai konfigurasi theme (warna aksen, radius, tipografi, spacing) lewat mekanisme extension paket foundation, bukan CSS yan... | Lakukan review manusia atau kumpulkan bukti eksternal yang tidak dapat digantikan test otomatis. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `MANUAL-0014-AC5` | [AC-5](#ac-5) | audit kapabilitas terdokumentasi: daftar kebutuhan generik V1 (button, input, select, dialog, drawer, popover, tooltip, tabs, menu, breadcrumb, table/data gr... | Lakukan review manusia atau kumpulkan bukti eksternal yang tidak dapat digantikan test otomatis. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 
@@ -123,12 +124,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

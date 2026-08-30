@@ -101,11 +101,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Definisikan bentuk read (filter, sort, page, total berlabel) di kontrak, regenerasi, contract test, memenuhi **AC-1**, **AC-2**.
-2. Implementasikan penerjemah filter/sort/pagination di provider `data/` kedua engine (berparameter, quoting terpusat, tie breaker, strategi total) dengan test unit dan integrasi, memenuhi **AC-2** sampai **AC-5**.
-3. Endpoint server plus validasi, memenuhi **AC-1**.
-4. UI tab data: ResultGrid mode browser, filter per kolom, chip filter, pemilih kolom, pagination, konteks tab serializable, memenuhi **AC-6**, **AC-7**.
-5. Test NFR-01, injeksi, dan e2e dua engine, memenuhi **AC-8**, **AC-9**.
+1. [x] Definisikan bentuk read (filter, sort, page, total berlabel) di kontrak, regenerasi, contract test, memenuhi **AC-1**, **AC-2**.
+2. [x] Implementasikan penerjemah filter/sort/pagination di provider `data/` kedua engine (berparameter, quoting terpusat, tie breaker, strategi total) dengan test unit dan integrasi, memenuhi **AC-2** sampai **AC-5**.
+3. [x] Endpoint server plus validasi, memenuhi **AC-1**.
+4. [x] UI tab data: ResultGrid mode browser, filter per kolom, chip filter, pemilih kolom, pagination, konteks tab serializable, memenuhi **AC-6**, **AC-7**.
+5. [x] Test NFR-01, injeksi, dan e2e dua engine, memenuhi **AC-8**, **AC-9**.
 
 ## Consequences
 
@@ -123,7 +123,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Follow-up
 
-- [ ] Spec 0038 menumpangkan penyuntingan pada tab data ini.
+- [x] Spec 0038 menumpangkan penyuntingan pada tab data ini.
 
 ## References
 

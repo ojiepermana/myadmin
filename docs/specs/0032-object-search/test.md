@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — real browser dan metadata performance PostgreSQL/MySQL lulus; visual dan acceptance penuh belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -42,58 +42,58 @@ e2e: cari nama table pada fixture 2000 table, hasil datang paginated cepat, lomp
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | n/a | `IT-0032-AC1` | `CT-0032-AC1` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | n/a | `IT-0032-AC2` | n/a | n/a | `SEC-0032-AC2` | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | `UT-0032-AC3` | n/a | n/a | `E2E-0032-AC3` | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | n/a | n/a | `E2E-0032-AC4` | n/a | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | `UT-0032-AC5` | n/a | n/a | `E2E-0032-AC5` | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | n/a | n/a | `E2E-0032-AC6` | n/a | `PERF-0032-AC6` | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract      | E2E            | Security       | Performance     | Visual | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | ------------- | -------------- | -------------- | --------------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | n/a           | `IT-0032-AC1` | `CT-0032-AC1` | n/a            | n/a            | n/a             | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | n/a           | `IT-0032-AC2` | n/a           | n/a            | `SEC-0032-AC2` | n/a             | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | `UT-0032-AC3` | n/a           | n/a           | `E2E-0032-AC3` | n/a            | n/a             | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | n/a           | n/a           | n/a           | `E2E-0032-AC4` | n/a            | n/a             | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | `UT-0032-AC5` | n/a           | n/a           | `E2E-0032-AC5` | n/a            | n/a             | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | n/a           | n/a           | n/a           | `E2E-0032-AC6` | n/a            | `PERF-0032-AC6` | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0032-AC3` | [AC-3](#ac-3) | UI: kotak pencarian di panel explorer dengan debounce 300 ms, hasil dikelompokkan per tipe, keyboard penuh (panah, Enter), dan tombol muat halaman berikutnya... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `UT-0032-AC5` | [AC-5](#ac-5) | pencarian dibatalkan otomatis saat kueri berubah (request lama di abort) supaya hasil tidak balapan. | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `UT-0032-AC5` | [AC-5](#ac-5) | pencarian dibatalkan otomatis saat kueri berubah (request lama di abort) supaya hasil tidak balapan.                                                             | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `IT-0032-AC1` | [AC-1](#ac-1) | GET /connections/:id/search?q=&types=&database=&page= memanggil searchObjects provider: q minimal 2 karakter, types opsional (database, schema, table, view,... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `IT-0032-AC1` | [AC-1](#ac-1) | GET /connections/:id/search?q=&types=&database=&page= memanggil searchObjects provider: q minimal 2 karakter, types opsional (database, schema, table, view,...  | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0032-AC2` | [AC-2](#ac-2) | pencarian berjalan hanya pada koneksi tersambung milik user; input dipakai sebagai parameter query provider (tanpa penyambungan SQL, sudah dijamin spec 0023/... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 
 ## Test tambahan
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                           | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0032-AC1` | [AC-1](#ac-1) | GET /connections/:id/search?q=&types=&database=&page= memanggil searchObjects provider: q minimal 2 karakter, types opsional (database, schema, table, view,... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0032-AC3` | [AC-3](#ac-3) | UI: kotak pencarian di panel explorer dengan debounce 300 ms, hasil dikelompokkan per tipe, keyboard penuh (panah, Enter), dan tombol muat halaman berikutnya... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `E2E-0032-AC4` | [AC-4](#ac-4) | memilih hasil melompat ke node terkait di pohon (mengekspansi jalurnya secara malas) atau, lewat menu hasil, langsung ke aksi utama object itu (browse data u... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `E2E-0032-AC5` | [AC-5](#ac-5) | pencarian dibatalkan otomatis saat kueri berubah (request lama di abort) supaya hasil tidak balapan. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `E2E-0032-AC6` | [AC-6](#ac-6) | e2e: cari nama table pada fixture 2000 table, hasil datang paginated cepat, lompat ke node bekerja, di kedua engine. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| `E2E-0032-AC5` | [AC-5](#ac-5) | pencarian dibatalkan otomatis saat kueri berubah (request lama di abort) supaya hasil tidak balapan.                                                             | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `E2E-0032-AC6` | [AC-6](#ac-6) | e2e: cari nama table pada fixture 2000 table, hasil datang paginated cepat, lompat ke node bekerja, di kedua engine.                                             | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0032-AC2` | [AC-2](#ac-2) | pencarian berjalan hanya pada koneksi tersambung milik user; input dipakai sebagai parameter query provider (tanpa penyambungan SQL, sudah dijamin spec 0023/... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 
 ### Performance
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID              | AC            | Fokus                                                                                                                | Scenario terencana                                                               | Expected result                                      |
+| --------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `PERF-0032-AC6` | [AC-6](#ac-6) | e2e: cari nama table pada fixture 2000 table, hasil datang paginated cepat, lompat ke node bekerja, di kedua engine. | Tetapkan dataset, baseline, ambang, pengulangan, dan toleransi sebelum eksekusi. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ### Visual dan accessibility
@@ -120,12 +120,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

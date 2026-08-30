@@ -33,6 +33,10 @@ Operation resource memuat schema lengkap yang didefinisikan di umbrella index, y
 
 Path v2 mempertahankan path resource yang ada, yaitu `/query/executions`, `/query/executions/{id}`, `/query/executions/{id}/cancel`, `/query/explain`, `/jobs`, `/jobs/{id}`, dan `/jobs/{id}/cancel`. Tidak dibuat alias `/operations` karena header version sudah menjadi pemilih kontrak.
 
+Header adalah satu satunya pemilih kontrak. Segmen `v1` pada base path `/api/v1` dibekukan sebagai base path dan tidak berubah pada cutover ini; ia bukan penanda versi kontrak. Tujuan header setelah cutover: menolak SPA basi dari rilis lama dengan error yang jelas. Keputusan dan alternatif yang ditolak tercatat pada bagian API migration boundary di [index.md](index.md) dan pada [rationale.md](rationale.md).
+
+Pekerjaan awal sebelum menyentuh v2: perbaiki penyimpangan v1 yang sudah diketahui pada permukaan yang akan dimigrasikan, minimal nama parameter `pageSize` versus `page-size` pada `/jobs` (server, SDK, test). Cutover tidak boleh menjadi alasan membiarkan bug kontrak v1 hidup selama masa persiapan.
+
 `POST /query/explain` tetap sinkron. Ia mengembalikan `planText`, `engine`, dan `durationMs` sesuai spec 0035, tidak menjadi operation, tidak menerima cancel link, dan tidak memakai idempotency record.
 
 ### Idempotency contract
@@ -64,7 +68,7 @@ Tanpa header, contract lama berlaku selama periode persiapan. Nilai header tidak
 
 1. OpenAPI v2 menjadi source of truth.
 2. Generated types tidak diedit manual.
-3. Validator registry memeriksa path, schema, version header, response, dan event mapping.
+3. Validator registry memeriksa path, method, nama query parameter, schema requestBody, schema response per status, version header, dan event mapping. Nama parameter termasuk yang diperiksa karena drift nama (`pageSize` versus `page-size`) pernah lolos ketika hanya path dan method yang dibandingkan.
 4. Contract test v1 dan v2 berjalan sebelum cutover. Setelah cutover, test v1 disimpan sebagai negative compatibility test sampai keputusan retirement diselesaikan.
 5. SDK facade mengirim header dan idempotency key, sedangkan component tidak mengetahui URL.
 6. WebSocket protocol test memeriksa version pada subscribe, reconnect, event envelope, dan mismatch rejection.

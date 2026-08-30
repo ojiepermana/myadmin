@@ -17,6 +17,7 @@ Kontrak (spec 0003) hanya berguna bila ada mesin yang menghukum penyimpangan. Ti
 ## Requirements
 
 **User stories**:
+
 - Sebagai developer, saya ingin tipe request dan response selalu berasal dari kontrak supaya perubahan kontrak langsung terasa sebagai error compile.
 - Sebagai reviewer, saya ingin CI gagal bila server dan kontrak tidak cocok.
 
@@ -39,18 +40,22 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 Tipe dari openapi-typescript; contract test mengkompilasi schema dari bundel kontrak dengan ajv dan memvalidasi response nyata.
 
 **Pros**:
+
 - Tipe murni tanpa runtime tambahan di produksi; validasi runtime hanya hidup di test.
 - Kontrol penuh bentuk SDK (spec 0005).
 
 **Cons**:
+
 - Harness test ditulis sendiri; generator client penuh memberi ini gratis.
 
 ### Option 2: Generator client penuh (@hey-api/openapi-ts atau ng-openapi-gen)
 
 **Pros**:
+
 - Client dan service jadi otomatis.
 
 **Cons**:
+
 - Bentuk client mengikuti generator; adaptasi ke infrastruktur transport @ojiepermana/angular dan realtime custom jadi kaku. Sudah ditolak di sesi desain.
 
 ## Decision
@@ -70,13 +75,15 @@ openapi-typescript menghasilkan tipe yang presisi tanpa memaksakan bentuk client
 **API surface**: tidak menambah endpoint; menguji yang sudah ada.
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| cakupan dua arah | daftar operasi kontrak | bundel openapi.yaml (operationId wajib per operasi) |
-| cakupan dua arah | daftar route server | introspeksi route Elysia saat test boot |
-| validasi response | schema per operasi | bundel kontrak, dikompilasi ajv |
+
+| Action            | Value produced / displayed | Source                                              |
+| ----------------- | -------------------------- | --------------------------------------------------- |
+| cakupan dua arah  | daftar operasi kontrak     | bundel openapi.yaml (operationId wajib per operasi) |
+| cakupan dua arah  | daftar route server        | introspeksi route Elysia saat test boot             |
+| validasi response | schema per operasi         | bundel kontrak, dikompilasi ajv                     |
 
 **Key invariants**:
+
 - Setiap operasi kontrak punya `operationId` unik; lint kontrak menegakkannya.
 - Tidak ada import dari `src/generated/` yang diedit manual; regenerasi selalu aman.
 
@@ -90,21 +97,24 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Tulis `generate-contract-types.ts` (bundel Redocly → openapi-typescript → generated), pastikan deterministik, memenuhi **AC-1**.
-2. Tambah pemeriksaan drift generated ke CI dan header "generated, jangan edit" pada file hasil, memenuhi **AC-2**, **AC-6**.
-3. Bangun harness contract test di `tests/contract/`: boot server in memory, introspeksi route, muat operasi kontrak, uji cakupan dua arah, memenuhi **AC-3**.
-4. Tambah validasi response berbasis ajv untuk enam path awal plus uji bentuk `ApiError` pada request tidak valid, memenuhi **AC-4**, **AC-5**.
-5. Tulis workflow `contract.yml` yang menjalankan validasi kontrak, drift, dan contract test, memenuhi **AC-7**.
+1. [x] Tulis `generate-contract-types.ts` (bundel Redocly → openapi-typescript → generated), pastikan deterministik, memenuhi **AC-1**.
+2. [x] Tambah pemeriksaan drift generated ke CI dan header "generated, jangan edit" pada file hasil, memenuhi **AC-2**, **AC-6**.
+3. [x] Bangun harness contract test di `tests/contract/`: boot server in memory, introspeksi route, muat operasi kontrak, uji cakupan dua arah, memenuhi **AC-3**.
+4. [x] Tambah validasi response berbasis ajv untuk enam path awal plus uji bentuk `ApiError` pada request tidak valid, memenuhi **AC-4**, **AC-5**.
+5. [x] Tulis workflow `contract.yml` yang menjalankan validasi kontrak, drift, dan contract test, memenuhi **AC-7**.
 
 ## Consequences
 
 **Positive**:
+
 - Drift kontrak menjadi kegagalan CI, bukan temuan produksi; janji Definition of Done butir 3 punya mesinnya.
 
 **Negative / tradeoffs**:
+
 - Harness sendiri berarti biaya perawatan test infrastruktur; dibayar sekali, dipakai semua fitur.
 
 **Neutral**:
+
 - Validasi response per fitur baru cukup mendaftarkan operationId nya ke harness.
 
 ## Follow-up
@@ -114,10 +124,13 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - Spec 0003 (bentuk kontrak); struktur.md bagian 4.2 (flow perubahan API); v1-feature-specification.md FR-RUN-04 dan Definition of Done butir 3.
 
 **Practices & standards**:
+
 - Generated code selalu bisa dibuang dan dibuat ulang; pemeriksaan drift byte per byte di CI.
 
 **Links** (terverifikasi web 2026-08-28):
+
 - openapi-typescript v7 aktif: https://www.npmjs.com/package/openapi-typescript

@@ -101,12 +101,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Bangun penulis format csv/json/sql (streaming, opsi) sebagai modul server plus unit test, memenuhi **AC-1**, **AC-2**.
-2. Implementasikan pembaca cursor dan quoting nilai di provider `import-export/` kedua engine plus test, memenuhi **AC-2**, **AC-3**.
-3. Executor job export (baca → tulis → progress → cancel → pembersihan), endpoint export dan download, kebijakan kadaluarsa plus pembersih temp berkala, memenuhi **AC-1**, **AC-3**, **AC-4**, **AC-5**.
-4. Kontrak, regenerasi, contract test; audit selesai, memenuhi **AC-7**.
-5. UI: dialog export, integrasi tombol data browser dan result grid, panel jobs generik di halaman import-export, memenuhi **AC-6**.
-6. E2e dan test skala, memenuhi **AC-8**.
+1. [x] Bangun penulis format csv/json/sql (streaming, opsi) sebagai modul server plus unit test, memenuhi **AC-1**, **AC-2**.
+2. [x] Implementasikan pembaca cursor dan quoting nilai di provider `import-export/` kedua engine plus test, memenuhi **AC-2**, **AC-3**.
+3. [x] Executor job export (baca → tulis → progress → cancel → pembersihan), endpoint export dan download, kebijakan kadaluarsa plus pembersih temp berkala, memenuhi **AC-1**, **AC-3**, **AC-4**, **AC-5**.
+4. [x] Kontrak, regenerasi, contract test; audit selesai, memenuhi **AC-7**.
+5. [x] UI: dialog export, integrasi tombol data browser dan result grid, panel jobs generik di halaman import-export, memenuhi **AC-6**.
+6. [x] E2e dan test skala, memenuhi **AC-8**.
 
 ## Consequences
 
@@ -124,7 +124,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Follow-up
 
-- [ ] Spec 0048 memakai roundtrip export SQL sebagai fixture import.
+- [x] Spec 0048 memakai roundtrip export SQL sebagai fixture import.
 
 ## References
 

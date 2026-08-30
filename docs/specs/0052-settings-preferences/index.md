@@ -99,11 +99,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Bangun registry key (schema, scope, default) plus SettingsService dengan cache, memenuhi **AC-1**, **AC-3**, **AC-6**.
-2. Kontrak dan endpoint preferences dan settings, audit settings, regenerasi, contract test, memenuhi **AC-1**, **AC-3**, **AC-4**.
-3. Sambungkan theme store dan pageSize/editor prefs ke preferences, memenuhi **AC-2**.
-4. UI halaman settings dua bagian dengan form dari registry, memenuhi **AC-5**.
-5. E2e tiga skenario, memenuhi **AC-7**.
+1. [x] Bangun registry key (schema, scope, default) plus SettingsService dengan cache, memenuhi **AC-1**, **AC-3**, **AC-6**.
+2. [x] Kontrak dan endpoint preferences dan settings, audit settings, regenerasi, contract test, memenuhi **AC-1**, **AC-3**, **AC-4**.
+3. [x] Sambungkan theme store dan pageSize/editor prefs ke preferences, memenuhi **AC-2**.
+4. [x] UI halaman settings dua bagian dengan form dari registry, memenuhi **AC-5**.
+5. [x] E2e tiga skenario, memenuhi **AC-7**.
 
 ## Consequences
 

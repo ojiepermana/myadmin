@@ -12,26 +12,26 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Prasyarat eksekusi
 
-| Kebutuhan | Cara memeriksa | Status awal |
-|---|---|---|
-| Implementasi | Build plan pada `index.md` selesai untuk slice yang diverifikasi. | Belum siap |
-| Dependency | Semua relation `requires` pada `relation.md` sudah diterima. | Belum diperiksa |
-| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested. | Belum diperiksa |
-| Test plan | Test ID relevan pada `test.md` sudah diimplementasikan. | Belum siap |
-| Environment | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa |
+| Kebutuhan     | Cara memeriksa                                                                   | Status awal                    |
+| ------------- | -------------------------------------------------------------------------------- | ------------------------------ |
+| Implementasi  | Build plan pada `index.md` selesai untuk slice yang diverifikasi.                | Tersedia; bukti lokal tercatat |
+| Dependency    | Semua relation `requires` pada `relation.md` sudah diterima.                     | Belum diperiksa                |
+| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested.             | Belum diperiksa                |
+| Test plan     | Test ID relevan pada `test.md` sudah diimplementasikan.                          | Belum siap                     |
+| Environment   | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa                |
 
 ## Matriks verifikasi AC
 
-| AC | Test atau proof ID | Metode | Bukti wajib | Result |
-|---|---|---|---|---|
-| [AC-1](test.md#ac-1) | `UT-0042-AC1`, `IT-0042-AC1`, `E2E-0042-AC1` | Unit, Integration, E2E | output command dan assertion | Belum dijalankan |
-| [AC-2](test.md#ac-2) | `UT-0042-AC2`, `CT-0042-AC2`, `E2E-0042-AC2` | Unit, Contract, E2E | output command dan assertion | Belum dijalankan |
-| [AC-3](test.md#ac-3) | `UT-0042-AC3`, `IT-0042-AC3`, `CT-0042-AC3`, `E2E-0042-AC3` | Unit, Integration, Contract, E2E | output command dan assertion | Belum dijalankan |
-| [AC-4](test.md#ac-4) | `UT-0042-AC4`, `IT-0042-AC4`, `E2E-0042-AC4` | Unit, Integration, E2E | output command dan assertion | Belum dijalankan |
-| [AC-5](test.md#ac-5) | `UT-0042-AC5`, `IT-0042-AC5`, `E2E-0042-AC5` | Unit, Integration, E2E | output command dan assertion | Belum dijalankan |
-| [AC-6](test.md#ac-6) | `IT-0042-AC6`, `E2E-0042-AC6`, `SEC-0042-AC6` | Integration, E2E, Security | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
-| [AC-7](test.md#ac-7) | `UT-0042-AC7`, `IT-0042-AC7`, `E2E-0042-AC7` | Unit, Integration, E2E | output command dan assertion | Belum dijalankan |
-| [AC-8](test.md#ac-8) | `UT-0042-AC8`, `IT-0042-AC8`, `E2E-0042-AC8` | Unit, Integration, E2E | output command dan assertion | Belum dijalankan |
+| AC                   | Test atau proof ID                                          | Metode                           | Bukti wajib                                                | Result                                                                                                                                                              |
+| -------------------- | ----------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [AC-1](test.md#ac-1) | `UT-0042-AC1`, `IT-0042-AC1`, `E2E-0042-AC1`                | Unit, Integration, E2E           | output command dan assertion                               | Parsial lokal; provider metadata `describeTable` dan browser index flow lulus pada PostgreSQL/MySQL, tetapi seluruh E2E matrix belum                                |
+| [AC-2](test.md#ac-2) | `UT-0042-AC2`, `CT-0042-AC2`, `E2E-0042-AC2`                | Unit, Contract, E2E              | output command dan assertion                               | Parsial lokal; unit/contract composite constraint lulus, seluruh E2E matrix belum                                                                                   |
+| [AC-3](test.md#ac-3) | `UT-0042-AC3`, `IT-0042-AC3`, `CT-0042-AC3`, `E2E-0042-AC3` | Unit, Integration, Contract, E2E | output command dan assertion                               | Real integration dan E2E PostgreSQL/MySQL membuktikan FK dengan target/rules; proof contract/security penuh belum lengkap                                           |
+| [AC-4](test.md#ac-4) | `UT-0042-AC4`, `IT-0042-AC4`, `E2E-0042-AC4`                | Unit, Integration, E2E           | output command dan assertion                               | Lokal lulus: unit/provider preview dan browser check-expression plus capability gate MySQL terbukti; hosted/manual acceptance tetap belum                           |
+| [AC-5](test.md#ac-5) | `UT-0042-AC5`, `IT-0042-AC5`, `E2E-0042-AC5`                | Unit, Integration, E2E           | output command dan assertion                               | Composite unique, FK supporting behavior, dan urutan kolom dipreview serta diterapkan pada kedua engine nyata                                                       |
+| [AC-6](test.md#ac-6) | `IT-0042-AC6`, `E2E-0042-AC6`, `SEC-0042-AC6`               | Integration, E2E, Security       | output command dan assertion; log tersanitasi tanpa secret | Lokal lulus untuk integration, E2E, dan security confirmation boundary; manual/hosted acceptance tetap belum                                                        |
+| [AC-7](test.md#ac-7) | `UT-0042-AC7`, `IT-0042-AC7`, `E2E-0042-AC7`                | Unit, Integration, E2E           | output command dan assertion                               | Lokal lulus untuk destructive warning, integration provider, dan refresh `rowIdentity` Data Browser setelah PK ditambahkan; hosted/manual acceptance tetap terpisah |
+| [AC-8](test.md#ac-8) | `UT-0042-AC8`, `IT-0042-AC8`, `E2E-0042-AC8`                | Unit, Integration, E2E           | output command dan assertion                               | Real integration dan E2E kedua engine lulus untuk FK dengan aturan, composite unique, preview, dan destructive drop                                                 |
 
 ## Urutan verifikasi
 
@@ -43,13 +43,13 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Pemeriksaan otomatis
 
-| Area | Command source | Expected result |
-|---|---|---|
-| Unit | Script root yang didaftarkan pada satu `package.json` | Semua `UT-0042-*` lulus dan memiliki assertion yang menutup AC. |
-| Integration | Script root yang didaftarkan pada satu `package.json` | Resource nyata disposable dipakai dan cleanup lulus. |
-| Contract | Script root yang didaftarkan pada satu `package.json` | Semua `CT-0042-*` lulus dan memiliki assertion yang menutup AC. |
-| E2E | Script root yang didaftarkan pada satu `package.json` | Semua `E2E-0042-*` lulus dan memiliki assertion yang menutup AC. |
-| Security | Script root yang didaftarkan pada satu `package.json` | Semua `SEC-0042-*` lulus dan memiliki assertion yang menutup AC. |
+| Area        | Command source                                        | Expected result                                                  |
+| ----------- | ----------------------------------------------------- | ---------------------------------------------------------------- |
+| Unit        | Script root yang didaftarkan pada satu `package.json` | Semua `UT-0042-*` lulus dan memiliki assertion yang menutup AC.  |
+| Integration | Script root yang didaftarkan pada satu `package.json` | Resource nyata disposable dipakai dan cleanup lulus.             |
+| Contract    | Script root yang didaftarkan pada satu `package.json` | Semua `CT-0042-*` lulus dan memiliki assertion yang menutup AC.  |
+| E2E         | Script root yang didaftarkan pada satu `package.json` | Semua `E2E-0042-*` lulus dan memiliki assertion yang menutup AC. |
+| Security    | Script root yang didaftarkan pada satu `package.json` | Semua `SEC-0042-*` lulus dan memiliki assertion yang menutup AC. |
 
 ## Pemeriksaan manual, staged, environment, atau external
 
@@ -57,15 +57,20 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
-| Waktu | Commit | Environment | Hasil | Evidence |
-|---|---|---|---|---|
-| Belum dijalankan | Belum ada | Belum ada | Belum ada | Belum ada |
+| Waktu      | Commit       | Environment                                                                     | Hasil                                                                                                                                                                                                                         | Evidence                                                                                                                                                                                                                                                               |
+| ---------- | ------------ | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-29 | Working tree | Bun 1.4.0, macOS arm64, provider table-designer unit suite                      | **11 pass, 16 assertions**; composite indexes, PK/FK/CHECK constraints, destructive drops, version gates, dan validation lulus                                                                                                | `bun test packages/database-mysql/test/table-designer.test.ts packages/database-postgresql/test/table-designer.test.ts`                                                                                                                                                |
+| 2026-08-29 | Working tree | Bun 1.4.0, table-designer provider/service/contract dan Playwright mock browser | Suite gabungan **16 pass, 30 assertions**; browser index/constraint flow termasuk ordered composite index dan preview gate lulus; real-engine two-engine evidence tetap dicatat terpisah                                      | `bun test packages/database-postgresql/test/table-designer.test.ts packages/database-mysql/test/table-designer.test.ts apps/server/test/table-designer.test.ts tests/contract/table-designer.test.ts`; `bun run test:e2e -- tests/e2e/web/zzzz-table-designer.spec.ts` |
+| 2026-08-29 | Working tree | PostgreSQL disposable 55433 dan MySQL disposable 3380, browser UI               | Real two-engine E2E **4 pass**; FK, composite unique, ordered index preview/apply, dan drop index dengan konfirmasi lulus                                                                                                     | `MYADMIN_REAL_DATABASE_E2E=1 bun run test:e2e -- tests/e2e/web/zz-real-query-editor.spec.ts`                                                                                                                                                                           |
+| 2026-08-30 | Working tree | Bun 1.4.0, PostgreSQL disposable 55433, MySQL 8.0/latest disposable 3380/3384   | Table-designer integration **6 pass, 0 fail, 37 assertions**; FK, composite unique, destructive constraint preview/apply, metadata readback, dan index changes lulus pada kedua engine                                        | `MYADMIN_POSTGRES_INTEGRATION=1 ... MYSQL_8_0_URL=... MYSQL_LATEST_URL=... bun test --isolate tests/integration/postgresql/table-designer.test.ts tests/integration/mysql/table-designer.test.ts`                                                                      |
+| 2026-08-30 | Working tree | Bun 1.4.0, mock browser dan OpenAPI contract bundle                             | Contract suite **74 pass, 0 fail, 820 assertions**; table-designer browser suite **6 pass, 0 fail dalam 8,0 detik**. `E2E-0042-AC2` memverifikasi perubahan index menjadi `dropIndex` + `addIndex` dan dua statement preview. | `bun run test:contract -- tests/contract/table-designer.test.ts`; `bun run test:e2e -- tests/e2e/web/zzzz-table-designer.spec.ts`                                                                                                                                      |
+| 2026-08-30 | Working tree | Bun 1.4.0, PostgreSQL disposable 55433 dan MySQL disposable 3380/3384           | **3 pass, 0 fail, 24 assertions**; create table, `describeTable` metadata readback, add/drop changes, and destructive index preview/apply lulus pada kedua engine                                                             | `MYADMIN_POSTGRES_INTEGRATION=1 ... MYSQL_8_0_URL=... MYSQL_LATEST_URL=... bun test --isolate tests/integration/postgresql/table-designer.test.ts tests/integration/mysql/table-designer.test.ts`                                                                      |
 
 ## Gap dan blocker
 
-| AC | Gap | Dampak | Tindak lanjut |
-|---|---|---|---|
-| Belum dinilai | Verifikasi belum dijalankan karena implementasi belum tersedia. | Belum ada verdict acceptance. | Jalankan `/check verify` setelah build dan test relevan selesai. |
+| AC                           | Gap                                                                                                                                                       | Dampak                            | Tindak lanjut                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------- |
+| AC-1, AC-2, AC-4, AC-6, AC-7 | Integration FK/constraint dan real E2E tersedia, tetapi sebagian contract/security proof, invalidasi row identity, dan failure-boundary UI belum lengkap. | Verdict tetap belum diverifikasi. | Lengkapi proof yang tersisa; jangan mengubah verdict berdasarkan E2E parsial. |
 
 ## Verdict akhir
 

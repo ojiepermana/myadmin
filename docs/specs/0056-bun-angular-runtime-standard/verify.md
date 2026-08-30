@@ -38,4 +38,4 @@ Dokumen ini adalah rencana pembuktian. Semua checklist tetap kosong sampai bukti
 
 ## Verdict
 
-Belum ada verdict. Spec standalone baru menjadi `Accepted` setelah engineer meratifikasi keputusan. Adopsi code dan bukti runtime tetap mengikuti status feature slice yang akan didaftarkan pada scope.
+Keputusan diratifikasi engineer pada 2026-08-29; status di `index.md` menjadi `Accepted`. Ratifikasi hanya memberlakukan standarnya. Seluruh checklist di atas tetap kosong sampai bukti benar benar dijalankan, dan adopsi code mengikuti status feature slice yang akan didaftarkan pada scope.

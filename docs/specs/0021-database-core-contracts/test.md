@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — provider-neutral contract suite lulus **22 test, 208 assertions**; manual review AC-8 belum tersedia.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -54,24 +54,24 @@ test kontrak generik tersedia di package (suite yang bisa dijalankan terhadap pr
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | n/a | n/a | `CT-0021-AC1` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | n/a | n/a | `CT-0021-AC2` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | `UT-0021-AC3` | n/a | `CT-0021-AC3` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | `UT-0021-AC4` | n/a | n/a | n/a | `SEC-0021-AC4` | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | `UT-0021-AC5` | n/a | `CT-0021-AC5` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | `UT-0021-AC6` | n/a | n/a | n/a | `SEC-0021-AC6` | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | n/a | `CT-0021-AC7` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-8](#ac-8) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `MANUAL-0021-AC8` |
-| [AC-9](#ac-9) | n/a | n/a | `CT-0021-AC9` | n/a | n/a | n/a | n/a | n/a | n/a |
+| AC            | Unit          | Integration | Contract      | E2E | Security       | Performance | Visual | Smoke | Manual atau external |
+| ------------- | ------------- | ----------- | ------------- | --- | -------------- | ----------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | n/a           | n/a         | `CT-0021-AC1` | n/a | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | n/a           | n/a         | `CT-0021-AC2` | n/a | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | `UT-0021-AC3` | n/a         | `CT-0021-AC3` | n/a | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | `UT-0021-AC4` | n/a         | n/a           | n/a | `SEC-0021-AC4` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | `UT-0021-AC5` | n/a         | `CT-0021-AC5` | n/a | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | `UT-0021-AC6` | n/a         | n/a           | n/a | `SEC-0021-AC6` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-7](#ac-7) | n/a           | n/a         | `CT-0021-AC7` | n/a | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-8](#ac-8) | n/a           | n/a         | `CT-0021-AC8` | n/a | n/a            | n/a         | n/a    | n/a   | `MANUAL-0021-AC8`    |
+| [AC-9](#ac-9) | n/a           | n/a         | `CT-0021-AC9` | n/a | n/a            | n/a         | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0021-AC3` | [AC-3](#ac-3) | model capability: { engine, version, capabilities: Record<CapabilityKey, boolean>, reasons?: Record<CapabilityKey, string> } dengan CapabilityKey terdaftar t... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `UT-0021-AC4` | [AC-4](#ac-4) | ConnectionContext membawa descriptor koneksi plus credential plaintext berumur sesaat dari vault; tipe nya tidak serializable (tidak lolos JSON.stringify den... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `UT-0021-AC5` | [AC-5](#ac-5) | ProviderRegistry.get(engine) mengembalikan provider terdaftar; engine tidak dikenal menghasilkan error ternormalisasi; registrasi terjadi di composition root... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
@@ -85,14 +85,15 @@ Tidak ada integration yang diwajibkan oleh acceptance criteria saat ini.
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `CT-0021-AC1` | [AC-1](#ac-1) | port terdefinisi per domain sebagai interface TypeScript kecil: ConnectionPort (open, close, ping, serverInfo), CapabilityPort (describe), MetadataPort (list... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
-| `CT-0021-AC2` | [AC-2](#ac-2) | database-core tidak mengimpor driver, HTTP, SQLite, Angular, atau provider konkret; ditegakkan boundary check. | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
-| `CT-0021-AC3` | [AC-3](#ac-3) | model capability: { engine, version, capabilities: Record<CapabilityKey, boolean>, reasons?: Record<CapabilityKey, string> } dengan CapabilityKey terdaftar t... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `CT-0021-AC5` | [AC-5](#ac-5) | ProviderRegistry.get(engine) mengembalikan provider terdaftar; engine tidak dikenal menghasilkan error ternormalisasi; registrasi terjadi di composition root... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `CT-0021-AC7` | [AC-7](#ac-7) | model umum terdefinisi: identitas object (ObjectRef { database, schema?, name, type }), halaman data (Page { items, cursor?, total? }), definisi kolom, defin... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
-| `CT-0021-AC9` | [AC-9](#ac-9) | test kontrak generik tersedia di package (suite yang bisa dijalankan terhadap provider mana pun) untuk perilaku dasar: describe konsisten dengan operasi yang... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                                          |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `CT-0021-AC1` | [AC-1](#ac-1) | port terdefinisi per domain sebagai interface TypeScript kecil: ConnectionPort (open, close, ping, serverInfo), CapabilityPort (describe), MetadataPort (list... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-1 terpenuhi.                     |
+| `CT-0021-AC2` | [AC-2](#ac-2) | database-core tidak mengimpor driver, HTTP, SQLite, Angular, atau provider konkret; ditegakkan boundary check.                                                   | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-2 terpenuhi.                     |
+| `CT-0021-AC3` | [AC-3](#ac-3) | model capability: { engine, version, capabilities: Record<CapabilityKey, boolean>, reasons?: Record<CapabilityKey, string> } dengan CapabilityKey terdaftar t... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi.                     |
+| `CT-0021-AC5` | [AC-5](#ac-5) | ProviderRegistry.get(engine) mengembalikan provider terdaftar; engine tidak dikenal menghasilkan error ternormalisasi; registrasi terjadi di composition root... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-5 terpenuhi.                     |
+| `CT-0021-AC7` | [AC-7](#ac-7) | model umum terdefinisi: identitas object (ObjectRef { database, schema?, name, type }), halaman data (Page { items, cursor?, total? }), definisi kolom, defin... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-7 terpenuhi.                     |
+| `CT-0021-AC8` | [AC-8](#ac-8) | setiap port punya dokumentasi kontrak perilaku singkat, termasuk unsupported boundary dan cross-port invariants.                                                 | Bandingkan dokumentasi port dengan daftar port pada `database-core` dan aturan capability.  | Semua port terdaftar dan memiliki perilaku wajib serta failure boundary. |
+| `CT-0021-AC9` | [AC-9](#ac-9) | test kontrak generik tersedia di package (suite yang bisa dijalankan terhadap provider mana pun) untuk perilaku dasar: describe konsisten dengan operasi yang... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-9 terpenuhi.                     |
 
 ### E2E
 
@@ -100,8 +101,8 @@ Tidak ada e2e yang diwajibkan oleh acceptance criteria saat ini.
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0021-AC4` | [AC-4](#ac-4) | ConnectionContext membawa descriptor koneksi plus credential plaintext berumur sesaat dari vault; tipe nya tidak serializable (tidak lolos JSON.stringify den... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `SEC-0021-AC6` | [AC-6](#ac-6) | model error ternormalisasi DbError { category, message, position?, sqlState?, cause tersembunyi } dengan kategori tertutup: auth_failed, connection_failed, t... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
@@ -119,8 +120,8 @@ Tidak ada smoke dan operational yang diwajibkan oleh acceptance criteria saat in
 
 ### Manual atau external proof
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID                | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                               | Expected result                                      |
+| ----------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `MANUAL-0021-AC8` | [AC-8](#ac-8) | setiap port punya dokumentasi kontrak perilaku singkat (apa yang wajib, apa yang boleh tidak didukung dan bagaimana menyatakannya: lempar unsupported plus ca... | Lakukan review manusia atau kumpulkan bukti eksternal yang tidak dapat digantikan test otomatis. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ## Critical test scenarios
@@ -135,12 +136,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

@@ -94,11 +94,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Perluas `release.yml`: publish GitHub Releases plus changelog, memenuhi **AC-1**.
-2. Bangun langkah signing macOS dan Windows bergerbang secret, plus catatan otomatis di release notes, memenuhi **AC-2**, **AC-3**.
-3. Bangun Dockerfile multi arch dan varian `-tools`, publish image, memenuhi **AC-4**.
-4. Tulis dan uji service file systemd dan launchd plus dokumen pemasangannya, memenuhi **AC-5**.
-5. Tulis dokumentasi operator lengkap (dengan ekspor referensi config dari registry), SECURITY.md, README, memenuhi **AC-6**, **AC-7**.
+1. [x] Perluas `release.yml`: publish GitHub Releases plus changelog, memenuhi **AC-1**.
+2. [x] Bangun langkah signing macOS dan Windows bergerbang secret, plus catatan otomatis di release notes, memenuhi **AC-2**, **AC-3**.
+3. [x] Bangun Dockerfile multi arch dan varian `-tools`, publish image, memenuhi **AC-4**.
+4. [x] Tulis dan uji service file systemd dan launchd plus dokumen pemasangannya, memenuhi **AC-5**.
+5. [x] Tulis dokumentasi operator lengkap (dengan ekspor referensi config dari registry), SECURITY.md, README, memenuhi **AC-6**, **AC-7**.
 6. Jalankan uji penerimaan distribusi per platform tersedia, memenuhi **AC-8**.
 
 ## Consequences

@@ -104,9 +104,9 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 1. [x] Endpoint unggah streaming dengan batas mengalir, penyimpanan temp, uploadId, pratinjau terpotong server, memenuhi **AC-1**, **AC-7**.
 2. [x] Mode streaming pemecah statement di provider plus executor job SQL (mode transaksi, laporan posisi), memenuhi **AC-2**, **AC-5**.
 3. [x] Executor job CSV (pemetaan, batch berparameter, ambang baris gagal, truncateFirst dengan konfirmasi), memenuhi **AC-3**, **AC-4**.
-4. Kontrak, regenerasi, contract test; audit, memenuhi **AC-6**.
-5. UI alur import lengkap dengan pemetaan dan pratinjau, memenuhi **AC-7**.
-6. E2e roundtrip dan kegagalan, memenuhi **AC-8**.
+4. [x] Kontrak, regenerasi, contract test; audit, memenuhi **AC-6**.
+5. [x] UI alur import lengkap dengan pemetaan dan pratinjau, memenuhi **AC-7**.
+6. [x] E2e roundtrip dan kegagalan, memenuhi **AC-8**.
 
 ## Consequences
 

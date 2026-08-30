@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — provider/integration, contract, server audit/confirmation, dan real-browser rename/truncate/drop lulus pada PostgreSQL dan MySQL; provider-error E2E, stale-tab, dialog/audit penuh, serta security matrix belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -42,29 +42,29 @@ e2e kedua engine: rename memperbarui explorer; truncate mengosongkan dengan iden
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | `UT-0043-AC1` | `IT-0043-AC1` | `CT-0043-AC1` | `E2E-0043-AC1` | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | `UT-0043-AC2` | `IT-0043-AC2` | `CT-0043-AC2` | `E2E-0043-AC2` | `SEC-0043-AC2` | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | n/a | `IT-0043-AC3` | `CT-0043-AC3` | `E2E-0043-AC3` | `SEC-0043-AC3` | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | `IT-0043-AC4` | `CT-0043-AC4` | n/a | `SEC-0043-AC4` | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | `UT-0043-AC5` | n/a | n/a | `E2E-0043-AC5` | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | `IT-0043-AC6` | n/a | `E2E-0043-AC6` | `SEC-0043-AC6` | n/a | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract      | E2E            | Security       | Performance | Visual | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | ------------- | -------------- | -------------- | ----------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | `UT-0043-AC1` | `IT-0043-AC1` | `CT-0043-AC1` | `E2E-0043-AC1` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | `UT-0043-AC2` | `IT-0043-AC2` | `CT-0043-AC2` | `E2E-0043-AC2` | `SEC-0043-AC2` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | n/a           | `IT-0043-AC3` | `CT-0043-AC3` | `E2E-0043-AC3` | `SEC-0043-AC3` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | n/a           | `IT-0043-AC4` | `CT-0043-AC4` | n/a            | `SEC-0043-AC4` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | `UT-0043-AC5` | n/a           | n/a           | `E2E-0043-AC5` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | n/a           | `IT-0043-AC6` | n/a           | `E2E-0043-AC6` | `SEC-0043-AC6` | n/a         | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0043-AC1` | [AC-1](#ac-1) | rename table: dialog menampilkan nama kini dan input nama baru, peringatan dampak (view, FK, dan query tersimpan yang mereferensikan nama lama bisa rusak; FK... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `UT-0043-AC2` | [AC-2](#ac-2) | truncate table: dialog menampilkan perkiraan jumlah baris yang akan hilang (dari metadata, berlabel perkiraan), opsi engine yang relevan (PostgreSQL: RESTART... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
-| `UT-0043-AC5` | [AC-5](#ac-5) | ketiga aksi terdaftar di context menu explorer dan menu tab designer; nonaktif dengan alasan bila koneksi tidak tersambung. | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `UT-0043-AC5` | [AC-5](#ac-5) | ketiga aksi terdaftar di context menu explorer dan menu tab designer; nonaktif dengan alasan bila koneksi tidak tersambung.                                      | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0043-AC1` | [AC-1](#ac-1) | rename table: dialog menampilkan nama kini dan input nama baru, peringatan dampak (view, FK, dan query tersimpan yang mereferensikan nama lama bisa rusak; FK... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0043-AC2` | [AC-2](#ac-2) | truncate table: dialog menampilkan perkiraan jumlah baris yang akan hilang (dari metadata, berlabel perkiraan), opsi engine yang relevan (PostgreSQL: RESTART... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `IT-0043-AC3` | [AC-3](#ac-3) | drop table: dialog menampilkan dependensi yang diketahui (view yang mereferensikan, FK masuk dari table lain, dari metadata provider), ketik nama, tanpa opsi... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
@@ -75,8 +75,8 @@ Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu t
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0043-AC1` | [AC-1](#ac-1) | rename table: dialog menampilkan nama kini dan input nama baru, peringatan dampak (view, FK, dan query tersimpan yang mereferensikan nama lama bisa rusak; FK... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `CT-0043-AC2` | [AC-2](#ac-2) | truncate table: dialog menampilkan perkiraan jumlah baris yang akan hilang (dari metadata, berlabel perkiraan), opsi engine yang relevan (PostgreSQL: RESTART... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `CT-0043-AC3` | [AC-3](#ac-3) | drop table: dialog menampilkan dependensi yang diketahui (view yang mereferensikan, FK masuk dari table lain, dari metadata provider), ketik nama, tanpa opsi... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
@@ -84,18 +84,18 @@ Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu t
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0043-AC1` | [AC-1](#ac-1) | rename table: dialog menampilkan nama kini dan input nama baru, peringatan dampak (view, FK, dan query tersimpan yang mereferensikan nama lama bisa rusak; FK... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `E2E-0043-AC2` | [AC-2](#ac-2) | truncate table: dialog menampilkan perkiraan jumlah baris yang akan hilang (dari metadata, berlabel perkiraan), opsi engine yang relevan (PostgreSQL: RESTART... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `E2E-0043-AC3` | [AC-3](#ac-3) | drop table: dialog menampilkan dependensi yang diketahui (view yang mereferensikan, FK masuk dari table lain, dari metadata provider), ketik nama, tanpa opsi... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `E2E-0043-AC5` | [AC-5](#ac-5) | ketiga aksi terdaftar di context menu explorer dan menu tab designer; nonaktif dengan alasan bila koneksi tidak tersambung. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `E2E-0043-AC5` | [AC-5](#ac-5) | ketiga aksi terdaftar di context menu explorer dan menu tab designer; nonaktif dengan alasan bila koneksi tidak tersambung.                                      | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `E2E-0043-AC6` | [AC-6](#ac-6) | e2e kedua engine: rename memperbarui explorer; truncate mengosongkan dengan identitas di restart sesuai pilihan; drop menghapus dan menutup tab terkait denga... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0043-AC2` | [AC-2](#ac-2) | truncate table: dialog menampilkan perkiraan jumlah baris yang akan hilang (dari metadata, berlabel perkiraan), opsi engine yang relevan (PostgreSQL: RESTART... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `SEC-0043-AC3` | [AC-3](#ac-3) | drop table: dialog menampilkan dependensi yang diketahui (view yang mereferensikan, FK masuk dari table lain, dari metadata provider), ketik nama, tanpa opsi... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `SEC-0043-AC4` | [AC-4](#ac-4) | ketiganya diaudit (table.renamed, table.truncated dengan perkiraan baris, table.dropped) sebelum response sukses; ketiganya memerlukan confirmName yang diver... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
@@ -129,12 +129,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

@@ -100,11 +100,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Perluas kontrak (GrantEntry, katalog, change set, preview/apply), regenerasi, contract test.
-2. Implementasikan introspeksi grant efektif, katalog privilege, dan kompilator GRANT/REVOKE di kedua provider plus test integrasi nyata, memenuhi **AC-1**, **AC-2**, **AC-4**.
-3. Endpoint server bergerbang capability, konfirmasi revoke, audit, memenuhi **AC-4**, **AC-5**, **AC-6**.
-4. UI matriks privilege (principal, scope picker, centang per privilege, pratinjau, konfirmasi revoke), memenuhi **AC-3**.
-5. E2e efek nyata dua engine, memenuhi **AC-7**.
+1. [x] Perluas kontrak (GrantEntry, katalog, change set, preview/apply), regenerasi, contract test.
+2. [x] Implementasikan introspeksi grant efektif, katalog privilege, dan kompilator GRANT/REVOKE di kedua provider plus test integrasi nyata, memenuhi **AC-1**, **AC-2**, **AC-4**.
+3. [x] Endpoint server bergerbang capability, konfirmasi revoke, audit, memenuhi **AC-4**, **AC-5**, **AC-6**.
+4. [x] UI matriks privilege (principal, scope picker, centang per privilege, pratinjau, konfirmasi revoke), memenuhi **AC-3**.
+5. [x] E2e efek nyata dua engine, memenuhi **AC-7**.
 
 ## Consequences
 

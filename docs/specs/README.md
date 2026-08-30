@@ -13,7 +13,9 @@ telah tersedia dan dapat diuji secara lokal, tetapi bukti acceptance belum
 lengkap pada semua AC, terutama proof visual, database nyata, dan proof
 operasional eksternal. Status tidak dinaikkan menjadi `Accepted` sebelum setiap
 AC memiliki evidence nyata dan checklist `verify.md` yang sesuai. Tidak ada spec
-yang saat ini berstatus `Proposed`.
+yang saat ini berstatus `Proposed`. Spec standar lintas modul `0056` diratifikasi
+pada 2026-08-29 dan berstatus `Accepted` sebagai keputusan standalone di luar
+urutan build fase; adopsi codenya tetap dibuktikan lewat evidence per AC.
 
 Keputusan teknis lanjutan pada tanggal yang sama: budget bundle Angular tetap
 `900kB` untuk warning dan `1MB` untuk error. Build production saat ini berada
@@ -45,6 +47,13 @@ docs/specs/NNNN-nama-spec/
 - `verify.md` adalah rencana dan catatan pembuktian runtime. File ini menyimpan evidence serta verdict, bukan mendefinisikan ulang AC.
 - Status spec hanya hidup di `index.md`. Companion file menautkan status kanonis itu dan tidak boleh mengklaim test atau verifikasi sudah dijalankan tanpa evidence.
 - Seluruh dependency dan command dimiliki satu `package.json` di akar repo. Tidak ada manifest atau command package level di bawah `apps/*` maupun `packages/*`.
+
+Spec standar lintas modul (umbrella) adalah pengecualian bentuk yang disengaja:
+selain empat file di atas ia boleh memuat `rationale.md` (catatan keputusan yang
+tidak dibaca saat build) dan child spec `NNNN-nama-child.md` per area. Hanya
+`index.md` yang memuat baris status; child tidak memuat status dan diatur oleh
+umbrella. `test.md` umbrella tetap satu satunya sumber AC dan test ID untuk
+matrix, dengan konvensi ID bertipe yang sama (`JENIS-NNNN-ACn`).
 
 ## Fase A. Fondasi
 
@@ -130,6 +139,16 @@ docs/specs/NNNN-nama-spec/
 | [0053](0053-security-hardening/index.md)     | Hardening keamanan lintas fitur                      | seluruh fitur P0 | [relation](0053-security-hardening/relation.md)     | [verify](0053-security-hardening/verify.md)     | [test](0053-security-hardening/test.md)     |
 | [0054](0054-binary-packaging-smoke/index.md) | Packaging binary dan smoke test                      | 0006, 0053       | [relation](0054-binary-packaging-smoke/relation.md) | [verify](0054-binary-packaging-smoke/verify.md) | [test](0054-binary-packaging-smoke/test.md) |
 | [0055](0055-distribution-release/index.md)   | Distribusi, signing, installer, dokumentasi operator | 0054             | [relation](0055-distribution-release/relation.md)   | [verify](0055-distribution-release/verify.md)   | [test](0055-distribution-release/test.md)   |
+
+## Standar lintas modul
+
+Spec di bagian ini adalah keputusan standalone di luar urutan build fase. Nomornya
+adalah identifier katalog, bukan urutan build; prasyaratnya bertingkat dan hidup
+di `relation.md` masing masing.
+
+| Spec                                               | Judul                                       | Prasyarat                   | Relation                                                  | Verify                                                | Test                                              |
+| -------------------------------------------------- | ------------------------------------------- | --------------------------- | --------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------- |
+| [0056](0056-bun-angular-runtime-standard/index.md) | Standar runtime Bun dan reaktivitas Angular | dua tingkat, lihat relation | [relation](0056-bun-angular-runtime-standard/relation.md) | [verify](0056-bun-angular-runtime-standard/verify.md) | [test](0056-bun-angular-runtime-standard/test.md) |
 
 ## Keputusan lintas spec yang sudah dikunci
 

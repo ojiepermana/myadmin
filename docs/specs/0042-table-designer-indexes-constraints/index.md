@@ -96,7 +96,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 1. [x] Perluas `TableChangeSet` di kontrak dan kompilator kedua provider (index, PK, FK, unique, check; drop plus add untuk ubah) dengan test snapshot, memenuhi **AC-2** sampai **AC-5**.
 2. [x] UI tab Index dan Constraint (daftar, editor FK dengan pencari target, composite dengan pengurutan, check ekspresi), memenuhi **AC-1**, **AC-3**, **AC-5**.
 3. [x] Konfirmasi destructive dan peringatan dampak PK/FK, audit, invalidasi plus refresh rowIdentity, memenuhi **AC-6**, **AC-7**.
-4. [ ] E2e dua engine, memenuhi **AC-8** (menunggu lingkungan database/browser fixture).
+4. [x] E2e dua engine, memenuhi **AC-8** (fixture PostgreSQL dan MySQL disposable telah dijalankan).
 
 ## Consequences
 

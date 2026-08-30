@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — query editor route/unit/contract, mock browser dengan autocomplete eksplisit, dan real-engine workflow tersedia dan lulus; skenario AC-9 lengkap lintas engine serta visual formal belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -54,55 +54,55 @@ e2e kedua engine: buka tab, autocomplete muncul, jalankan seleksi, multi stateme
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | `UT-0033-AC1` | n/a | n/a | `E2E-0033-AC1` | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | `UT-0033-AC2` | n/a | n/a | `E2E-0033-AC2` | n/a | n/a | `VIS-0033-AC2` | n/a | n/a |
-| [AC-3](#ac-3) | n/a | `IT-0033-AC3` | n/a | `E2E-0033-AC3` | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | `UT-0033-AC4` | `IT-0033-AC4` | `CT-0033-AC4` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | n/a | `IT-0033-AC5` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | `IT-0033-AC6` | `CT-0033-AC6` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | `IT-0033-AC7` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-8](#ac-8) | `UT-0033-AC8` | n/a | `CT-0033-AC8` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-9](#ac-9) | n/a | n/a | n/a | `E2E-0033-AC9` | n/a | n/a | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract      | E2E            | Security | Performance | Visual         | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | ------------- | -------------- | -------- | ----------- | -------------- | ----- | -------------------- |
+| [AC-1](#ac-1) | `UT-0033-AC1` | n/a           | n/a           | `E2E-0033-AC1` | n/a      | n/a         | n/a            | n/a   | n/a                  |
+| [AC-2](#ac-2) | `UT-0033-AC2` | n/a           | n/a           | `E2E-0033-AC2` | n/a      | n/a         | `VIS-0033-AC2` | n/a   | n/a                  |
+| [AC-3](#ac-3) | n/a           | `IT-0033-AC3` | n/a           | `E2E-0033-AC3` | n/a      | n/a         | n/a            | n/a   | n/a                  |
+| [AC-4](#ac-4) | `UT-0033-AC4` | `IT-0033-AC4` | `CT-0033-AC4` | n/a            | n/a      | n/a         | n/a            | n/a   | n/a                  |
+| [AC-5](#ac-5) | n/a           | `IT-0033-AC5` | n/a           | n/a            | n/a      | n/a         | n/a            | n/a   | n/a                  |
+| [AC-6](#ac-6) | n/a           | `IT-0033-AC6` | `CT-0033-AC6` | n/a            | n/a      | n/a         | n/a            | n/a   | n/a                  |
+| [AC-7](#ac-7) | n/a           | `IT-0033-AC7` | n/a           | n/a            | n/a      | n/a         | n/a            | n/a   | n/a                  |
+| [AC-8](#ac-8) | `UT-0033-AC8` | n/a           | `CT-0033-AC8` | n/a            | n/a      | n/a         | n/a            | n/a   | n/a                  |
+| [AC-9](#ac-9) | n/a           | n/a           | n/a           | `E2E-0033-AC9` | n/a      | n/a         | n/a            | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0033-AC1` | [AC-1](#ac-1) | tab query dibuka dari explorer atau menu; setiap tab menyimpan connectionId, database, schema (bila berlaku), draft SQL, dan state eksekusinya sendiri (FR-QR... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
-| `UT-0033-AC2` | [AC-2](#ac-2) | editor CodeMirror 6 dengan dialek SQL sesuai engine koneksi (dari capability/engine tampilan, bukan logika bercabang di fitur: dialek dipilih lewat pemetaan... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
+| `UT-0033-AC2` | [AC-2](#ac-2) | editor CodeMirror 6 dengan dialek SQL sesuai engine koneksi (dari capability/engine tampilan, bukan logika bercabang di fitur: dialek dipilih lewat pemetaan...  | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `UT-0033-AC4` | [AC-4](#ac-4) | eksekusi: POST /query/executions menerima { connectionId, database, schema?, sql, mode: selection\|full\|statementAtCursor } dan mengembalikan executionId se... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `UT-0033-AC8` | [AC-8](#ac-8) | nilai baris di serialisasi aman ke klien: tipe tanggal/angka besar/bytea dalam bentuk yang tidak kehilangan presisi (string berlabel tipe), NULL dibedakan da... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0033-AC3` | [AC-3](#ac-3) | autocomplete menawarkan schema, table, view, kolom, dan kata kunci dari metadata provider untuk konteks aktif, dimuat malas per kebutuhan (schema → table saa... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `IT-0033-AC4` | [AC-4](#ac-4) | eksekusi: POST /query/executions menerima { connectionId, database, schema?, sql, mode: selection\|full\|statementAtCursor } dan mengembalikan executionId se... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `IT-0033-AC5` | [AC-5](#ac-5) | sesi provider per tab: eksekusi pertama tab membuka sesi khusus (terpisah dari sesi status spec 0027) yang dipakai semua eksekusi tab itu; menutup tab atau i... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `IT-0033-AC6` | [AC-6](#ac-6) | hasil per statement: kolom dan baris (maksimum limits.resultMaxRows, dengan penanda "terpotong, N baris pertama" bila terpotong), jumlah affected rows untuk... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `IT-0033-AC7` | [AC-7](#ac-7) | setiap eksekusi tercatat ke query history (user, koneksi, database, SQL, status, durasi, jumlah baris) lewat repository (spec 0009); SQL dicatat utuh (bukan... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `IT-0033-AC6` | [AC-6](#ac-6) | hasil per statement: kolom dan baris (maksimum limits.resultMaxRows, dengan penanda "terpotong, N baris pertama" bila terpotong), jumlah affected rows untuk...  | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| `IT-0033-AC7` | [AC-7](#ac-7) | setiap eksekusi tercatat ke query history (user, koneksi, database, SQL, status, durasi, jumlah baris) lewat repository (spec 0009); SQL dicatat utuh (bukan...  | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ## Test tambahan
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0033-AC4` | [AC-4](#ac-4) | eksekusi: POST /query/executions menerima { connectionId, database, schema?, sql, mode: selection\|full\|statementAtCursor } dan mengembalikan executionId se... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `CT-0033-AC6` | [AC-6](#ac-6) | hasil per statement: kolom dan baris (maksimum limits.resultMaxRows, dengan penanda "terpotong, N baris pertama" bila terpotong), jumlah affected rows untuk... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| `CT-0033-AC6` | [AC-6](#ac-6) | hasil per statement: kolom dan baris (maksimum limits.resultMaxRows, dengan penanda "terpotong, N baris pertama" bila terpotong), jumlah affected rows untuk...  | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 | `CT-0033-AC8` | [AC-8](#ac-8) | nilai baris di serialisasi aman ke klien: tipe tanggal/angka besar/bytea dalam bentuk yang tidak kehilangan presisi (string berlabel tipe), NULL dibedakan da... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0033-AC1` | [AC-1](#ac-1) | tab query dibuka dari explorer atau menu; setiap tab menyimpan connectionId, database, schema (bila berlaku), draft SQL, dan state eksekusinya sendiri (FR-QR... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
-| `E2E-0033-AC2` | [AC-2](#ac-2) | editor CodeMirror 6 dengan dialek SQL sesuai engine koneksi (dari capability/engine tampilan, bukan logika bercabang di fitur: dialek dipilih lewat pemetaan... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
+| `E2E-0033-AC2` | [AC-2](#ac-2) | editor CodeMirror 6 dengan dialek SQL sesuai engine koneksi (dari capability/engine tampilan, bukan logika bercabang di fitur: dialek dipilih lewat pemetaan...  | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `E2E-0033-AC3` | [AC-3](#ac-3) | autocomplete menawarkan schema, table, view, kolom, dan kata kunci dari metadata provider untuk konteks aktif, dimuat malas per kebutuhan (schema → table saa... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `E2E-0033-AC9` | [AC-9](#ac-9) | e2e kedua engine: buka tab, autocomplete muncul, jalankan seleksi, multi statement dengan error di tengah menunjuk posisi, transaksi manual lintas eksekusi b... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
 
@@ -116,8 +116,8 @@ Tidak ada performance yang diwajibkan oleh acceptance criteria saat ini.
 
 ### Visual dan accessibility
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                           | Scenario terencana                                                                    | Expected result                                      |
+| -------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `VIS-0033-AC2` | [AC-2](#ac-2) | editor CodeMirror 6 dengan dialek SQL sesuai engine koneksi (dari capability/engine tampilan, bukan logika bercabang di fitur: dialek dipilih lewat pemetaan... | Kunci viewport, mode warna, state komponen, interaksi keyboard, dan bukti screenshot. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 
 ### Smoke dan operational acceptance
@@ -140,12 +140,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal, unit, integration, contract settings, authorization security, dan Playwright E2E lulus; review penuh serta skenario lintas sesi/retensi lebih luas belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -46,36 +46,36 @@ e2e: ganti theme di satu browser, login di konteks lain, theme mengikuti; Admin 
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | `UT-0052-AC1` | `IT-0052-AC1` | `CT-0052-AC1` | n/a | `SEC-0052-AC1` | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | `UT-0052-AC2` | `IT-0052-AC2` | n/a | `E2E-0052-AC2` | n/a | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | `UT-0052-AC3` | `IT-0052-AC3` | `CT-0052-AC3` | n/a | `SEC-0052-AC3` | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | `IT-0052-AC4` | n/a | n/a | `SEC-0052-AC4` | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | `UT-0052-AC5` | n/a | n/a | `E2E-0052-AC5` | `SEC-0052-AC5` | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | `UT-0052-AC6` | `IT-0052-AC6` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | `IT-0052-AC7` | n/a | `E2E-0052-AC7` | `SEC-0052-AC7` | n/a | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract      | E2E            | Security       | Performance | Visual | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | ------------- | -------------- | -------------- | ----------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | `UT-0052-AC1` | `IT-0052-AC1` | `CT-0052-AC1` | n/a            | `SEC-0052-AC1` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | `UT-0052-AC2` | `IT-0052-AC2` | n/a           | `E2E-0052-AC2` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | `UT-0052-AC3` | `IT-0052-AC3` | `CT-0052-AC3` | n/a            | `SEC-0052-AC3` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | n/a           | `IT-0052-AC4` | n/a           | n/a            | `SEC-0052-AC4` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | `UT-0052-AC5` | n/a           | n/a           | `E2E-0052-AC5` | `SEC-0052-AC5` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | `UT-0052-AC6` | `IT-0052-AC6` | n/a           | n/a            | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-7](#ac-7) | n/a           | `IT-0052-AC7` | n/a           | `E2E-0052-AC7` | `SEC-0052-AC7` | n/a         | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0052-AC1` | [AC-1](#ac-1) | preferences API: GET /preferences (semua milik user), PUT /preferences/:key (nilai JSON tervalidasi terhadap daftar key dikenal dengan schema per key); key V... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `UT-0052-AC2` | [AC-2](#ac-2) | theme store (spec 0014) membaca dan menulis ui.theme lewat preferences setelah login; sebelum login tetap localStorage; konflik diselesaikan dengan nilai ser... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
-| `UT-0052-AC3` | [AC-3](#ac-3) | settings API (admin only): GET /settings, PUT /settings/:key untuk key V1: history.maxEntriesPerUser (dipakai retensi spec 0009), security.sessionNote tidak... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
+| `UT-0052-AC3` | [AC-3](#ac-3) | settings API (admin only): GET /settings, PUT /settings/:key untuk key V1: history.maxEntriesPerUser (dipakai retensi spec 0009), security.sessionNote tidak...  | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `UT-0052-AC5` | [AC-5](#ac-5) | UI: halaman settings dengan dua bagian: Preferensi (semua user; theme, page size, editor) dan Pengaturan Aplikasi (tampil hanya untuk Admin; form per key den... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `UT-0052-AC6` | [AC-6](#ac-6) | nilai preferences dan settings dibaca lewat lapisan tunggal di server (SettingsService dengan cache dan invalidasi saat tulis) sehingga pemakai (retensi hist... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0052-AC1` | [AC-1](#ac-1) | preferences API: GET /preferences (semua milik user), PUT /preferences/:key (nilai JSON tervalidasi terhadap daftar key dikenal dengan schema per key); key V... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0052-AC2` | [AC-2](#ac-2) | theme store (spec 0014) membaca dan menulis ui.theme lewat preferences setelah login; sebelum login tetap localStorage; konflik diselesaikan dengan nilai ser... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
-| `IT-0052-AC3` | [AC-3](#ac-3) | settings API (admin only): GET /settings, PUT /settings/:key untuk key V1: history.maxEntriesPerUser (dipakai retensi spec 0009), security.sessionNote tidak... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `IT-0052-AC4` | [AC-4](#ac-4) | perubahan settings diaudit (settings.changed: key, nilai lama dan baru bila tidak sensitif) sebelum sukses; preferences tidak diaudit (selera pribadi). | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| `IT-0052-AC3` | [AC-3](#ac-3) | settings API (admin only): GET /settings, PUT /settings/:key untuk key V1: history.maxEntriesPerUser (dipakai retensi spec 0009), security.sessionNote tidak...  | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
+| `IT-0052-AC4` | [AC-4](#ac-4) | perubahan settings diaudit (settings.changed: key, nilai lama dan baru bila tidak sensitif) sebelum sukses; preferences tidak diaudit (selera pribadi).          | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `IT-0052-AC6` | [AC-6](#ac-6) | nilai preferences dan settings dibaca lewat lapisan tunggal di server (SettingsService dengan cache dan invalidasi saat tulis) sehingga pemakai (retensi hist... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 | `IT-0052-AC7` | [AC-7](#ac-7) | e2e: ganti theme di satu browser, login di konteks lain, theme mengikuti; Admin mengubah retensi dan nilai efektif berubah (dibuktikan lewat perilaku retensi... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
@@ -83,26 +83,26 @@ Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu t
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0052-AC1` | [AC-1](#ac-1) | preferences API: GET /preferences (semua milik user), PUT /preferences/:key (nilai JSON tervalidasi terhadap daftar key dikenal dengan schema per key); key V... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
-| `CT-0052-AC3` | [AC-3](#ac-3) | settings API (admin only): GET /settings, PUT /settings/:key untuk key V1: history.maxEntriesPerUser (dipakai retensi spec 0009), security.sessionNote tidak... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
+| `CT-0052-AC3` | [AC-3](#ac-3) | settings API (admin only): GET /settings, PUT /settings/:key untuk key V1: history.maxEntriesPerUser (dipakai retensi spec 0009), security.sessionNote tidak...  | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0052-AC2` | [AC-2](#ac-2) | theme store (spec 0014) membaca dan menulis ui.theme lewat preferences setelah login; sebelum login tetap localStorage; konflik diselesaikan dengan nilai ser... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `E2E-0052-AC5` | [AC-5](#ac-5) | UI: halaman settings dengan dua bagian: Preferensi (semua user; theme, page size, editor) dan Pengaturan Aplikasi (tampil hanya untuk Admin; form per key den... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `E2E-0052-AC7` | [AC-7](#ac-7) | e2e: ganti theme di satu browser, login di konteks lain, theme mengikuti; Admin mengubah retensi dan nilai efektif berubah (dibuktikan lewat perilaku retensi... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0052-AC1` | [AC-1](#ac-1) | preferences API: GET /preferences (semua milik user), PUT /preferences/:key (nilai JSON tervalidasi terhadap daftar key dikenal dengan schema per key); key V... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
-| `SEC-0052-AC3` | [AC-3](#ac-3) | settings API (admin only): GET /settings, PUT /settings/:key untuk key V1: history.maxEntriesPerUser (dipakai retensi spec 0009), security.sessionNote tidak... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `SEC-0052-AC4` | [AC-4](#ac-4) | perubahan settings diaudit (settings.changed: key, nilai lama dan baru bila tidak sensitif) sebelum sukses; preferences tidak diaudit (selera pribadi). | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| `SEC-0052-AC3` | [AC-3](#ac-3) | settings API (admin only): GET /settings, PUT /settings/:key untuk key V1: history.maxEntriesPerUser (dipakai retensi spec 0009), security.sessionNote tidak...  | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
+| `SEC-0052-AC4` | [AC-4](#ac-4) | perubahan settings diaudit (settings.changed: key, nilai lama dan baru bila tidak sensitif) sebelum sukses; preferences tidak diaudit (selera pribadi).          | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `SEC-0052-AC5` | [AC-5](#ac-5) | UI: halaman settings dengan dua bagian: Preferensi (semua user; theme, page size, editor) dan Pengaturan Aplikasi (tampil hanya untuk Admin; form per key den... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `SEC-0052-AC7` | [AC-7](#ac-7) | e2e: ganti theme di satu browser, login di konteks lain, theme mengikuti; Admin mengubah retensi dan nilai efektif berubah (dibuktikan lewat perilaku retensi... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
@@ -134,12 +134,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — provider unit, contract, browser index/constraint flow, dan real-engine two-engine flow lulus; failure-boundary/security matrix dan visual penuh belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -50,69 +50,69 @@ test snapshot kompilasi untuk semua jenis index dan constraint di kedua engine; 
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | `UT-0042-AC1` | `IT-0042-AC1` | n/a | `E2E-0042-AC1` | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | `UT-0042-AC2` | n/a | `CT-0042-AC2` | `E2E-0042-AC2` | n/a | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | `UT-0042-AC3` | `IT-0042-AC3` | `CT-0042-AC3` | `E2E-0042-AC3` | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | `UT-0042-AC4` | `IT-0042-AC4` | n/a | `E2E-0042-AC4` | n/a | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | `UT-0042-AC5` | `IT-0042-AC5` | n/a | `E2E-0042-AC5` | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | `IT-0042-AC6` | n/a | `E2E-0042-AC6` | `SEC-0042-AC6` | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | `UT-0042-AC7` | `IT-0042-AC7` | n/a | `E2E-0042-AC7` | n/a | n/a | n/a | n/a | n/a |
-| [AC-8](#ac-8) | `UT-0042-AC8` | `IT-0042-AC8` | n/a | `E2E-0042-AC8` | n/a | n/a | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract      | E2E            | Security       | Performance | Visual | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | ------------- | -------------- | -------------- | ----------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | `UT-0042-AC1` | `IT-0042-AC1` | n/a           | `E2E-0042-AC1` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | `UT-0042-AC2` | n/a           | `CT-0042-AC2` | `E2E-0042-AC2` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | `UT-0042-AC3` | `IT-0042-AC3` | `CT-0042-AC3` | `E2E-0042-AC3` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | `UT-0042-AC4` | `IT-0042-AC4` | n/a           | `E2E-0042-AC4` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | `UT-0042-AC5` | `IT-0042-AC5` | n/a           | `E2E-0042-AC5` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | n/a           | `IT-0042-AC6` | n/a           | `E2E-0042-AC6` | `SEC-0042-AC6` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-7](#ac-7) | `UT-0042-AC7` | `IT-0042-AC7` | n/a           | `E2E-0042-AC7` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-8](#ac-8) | `UT-0042-AC8` | `IT-0042-AC8` | n/a           | `E2E-0042-AC8` | n/a            | n/a         | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0042-AC1` | [AC-1](#ac-1) | tab Index dan tab Constraint di table designer memuat keadaan kini dari describeTable: daftar index (nama, kolom terurut, unik, metode bila ada) dan constrai... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `UT-0042-AC2` | [AC-2](#ac-2) | change set diperluas: addIndex, dropIndex, addConstraint, dropConstraint; "ubah" dimodelkan drop plus add dan pratinjau menampilkannya jujur sebagai dua stat... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `UT-0042-AC3` | [AC-3](#ac-3) | editor FK: memilih kolom lokal, table target (pencari object dari metadata), kolom target, ON DELETE dan ON UPDATE dari daftar aturan engine; provider memval... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `UT-0042-AC4` | [AC-4](#ac-4) | editor check dengan ekspresi bebas divalidasi provider saat preview (engine yang mem parse saat DDL); pada MySQL versi tanpa penegakan, UI menonaktifkan chec... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `UT-0042-AC5` | [AC-5](#ac-5) | composite index dan composite PK/unique didukung dengan pengurutan kolom drag; batas jumlah kolom mengikuti engine (dinyatakan provider). | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `UT-0042-AC7` | [AC-7](#ac-7) | setelah terapkan, invalidasi metadata (pola spec 0041 AC-7); data browser menyegarkan rowIdentity bila PK berubah. | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `UT-0042-AC5` | [AC-5](#ac-5) | composite index dan composite PK/unique didukung dengan pengurutan kolom drag; batas jumlah kolom mengikuti engine (dinyatakan provider).                        | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `UT-0042-AC7` | [AC-7](#ac-7) | setelah terapkan, invalidasi metadata (pola spec 0041 AC-7); data browser menyegarkan rowIdentity bila PK berubah.                                               | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 | `UT-0042-AC8` | [AC-8](#ac-8) | test snapshot kompilasi untuk semua jenis index dan constraint di kedua engine; e2e: buat FK antar table fixture dengan aturan ON, buat composite unique, dro... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0042-AC1` | [AC-1](#ac-1) | tab Index dan tab Constraint di table designer memuat keadaan kini dari describeTable: daftar index (nama, kolom terurut, unik, metode bila ada) dan constrai... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0042-AC3` | [AC-3](#ac-3) | editor FK: memilih kolom lokal, table target (pencari object dari metadata), kolom target, ON DELETE dan ON UPDATE dari daftar aturan engine; provider memval... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `IT-0042-AC4` | [AC-4](#ac-4) | editor check dengan ekspresi bebas divalidasi provider saat preview (engine yang mem parse saat DDL); pada MySQL versi tanpa penegakan, UI menonaktifkan chec... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `IT-0042-AC5` | [AC-5](#ac-5) | composite index dan composite PK/unique didukung dengan pengurutan kolom drag; batas jumlah kolom mengikuti engine (dinyatakan provider). | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `IT-0042-AC5` | [AC-5](#ac-5) | composite index dan composite PK/unique didukung dengan pengurutan kolom drag; batas jumlah kolom mengikuti engine (dinyatakan provider).                        | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `IT-0042-AC6` | [AC-6](#ac-6) | drop index atau constraint memakai konfirmasi destructive; drop PK dan drop FK menampilkan peringatan dampak khusus (identitas baris data browser, integritas... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `IT-0042-AC7` | [AC-7](#ac-7) | setelah terapkan, invalidasi metadata (pola spec 0041 AC-7); data browser menyegarkan rowIdentity bila PK berubah. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `IT-0042-AC7` | [AC-7](#ac-7) | setelah terapkan, invalidasi metadata (pola spec 0041 AC-7); data browser menyegarkan rowIdentity bila PK berubah.                                               | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 | `IT-0042-AC8` | [AC-8](#ac-8) | test snapshot kompilasi untuk semua jenis index dan constraint di kedua engine; e2e: buat FK antar table fixture dengan aturan ON, buat composite unique, dro... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ## Test tambahan
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0042-AC2` | [AC-2](#ac-2) | change set diperluas: addIndex, dropIndex, addConstraint, dropConstraint; "ubah" dimodelkan drop plus add dan pratinjau menampilkannya jujur sebagai dua stat... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `CT-0042-AC3` | [AC-3](#ac-3) | editor FK: memilih kolom lokal, table target (pencari object dari metadata), kolom target, ON DELETE dan ON UPDATE dari daftar aturan engine; provider memval... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0042-AC1` | [AC-1](#ac-1) | tab Index dan tab Constraint di table designer memuat keadaan kini dari describeTable: daftar index (nama, kolom terurut, unik, metode bila ada) dan constrai... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `E2E-0042-AC2` | [AC-2](#ac-2) | change set diperluas: addIndex, dropIndex, addConstraint, dropConstraint; "ubah" dimodelkan drop plus add dan pratinjau menampilkannya jujur sebagai dua stat... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `E2E-0042-AC3` | [AC-3](#ac-3) | editor FK: memilih kolom lokal, table target (pencari object dari metadata), kolom target, ON DELETE dan ON UPDATE dari daftar aturan engine; provider memval... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `E2E-0042-AC4` | [AC-4](#ac-4) | editor check dengan ekspresi bebas divalidasi provider saat preview (engine yang mem parse saat DDL); pada MySQL versi tanpa penegakan, UI menonaktifkan chec... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `E2E-0042-AC5` | [AC-5](#ac-5) | composite index dan composite PK/unique didukung dengan pengurutan kolom drag; batas jumlah kolom mengikuti engine (dinyatakan provider). | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `E2E-0042-AC5` | [AC-5](#ac-5) | composite index dan composite PK/unique didukung dengan pengurutan kolom drag; batas jumlah kolom mengikuti engine (dinyatakan provider).                        | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `E2E-0042-AC6` | [AC-6](#ac-6) | drop index atau constraint memakai konfirmasi destructive; drop PK dan drop FK menampilkan peringatan dampak khusus (identitas baris data browser, integritas... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `E2E-0042-AC7` | [AC-7](#ac-7) | setelah terapkan, invalidasi metadata (pola spec 0041 AC-7); data browser menyegarkan rowIdentity bila PK berubah. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `E2E-0042-AC7` | [AC-7](#ac-7) | setelah terapkan, invalidasi metadata (pola spec 0041 AC-7); data browser menyegarkan rowIdentity bila PK berubah.                                               | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 | `E2E-0042-AC8` | [AC-8](#ac-8) | test snapshot kompilasi untuk semua jenis index dan constraint di kedua engine; e2e: buat FK antar table fixture dengan aturan ON, buat composite unique, dro... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0042-AC6` | [AC-6](#ac-6) | drop index atau constraint memakai konfirmasi destructive; drop PK dan drop FK menampilkan peringatan dampak khusus (identitas baris data browser, integritas... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ### Performance
@@ -143,12 +143,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

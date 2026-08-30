@@ -41,7 +41,13 @@ keyboard, focus, screen reader, and Playwright proof
 
 **Rollout**:
 
-Audit ulang component inventory, migrasikan komponen generik yang sudah dapat diganti, lalu kerjakan gap object explorer dan table designer dengan test accessibility per behavior.
+Tiga slice pertama sudah ditetapkan dari temuan review implementasi 2026-08-29, dikerjakan sebelum audit inventory yang lebih luas:
+
+1. Modal drop database dan schema pindah dari overlay buatan tangan ke Dialog foundation (focus trap, Escape, pengembalian focus), memakai `role="alertdialog"` untuk aksi destruktif.
+2. Result grid mendapat jalur keyboard untuk edit sel (Enter atau F2) sehingga edit tidak lagi hanya lewat double click.
+3. Result grid memakai roving tabindex (satu tab stop per grid) mengikuti pola yang sudah benar pada object explorer tree.
+
+Setelah itu audit ulang component inventory, migrasikan komponen generik yang sudah dapat diganti, lalu kerjakan gap object explorer dan table designer dengan test accessibility per behavior.
 
 **Exceptions**:
 

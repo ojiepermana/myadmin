@@ -12,23 +12,23 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Prasyarat eksekusi
 
-| Kebutuhan | Cara memeriksa | Status awal |
-|---|---|---|
-| Implementasi | Build plan pada `index.md` selesai untuk slice yang diverifikasi. | Belum siap |
-| Dependency | Semua relation `requires` pada `relation.md` sudah diterima. | Belum diperiksa |
-| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested. | Belum diperiksa |
-| Test plan | Test ID relevan pada `test.md` sudah diimplementasikan. | Belum siap |
-| Environment | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa |
+| Kebutuhan     | Cara memeriksa                                                                   | Status awal     |
+| ------------- | -------------------------------------------------------------------------------- | --------------- |
+| Implementasi  | Build plan pada `index.md` selesai untuk slice yang diverifikasi.                | Belum siap      |
+| Dependency    | Semua relation `requires` pada `relation.md` sudah diterima.                     | Belum diperiksa |
+| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested.             | Belum diperiksa |
+| Test plan     | Test ID relevan pada `test.md` sudah diimplementasikan.                          | Belum siap      |
+| Environment   | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa |
 
 ## Matriks verifikasi AC
 
-| AC | Test atau proof ID | Metode | Bukti wajib | Result |
-|---|---|---|---|---|
-| [AC-1](test.md#ac-1) | `SEC-0011-AC1` | Security | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
-| [AC-2](test.md#ac-2) | `IT-0011-AC2` | Integration | output command dan assertion | Belum dijalankan |
-| [AC-3](test.md#ac-3) | `SEC-0011-AC3` | Security | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
-| [AC-4](test.md#ac-4) | `SEC-0011-AC4` | Security | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
-| [AC-5](test.md#ac-5) | `UT-0011-AC5`, `SEC-0011-AC5` | Unit, Security | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
+| AC                   | Test atau proof ID            | Metode                | Bukti wajib                                                | Result           |
+| -------------------- | ----------------------------- | --------------------- | ---------------------------------------------------------- | ---------------- |
+| [AC-1](test.md#ac-1) | `SEC-0011-AC1`                | Security              | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
+| [AC-2](test.md#ac-2) | `IT-0011-AC2`                 | Integration           | output command dan assertion                               | Belum dijalankan |
+| [AC-3](test.md#ac-3) | `SEC-0011-AC3`                | Security              | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
+| [AC-4](test.md#ac-4) | `SEC-0011-AC4`                | Security              | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
+| [AC-5](test.md#ac-5) | `UT-0011-AC5`, `SEC-0011-AC5` | Unit, Security        | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
 | [AC-6](test.md#ac-6) | `IT-0011-AC6`, `SEC-0011-AC6` | Integration, Security | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
 | [AC-7](test.md#ac-7) | `IT-0011-AC7`, `SEC-0011-AC7` | Integration, Security | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
 
@@ -42,11 +42,11 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Pemeriksaan otomatis
 
-| Area | Command source | Expected result |
-|---|---|---|
-| Unit | Script root yang didaftarkan pada satu `package.json` | Semua `UT-0011-*` lulus dan memiliki assertion yang menutup AC. |
-| Integration | Script root yang didaftarkan pada satu `package.json` | Resource nyata disposable dipakai dan cleanup lulus. |
-| Security | Script root yang didaftarkan pada satu `package.json` | Semua `SEC-0011-*` lulus dan memiliki assertion yang menutup AC. |
+| Area        | Command source                                        | Expected result                                                  |
+| ----------- | ----------------------------------------------------- | ---------------------------------------------------------------- |
+| Unit        | Script root yang didaftarkan pada satu `package.json` | Semua `UT-0011-*` lulus dan memiliki assertion yang menutup AC.  |
+| Integration | Script root yang didaftarkan pada satu `package.json` | Resource nyata disposable dipakai dan cleanup lulus.             |
+| Security    | Script root yang didaftarkan pada satu `package.json` | Semua `SEC-0011-*` lulus dan memiliki assertion yang menutup AC. |
 
 ## Pemeriksaan manual, staged, environment, atau external
 
@@ -54,15 +54,15 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
-| Waktu | Commit | Environment | Hasil | Evidence |
-|---|---|---|---|---|
-| Belum dijalankan | Belum ada | Belum ada | Belum ada | Belum ada |
+| Waktu      | Commit       | Environment                                            | Hasil                                                                                                                                                                             | Evidence                                                                                                                       |
+| ---------- | ------------ | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-08-30 | Working tree | Bun 1.4.0, disposable SQLite, security redaction suite | **11 pass, 0 fail, 52 assertions**; ciphertext metadata is separated, SQLite bytes contain no credential plaintext, and shared redaction paths are covered by security assertions | `bun test --isolate --timeout=10000 tests/security/crypto/credential-vault.test.ts tests/security/redaction/redaction.test.ts` |
 
 ## Gap dan blocker
 
-| AC | Gap | Dampak | Tindak lanjut |
-|---|---|---|---|
-| Belum dinilai | Verifikasi belum dijalankan karena implementasi belum tersedia. | Belum ada verdict acceptance. | Jalankan `/check verify` setelah build dan test relevan selesai. |
+| AC         | Gap                                                                                                                                         | Dampak                                    | Tindak lanjut                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------- |
+| AC-6, AC-7 | Local security assertions are available; formal reviewer evidence and the full logger/transport/audit integration boundary remain separate. | Verdict acceptance tetap belum dinaikkan. | Lengkapi boundary review dan tandai hanya evidence yang benar-benar terbukti. |
 
 ## Verdict akhir
 

@@ -12,26 +12,26 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Prasyarat eksekusi
 
-| Kebutuhan | Cara memeriksa | Status awal |
-|---|---|---|
-| Implementasi | Build plan pada `index.md` selesai untuk slice yang diverifikasi. | Belum siap |
-| Dependency | Semua relation `requires` pada `relation.md` sudah diterima. | Belum diperiksa |
-| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested. | Belum diperiksa |
-| Test plan | Test ID relevan pada `test.md` sudah diimplementasikan. | Belum siap |
-| Environment | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa |
+| Kebutuhan     | Cara memeriksa                                                                   | Status awal                    |
+| ------------- | -------------------------------------------------------------------------------- | ------------------------------ |
+| Implementasi  | Build plan pada `index.md` selesai untuk slice yang diverifikasi.                | Tersedia; bukti lokal tercatat |
+| Dependency    | Semua relation `requires` pada `relation.md` sudah diterima.                     | Belum diperiksa                |
+| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested.             | Belum diperiksa                |
+| Test plan     | Test ID relevan pada `test.md` sudah diimplementasikan.                          | Belum siap                     |
+| Environment   | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa                |
 
 ## Matriks verifikasi AC
 
-| AC | Test atau proof ID | Metode | Bukti wajib | Result |
-|---|---|---|---|---|
-| [AC-1](test.md#ac-1) | `CT-0003-AC1` | Contract | output command dan assertion | Belum dijalankan |
-| [AC-2](test.md#ac-2) | `CT-0003-AC2`, `SMOKE-0003-AC2` | Contract, Smoke dan operational | output command dan assertion | Belum dijalankan |
-| [AC-3](test.md#ac-3) | `CT-0003-AC3` | Contract | output command dan assertion | Belum dijalankan |
-| [AC-4](test.md#ac-4) | `CT-0003-AC4` | Contract | output command dan assertion | Belum dijalankan |
-| [AC-5](test.md#ac-5) | `CT-0003-AC5` | Contract | output command dan assertion | Belum dijalankan |
-| [AC-6](test.md#ac-6) | `CT-0003-AC6` | Contract | output command dan assertion | Belum dijalankan |
-| [AC-7](test.md#ac-7) | `CT-0003-AC7` | Contract | output command dan assertion | Belum dijalankan |
-| [AC-8](test.md#ac-8) | `CT-0003-AC8` | Contract | output command dan assertion | Belum dijalankan |
+| AC                   | Test atau proof ID              | Metode                          | Bukti wajib                  | Result                                                        |
+| -------------------- | ------------------------------- | ------------------------------- | ---------------------------- | ------------------------------------------------------------- |
+| [AC-1](test.md#ac-1) | `CT-0003-AC1`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
+| [AC-2](test.md#ac-2) | `CT-0003-AC2`, `SMOKE-0003-AC2` | Contract, Smoke dan operational | output command dan assertion | Contract lulus lokal; hosted/operational smoke belum terbukti |
+| [AC-3](test.md#ac-3) | `CT-0003-AC3`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
+| [AC-4](test.md#ac-4) | `CT-0003-AC4`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
+| [AC-5](test.md#ac-5) | `CT-0003-AC5`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
+| [AC-6](test.md#ac-6) | `CT-0003-AC6`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
+| [AC-7](test.md#ac-7) | `CT-0003-AC7`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
+| [AC-8](test.md#ac-8) | `CT-0003-AC8`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
 
 ## Urutan verifikasi
 
@@ -43,9 +43,9 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Pemeriksaan otomatis
 
-| Area | Command source | Expected result |
-|---|---|---|
-| Contract | Script root yang didaftarkan pada satu `package.json` | Semua `CT-0003-*` lulus dan memiliki assertion yang menutup AC. |
+| Area                  | Command source                                        | Expected result                                                         |
+| --------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| Contract              | Script root yang didaftarkan pada satu `package.json` | Semua `CT-0003-*` lulus dan memiliki assertion yang menutup AC.         |
 | Smoke dan operational | Script root yang didaftarkan pada satu `package.json` | Artefak atau workflow berjalan pada environment bersih yang ditetapkan. |
 
 ## Pemeriksaan manual, staged, environment, atau external
@@ -54,15 +54,15 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
-| Waktu | Commit | Environment | Hasil | Evidence |
-|---|---|---|---|---|
-| Belum dijalankan | Belum ada | Belum ada | Belum ada | Belum ada |
+| Waktu      | Commit       | Environment            | Hasil                                                                                                                       | Evidence                                                                             |
+| ---------- | ------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 2026-08-30 | Working tree | Bun 1.4.0, macOS arm64 | OpenAPI validation dan generated contract drift lulus; **71 contract test, 812 assertions** lulus; hosted CI belum terbukti | `bun run validate-contract`; `bun run check:contract-drift`; `bun run test:contract` |
 
 ## Gap dan blocker
 
-| AC | Gap | Dampak | Tindak lanjut |
-|---|---|---|---|
-| Belum dinilai | Verifikasi belum dijalankan karena implementasi belum tersedia. | Belum ada verdict acceptance. | Jalankan `/check verify` setelah build dan test relevan selesai. |
+| AC   | Gap                                                                 | Dampak                            | Tindak lanjut                                      |
+| ---- | ------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------- |
+| AC-2 | Hosted CI/operational smoke untuk workflow contract belum tersedia. | Verdict tetap belum diverifikasi. | Jalankan workflow hosted dan tautkan artifact-nya. |
 
 ## Verdict akhir
 

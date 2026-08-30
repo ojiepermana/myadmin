@@ -103,7 +103,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 1. [x] Tambah operasi history dan saved ke kontrak, regenerasi, contract test.
 2. [x] Use case dan endpoint server (filter berparameter, kepemilikan, retensi saat penulisan, hapus semua), memenuhi **AC-1** sampai **AC-4**, **AC-6**.
 3. [x] UI halaman query-history dua tab plus panel cepat di editor plus simpan cepat, memenuhi **AC-5**, **AC-7**.
-4. [ ] E2e dan test otorisasi, memenuhi **AC-8**.
+4. [x] E2e dan test otorisasi, memenuhi **AC-8**.
 
 ## Consequences
 

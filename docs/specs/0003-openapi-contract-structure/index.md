@@ -19,6 +19,7 @@ Ada ketegangan yang perlu dinyatakan: Elysia menghasilkan OpenAPI dari kode (cod
 ## Requirements
 
 **User stories**:
+
 - Sebagai developer server atau web, saya ingin satu definisi endpoint bertipe supaya request dan response tidak ditulis dua kali.
 - Sebagai integrator, saya ingin semua error berbentuk sama supaya penanganan error cukup ditulis sekali.
 
@@ -40,17 +41,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Redocly CLI untuk lint dan bundel (dipilih)
 
 **Pros**:
+
 - Satu alat untuk lint aturan kontrak dan bundel multi file menjadi satu dokumen; dukungan OpenAPI 3.1 baik.
 
 **Cons**:
+
 - Aturan lint bawaannya opinionated; perlu menonaktifkan beberapa aturan yang tidak relevan.
 
 ### Option 2: Spectral untuk lint plus bundler terpisah
 
 **Pros**:
+
 - Aturan lint sangat bisa dikustom.
 
 **Cons**:
+
 - Dua alat untuk pekerjaan yang Redocly selesaikan sendiri.
 
 ### Option 3: Error model RFC 7807 (application/problem+json)
@@ -58,9 +63,11 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 Dipertimbangkan untuk bentuk `ApiError`.
 
 **Pros**:
+
 - Standar IETF yang dikenal luas.
 
 **Cons**:
+
 - Field `type`/`instance` berbasis URI tidak memberi nilai untuk aplikasi self hosted satu binary; kebutuhan proyek (kode stabil, correlation ID, redaction) lebih langsung dipenuhi envelope sendiri yang lebih kecil.
 
 ## Decision
@@ -79,7 +86,7 @@ Contract first hanya bekerja kalau kontraknya tervalidasi dan terbundel secara m
 
 Bentuk `ApiError`:
 
-~~~yaml
+```yaml
 ApiError:
   type: object
   required: [code, message, correlationId]
@@ -87,27 +94,31 @@ ApiError:
     code: { type: string, description: kode stabil, contoh AUTH_INVALID_CREDENTIALS }
     message: { type: string, description: pesan aman untuk manusia, tanpa secret }
     correlationId: { type: string }
-    details: { type: object, additionalProperties: true, description: data terstruktur aman, opsional }
-~~~
+    details:
+      { type: object, additionalProperties: true, description: data terstruktur aman, opsional }
+```
 
 **API surface** (path awal yang didefinisikan spec ini; perilakunya dibangun di spec 0016 dan 0017):
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /health | GET | tidak ada | status, version | publik | 503 |
-| /setup/status | GET | tidak ada | initialized: boolean | publik | tidak ada |
-| /setup/admin | POST | username, password | user | publik | 409 sudah terinisialisasi, 422 validasi |
-| /auth/login | POST | username, password | user | publik, rate limited | 401 kredensial salah, 429 |
-| /auth/logout | POST | tidak ada | kosong | sessionCookie | 401 |
-| /auth/me | GET | tidak ada | user, role | sessionCookie | 401 |
+
+| Endpoint      | Method | Key inputs         | Key outputs          | Auth                 | Key errors                              |
+| ------------- | ------ | ------------------ | -------------------- | -------------------- | --------------------------------------- |
+| /health       | GET    | tidak ada          | status, version      | publik               | 503                                     |
+| /setup/status | GET    | tidak ada          | initialized: boolean | publik               | tidak ada                               |
+| /setup/admin  | POST   | username, password | user                 | publik               | 409 sudah terinisialisasi, 422 validasi |
+| /auth/login   | POST   | username, password | user                 | publik, rate limited | 401 kredensial salah, 429               |
+| /auth/logout  | POST   | tidak ada          | kosong               | sessionCookie        | 401                                     |
+| /auth/me      | GET    | tidak ada          | user, role           | sessionCookie        | 401                                     |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| semua error | correlationId | dihasilkan middleware server per request (spec 0013) |
-| respons capability | reasons per capability false | provider (spec 0022, 0024), diteruskan apa adanya |
-| pagination | total | provider atau repository; boleh null bila mahal dihitung |
+
+| Action             | Value produced / displayed   | Source                                                   |
+| ------------------ | ---------------------------- | -------------------------------------------------------- |
+| semua error        | correlationId                | dihasilkan middleware server per request (spec 0013)     |
+| respons capability | reasons per capability false | provider (spec 0022, 0024), diteruskan apa adanya        |
+| pagination         | total                        | provider atau repository; boleh null bila mahal dihitung |
 
 **Key invariants**:
+
 - Semua response non 2xx di kontrak wajib bertipe `ApiError`; contract lint punya aturan yang menegakkannya.
 - Prefix path runtime adalah `/api/v1` (dinyatakan lewat `servers` di kontrak); kontrak sendiri menulis path tanpa prefix.
 - File `src/generated/` tidak pernah diedit manual.
@@ -122,21 +133,24 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Buat kerangka `openapi/v1/openapi.yaml` (info, servers `/api/v1`, security default `sessionCookie`) plus `components/` berisi `ApiError`, pagination, `Capability`, `security-schemes.yaml`, memenuhi **AC-3**, **AC-4**, **AC-5**, **AC-6**.
-2. Definisikan enam path awal di `paths/auth.yaml` dan file terkait, memenuhi **AC-8**.
-3. Definisikan `events/websocket-protocol.yaml` dan `events/websocket-events.yaml`, memenuhi **AC-7**.
-4. Pasang Redocly CLI, konfigurasi aturan lint (termasuk aturan custom "semua error memakai ApiError"), tulis `scripts/validate-contract.ts` dan `packages/api-contract/scripts/validate-contract.ts`, sambungkan ke CI, memenuhi **AC-1**, **AC-2**.
+1. [x] Buat kerangka `openapi/v1/openapi.yaml` (info, servers `/api/v1`, security default `sessionCookie`) plus `components/` berisi `ApiError`, pagination, `Capability`, `security-schemes.yaml`, memenuhi **AC-3**, **AC-4**, **AC-5**, **AC-6**.
+2. [x] Definisikan enam path awal di `paths/auth.yaml` dan file terkait, memenuhi **AC-8**.
+3. [x] Definisikan `events/websocket-protocol.yaml` dan `events/websocket-events.yaml`, memenuhi **AC-7**.
+4. [x] Pasang Redocly CLI, konfigurasi aturan lint (termasuk aturan custom "semua error memakai ApiError"), tulis `scripts/validate-contract.ts` dan `packages/api-contract/scripts/validate-contract.ts`, sambungkan ke CI, memenuhi **AC-1**, **AC-2**.
 
 ## Consequences
 
 **Positive**:
+
 - Setiap spec fitur tinggal menambah path dan schema pada pola yang sudah pasti; SDK dan server membaca bentuk yang sama.
 
 **Negative / tradeoffs**:
+
 - Menulis kontrak lebih dulu terasa lebih lambat per fitur; ini harga dari tipe yang tidak pernah drift.
 - Error envelope sendiri berarti integrator luar tidak mendapat format standar industri; diterima karena API ini untuk SPA sendiri.
 
 **Neutral**:
+
 - Kontrak memakai OpenAPI 3.1; alat hilir (spec 0004) dipilih yang mendukungnya.
 
 ## Follow-up
@@ -146,10 +160,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - struktur.md bagian 4.2 (aturan API first) dan pohon `packages/api-contract`.
 - v1-feature-specification.md FR-RUN-04, FR-OPS-02, bagian 7.6 (contoh capability), bagian 8 (aturan redaction).
 
 **Practices & standards**:
+
 - Contract first dengan verifikasi kesesuaian lewat test; kode error stabil untuk mesin, pesan untuk manusia.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

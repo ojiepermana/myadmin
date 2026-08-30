@@ -105,11 +105,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Implementasikan `ViewPort` di kedua provider (create, getDefinition sudah ada, replace dengan analisis strategi, drop) plus test integrasi, memenuhi **AC-3**.
-2. Tambah operasi view ke kontrak (flag drop create, confirmName), regenerasi, contract test, memenuhi **AC-3**, **AC-4**.
-3. Endpoint server dengan gerbang capability dan audit, memenuhi **AC-4**, **AC-5**.
-4. UI: halaman editor view (nama, editor SELECT plus autocomplete, validasi, pratinjau DDL), aksi explorer, konfirmasi destructive dengan dampak, invalidasi metadata, memenuhi **AC-1**, **AC-2**, **AC-6**, **AC-7**.
-5. E2e dua engine, memenuhi **AC-8**.
+1. [x] Implementasikan `ViewPort` di kedua provider (create, getDefinition sudah ada, replace dengan analisis strategi, drop) plus test integrasi, memenuhi **AC-3**.
+2. [x] Tambah operasi view ke kontrak (flag drop create, confirmName), regenerasi, contract test, memenuhi **AC-3**, **AC-4**.
+3. [x] Endpoint server dengan gerbang capability dan audit, memenuhi **AC-4**, **AC-5**.
+4. [x] UI: halaman editor view (nama, editor SELECT plus autocomplete, validasi, pratinjau DDL), aksi explorer, konfirmasi destructive dengan dampak, invalidasi metadata, memenuhi **AC-1**, **AC-2**, **AC-6**, **AC-7**.
+5. [x] E2e dua engine, memenuhi **AC-8**.
 
 ## Consequences
 

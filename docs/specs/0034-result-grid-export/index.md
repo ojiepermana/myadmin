@@ -94,11 +94,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Bangun ResultGrid (virtual scroll, kolom, render sel bertipe, dialog nilai penuh, JSON viewer) di database-components, memenuhi **AC-1**, **AC-3**, **AC-7**.
-2. Integrasikan ke query editor: sub tab per statement, panel error, ringkasan durasi, memenuhi **AC-2**, **AC-6**.
-3. Bangun pemilihan dan salin (TSV/CSV), memenuhi **AC-4**.
-4. Bangun export klien plus tombol dua jalur dengan gerbang fitur export penuh, memenuhi **AC-5**.
-5. Unit test render, e2e alur hasil, test kinerja ringan, memenuhi **AC-8**.
+1. [x] Bangun ResultGrid (virtual scroll, kolom, render sel bertipe, dialog nilai penuh, JSON viewer) di database-components, memenuhi **AC-1**, **AC-3**, **AC-7**.
+2. [x] Integrasikan ke query editor: sub tab per statement, panel error, ringkasan durasi, memenuhi **AC-2**, **AC-6**.
+3. [x] Bangun pemilihan dan salin (TSV/CSV), memenuhi **AC-4**.
+4. [x] Bangun export klien plus tombol dua jalur dengan gerbang fitur export penuh, memenuhi **AC-5**.
+5. [x] Unit test render, e2e alur hasil, test kinerja ringan, memenuhi **AC-8**.
 
 ## Consequences
 
@@ -116,7 +116,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Follow-up
 
-- [ ] Spec 0047 mengaktifkan jalur "export semua baris" pada tombol yang sudah ada.
+- [x] Spec 0047 mengaktifkan jalur "export semua baris" pada tombol yang sudah ada.
 
 ## References
 

@@ -113,12 +113,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Bangun modul deteksi tool (config, PATH, versi, kecocokan) plus doctor check plus penentuan capability, memenuhi **AC-1**, **AC-7**.
-2. Bangun pembangun argumen dan penanganan credential subprocess per engine di provider, memenuhi **AC-2**.
-3. Executor job backup (subprocess, streaming ke file, gzip, progress, cancel, validasi, manifest), memenuhi **AC-2**, **AC-3**, **AC-4**.
-4. Kontrak, endpoint (backup, daftar, unduh, hapus), audit, regenerasi, contract test, memenuhi **AC-5**, **AC-6**.
-5. UI dialog backup dan halaman backup-restore (daftar artefak plus panel jobs), memenuhi **AC-6**, **AC-7**.
-6. E2e dua engine plus simulasi tanpa tool, memenuhi **AC-8**.
+1. [x] Bangun modul deteksi tool (config, PATH, versi, kecocokan) plus doctor check plus penentuan capability, memenuhi **AC-1**, **AC-7**.
+2. [x] Bangun pembangun argumen dan penanganan credential subprocess per engine di provider, memenuhi **AC-2**.
+3. [x] Executor job backup (subprocess, streaming ke file, gzip, progress, cancel, validasi, manifest), memenuhi **AC-2**, **AC-3**, **AC-4**.
+4. [x] Kontrak, endpoint (backup, daftar, unduh, hapus), audit, regenerasi, contract test, memenuhi **AC-5**, **AC-6**.
+5. [x] UI dialog backup dan halaman backup-restore (daftar artefak plus panel jobs), memenuhi **AC-6**, **AC-7**.
+6. [x] E2e dua engine plus simulasi tanpa tool, memenuhi **AC-8**.
 
 ## Consequences
 
@@ -136,7 +136,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Follow-up
 
-- [ ] Spec 0055 mengevaluasi pembundelan atau pemaketan tool per platform.
+- [x] Spec 0055 mengevaluasi pembundelan atau pemaketan tool per platform.
 
 ## References
 

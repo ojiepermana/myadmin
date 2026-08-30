@@ -102,11 +102,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Tambah operasi cancel dan explain ke kontrak, regenerasi, contract test.
-2. Implementasi cancel di use case query (state cancelling, konfirmasi provider, idempotensi) plus event WS state, memenuhi **AC-1**, **AC-2**, **AC-4**.
-3. Implementasi explain di provider `query/` masing masing engine plus endpoint, memenuhi **AC-5**, **AC-6**, **AC-7**.
-4. UI: tombol cancel bergerbang capability dengan state jelas, aksi darurat putuskan sesi (konfirmasi), panel explain teks, memenuhi **AC-3**, **AC-5**.
-5. Integration dan e2e dua engine, memenuhi **AC-8**.
+1. [x] Tambah operasi cancel dan explain ke kontrak, regenerasi, contract test.
+2. [x] Implementasi cancel di use case query (state cancelling, konfirmasi provider, idempotensi) plus event WS state, memenuhi **AC-1**, **AC-2**, **AC-4**.
+3. [x] Implementasi explain di provider `query/` masing masing engine plus endpoint, memenuhi **AC-5**, **AC-6**, **AC-7**.
+4. [x] UI: tombol cancel bergerbang capability dengan state jelas, aksi darurat putuskan sesi (konfirmasi), panel explain teks, memenuhi **AC-3**, **AC-5**.
+5. [x] Integration dan e2e dua engine, memenuhi **AC-8**.
 
 ## Consequences
 

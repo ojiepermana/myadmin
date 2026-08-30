@@ -17,6 +17,7 @@ FR-AUD-02 (P1): Admin dapat melihat audit history dengan filter waktu, actor, ac
 ## Requirements
 
 **User stories**:
+
 - Sebagai Admin, saya ingin menelusuri kejadian penting berdasarkan waktu, pelaku, jenis aksi, dan target untuk investigasi.
 
 **Acceptance criteria**:
@@ -36,17 +37,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Filter SQL dinamis parameterized di repository (dipilih)
 
 **Pros**:
+
 - Sederhana, memanfaatkan index, jumlah kombinasi filter kecil dan dikenal.
 
 **Cons**:
+
 - Penulisan klausa dinamis harus rapi; ditutup dengan builder kecil yang diuji.
 
 ### Option 2: Full text search di atas audit
 
 **Pros**:
+
 - Pencarian bebas.
 
 **Cons**:
+
 - FR-AUD-02 hanya meminta filter terstruktur; FTS menambah index dan kompleksitas tanpa permintaan.
 
 ## Decision
@@ -64,20 +69,23 @@ Data audit lokal dan berukuran moderat; SQL berindeks dengan filter terstruktur 
 **Data model sketch**: memakai `audit_logs` plus join ringan ke `users` untuk username actor; tidak ada tabel baru.
 
 **API surface**:
-| Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
-|---|---|---|---|---|---|
-| /audit | GET | from?, to?, actorUserId?, action[]?, connectionId?, targetRef?, result?, page, pageSize | items, page, pageSize, total | admin | 403, 422 filter tidak valid |
-| /audit/actions | GET | tidak ada | daftar action taksonomi | admin | 403 |
+
+| Endpoint       | Method | Key inputs                                                                              | Key outputs                  | Auth  | Key errors                  |
+| -------------- | ------ | --------------------------------------------------------------------------------------- | ---------------------------- | ----- | --------------------------- |
+| /audit         | GET    | from?, to?, actorUserId?, action[]?, connectionId?, targetRef?, result?, page, pageSize | items, page, pageSize, total | admin | 403, 422 filter tidak valid |
+| /audit/actions | GET    | tidak ada                                                                               | daftar action taksonomi      | admin | 403                         |
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| list | username actor | join `users.username`; actor null tampil sebagai "sistem/pra login" |
-| filter action | pilihan tersedia | taksonomi spec 0019 |
-| baris details | JSON tersensor | kolom `details` apa adanya (sudah tersensor saat tulis) |
-| total | hitungan | COUNT query yang sama |
+
+| Action        | Value produced / displayed | Source                                                              |
+| ------------- | -------------------------- | ------------------------------------------------------------------- |
+| list          | username actor             | join `users.username`; actor null tampil sebagai "sistem/pra login" |
+| filter action | pilihan tersedia           | taksonomi spec 0019                                                 |
+| baris details | JSON tersensor             | kolom `details` apa adanya (sudah tersensor saat tulis)             |
+| total         | hitungan                   | COUNT query yang sama                                               |
 
 **Key invariants**:
+
 - Endpoint baca tidak pernah mengubah baris audit; tidak ada endpoint tulis audit publik.
 - pageSize dibatasi 100 di kontrak dan server.
 
@@ -91,21 +99,24 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Perluas `AuditRepository.query` dengan builder filter parameterized plus test, memenuhi **AC-1**, **AC-2**, **AC-6**.
-2. Tambahkan operasi `/audit` dan `/audit/actions` ke kontrak, regenerasi tipe dan SDK, daftarkan contract test, memenuhi **AC-1**, **AC-3**.
-3. Endpoint server admin only, memenuhi **AC-4**.
-4. Web: feature `audit` (halaman grid, panel filter, baris expandable), guard admin, memenuhi **AC-5**.
-5. E2e alur audit dari aksi nyata, memenuhi **AC-7**.
+1. [x] Perluas `AuditRepository.query` dengan builder filter parameterized plus test, memenuhi **AC-1**, **AC-2**, **AC-6**.
+2. [x] Tambahkan operasi `/audit` dan `/audit/actions` ke kontrak, regenerasi tipe dan SDK, daftarkan contract test, memenuhi **AC-1**, **AC-3**.
+3. [x] Endpoint server admin only, memenuhi **AC-4**.
+4. [x] Web: feature `audit` (halaman grid, panel filter, baris expandable), guard admin, memenuhi **AC-5**.
+5. [x] E2e alur audit dari aksi nyata, memenuhi **AC-7**.
 
 ## Consequences
 
 **Positive**:
+
 - Audit menjadi fitur yang terlihat; investigasi tidak butuh akses file db.
 
 **Negative / tradeoffs**:
+
 - Join username per baris menambah biaya kecil; bisa dioptimalkan nanti bila perlu.
 
 **Neutral**:
+
 - Ekspor audit ke file tidak ada di V1; bisa menumpang jalur export umum di masa depan.
 
 ## Follow-up
@@ -115,9 +126,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-AUD-02, bagian 6; spec 0019.
 
 **Practices & standards**:
+
 - Pagination server side untuk data tumbuh; pilihan filter dari sumber kebenaran tunggal.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

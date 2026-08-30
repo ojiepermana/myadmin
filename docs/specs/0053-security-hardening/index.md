@@ -119,13 +119,13 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Tulis standar redaction dan daftar saluran keluar; sweep kode: pastikan setiap saluran memanggil redaction; tambah test suntik per saluran, memenuhi **AC-1**.
-2. Pasang pemindai secret untuk fixture dan source test di CI, memenuhi **AC-2**.
-3. Pasang header keamanan di server plus test header, memenuhi **AC-3**.
-4. Konsolidasikan rate limiter ke satu modul dengan nilai terdokumentasi, terpasang di empat titik, plus test, memenuhi **AC-4**.
-5. Bangun generator matriks otorisasi dari kontrak dan e2e tiga aktor, memenuhi **AC-5**.
-6. Test at rest byte scan dan test kelengkapan audit destructive, memenuhi **AC-6**, **AC-7**.
-7. Rakit `security.yml` sebagai gerbang, memenuhi **AC-8**.
+1. [x] Tulis standar redaction dan daftar saluran keluar; sweep kode: pastikan setiap saluran memanggil redaction; tambah test suntik per saluran, memenuhi **AC-1**.
+2. [x] Pasang pemindai secret untuk fixture dan source test di CI, memenuhi **AC-2**.
+3. [x] Pasang header keamanan di server plus test header, memenuhi **AC-3**.
+4. [x] Konsolidasikan rate limiter ke satu modul dengan nilai terdokumentasi, terpasang di empat titik, plus test, memenuhi **AC-4**.
+5. [x] Bangun generator matriks otorisasi dari kontrak dan e2e tiga aktor, memenuhi **AC-5**.
+6. [x] Test at rest byte scan dan test kelengkapan audit destructive, memenuhi **AC-6**, **AC-7**.
+7. [x] Rakit `security.yml` sebagai gerbang, memenuhi **AC-8**.
 
 ## Consequences
 

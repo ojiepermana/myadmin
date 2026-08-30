@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — import unit/contract/integration, destructive CSV real-engine, bounded browser preview, dan authenticated route flow lulus; upload-limit/security end-to-end, performance, dan acceptance penuh belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -50,31 +50,31 @@ e2e kedua engine: roundtrip export SQL (spec 0047) diimpor balik utuh; CSV denga
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | `UT-0048-AC1` | `IT-0048-AC1` | `CT-0048-AC1` | n/a | `SEC-0048-AC1` | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | `UT-0048-AC2` | `IT-0048-AC2` | `CT-0048-AC2` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | `UT-0048-AC3` | `IT-0048-AC3` | `CT-0048-AC3` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | `IT-0048-AC4` | `CT-0048-AC4` | `E2E-0048-AC4` | `SEC-0048-AC4` | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | n/a | `IT-0048-AC5` | n/a | `E2E-0048-AC5` | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | `IT-0048-AC6` | `CT-0048-AC6` | n/a | `SEC-0048-AC6` | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | n/a | `CT-0048-AC7` | `E2E-0048-AC7` | `SEC-0048-AC7` | n/a | n/a | n/a | n/a |
-| [AC-8](#ac-8) | n/a | `IT-0048-AC8` | n/a | `E2E-0048-AC8` | `SEC-0048-AC8` | n/a | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract      | E2E            | Security       | Performance | Visual | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | ------------- | -------------- | -------------- | ----------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | `UT-0048-AC1` | `IT-0048-AC1` | `CT-0048-AC1` | n/a            | `SEC-0048-AC1` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | `UT-0048-AC2` | `IT-0048-AC2` | `CT-0048-AC2` | n/a            | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | `UT-0048-AC3` | `IT-0048-AC3` | `CT-0048-AC3` | n/a            | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | n/a           | `IT-0048-AC4` | `CT-0048-AC4` | `E2E-0048-AC4` | `SEC-0048-AC4` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | n/a           | `IT-0048-AC5` | n/a           | `E2E-0048-AC5` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | n/a           | `IT-0048-AC6` | `CT-0048-AC6` | n/a            | `SEC-0048-AC6` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-7](#ac-7) | n/a           | n/a           | `CT-0048-AC7` | `E2E-0048-AC7` | `SEC-0048-AC7` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-8](#ac-8) | n/a           | `IT-0048-AC8` | n/a           | `E2E-0048-AC8` | `SEC-0048-AC8` | n/a         | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0048-AC1` | [AC-1](#ac-1) | POST /import/upload menerima unggahan multipart streaming ke <data-dir>/temp/imports/, memvalidasi ukuran maksimum (limits.uploadMaxBytes) saat mengalir (buk... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `UT-0048-AC2` | [AC-2](#ac-2) | import SQL: POST /import/sql { connectionId, database, uploadId, mode transaksi } membuat job yang membaca file streaming, memecah statement (pemecah provide... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `UT-0048-AC3` | [AC-3](#ac-3) | import CSV: POST /import/csv { connectionId, ref table target, uploadId, options } dengan opsi: delimiter, header ada/tidak, pemetaan kolom CSV ke kolom tabl... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0048-AC1` | [AC-1](#ac-1) | POST /import/upload menerima unggahan multipart streaming ke <data-dir>/temp/imports/, memvalidasi ukuran maksimum (limits.uploadMaxBytes) saat mengalir (buk... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0048-AC2` | [AC-2](#ac-2) | import SQL: POST /import/sql { connectionId, database, uploadId, mode transaksi } membuat job yang membaca file streaming, memecah statement (pemecah provide... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `IT-0048-AC3` | [AC-3](#ac-3) | import CSV: POST /import/csv { connectionId, ref table target, uploadId, options } dengan opsi: delimiter, header ada/tidak, pemetaan kolom CSV ke kolom tabl... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
@@ -87,8 +87,8 @@ Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu t
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0048-AC1` | [AC-1](#ac-1) | POST /import/upload menerima unggahan multipart streaming ke <data-dir>/temp/imports/, memvalidasi ukuran maksimum (limits.uploadMaxBytes) saat mengalir (buk... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `CT-0048-AC2` | [AC-2](#ac-2) | import SQL: POST /import/sql { connectionId, database, uploadId, mode transaksi } membuat job yang membaca file streaming, memecah statement (pemecah provide... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `CT-0048-AC3` | [AC-3](#ac-3) | import CSV: POST /import/csv { connectionId, ref table target, uploadId, options } dengan opsi: delimiter, header ada/tidak, pemetaan kolom CSV ke kolom tabl... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
@@ -98,8 +98,8 @@ Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu t
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0048-AC4` | [AC-4](#ac-4) | opsi destructive "kosongkan table sebelum import" (truncate dulu) memerlukan konfirmasi eksplisit menyebut table dan konsekuensi, diverifikasi server (flag p... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `E2E-0048-AC5` | [AC-5](#ac-5) | cancel menghentikan eksekusi pada batas statement/batch berikutnya; mode single di rollback; hasil parsial mode lain dilaporkan jujur (berapa statement/baris... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `E2E-0048-AC7` | [AC-7](#ac-7) | UI: alur import di halaman import-export: pilih file (drag and drop), pilih target, opsi per format, pemetaan kolom CSV dengan pratinjau 20 baris pertama, ko... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
@@ -107,8 +107,8 @@ Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu t
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0048-AC1` | [AC-1](#ac-1) | POST /import/upload menerima unggahan multipart streaming ke <data-dir>/temp/imports/, memvalidasi ukuran maksimum (limits.uploadMaxBytes) saat mengalir (buk... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `SEC-0048-AC4` | [AC-4](#ac-4) | opsi destructive "kosongkan table sebelum import" (truncate dulu) memerlukan konfirmasi eksplisit menyebut table dan konsekuensi, diverifikasi server (flag p... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `SEC-0048-AC6` | [AC-6](#ac-6) | hasil akhir job memuat ringkasan: statement/baris sukses, gagal, durasi; import selesai atau gagal diaudit (import.completed / import.failed, plus penanda de... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
@@ -143,12 +143,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

@@ -2,7 +2,7 @@
 
 ## Summary
 
-Feature Angular membaca data melalui SDK resource facade dan signals. `resource` atau `httpResource` dipakai saat lifecycle request cocok, sedangkan command, realtime, dan stream tetap memiliki lifecycle eksplisit. Aplikasi berpindah ke zoneless dengan gate per feature.
+Feature Angular membaca data melalui SDK resource facade dan signals. `resource` atau `httpResource` dipakai saat lifecycle request cocok, sedangkan command, realtime, dan stream tetap memiliki lifecycle eksplisit. Aplikasi sudah berjalan zoneless (tidak ada polyfill zone.js pada build saat ini); child ini meresmikan keadaan itu menjadi kebijakan dengan gate per feature, sehingga tidak ada feature yang lulus karena kebetulan.
 
 ## Scope
 
@@ -36,14 +36,14 @@ Component membaca signal dan mengirim command ke facade. Component tidak membuat
 **Enforcement**:
 
 1. SDK resource facade typed menjadi boundary compile time.
-2. `provideZonelessChangeDetection()` menjadi konfigurasi aplikasi.
+2. `provideZonelessChangeDetection()` dinyatakan eksplisit pada konfigurasi aplikasi sebagai dokumentasi keadaan yang sudah berjalan, bukan sebagai migrasi.
 3. Angular build, focused test dengan runner DOM yang tepat, dan Playwright memeriksa render serta lifecycle.
 4. Feature yang belum signal safe masuk register pengecualian dan gagal pada gate zoneless, tanpa fallback otomatis ke Zone.js.
 5. Focused DOM test dan Playwright memeriksa `aria-busy`, live region untuk status operation, focus setelah error atau cancel, stale notice, dan empty state.
 
 **Rollout**:
 
-Migrasikan read model yang paling sering dipakai lebih dahulu, kemudian command dan realtime boundary, lalu aktifkan gate zoneless per feature sampai semua area lulus. Setelah seluruh feature lulus, zoneless menjadi konfigurasi default aplikasi.
+Migrasikan read model yang paling sering dipakai lebih dahulu, kemudian command dan realtime boundary, lalu jalankan gate zoneless per feature sampai semua area lulus. Gate bukan migrasi runtime (runtime sudah zoneless); gate adalah bukti test DOM per feature bahwa tidak ada behavior yang bergantung Zone.js.
 
 **Exceptions**:
 
@@ -60,6 +60,11 @@ Subscription tetap benar untuk WebSocket, event stream, atau library external ya
 7. Abort akibat request lama digantikan tidak dirender sebagai error.
 
 `aria-busy` aktif pada `loading` dan `refreshing`. Completion, cancellation, failure, stale, dan retry diumumkan melalui live region polite. Focus berpindah ke error summary hanya setelah aksi user, bukan karena background refresh. Tidak ada announcement yang memuat SQL, parameter, credential, token, atau isi data.
+
+Dua aturan pendamping read model:
+
+1. Pesan sukses dan pesan error memakai channel berbeda. Sukses lewat elemen `role="status"` atau toast; error lewat `role="alert"` atau banner error. Pesan sukses tidak boleh disalurkan lewat signal atau elemen error.
+2. Satu util pesan error di `core/errors` (menerima unknown, mengembalikan pesan aman plus correlationId bila ada) menggantikan semua salinan `messageFor` per feature. Kebijakan presentasi: error tak terduga lewat presenter global (toast dengan correlationId), error kontekstual lewat banner inline, keduanya memakai util yang sama.
 
 ## Zoneless gate
 

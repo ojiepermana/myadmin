@@ -96,11 +96,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Implementasikan `SchemaPort` PostgreSQL (create, rename, drop restrict, properties) plus test integrasi, memenuhi **AC-1**.
-2. Tambah operasi ke kontrak dengan confirmName, regenerasi, contract test, memenuhi **AC-2**.
-3. Endpoint server dengan gerbang capability tegas, memenuhi **AC-3**.
-4. UI: menu dan form schema (create dengan owner, rename dengan peringatan, drop konfirmasi), registrasi menu explorer, memenuhi **AC-4**.
-5. Audit dan e2e dua arah, memenuhi **AC-5**, **AC-6**.
+1. [x] Implementasikan `SchemaPort` PostgreSQL (create, rename, drop restrict, properties) plus test integrasi, memenuhi **AC-1**.
+2. [x] Tambah operasi ke kontrak dengan confirmName, regenerasi, contract test, memenuhi **AC-2**.
+3. [x] Endpoint server dengan gerbang capability tegas, memenuhi **AC-3**.
+4. [x] UI: menu dan form schema (create dengan owner, rename dengan peringatan, drop konfirmasi), registrasi menu explorer, memenuhi **AC-4**.
+5. [x] Audit dan e2e dua arah, memenuhi **AC-5**, **AC-6**.
 
 ## Consequences
 

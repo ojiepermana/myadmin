@@ -99,11 +99,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Definisikan `TableChangeSet` dan operasi preview/apply di kontrak, regenerasi, contract test.
-2. Bangun modul tipe engine dan kompilator change set → DDL di provider `table/` kedua engine, dengan test snapshot SQL menyeluruh, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-5**.
-3. Endpoint server (preview, apply dengan semantik transaksi per engine, konfirmasi destructive, audit), memenuhi **AC-4**, **AC-6**.
-4. UI feature table-designer: editor kolom (create dan alter), panel pratinjau SQL plus peringatan, konfirmasi drop kolom, invalidasi metadata, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-7**.
-5. E2e dua engine, memenuhi **AC-8**.
+1. [x] Definisikan `TableChangeSet` dan operasi preview/apply di kontrak, regenerasi, contract test.
+2. [x] Bangun modul tipe engine dan kompilator change set → DDL di provider `table/` kedua engine, dengan test snapshot SQL menyeluruh, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-5**.
+3. [x] Endpoint server (preview, apply dengan semantik transaksi per engine, konfirmasi destructive, audit), memenuhi **AC-4**, **AC-6**.
+4. [x] UI feature table-designer: editor kolom (create dan alter), panel pratinjau SQL plus peringatan, konfirmasi drop kolom, invalidasi metadata, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-7**.
+5. [x] E2e dua engine, memenuhi **AC-8** (fixture PostgreSQL dan MySQL disposable telah dijalankan).
 
 ## Consequences
 
@@ -121,7 +121,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Follow-up
 
-- [ ] Spec 0042 memperluas change set dengan index dan constraint.
+- [x] Spec 0042 memperluas change set dengan index dan constraint.
 
 ## References
 

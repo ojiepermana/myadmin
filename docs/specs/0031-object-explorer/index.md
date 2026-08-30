@@ -96,11 +96,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Tambah endpoint metadata ke kontrak, implementasi server di modul explorer (meneruskan MetadataPort dengan pemeriksaan koneksi), contract test, memenuhi **AC-1**.
-2. Bangun `explorer.store` dan pohon virtualized data driven dengan lazy load dan halaman berikutnya, memenuhi **AC-2**, **AC-3**, **AC-4**, **AC-7**.
-3. Bangun registry aksi context menu yang membaca capability dan fitur terpasang, memenuhi **AC-5**.
-4. Refresh per node dengan invalidasi cache provider, memenuhi **AC-6**.
-5. E2e dua engine, memenuhi **AC-8**.
+1. [x] Tambah endpoint metadata ke kontrak, implementasi server di modul explorer (meneruskan MetadataPort dengan pemeriksaan koneksi), contract test, memenuhi **AC-1**.
+2. [x] Bangun `explorer.store` dan pohon virtualized data driven dengan lazy load dan halaman berikutnya, memenuhi **AC-2**, **AC-3**, **AC-4**, **AC-7**.
+3. [x] Bangun registry aksi context menu yang membaca capability dan fitur terpasang, memenuhi **AC-5**.
+4. [x] Refresh per node dengan invalidasi cache provider, memenuhi **AC-6**.
+5. [x] E2e dua engine, memenuhi **AC-8**.
 
 ## Consequences
 

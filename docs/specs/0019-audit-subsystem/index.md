@@ -103,12 +103,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Definisikan taksonomi event V1 lengkap (daftar dari FR-AUD-01 plus event auth spec 0016 sampai 0018) dengan flag wajib audit, memenuhi **AC-1**.
-2. Bangun `AuditWriter` di atas `AuditRepository` dengan redaction wajib dan correlation otomatis, memenuhi **AC-2**, **AC-4**, **AC-5**.
-3. Bangun `withAudit` dengan semantik urutan dan kegagalan, memenuhi **AC-3**.
-4. Migrasikan penulisan audit sementara dari spec 0016 sampai 0018 ke jalur ini, memenuhi **AC-1**, **AC-6**.
-5. Doctor check informasional ukuran audit, memenuhi **AC-8**.
-6. Unit test lengkap di `packages/audit/test/` plus test redaction di `tests/security/redaction/`, memenuhi **AC-7**.
+1. [x] Definisikan taksonomi event V1 lengkap (daftar dari FR-AUD-01 plus event auth spec 0016 sampai 0018) dengan flag wajib audit, memenuhi **AC-1**.
+2. [x] Bangun `AuditWriter` di atas `AuditRepository` dengan redaction wajib dan correlation otomatis, memenuhi **AC-2**, **AC-4**, **AC-5**.
+3. [x] Bangun `withAudit` dengan semantik urutan dan kegagalan, memenuhi **AC-3**.
+4. [x] Migrasikan penulisan audit sementara dari spec 0016 sampai 0018 ke jalur ini, memenuhi **AC-1**, **AC-6**.
+5. [x] Doctor check informasional ukuran audit, memenuhi **AC-8**.
+6. [x] Unit test lengkap di `packages/audit/test/` plus test redaction di `tests/security/redaction/`, memenuhi **AC-7**.
 
 ## Consequences
 

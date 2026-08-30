@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — packaging/release invariant suite lulus 17 test/85 assertions; lima target binary berhasil dikompilasi, checksum/size report lulus, dan macOS ARM64 smoke tanpa database lulus; hosted release workflow, clean environment, serta database smoke seluruh target belum tersedia.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -46,36 +46,36 @@ dokumentasi singkat cara menjalankan tiap platform (file README rilis) dihasilka
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | `UT-0054-AC1` | `IT-0054-AC1` | n/a | n/a | n/a | n/a | n/a | `SMOKE-0054-AC1` | n/a |
-| [AC-2](#ac-2) | n/a | `IT-0054-AC2` | n/a | n/a | n/a | n/a | n/a | `SMOKE-0054-AC2` | n/a |
-| [AC-3](#ac-3) | `UT-0054-AC3` | `IT-0054-AC3` | n/a | n/a | `SEC-0054-AC3` | n/a | n/a | `SMOKE-0054-AC3` | n/a |
-| [AC-4](#ac-4) | n/a | `IT-0054-AC4` | n/a | `E2E-0054-AC4` | `SEC-0054-AC4` | n/a | n/a | `SMOKE-0054-AC4` | n/a |
-| [AC-5](#ac-5) | n/a | `IT-0054-AC5` | n/a | n/a | n/a | n/a | n/a | `SMOKE-0054-AC5` | `MANUAL-0054-AC5` |
-| [AC-6](#ac-6) | n/a | `IT-0054-AC6` | n/a | n/a | n/a | `PERF-0054-AC6` | n/a | `SMOKE-0054-AC6` | n/a |
-| [AC-7](#ac-7) | n/a | `IT-0054-AC7` | n/a | n/a | n/a | n/a | n/a | `SMOKE-0054-AC7` | `MANUAL-0054-AC7` |
+| AC            | Unit          | Integration   | Contract | E2E            | Security       | Performance     | Visual | Smoke            | Manual atau external |
+| ------------- | ------------- | ------------- | -------- | -------------- | -------------- | --------------- | ------ | ---------------- | -------------------- |
+| [AC-1](#ac-1) | `UT-0054-AC1` | `IT-0054-AC1` | n/a      | n/a            | n/a            | n/a             | n/a    | `SMOKE-0054-AC1` | n/a                  |
+| [AC-2](#ac-2) | n/a           | `IT-0054-AC2` | n/a      | n/a            | n/a            | n/a             | n/a    | `SMOKE-0054-AC2` | n/a                  |
+| [AC-3](#ac-3) | `UT-0054-AC3` | `IT-0054-AC3` | n/a      | n/a            | `SEC-0054-AC3` | n/a             | n/a    | `SMOKE-0054-AC3` | n/a                  |
+| [AC-4](#ac-4) | n/a           | `IT-0054-AC4` | n/a      | `E2E-0054-AC4` | `SEC-0054-AC4` | n/a             | n/a    | `SMOKE-0054-AC4` | n/a                  |
+| [AC-5](#ac-5) | n/a           | `IT-0054-AC5` | n/a      | n/a            | n/a            | n/a             | n/a    | `SMOKE-0054-AC5` | `MANUAL-0054-AC5`    |
+| [AC-6](#ac-6) | n/a           | `IT-0054-AC6` | n/a      | n/a            | n/a            | `PERF-0054-AC6` | n/a    | `SMOKE-0054-AC6` | n/a                  |
+| [AC-7](#ac-7) | n/a           | `IT-0054-AC7` | n/a      | n/a            | n/a            | n/a             | n/a    | `SMOKE-0054-AC7` | `MANUAL-0054-AC7`    |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0054-AC1` | [AC-1](#ac-1) | scripts/build/build-web.ts menghasilkan build production Angular ke dist/web/; embed-web-assets.ts menghasilkan modul manifest aset (path, konten, tipe MIME,... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `UT-0054-AC3` | [AC-3](#ac-3) | checksums.ts menghasilkan SHA-256 per artefak dalam satu file checksum; hasil build deterministik sejauh toolchain memungkinkan (input build dipin: versi Bun... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0054-AC1` | [AC-1](#ac-1) | scripts/build/build-web.ts menghasilkan build production Angular ke dist/web/; embed-web-assets.ts menghasilkan modul manifest aset (path, konten, tipe MIME,... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0054-AC2` | [AC-2](#ac-2) | compile-binary.ts menjalankan Bun Compile dengan entrypoint apps/cli/src/main.ts untuk kelima target lintas platform (cross compile dari runner CI), menghasi... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `IT-0054-AC3` | [AC-3](#ac-3) | checksums.ts menghasilkan SHA-256 per artefak dalam satu file checksum; hasil build deterministik sejauh toolchain memungkinkan (input build dipin: versi Bun... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `IT-0054-AC4` | [AC-4](#ac-4) | harness smoke test (scripts/verify/smoke-binary.ts) menjalankan binary nyata pada data directory sementara dan membuktikan lewat HTTP: proses start dan healt... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `IT-0054-AC5` | [AC-5](#ac-5) | workflow CI release.yml: berjalan pada tag; prasyarat hijau: ci, contract, integration, security; lalu build web, kompilasi lima target, checksum, smoke test... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `IT-0054-AC6` | [AC-6](#ac-6) | ukuran dan isi dipantau: laporan ukuran binary per target di ringkasan; kegagalan embed (aset hilang) terdeteksi smoke test (halaman SPA gagal berarti gagal). | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `IT-0054-AC7` | [AC-7](#ac-7) | dokumentasi singkat cara menjalankan tiap platform (file README rilis) dihasilkan bersama artefak (FR-RUN-02 "dokumentasi cara menjalankan"). | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `IT-0054-AC6` | [AC-6](#ac-6) | ukuran dan isi dipantau: laporan ukuran binary per target di ringkasan; kegagalan embed (aset hilang) terdeteksi smoke test (halaman SPA gagal berarti gagal).   | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| `IT-0054-AC7` | [AC-7](#ac-7) | dokumentasi singkat cara menjalankan tiap platform (file README rilis) dihasilkan bersama artefak (FR-RUN-02 "dokumentasi cara menjalankan").                    | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ## Test tambahan
 
@@ -85,21 +85,21 @@ Tidak ada contract yang diwajibkan oleh acceptance criteria saat ini.
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0054-AC4` | [AC-4](#ac-4) | harness smoke test (scripts/verify/smoke-binary.ts) menjalankan binary nyata pada data directory sementara dan membuktikan lewat HTTP: proses start dan healt... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0054-AC3` | [AC-3](#ac-3) | checksums.ts menghasilkan SHA-256 per artefak dalam satu file checksum; hasil build deterministik sejauh toolchain memungkinkan (input build dipin: versi Bun... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `SEC-0054-AC4` | [AC-4](#ac-4) | harness smoke test (scripts/verify/smoke-binary.ts) menjalankan binary nyata pada data directory sementara dan membuktikan lewat HTTP: proses start dan healt... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 
 ### Performance
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID              | AC            | Fokus                                                                                                                                                          | Scenario terencana                                                               | Expected result                                      |
+| --------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `PERF-0054-AC6` | [AC-6](#ac-6) | ukuran dan isi dipantau: laporan ukuran binary per target di ringkasan; kegagalan embed (aset hilang) terdeteksi smoke test (halaman SPA gagal berarti gagal). | Tetapkan dataset, baseline, ambang, pengulangan, dan toleransi sebelum eksekusi. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ### Visual dan accessibility
@@ -108,22 +108,22 @@ Tidak ada visual dan accessibility yang diwajibkan oleh acceptance criteria saat
 
 ### Smoke dan operational acceptance
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID               | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                   | Expected result                                      |
+| ---------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `SMOKE-0054-AC1` | [AC-1](#ac-1) | scripts/build/build-web.ts menghasilkan build production Angular ke dist/web/; embed-web-assets.ts menghasilkan modul manifest aset (path, konten, tipe MIME,... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `SMOKE-0054-AC2` | [AC-2](#ac-2) | compile-binary.ts menjalankan Bun Compile dengan entrypoint apps/cli/src/main.ts untuk kelima target lintas platform (cross compile dari runner CI), menghasi... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `SMOKE-0054-AC3` | [AC-3](#ac-3) | checksums.ts menghasilkan SHA-256 per artefak dalam satu file checksum; hasil build deterministik sejauh toolchain memungkinkan (input build dipin: versi Bun... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `SMOKE-0054-AC4` | [AC-4](#ac-4) | harness smoke test (scripts/verify/smoke-binary.ts) menjalankan binary nyata pada data directory sementara dan membuktikan lewat HTTP: proses start dan healt... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `SMOKE-0054-AC5` | [AC-5](#ac-5) | workflow CI release.yml: berjalan pada tag; prasyarat hijau: ci, contract, integration, security; lalu build web, kompilasi lima target, checksum, smoke test... | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `SMOKE-0054-AC6` | [AC-6](#ac-6) | ukuran dan isi dipantau: laporan ukuran binary per target di ringkasan; kegagalan embed (aset hilang) terdeteksi smoke test (halaman SPA gagal berarti gagal). | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `SMOKE-0054-AC7` | [AC-7](#ac-7) | dokumentasi singkat cara menjalankan tiap platform (file README rilis) dihasilkan bersama artefak (FR-RUN-02 "dokumentasi cara menjalankan"). | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `SMOKE-0054-AC6` | [AC-6](#ac-6) | ukuran dan isi dipantau: laporan ukuran binary per target di ringkasan; kegagalan embed (aset hilang) terdeteksi smoke test (halaman SPA gagal berarti gagal).   | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
+| `SMOKE-0054-AC7` | [AC-7](#ac-7) | dokumentasi singkat cara menjalankan tiap platform (file README rilis) dihasilkan bersama artefak (FR-RUN-02 "dokumentasi cara menjalankan").                    | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ### Manual atau external proof
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `MANUAL-0054-AC5` | [AC-5](#ac-5) | workflow CI release.yml: berjalan pada tag; prasyarat hijau: ci, contract, integration, security; lalu build web, kompilasi lima target, checksum, smoke test... | Tag workflow, runner platform, dan upload artefak harus dibuktikan pada CI nyata. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `MANUAL-0054-AC7` | [AC-7](#ac-7) | dokumentasi singkat cara menjalankan tiap platform (file README rilis) dihasilkan bersama artefak (FR-RUN-02 "dokumentasi cara menjalankan"). | Lakukan review manusia atau kumpulkan bukti eksternal yang tidak dapat digantikan test otomatis. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| ID                | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                               | Expected result                                      |
+| ----------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `MANUAL-0054-AC5` | [AC-5](#ac-5) | workflow CI release.yml: berjalan pada tag; prasyarat hijau: ci, contract, integration, security; lalu build web, kompilasi lima target, checksum, smoke test... | Tag workflow, runner platform, dan upload artefak harus dibuktikan pada CI nyata.                | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `MANUAL-0054-AC7` | [AC-7](#ac-7) | dokumentasi singkat cara menjalankan tiap platform (file README rilis) dihasilkan bersama artefak (FR-RUN-02 "dokumentasi cara menjalankan").                    | Lakukan review manusia atau kumpulkan bukti eksternal yang tidak dapat digantikan test otomatis. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ## Critical test scenarios
 
@@ -133,18 +133,18 @@ Tidak ada visual dan accessibility yang diwajibkan oleh acceptance criteria saat
 
 ## Staged, environment, dan external proof
 
-| AC | Jenis bukti | Kewajiban |
-|---|---|---|
-| [AC-5](#ac-5) | `external` | Tag workflow, runner platform, dan upload artefak harus dibuktikan pada CI nyata. |
+| AC            | Jenis bukti | Kewajiban                                                                         |
+| ------------- | ----------- | --------------------------------------------------------------------------------- |
+| [AC-5](#ac-5) | `external`  | Tag workflow, runner platform, dan upload artefak harus dibuktikan pada CI nyata. |
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

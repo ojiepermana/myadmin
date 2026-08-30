@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — cancel/EXPLAIN unit, integration, mock browser, dan real-engine workflow lulus; visual/manual serta hosted review tetap belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -50,36 +50,36 @@ integration test kedua engine: query tidur panjang dibatalkan cepat dan status a
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | n/a | `IT-0035-AC1` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | n/a | `IT-0035-AC2` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | n/a | n/a | n/a | `E2E-0035-AC3` | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | `UT-0035-AC4` | `IT-0035-AC4` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | n/a | `IT-0035-AC5` | n/a | `E2E-0035-AC5` | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | `IT-0035-AC6` | n/a | `E2E-0035-AC6` | n/a | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | `IT-0035-AC7` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-8](#ac-8) | n/a | `IT-0035-AC8` | n/a | `E2E-0035-AC8` | n/a | n/a | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract | E2E            | Security | Performance | Visual | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | -------- | -------------- | -------- | ----------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | n/a           | `IT-0035-AC1` | n/a      | n/a            | n/a      | n/a         | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | n/a           | `IT-0035-AC2` | n/a      | n/a            | n/a      | n/a         | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | n/a           | n/a           | n/a      | `E2E-0035-AC3` | n/a      | n/a         | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | `UT-0035-AC4` | `IT-0035-AC4` | n/a      | n/a            | n/a      | n/a         | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | n/a           | `IT-0035-AC5` | n/a      | `E2E-0035-AC5` | n/a      | n/a         | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | n/a           | `IT-0035-AC6` | n/a      | `E2E-0035-AC6` | n/a      | n/a         | n/a    | n/a   | n/a                  |
+| [AC-7](#ac-7) | n/a           | `IT-0035-AC7` | n/a      | n/a            | n/a      | n/a         | n/a    | n/a   | n/a                  |
+| [AC-8](#ac-8) | n/a           | `IT-0035-AC8` | n/a      | `E2E-0035-AC8` | n/a      | n/a         | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                      | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0035-AC4` | [AC-4](#ac-4) | race tertangani: cancel pada eksekusi yang sudah selesai menjawab state final tanpa error; dua cancel beruntun idempotent. | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0035-AC1` | [AC-1](#ac-1) | POST /query/executions/:id/cancel (pemilik saja) memicu cancel provider pada sesi tab eksekusi itu; state menjadi cancelling lalu cancelled saat provider men... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0035-AC2` | [AC-2](#ac-2) | cancel menarget tepat: hanya statement aktif eksekusi itu; eksekusi dan tab lain tidak terpengaruh; hasil statement yang sudah selesai pada eksekusi yang sam... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
-| `IT-0035-AC4` | [AC-4](#ac-4) | race tertangani: cancel pada eksekusi yang sudah selesai menjawab state final tanpa error; dua cancel beruntun idempotent. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `IT-0035-AC5` | [AC-5](#ac-5) | EXPLAIN: aksi "Explain" menjalankan rencana untuk statement terpilih (atau statement di kursor) lewat POST /query/explain { connectionId, database, schema?,... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `IT-0035-AC4` | [AC-4](#ac-4) | race tertangani: cancel pada eksekusi yang sudah selesai menjawab state final tanpa error; dua cancel beruntun idempotent.                                       | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| `IT-0035-AC5` | [AC-5](#ac-5) | EXPLAIN: aksi "Explain" menjalankan rencana untuk statement terpilih (atau statement di kursor) lewat POST /query/explain { connectionId, database, schema?,...  | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `IT-0035-AC6` | [AC-6](#ac-6) | EXPLAIN digerbangi capabilities.explain; statement non EXPLAINable (DDL tertentu) mengembalikan error ternormalisasi yang dijelaskan UI; EXPLAIN tidak mengek... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `IT-0035-AC7` | [AC-7](#ac-7) | cancel dan explain melalui sesi tab yang sama (konsisten dengan konteks transaksi); explain tidak merusak transaksi aktif. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
-| `IT-0035-AC8` | [AC-8](#ac-8) | integration test kedua engine: query tidur panjang dibatalkan cepat dan status akhir benar; explain menghasilkan teks rencana; e2e tombol cancel dan explain. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
+| `IT-0035-AC7` | [AC-7](#ac-7) | cancel dan explain melalui sesi tab yang sama (konsisten dengan konteks transaksi); explain tidak merusak transaksi aktif.                                       | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `IT-0035-AC8` | [AC-8](#ac-8) | integration test kedua engine: query tidur panjang dibatalkan cepat dan status akhir benar; explain menghasilkan teks rencana; e2e tombol cancel dan explain.    | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ## Test tambahan
 
@@ -89,12 +89,12 @@ Tidak ada contract yang diwajibkan oleh acceptance criteria saat ini.
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0035-AC3` | [AC-3](#ac-3) | tombol cancel di UI hanya aktif saat ada eksekusi berjalan dan capabilities.cancelQuery true (bagian 10); state akhir tampil eksplisit: cancelled (dengan sta... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `E2E-0035-AC5` | [AC-5](#ac-5) | EXPLAIN: aksi "Explain" menjalankan rencana untuk statement terpilih (atau statement di kursor) lewat POST /query/explain { connectionId, database, schema?,... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `E2E-0035-AC5` | [AC-5](#ac-5) | EXPLAIN: aksi "Explain" menjalankan rencana untuk statement terpilih (atau statement di kursor) lewat POST /query/explain { connectionId, database, schema?,...  | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `E2E-0035-AC6` | [AC-6](#ac-6) | EXPLAIN digerbangi capabilities.explain; statement non EXPLAINable (DDL tertentu) mengembalikan error ternormalisasi yang dijelaskan UI; EXPLAIN tidak mengek... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `E2E-0035-AC8` | [AC-8](#ac-8) | integration test kedua engine: query tidur panjang dibatalkan cepat dan status akhir benar; explain menghasilkan teks rencana; e2e tombol cancel dan explain. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
+| `E2E-0035-AC8` | [AC-8](#ac-8) | integration test kedua engine: query tidur panjang dibatalkan cepat dan status akhir benar; explain menghasilkan teks rencana; e2e tombol cancel dan explain.    | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ### Security
 
@@ -128,12 +128,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

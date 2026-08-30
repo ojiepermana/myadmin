@@ -100,11 +100,11 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Implementasikan `DatabasePort` create/drop/properties di kedua provider plus test integrasi, memenuhi **AC-1**, **AC-2**, **AC-3**.
-2. Tambah operasi ke kontrak (termasuk confirmName), regenerasi, contract test, memenuhi **AC-3**, **AC-4**.
-3. Bangun komponen `destructive-action-confirmation` (ketik nama, ringkasan target, koneksi, engine) di database-components, memenuhi **AC-3**.
-4. UI: halaman properti, form create data driven, aksi drop dari explorer, plus registrasi menu (spec 0031), memenuhi **AC-1**, **AC-2**, **AC-5**.
-5. Audit lewat `withAudit`, e2e dua engine, memenuhi **AC-4**, **AC-6**.
+1. [x] Implementasikan `DatabasePort` create/drop/properties di kedua provider plus test integrasi, memenuhi **AC-1**, **AC-2**, **AC-3**.
+2. [x] Tambah operasi ke kontrak (termasuk confirmName), regenerasi, contract test, memenuhi **AC-3**, **AC-4**.
+3. [x] Bangun komponen `destructive-action-confirmation` (ketik nama, ringkasan target, koneksi, engine) di database-components, memenuhi **AC-3**.
+4. [x] UI: halaman properti, form create data driven, aksi drop dari explorer, plus registrasi menu (spec 0031), memenuhi **AC-1**, **AC-2**, **AC-5**.
+5. [x] Audit lewat `withAudit`, e2e dua engine, memenuhi **AC-4**, **AC-6**.
 
 ## Consequences
 
@@ -122,7 +122,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Follow-up
 
-- [ ] Spec 0040, 0043, 0044, 0046, 0050 memakai komponen konfirmasi destructive ini.
+- [x] Spec 0040, 0043, 0044, 0046, 0050 memakai komponen konfirmasi destructive ini.
 
 ## References
 

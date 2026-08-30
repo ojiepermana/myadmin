@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — provider/contract suite dan view-editor browser flow lulus; real-engine UI matrix, audit/security completeness, stale-tab behavior, dan full CRUD acceptance belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -50,69 +50,69 @@ e2e kedua engine: create view dari SELECT fixture, buka datanya, ubah definisi (
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | n/a | n/a | n/a | `E2E-0044-AC1` | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | `UT-0044-AC2` | `IT-0044-AC2` | `CT-0044-AC2` | `E2E-0044-AC2` | n/a | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | `UT-0044-AC3` | `IT-0044-AC3` | `CT-0044-AC3` | `E2E-0044-AC3` | `SEC-0044-AC3` | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | `UT-0044-AC4` | `IT-0044-AC4` | `CT-0044-AC4` | `E2E-0044-AC4` | n/a | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | n/a | `IT-0044-AC5` | n/a | `E2E-0044-AC5` | `SEC-0044-AC5` | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | `UT-0044-AC6` | `IT-0044-AC6` | `CT-0044-AC6` | `E2E-0044-AC6` | n/a | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | `UT-0044-AC7` | `IT-0044-AC7` | n/a | `E2E-0044-AC7` | n/a | n/a | n/a | n/a | n/a |
-| [AC-8](#ac-8) | n/a | `IT-0044-AC8` | n/a | `E2E-0044-AC8` | `SEC-0044-AC8` | n/a | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract      | E2E            | Security       | Performance | Visual | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | ------------- | -------------- | -------------- | ----------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | n/a           | n/a           | n/a           | `E2E-0044-AC1` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | `UT-0044-AC2` | `IT-0044-AC2` | `CT-0044-AC2` | `E2E-0044-AC2` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | `UT-0044-AC3` | `IT-0044-AC3` | `CT-0044-AC3` | `E2E-0044-AC3` | `SEC-0044-AC3` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | `UT-0044-AC4` | `IT-0044-AC4` | `CT-0044-AC4` | `E2E-0044-AC4` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | n/a           | `IT-0044-AC5` | n/a           | `E2E-0044-AC5` | `SEC-0044-AC5` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | `UT-0044-AC6` | `IT-0044-AC6` | `CT-0044-AC6` | `E2E-0044-AC6` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-7](#ac-7) | `UT-0044-AC7` | `IT-0044-AC7` | n/a           | `E2E-0044-AC7` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-8](#ac-8) | n/a           | `IT-0044-AC8` | n/a           | `E2E-0044-AC8` | `SEC-0044-AC8` | n/a         | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0044-AC2` | [AC-2](#ac-2) | halaman editor view: nama (dan schema/database konteks), definisi SELECT di editor CodeMirror dengan dialek engine dan autocomplete metadata, tombol validasi... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `UT-0044-AC3` | [AC-3](#ac-3) | POST /views membuat view; PUT /views/:ref memperbarui definisi: provider memilih strategi per engine (MySQL ALTER VIEW; PostgreSQL CREATE OR REPLACE bila kom... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `UT-0044-AC4` | [AC-4](#ac-4) | fitur digerbangi capabilities.viewEditor; server menolak operasi saat capability false meski UI dimanipulasi (FR-PROV-04). | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| `UT-0044-AC4` | [AC-4](#ac-4) | fitur digerbangi capabilities.viewEditor; server menolak operasi saat capability false meski UI dimanipulasi (FR-PROV-04).                                       | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `UT-0044-AC6` | [AC-6](#ac-6) | definisi yang gagal (SELECT tidak valid, kolom bentrok) tiba sebagai DbError berkategori dengan posisi bila tersedia, ditampilkan di editor seperti error query. | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `UT-0044-AC7` | [AC-7](#ac-7) | setelah operasi, cache metadata di invalidate; tab data view yang definisinya berubah diberi tanda muat ulang. | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `UT-0044-AC7` | [AC-7](#ac-7) | setelah operasi, cache metadata di invalidate; tab data view yang definisinya berubah diberi tanda muat ulang.                                                   | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0044-AC2` | [AC-2](#ac-2) | halaman editor view: nama (dan schema/database konteks), definisi SELECT di editor CodeMirror dengan dialek engine dan autocomplete metadata, tombol validasi... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `IT-0044-AC3` | [AC-3](#ac-3) | POST /views membuat view; PUT /views/:ref memperbarui definisi: provider memilih strategi per engine (MySQL ALTER VIEW; PostgreSQL CREATE OR REPLACE bila kom... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `IT-0044-AC4` | [AC-4](#ac-4) | fitur digerbangi capabilities.viewEditor; server menolak operasi saat capability false meski UI dimanipulasi (FR-PROV-04). | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| `IT-0044-AC4` | [AC-4](#ac-4) | fitur digerbangi capabilities.viewEditor; server menolak operasi saat capability false meski UI dimanipulasi (FR-PROV-04).                                       | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `IT-0044-AC5` | [AC-5](#ac-5) | create, replace, drop diaudit (view.created, view.replaced, view.dropped) sebelum response sukses; drop dan jalur drop create memakai komponen konfirmasi des... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `IT-0044-AC6` | [AC-6](#ac-6) | definisi yang gagal (SELECT tidak valid, kolom bentrok) tiba sebagai DbError berkategori dengan posisi bila tersedia, ditampilkan di editor seperti error query. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `IT-0044-AC7` | [AC-7](#ac-7) | setelah operasi, cache metadata di invalidate; tab data view yang definisinya berubah diberi tanda muat ulang. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `IT-0044-AC7` | [AC-7](#ac-7) | setelah operasi, cache metadata di invalidate; tab data view yang definisinya berubah diberi tanda muat ulang.                                                   | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 | `IT-0044-AC8` | [AC-8](#ac-8) | e2e kedua engine: create view dari SELECT fixture, buka datanya, ubah definisi (termasuk kasus PostgreSQL yang butuh drop create dengan konfirmasi), drop; au... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ## Test tambahan
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0044-AC2` | [AC-2](#ac-2) | halaman editor view: nama (dan schema/database konteks), definisi SELECT di editor CodeMirror dengan dialek engine dan autocomplete metadata, tombol validasi... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `CT-0044-AC3` | [AC-3](#ac-3) | POST /views membuat view; PUT /views/:ref memperbarui definisi: provider memilih strategi per engine (MySQL ALTER VIEW; PostgreSQL CREATE OR REPLACE bila kom... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `CT-0044-AC4` | [AC-4](#ac-4) | fitur digerbangi capabilities.viewEditor; server menolak operasi saat capability false meski UI dimanipulasi (FR-PROV-04). | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| `CT-0044-AC4` | [AC-4](#ac-4) | fitur digerbangi capabilities.viewEditor; server menolak operasi saat capability false meski UI dimanipulasi (FR-PROV-04).                                       | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `CT-0044-AC6` | [AC-6](#ac-6) | definisi yang gagal (SELECT tidak valid, kolom bentrok) tiba sebagai DbError berkategori dengan posisi bila tersedia, ditampilkan di editor seperti error query. | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
-| `E2E-0044-AC1` | [AC-1](#ac-1) | dari explorer, view punya aksi: buka data (jalur data browser read only, spec 0037 AC-7), edit definisi, drop; folder Views punya aksi create view. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `E2E-0044-AC1` | [AC-1](#ac-1) | dari explorer, view punya aksi: buka data (jalur data browser read only, spec 0037 AC-7), edit definisi, drop; folder Views punya aksi create view.              | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `E2E-0044-AC2` | [AC-2](#ac-2) | halaman editor view: nama (dan schema/database konteks), definisi SELECT di editor CodeMirror dengan dialek engine dan autocomplete metadata, tombol validasi... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `E2E-0044-AC3` | [AC-3](#ac-3) | POST /views membuat view; PUT /views/:ref memperbarui definisi: provider memilih strategi per engine (MySQL ALTER VIEW; PostgreSQL CREATE OR REPLACE bila kom... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `E2E-0044-AC4` | [AC-4](#ac-4) | fitur digerbangi capabilities.viewEditor; server menolak operasi saat capability false meski UI dimanipulasi (FR-PROV-04). | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
+| `E2E-0044-AC4` | [AC-4](#ac-4) | fitur digerbangi capabilities.viewEditor; server menolak operasi saat capability false meski UI dimanipulasi (FR-PROV-04).                                       | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `E2E-0044-AC5` | [AC-5](#ac-5) | create, replace, drop diaudit (view.created, view.replaced, view.dropped) sebelum response sukses; drop dan jalur drop create memakai komponen konfirmasi des... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `E2E-0044-AC6` | [AC-6](#ac-6) | definisi yang gagal (SELECT tidak valid, kolom bentrok) tiba sebagai DbError berkategori dengan posisi bila tersedia, ditampilkan di editor seperti error query. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `E2E-0044-AC7` | [AC-7](#ac-7) | setelah operasi, cache metadata di invalidate; tab data view yang definisinya berubah diberi tanda muat ulang. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `E2E-0044-AC7` | [AC-7](#ac-7) | setelah operasi, cache metadata di invalidate; tab data view yang definisinya berubah diberi tanda muat ulang.                                                   | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 | `E2E-0044-AC8` | [AC-8](#ac-8) | e2e kedua engine: create view dari SELECT fixture, buka datanya, ubah definisi (termasuk kasus PostgreSQL yang butuh drop create dengan konfirmasi), drop; au... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0044-AC3` | [AC-3](#ac-3) | POST /views membuat view; PUT /views/:ref memperbarui definisi: provider memilih strategi per engine (MySQL ALTER VIEW; PostgreSQL CREATE OR REPLACE bila kom... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `SEC-0044-AC5` | [AC-5](#ac-5) | create, replace, drop diaudit (view.created, view.replaced, view.dropped) sebelum response sukses; drop dan jalur drop create memakai komponen konfirmasi des... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `SEC-0044-AC8` | [AC-8](#ac-8) | e2e kedua engine: create view dari SELECT fixture, buka datanya, ubah definisi (termasuk kasus PostgreSQL yang butuh drop create dengan konfirmasi), drop; au... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-8 terpenuhi. |
@@ -145,12 +145,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

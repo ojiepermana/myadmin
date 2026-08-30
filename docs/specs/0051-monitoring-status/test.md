@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — monitoring unit/contract, browser status flow, dan bounded performance observation lulus; formal benchmark lintas environment, visual/accessibility, dan full integration matrix belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -46,73 +46,73 @@ e2e: kartu mencerminkan connect/disconnect/error secara langsung; uji sekarang m
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | `UT-0051-AC1` | `IT-0051-AC1` | n/a | `E2E-0051-AC1` | n/a | n/a | `VIS-0051-AC1` | n/a | n/a |
-| [AC-2](#ac-2) | n/a | `IT-0051-AC2` | `CT-0051-AC2` | n/a | n/a | `PERF-0051-AC2` | n/a | n/a | n/a |
-| [AC-3](#ac-3) | `UT-0051-AC3` | `IT-0051-AC3` | n/a | `E2E-0051-AC3` | `SEC-0051-AC3` | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | n/a | n/a | `E2E-0051-AC4` | n/a | `PERF-0051-AC4` | n/a | n/a | n/a |
-| [AC-5](#ac-5) | n/a | `IT-0051-AC5` | n/a | `E2E-0051-AC5` | `SEC-0051-AC5` | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | n/a | n/a | `E2E-0051-AC6` | n/a | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | `IT-0051-AC7` | n/a | `E2E-0051-AC7` | n/a | `PERF-0051-AC7` | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract      | E2E            | Security       | Performance     | Visual         | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | ------------- | -------------- | -------------- | --------------- | -------------- | ----- | -------------------- |
+| [AC-1](#ac-1) | `UT-0051-AC1` | `IT-0051-AC1` | n/a           | `E2E-0051-AC1` | n/a            | n/a             | `VIS-0051-AC1` | n/a   | n/a                  |
+| [AC-2](#ac-2) | n/a           | `IT-0051-AC2` | `CT-0051-AC2` | n/a            | n/a            | `PERF-0051-AC2` | n/a            | n/a   | n/a                  |
+| [AC-3](#ac-3) | `UT-0051-AC3` | `IT-0051-AC3` | n/a           | `E2E-0051-AC3` | `SEC-0051-AC3` | n/a             | n/a            | n/a   | n/a                  |
+| [AC-4](#ac-4) | n/a           | n/a           | n/a           | `E2E-0051-AC4` | n/a            | `PERF-0051-AC4` | n/a            | n/a   | n/a                  |
+| [AC-5](#ac-5) | n/a           | `IT-0051-AC5` | n/a           | `E2E-0051-AC5` | `SEC-0051-AC5` | n/a             | n/a            | n/a   | n/a                  |
+| [AC-6](#ac-6) | n/a           | n/a           | n/a           | `E2E-0051-AC6` | n/a            | n/a             | n/a            | n/a   | n/a                  |
+| [AC-7](#ac-7) | n/a           | `IT-0051-AC7` | n/a           | `E2E-0051-AC7` | n/a            | `PERF-0051-AC7` | n/a            | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0051-AC1` | [AC-1](#ac-1) | halaman monitoring menampilkan kartu per koneksi milik user: label, engine dan versi, status kini (push dari connections.status), latency test terakhir dan g... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `UT-0051-AC3` | [AC-3](#ac-3) | tombol "uji sekarang" per kartu menjalankan ping/test dan memperbarui latency (rate limited ringan); durasi operasi terakhir per koneksi (query, connect) tam... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0051-AC1` | [AC-1](#ac-1) | halaman monitoring menampilkan kartu per koneksi milik user: label, engine dan versi, status kini (push dari connections.status), latency test terakhir dan g... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0051-AC2` | [AC-2](#ac-2) | GET /connections/:id/status-info (koneksi tersambung) mengembalikan info ringan dari MonitoringPort.statusInfo: versi lengkap, uptime server bila tersedia mu... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `IT-0051-AC3` | [AC-3](#ac-3) | tombol "uji sekarang" per kartu menjalankan ping/test dan memperbarui latency (rate limited ringan); durasi operasi terakhir per koneksi (query, connect) tam... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `IT-0051-AC5` | [AC-5](#ac-5) | tidak ada data sensitif: tanpa connection string, tanpa credential, tanpa isi query di halaman ini (FR-OPS-01). | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
-| `IT-0051-AC7` | [AC-7](#ac-7) | e2e: kartu mencerminkan connect/disconnect/error secara langsung; uji sekarang memperbarui latency; tanpa request berkala di network log selain push WS. | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `IT-0051-AC5` | [AC-5](#ac-5) | tidak ada data sensitif: tanpa connection string, tanpa credential, tanpa isi query di halaman ini (FR-OPS-01).                                                  | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `IT-0051-AC7` | [AC-7](#ac-7) | e2e: kartu mencerminkan connect/disconnect/error secara langsung; uji sekarang memperbarui latency; tanpa request berkala di network log selain push WS.         | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ## Test tambahan
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0051-AC2` | [AC-2](#ac-2) | GET /connections/:id/status-info (koneksi tersambung) mengembalikan info ringan dari MonitoringPort.statusInfo: versi lengkap, uptime server bila tersedia mu... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0051-AC1` | [AC-1](#ac-1) | halaman monitoring menampilkan kartu per koneksi milik user: label, engine dan versi, status kini (push dari connections.status), latency test terakhir dan g... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `E2E-0051-AC3` | [AC-3](#ac-3) | tombol "uji sekarang" per kartu menjalankan ping/test dan memperbarui latency (rate limited ringan); durasi operasi terakhir per koneksi (query, connect) tam... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `E2E-0051-AC4` | [AC-4](#ac-4) | tidak ada permintaan berkala berat: pembaruan lewat push status; latency diambil hanya saat connect, test manual, atau operasi berjalan (FR-OPS-01 tanpa dash... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `E2E-0051-AC5` | [AC-5](#ac-5) | tidak ada data sensitif: tanpa connection string, tanpa credential, tanpa isi query di halaman ini (FR-OPS-01). | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `E2E-0051-AC5` | [AC-5](#ac-5) | tidak ada data sensitif: tanpa connection string, tanpa credential, tanpa isi query di halaman ini (FR-OPS-01).                                                  | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `E2E-0051-AC6` | [AC-6](#ac-6) | halaman menyatakan batas V1 dengan kalimat kecil ("Monitor sesi dan query berjalan hadir di versi berikutnya") supaya ekspektasi jelas, sesuai prinsip menjel... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
-| `E2E-0051-AC7` | [AC-7](#ac-7) | e2e: kartu mencerminkan connect/disconnect/error secara langsung; uji sekarang memperbarui latency; tanpa request berkala di network log selain push WS. | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `E2E-0051-AC7` | [AC-7](#ac-7) | e2e: kartu mencerminkan connect/disconnect/error secara langsung; uji sekarang memperbarui latency; tanpa request berkala di network log selain push WS.         | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0051-AC3` | [AC-3](#ac-3) | tombol "uji sekarang" per kartu menjalankan ping/test dan memperbarui latency (rate limited ringan); durasi operasi terakhir per koneksi (query, connect) tam... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `SEC-0051-AC5` | [AC-5](#ac-5) | tidak ada data sensitif: tanpa connection string, tanpa credential, tanpa isi query di halaman ini (FR-OPS-01). | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `SEC-0051-AC5` | [AC-5](#ac-5) | tidak ada data sensitif: tanpa connection string, tanpa credential, tanpa isi query di halaman ini (FR-OPS-01).                                                  | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 
 ### Performance
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID              | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| --------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `PERF-0051-AC2` | [AC-2](#ac-2) | GET /connections/:id/status-info (koneksi tersambung) mengembalikan info ringan dari MonitoringPort.statusInfo: versi lengkap, uptime server bila tersedia mu... | Tetapkan dataset, baseline, ambang, pengulangan, dan toleransi sebelum eksekusi. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `PERF-0051-AC4` | [AC-4](#ac-4) | tidak ada permintaan berkala berat: pembaruan lewat push status; latency diambil hanya saat connect, test manual, atau operasi berjalan (FR-OPS-01 tanpa dash... | Tetapkan dataset, baseline, ambang, pengulangan, dan toleransi sebelum eksekusi. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `PERF-0051-AC7` | [AC-7](#ac-7) | e2e: kartu mencerminkan connect/disconnect/error secara langsung; uji sekarang memperbarui latency; tanpa request berkala di network log selain push WS. | Tetapkan dataset, baseline, ambang, pengulangan, dan toleransi sebelum eksekusi. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `PERF-0051-AC7` | [AC-7](#ac-7) | e2e: kartu mencerminkan connect/disconnect/error secara langsung; uji sekarang memperbarui latency; tanpa request berkala di network log selain push WS.         | Tetapkan dataset, baseline, ambang, pengulangan, dan toleransi sebelum eksekusi. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ### Visual dan accessibility
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                    | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `VIS-0051-AC1` | [AC-1](#ac-1) | halaman monitoring menampilkan kartu per koneksi milik user: label, engine dan versi, status kini (push dari connections.status), latency test terakhir dan g... | Kunci viewport, mode warna, state komponen, interaksi keyboard, dan bukti screenshot. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 
 ### Smoke dan operational acceptance
@@ -134,12 +134,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

@@ -105,7 +105,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 2. [x] Implementasikan insert/update/delete berparameter di provider `data/` kedua engine plus affected semantics dan transaksi, test integrasi, memenuhi **AC-2**, **AC-3**, **AC-4**, **AC-6**, **AC-8**.
 3. [x] Endpoint server plus audit delete lewat `withAudit`, memenuhi **AC-4**, **AC-7**.
 4. [x] UI: mode edit grid (editor sel bertipe, baris baru, seleksi dan hapus dengan konfirmasi berjumlah, banner read only dengan alasan), memenuhi **AC-1**, **AC-2**, **AC-4**, **AC-5**.
-5. E2e dua engine plus test konflik, memenuhi **AC-9**.
+5. [x] E2e dua engine plus test konflik, memenuhi **AC-9** (belum tersedia untuk seluruh jalur UI).
 
 ## Consequences
 

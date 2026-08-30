@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Status**: In Progress
-**Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md)
+**Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md) | [Verify](verify.md) | [Behavioral port contracts](port-contracts.md)
 
 ## Summary
 
@@ -17,6 +17,7 @@ FR-PROV-01 sampai FR-PROV-04 mengunci: port kecil per domain tanpa impor driver,
 ## Requirements
 
 **User stories**:
+
 - Sebagai developer fitur, saya ingin memanggil operasi database lewat kontrak yang sama untuk PostgreSQL dan MySQL.
 - Sebagai developer provider, saya ingin kontrak yang jelas sehingga implementasi engine bisa dikerjakan terpisah.
 
@@ -39,17 +40,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Port per domain plus registry (dipilih)
 
 **Pros**:
+
 - Sesuai FR-PROV-01; provider bisa mengimplementasikan sebagian dengan jujur lewat capability; test kontrak per port.
 
 **Cons**:
+
 - Lebih banyak file dan tipe dibanding satu interface besar.
 
 ### Option 2: Satu interface DatabaseProvider besar
 
 **Pros**:
+
 - Sederhana dilihat sekilas.
 
 **Cons**:
+
 - Dilarang eksplisit struktur.md; memaksa provider mengimplementasikan semuanya atau melempar; capability jadi tempelan.
 
 ## Decision
@@ -69,14 +74,16 @@ Bentuk port kecil membuat batas dukungan tiap engine bisa dinyatakan jujur: MySQ
 **API surface**: tidak ada endpoint; kosakata tipe dipakai kontrak API mulai spec 0022.
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| describe | engine, version, capabilities | deteksi provider terhadap server nyata (spec 0022, 0024) |
-| reasons | pesan ketidaktersediaan | provider; kosong bila tidak relevan |
-| DbError.position | posisi error SQL | provider dari error driver, bila tersedia |
-| registry | provider per engine | komposisi di `bootstrap/database-providers.ts` |
+
+| Action           | Value produced / displayed    | Source                                                   |
+| ---------------- | ----------------------------- | -------------------------------------------------------- |
+| describe         | engine, version, capabilities | deteksi provider terhadap server nyata (spec 0022, 0024) |
+| reasons          | pesan ketidaktersediaan       | provider; kosong bila tidak relevan                      |
+| DbError.position | posisi error SQL              | provider dari error driver, bila tersedia                |
+| registry         | provider per engine           | komposisi di `bootstrap/database-providers.ts`           |
 
 **Key invariants**:
+
 - Core bebas dependency konkret (AC-2); provider tidak saling impor (ditegakkan boundary, FR-PROV-02).
 - Operasi yang capability nya false wajib menghasilkan `unsupported` di server meski UI dimanipulasi (FR-PROV-04); ini kontrak perilaku port, diuji suite generik.
 - Tidak ada nama engine di logic aplikasi; hanya registry yang memetakan engine ke provider.
@@ -91,22 +98,25 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Definisikan model umum (`ObjectRef`, `Page`, kolom, index, constraint, principal, grant) dan `DbError` berkategori, memenuhi **AC-6**, **AC-7**.
-2. Definisikan seluruh port per domain termasuk `ViewPort`, dokumentasikan kontrak perilakunya, dan daftarkan boundary check yang melarang dependency konkret dari `database-core`, memenuhi **AC-1**, **AC-2**, **AC-8**.
-3. Definisikan model capability dengan kunci tertutup, selaras schema kontrak API, memenuhi **AC-3**.
-4. Bangun `ConnectionContext` non serializable plus test kebocoran, memenuhi **AC-4**.
-5. Bangun `ProviderRegistry` plus error engine tak dikenal, memenuhi **AC-5**.
-6. Tulis suite test kontrak generik plus provider fake referensi di package, memenuhi **AC-9**.
+1. [x] Definisikan model umum (`ObjectRef`, `Page`, kolom, index, constraint, principal, grant) dan `DbError` berkategori, memenuhi **AC-6**, **AC-7**.
+2. [x] Definisikan seluruh port per domain termasuk `ViewPort`, dokumentasikan kontrak perilakunya, dan daftarkan boundary check yang melarang dependency konkret dari `database-core`, memenuhi **AC-1**, **AC-2**, **AC-8**.
+3. [x] Definisikan model capability dengan kunci tertutup, selaras schema kontrak API, memenuhi **AC-3**.
+4. [x] Bangun `ConnectionContext` non serializable plus test kebocoran, memenuhi **AC-4**.
+5. [x] Bangun `ProviderRegistry` plus error engine tak dikenal, memenuhi **AC-5**.
+6. [x] Tulis suite test kontrak generik plus provider fake referensi di package, memenuhi **AC-9**.
 
 ## Consequences
 
 **Positive**:
+
 - Provider dan fitur bisa dibangun paralel dengan bahasa yang sama; kejujuran dukungan engine terprogram, bukan konvensi.
 
 **Negative / tradeoffs**:
+
 - Perubahan kontrak setelah dua provider jadi akan mahal; karena itu spec ini menuntut review paling teliti sebelum build lanjut.
 
 **Neutral**:
+
 - Kunci capability V2 sudah ada bernilai false, sehingga UI capability driven tidak berubah saat V2 mengaktifkannya.
 
 ## Follow-up
@@ -116,10 +126,12 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-PROV-01 sampai FR-PROV-05, bagian 10 (capability rules); struktur.md packages/database-core dan aturan 4.3.
 - Keputusan view CRUD GUI V1, sesi desain 2026-08-28.
 
 **Practices & standards**:
+
 - Ports and adapters; capability negotiation antara penyedia dan konsumen; error berkategori tertutup.
 
 **Links**: tidak ada yang diverifikasi untuk spec ini.

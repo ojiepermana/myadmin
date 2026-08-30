@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — route integration lulus 6 test/52 assertions, mutation builder/contract suite lulus 15 test/36 assertions, dan real-engine typed JSON/NULL/stale-conflict E2E lulus pada PostgreSQL/MySQL; security matrix serta full acceptance roundtrip belum lengkap.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -54,34 +54,34 @@ e2e kedua engine: insert, edit sel (termasuk set NULL dan JSON), delete satu bar
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | `UT-0038-AC1` | `IT-0038-AC1` | `CT-0038-AC1` | `E2E-0038-AC1` | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | `UT-0038-AC2` | `IT-0038-AC2` | `CT-0038-AC2` | `E2E-0038-AC2` | n/a | n/a | n/a | n/a | n/a |
-| [AC-3](#ac-3) | `UT-0038-AC3` | `IT-0038-AC3` | `CT-0038-AC3` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | `IT-0038-AC4` | `CT-0038-AC4` | `E2E-0038-AC4` | `SEC-0038-AC4` | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | `UT-0038-AC5` | n/a | n/a | `E2E-0038-AC5` | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | `UT-0038-AC6` | `IT-0038-AC6` | `CT-0038-AC6` | n/a | `SEC-0038-AC6` | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | `IT-0038-AC7` | n/a | n/a | `SEC-0038-AC7` | n/a | n/a | n/a | n/a |
-| [AC-8](#ac-8) | n/a | `IT-0038-AC8` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-9](#ac-9) | n/a | `IT-0038-AC9` | n/a | `E2E-0038-AC9` | n/a | n/a | n/a | n/a | n/a |
+| AC            | Unit          | Integration   | Contract      | E2E            | Security       | Performance | Visual | Smoke | Manual atau external |
+| ------------- | ------------- | ------------- | ------------- | -------------- | -------------- | ----------- | ------ | ----- | -------------------- |
+| [AC-1](#ac-1) | `UT-0038-AC1` | `IT-0038-AC1` | `CT-0038-AC1` | `E2E-0038-AC1` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-2](#ac-2) | `UT-0038-AC2` | `IT-0038-AC2` | `CT-0038-AC2` | `E2E-0038-AC2` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-3](#ac-3) | `UT-0038-AC3` | `IT-0038-AC3` | `CT-0038-AC3` | n/a            | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-4](#ac-4) | n/a           | `IT-0038-AC4` | `CT-0038-AC4` | `E2E-0038-AC4` | `SEC-0038-AC4` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-5](#ac-5) | `UT-0038-AC5` | n/a           | n/a           | `E2E-0038-AC5` | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-6](#ac-6) | `UT-0038-AC6` | `IT-0038-AC6` | `CT-0038-AC6` | n/a            | `SEC-0038-AC6` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-7](#ac-7) | n/a           | `IT-0038-AC7` | n/a           | n/a            | `SEC-0038-AC7` | n/a         | n/a    | n/a   | n/a                  |
+| [AC-8](#ac-8) | n/a           | `IT-0038-AC8` | n/a           | n/a            | n/a            | n/a         | n/a    | n/a   | n/a                  |
+| [AC-9](#ac-9) | n/a           | `IT-0038-AC9` | n/a           | `E2E-0038-AC9` | n/a            | n/a         | n/a    | n/a   | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
 ## Unit test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                                       | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `UT-0038-AC1` | [AC-1](#ac-1) | kelayakan edit ditentukan server per table: rowIdentity = primary key, atau unique index semua kolomnya NOT NULL; tanpa itu, response read (spec 0037) menand... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `UT-0038-AC2` | [AC-2](#ac-2) | POST /data/rows insert satu baris: nilai per kolom bertipe (bentuk sel berlabel tipe), kolom default/identity bisa dibiarkan; sukses mengembalikan baris hasi... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `UT-0038-AC3` | [AC-3](#ac-3) | PATCH /data/rows update: identitas baris (nilai kolom identity saat dibaca) plus perubahan kolom; provider membangun UPDATE berparameter dengan WHERE identit... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
-| `UT-0038-AC5` | [AC-5](#ac-5) | editor sel bertipe: teks multiline, angka dengan validasi, boolean, tanggal/waktu dengan input terstruktur, enum dari tipe bila diketahui, JSON lewat editor... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `UT-0038-AC5` | [AC-5](#ac-5) | editor sel bertipe: teks multiline, angka dengan validasi, boolean, tanggal/waktu dengan input terstruktur, enum dari tipe bila diketahui, JSON lewat editor...  | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `UT-0038-AC6` | [AC-6](#ac-6) | konversi tipe dan binary safety milik provider: nilai dikirim bertipe dan di bind sebagai parameter; kegagalan konversi menghasilkan 422 dengan pesan kolom s... | Isolasi unit terkecil yang menentukan perilaku AC. Ganti I/O eksternal dengan test double deterministik. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0038-AC1` | [AC-1](#ac-1) | kelayakan edit ditentukan server per table: rowIdentity = primary key, atau unique index semua kolomnya NOT NULL; tanpa itu, response read (spec 0037) menand... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `IT-0038-AC2` | [AC-2](#ac-2) | POST /data/rows insert satu baris: nilai per kolom bertipe (bentuk sel berlabel tipe), kolom default/identity bisa dibiarkan; sukses mengembalikan baris hasi... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `IT-0038-AC3` | [AC-3](#ac-3) | PATCH /data/rows update: identitas baris (nilai kolom identity saat dibaca) plus perubahan kolom; provider membangun UPDATE berparameter dengan WHERE identit... | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
@@ -95,8 +95,8 @@ Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu t
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0038-AC1` | [AC-1](#ac-1) | kelayakan edit ditentukan server per table: rowIdentity = primary key, atau unique index semua kolomnya NOT NULL; tanpa itu, response read (spec 0037) menand... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `CT-0038-AC2` | [AC-2](#ac-2) | POST /data/rows insert satu baris: nilai per kolom bertipe (bentuk sel berlabel tipe), kolom default/identity bisa dibiarkan; sukses mengembalikan baris hasi... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `CT-0038-AC3` | [AC-3](#ac-3) | PATCH /data/rows update: identitas baris (nilai kolom identity saat dibaca) plus perubahan kolom; provider membangun UPDATE berparameter dengan WHERE identit... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
@@ -105,18 +105,18 @@ Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu t
 
 ### E2E
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                       | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `E2E-0038-AC1` | [AC-1](#ac-1) | kelayakan edit ditentukan server per table: rowIdentity = primary key, atau unique index semua kolomnya NOT NULL; tanpa itu, response read (spec 0037) menand... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `E2E-0038-AC2` | [AC-2](#ac-2) | POST /data/rows insert satu baris: nilai per kolom bertipe (bentuk sel berlabel tipe), kolom default/identity bisa dibiarkan; sukses mengembalikan baris hasi... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
 | `E2E-0038-AC4` | [AC-4](#ac-4) | POST /data/rows/delete menerima daftar identitas baris; UI meminta konfirmasi menyebut jumlah dan target (table, koneksi); response memuat affected rows; bul... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `E2E-0038-AC5` | [AC-5](#ac-5) | editor sel bertipe: teks multiline, angka dengan validasi, boolean, tanggal/waktu dengan input terstruktur, enum dari tipe bila diketahui, JSON lewat editor... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `E2E-0038-AC5` | [AC-5](#ac-5) | editor sel bertipe: teks multiline, angka dengan validasi, boolean, tanggal/waktu dengan input terstruktur, enum dari tipe bila diketahui, JSON lewat editor...  | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 | `E2E-0038-AC9` | [AC-9](#ac-9) | e2e kedua engine: insert, edit sel (termasuk set NULL dan JSON), delete satu baris, bulk delete dengan konfirmasi; table tanpa PK terbukti read only dengan p... | Jalankan alur dari permukaan pengguna sampai outcome yang dapat diamati. | Seluruh outcome dan failure boundary AC-9 terpenuhi. |
 
 ### Security
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID             | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                               | Expected result                                      |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `SEC-0038-AC4` | [AC-4](#ac-4) | POST /data/rows/delete menerima daftar identitas baris; UI meminta konfirmasi menyebut jumlah dan target (table, koneksi); response memuat affected rows; bul... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
 | `SEC-0038-AC6` | [AC-6](#ac-6) | konversi tipe dan binary safety milik provider: nilai dikirim bertipe dan di bind sebagai parameter; kegagalan konversi menghasilkan 422 dengan pesan kolom s... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 | `SEC-0038-AC7` | [AC-7](#ac-7) | delete dan bulk delete diaudit (data.rows_deleted: table, jumlah, tanpa isi baris); insert dan update tidak diaudit default (bukan destructive; bagian 4.4 bu... | Uji jalur sukses dan penyalahgunaan tanpa mencatat credential atau secret nyata. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
@@ -149,12 +149,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

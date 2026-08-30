@@ -10,11 +10,11 @@ Semua AC-1 sampai AC-8 memiliki evidence PASS pada [ac-evidence-matrix.md](../ac
 
 | Bukti                 | Hasil                                                                                                                        |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Full Bun suite        | 558 pass, 8 skip, 0 fail.                                                                                                    |
+| Full Bun suite        | 560 pass, 14 skip, 0 fail.                                                                                                   |
 | Realtime integration  | `tests/integration/realtime/realtime.test.ts`: 5 pass, 0 fail, termasuk limit koneksi, redaction, dan reconnect/resubscribe. |
 | SDK client            | Coverage backoff, reconnect, resubscribe, typed events, dan connection state lulus.                                          |
 | Browser E2E           | Browser mengobservasi WebSocket terbuka melalui `E2E-0029-AC4`; targeted Playwright 3 pass, 0 fail.                          |
-| Contract dan security | Contract 68 pass, 0 fail; security 40 pass, 0 fail.                                                                          |
+| Contract dan security | Contract 70 pass, 0 fail; security 38 pass, 0 fail.                                                                          |
 
 Evidence terbaru: [2026-08-29-infrastructure-followup.md](../evidence/2026-08-29-infrastructure-followup.md). Delapan test database pada full suite skip karena service disposable dan environment URL tidak tersedia, bukan dependency AC spec ini.
 

@@ -12,26 +12,26 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Prasyarat eksekusi
 
-| Kebutuhan | Cara memeriksa | Status awal |
-|---|---|---|
-| Implementasi | Build plan pada `index.md` selesai untuk slice yang diverifikasi. | Belum siap |
-| Dependency | Semua relation `requires` pada `relation.md` sudah diterima. | Belum diperiksa |
-| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested. | Belum diperiksa |
-| Test plan | Test ID relevan pada `test.md` sudah diimplementasikan. | Belum siap |
-| Environment | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa |
+| Kebutuhan     | Cara memeriksa                                                                   | Status awal                    |
+| ------------- | -------------------------------------------------------------------------------- | ------------------------------ |
+| Implementasi  | Build plan pada `index.md` selesai untuk slice yang diverifikasi.                | Tersedia; bukti lokal tercatat |
+| Dependency    | Semua relation `requires` pada `relation.md` sudah diterima.                     | Belum diperiksa                |
+| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested.             | Belum diperiksa                |
+| Test plan     | Test ID relevan pada `test.md` sudah diimplementasikan.                          | Belum siap                     |
+| Environment   | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa                |
 
 ## Matriks verifikasi AC
 
-| AC | Test atau proof ID | Metode | Bukti wajib | Result |
-|---|---|---|---|---|
-| [AC-1](test.md#ac-1) | `IT-0036-AC1` | Integration | output command dan assertion | Belum dijalankan |
-| [AC-2](test.md#ac-2) | `IT-0036-AC2`, `E2E-0036-AC2` | Integration, E2E | output command dan assertion | Belum dijalankan |
-| [AC-3](test.md#ac-3) | `IT-0036-AC3`, `E2E-0036-AC3` | Integration, E2E | output command dan assertion | Belum dijalankan |
-| [AC-4](test.md#ac-4) | `IT-0036-AC4` | Integration | output command dan assertion | Belum dijalankan |
-| [AC-5](test.md#ac-5) | `E2E-0036-AC5` | E2E | output command dan assertion | Belum dijalankan |
-| [AC-6](test.md#ac-6) | `SEC-0036-AC6` | Security | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
-| [AC-7](test.md#ac-7) | `E2E-0036-AC7`, `VIS-0036-AC7` | E2E, Visual dan accessibility | output command dan assertion; screenshot dengan viewport dan state terkunci | Belum dijalankan |
-| [AC-8](test.md#ac-8) | `E2E-0036-AC8`, `SEC-0036-AC8` | E2E, Security | output command dan assertion; log tersanitasi tanpa secret | Belum dijalankan |
+| AC                   | Test atau proof ID             | Metode                        | Bukti wajib                                                                 | Result                                                                                                                                                                                                              |
+| -------------------- | ------------------------------ | ----------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [AC-1](test.md#ac-1) | `IT-0036-AC1`                  | Integration                   | output command dan assertion                                                | Lulus lokal; list/filter/redaction/retention teruji                                                                                                                                                                 |
+| [AC-2](test.md#ac-2) | `IT-0036-AC2`, `E2E-0036-AC2`  | Integration, E2E              | output command dan assertion                                                | Lulus lokal pada integration dan browser contract E2E                                                                                                                                                               |
+| [AC-3](test.md#ac-3) | `IT-0036-AC3`, `E2E-0036-AC3`  | Integration, E2E              | output command dan assertion                                                | Lulus lokal pada integration dan browser contract E2E                                                                                                                                                               |
+| [AC-4](test.md#ac-4) | `IT-0036-AC4`                  | Integration                   | output command dan assertion                                                | Lulus lokal; saved-query CRUD, tags, dan conflict teruji                                                                                                                                                            |
+| [AC-5](test.md#ac-5) | `E2E-0036-AC5`                 | E2E                           | output command dan assertion                                                | Lulus lokal pada browser contract E2E                                                                                                                                                                               |
+| [AC-6](test.md#ac-6) | `SEC-0036-AC6`                 | Security                      | output command dan assertion; log tersanitasi tanpa secret                  | Lulus lokal pada service/integration ownership boundary                                                                                                                                                             |
+| [AC-7](test.md#ac-7) | `E2E-0036-AC7`, `VIS-0036-AC7` | E2E, Visual dan accessibility | output command dan assertion; screenshot dengan viewport dan state terkunci | E2E lulus lokal; visual belum direview formal                                                                                                                                                                       |
+| [AC-8](test.md#ac-8) | `E2E-0036-AC8`, `SEC-0036-AC8` | E2E, Security                 | output command dan assertion; log tersanitasi tanpa secret                  | Lulus lokal; E2E lifecycle dan QueryHistoryService security assertions membuktikan history/saved query hanya terlihat atau dapat dimutasi oleh owner; security matrix penuh dan hosted/manual review tetap terpisah |
 
 ## Urutan verifikasi
 
@@ -43,11 +43,11 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Pemeriksaan otomatis
 
-| Area | Command source | Expected result |
-|---|---|---|
-| Integration | Script root yang didaftarkan pada satu `package.json` | Resource nyata disposable dipakai dan cleanup lulus. |
-| E2E | Script root yang didaftarkan pada satu `package.json` | Semua `E2E-0036-*` lulus dan memiliki assertion yang menutup AC. |
-| Security | Script root yang didaftarkan pada satu `package.json` | Semua `SEC-0036-*` lulus dan memiliki assertion yang menutup AC. |
+| Area                     | Command source                                        | Expected result                                                         |
+| ------------------------ | ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| Integration              | Script root yang didaftarkan pada satu `package.json` | Resource nyata disposable dipakai dan cleanup lulus.                    |
+| E2E                      | Script root yang didaftarkan pada satu `package.json` | Semua `E2E-0036-*` lulus dan memiliki assertion yang menutup AC.        |
+| Security                 | Script root yang didaftarkan pada satu `package.json` | Semua `SEC-0036-*` lulus dan memiliki assertion yang menutup AC.        |
 | Visual dan accessibility | Script root yang didaftarkan pada satu `package.json` | Screenshot, viewport, mode warna, dan state yang disyaratkan tersimpan. |
 
 ## Pemeriksaan manual, staged, environment, atau external
@@ -56,15 +56,20 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
-| Waktu | Commit | Environment | Hasil | Evidence |
-|---|---|---|---|---|
-| Belum dijalankan | Belum ada | Belum ada | Belum ada | Belum ada |
+| Waktu      | Commit       | Environment                                                 | Hasil                                                                                                                                                                                                       | Evidence                                                                                                                                                              |
+| ---------- | ------------ | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-29 | Working tree | Bun 1.4.0, Bun unit/integration                             | 5 test lulus; 41 assertions                                                                                                                                                                                 | `bun test apps/server/test/query-history.test.ts tests/integration/query-history/query-history.test.ts`                                                               |
+| 2026-08-29 | Working tree | Bun 1.4.0, macOS arm64, Playwright local web server         | 1 E2E lulus                                                                                                                                                                                                 | `bun run test:e2e -- tests/e2e/web/zz-query-history.spec.ts`                                                                                                          |
+| 2026-08-29 | Working tree | Bun 1.4.0, query-history service/integration and Playwright | Service/integration **5 pass, 41 assertions**; browser history lifecycle **1 pass dalam 6,5 detik**; ownership, retention, redaction, saved-query CRUD/conflict, delete confirmation, dan tab handoff lulus | `bun test apps/server/test/query-history.test.ts tests/integration/query-history/query-history.test.ts`; `bun run test:e2e -- tests/e2e/web/zz-query-history.spec.ts` |
+
+| 2026-08-30 | Working tree | Bun 1.4.0, QueryHistoryService ownership security tests | **3 pass, 12 assertions**; history filtering, foreign connection rejection, saved-query list, update, dan delete terbatas pada owner | `bun test --isolate apps/server/test/query-history.test.ts`; `apps/server/test/query-history.test.ts` |
+| 2026-08-30 | Working tree | Bun 1.4.0, Playwright local web server | Browser history lifecycle **1 pass, 0 fail dalam 7,9 detik** setelah locator diperketat ke teks toast sukses; seluruh workflow saved-query tetap lulus | `bunx playwright test --config playwright.config.ts tests/e2e/web/zz-query-history.spec.ts` |
 
 ## Gap dan blocker
 
-| AC | Gap | Dampak | Tindak lanjut |
-|---|---|---|---|
-| Belum dinilai | Verifikasi belum dijalankan karena implementasi belum tersedia. | Belum ada verdict acceptance. | Jalankan `/check verify` setelah build dan test relevan selesai. |
+| AC                           | Gap                                                  | Dampak                            | Tindak lanjut                                    |
+| ---------------------------- | ---------------------------------------------------- | --------------------------------- | ------------------------------------------------ |
+| AC-1, AC-4, AC-6, AC-7, AC-8 | Sebagian visual dan security evidence belum lengkap. | Verdict tetap belum diverifikasi. | Lengkapi visual review dan authorization matrix. |
 
 ## Verdict akhir
 

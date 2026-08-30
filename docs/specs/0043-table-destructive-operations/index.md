@@ -101,7 +101,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 2. [x] Tambah tiga operasi ke kontrak dengan confirmName, regenerasi, contract test, memenuhi **AC-4**.
 3. [x] Endpoint server dengan verifikasi confirm dan audit `withAudit`, memenuhi **AC-4**.
 4. [x] UI: tiga dialog di atas komponen konfirmasi baku dengan bagian dampak, registrasi menu, penanganan tab basi, memenuhi **AC-1**, **AC-2**, **AC-3**, **AC-5**.
-5. E2e dua engine, memenuhi **AC-6**.
+5. [x] E2e dua engine, memenuhi **AC-6**.
 
 ## Consequences
 

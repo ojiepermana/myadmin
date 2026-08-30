@@ -17,6 +17,7 @@ FR-UI-01 dan aturan struktur.md bagian 4.1 mengunci @ojiepermana/angular untuk t
 ## Requirements
 
 **User stories**:
+
 - Sebagai pengguna, saya ingin memilih light, dark, atau ikut sistem, dan pilihan itu bertahan di sesi berikutnya.
 - Sebagai developer, saya ingin token warna dan komponen siap pakai supaya fitur tidak mendesain sendiri.
 
@@ -37,17 +38,21 @@ Definisi normatif dan rancangan test hidup di [test.md](test.md#acceptance-crite
 ### Option 1: Theme lewat mekanisme extension paket foundation (dipilih)
 
 **Pros**:
+
 - Sesuai aturan 4.1 butir 4: theme.config hanya mengonfigurasi dan meng extend; upgrade paket foundation tidak menabrak override liar.
 
 **Cons**:
+
 - Terikat pada kemampuan theming yang paket sediakan; gap harus diselesaikan di paket, bukan lokal.
 
 ### Option 2: Override CSS global di atas paket
 
 **Pros**:
+
 - Bebas menyetel apa pun segera.
 
 **Cons**:
+
 - Rapuh terhadap upgrade dan secara efektif menjadi design system kedua; dilarang aturan yang dikunci.
 
 ## Decision
@@ -69,13 +74,15 @@ Nilai paket foundation justru hilang kalau di override; aturan proyek menutup ja
 **API surface**: belum ada endpoint baru (preferences API milik spec 0052).
 
 **Value sourcing**:
-| Action | Value produced / displayed | Source |
-|---|---|---|
-| mode efektif | light atau dark | preferensi user; bila `system`, `prefers-color-scheme` |
-| preferensi awal | nilai theme | localStorage sebelum login; preferences server setelah spec 0052 |
-| token warna | nilai | konfigurasi theme Myadmin di atas token paket foundation |
+
+| Action          | Value produced / displayed | Source                                                           |
+| --------------- | -------------------------- | ---------------------------------------------------------------- |
+| mode efektif    | light atau dark            | preferensi user; bila `system`, `prefers-color-scheme`           |
+| preferensi awal | nilai theme                | localStorage sebelum login; preferences server setelah spec 0052 |
+| token warna     | nilai                      | konfigurasi theme Myadmin di atas token paket foundation         |
 
 **Key invariants**:
+
 - Tidak ada komponen generik baru di `apps/web/src/app/shared/` (hanya database-components, directives, pipes, types, utils).
 - Perubahan mode adalah perubahan state reaktif, bukan reload.
 
@@ -89,21 +96,24 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Build plan
 
-1. Pasang @ojiepermana/angular v22.1.7 atau lebih baru dari npm publik (terverifikasi 2026-08-28), kunci versi di lockfile, tambahkan @angular/material sebagai peer bila komponen yang membutuhkannya dipakai, memenuhi **AC-1**.
-2. Bangun `core/theme/` (konfigurasi identitas, token, mode) dan `theme-preference.store.ts` dengan abstraksi sumber, memenuhi **AC-2**, **AC-3**, **AC-4**.
-3. Lakukan audit kapabilitas terhadap daftar kebutuhan V1 dan tulis hasilnya (tabel kebutuhan → API paket) sebagai lampiran di folder docs/architecture, memenuhi **AC-5**.
-4. Bangun halaman demo dev only, memenuhi **AC-6**.
-5. Tambahkan aturan lint/boundary larangan design system kedua dan pola komponen generik, memenuhi **AC-7**.
+1. [x] Pasang @ojiepermana/angular v22.1.7 atau lebih baru dari npm publik (terverifikasi 2026-08-28), kunci versi di lockfile, tambahkan @angular/material sebagai peer bila komponen yang membutuhkannya dipakai, memenuhi **AC-1**.
+2. [x] Bangun `core/theme/` (konfigurasi identitas, token, mode) dan `theme-preference.store.ts` dengan abstraksi sumber, memenuhi **AC-2**, **AC-3**, **AC-4**.
+3. [x] Lakukan audit kapabilitas terhadap daftar kebutuhan V1 dan tulis hasilnya (tabel kebutuhan → API paket) sebagai lampiran di folder docs/architecture, memenuhi **AC-5**.
+4. [x] Bangun halaman demo dev only, memenuhi **AC-6**.
+5. [x] Tambahkan aturan lint/boundary larangan design system kedua dan pola komponen generik, memenuhi **AC-7**.
 
 ## Consequences
 
 **Positive**:
+
 - Seluruh fitur berikutnya mewarisi theme dan komponen konsisten; FR-UI-01 dan FR-UI-02 selesai di fondasi.
 
 **Negative / tradeoffs**:
+
 - Ketergantungan kuat pada satu paket eksternal milik sendiri; gap kapabilitas menjadi blocker fitur sampai paketnya dirilis ulang.
 
 **Neutral**:
+
 - Halaman demo dev menjadi tempat termurah memverifikasi regresi visual saat upgrade paket.
 
 ## Follow-up
@@ -114,11 +124,14 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 ## References
 
 **Project sources**:
+
 - v1-feature-specification.md FR-UI-01, FR-UI-02; struktur.md bagian 3 (shared, core/theme) dan 4.1.
 - Pernyataan pemilik proyek 2026-08-28: paket lengkap, tersedia di npm publik.
 
 **Practices & standards**:
+
 - Design token dan semantic theming; satu design system per produk.
 
 **Links** (terverifikasi web 2026-08-28):
+
 - @ojiepermana/angular di npm (v22.1.7, terbit 2026-08-26, MIT): https://www.npmjs.com/package/@ojiepermana/angular

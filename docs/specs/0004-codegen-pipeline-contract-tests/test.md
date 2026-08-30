@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Execution**: Belum dijalankan
+**Execution**: Parsial lokal — codegen, drift check, contract validation, dan contract suite lulus **71 test, 812 assertions**; hosted `contract.yml` belum tersedia.
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Verify](verify.md)
 
@@ -46,15 +46,15 @@ workflow CI `contract.yml` menjalankan validasi kontrak (spec 0003), codegen dri
 
 ## Matriks cakupan
 
-| AC | Unit | Integration | Contract | E2E | Security | Performance | Visual | Smoke | Manual atau external |
-|---|---|---|---|---|---|---|---|---|---|
-| [AC-1](#ac-1) | n/a | n/a | `CT-0004-AC1` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-2](#ac-2) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `SMOKE-0004-AC2` | n/a |
-| [AC-3](#ac-3) | n/a | n/a | `CT-0004-AC3` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-4](#ac-4) | n/a | n/a | `CT-0004-AC4` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-5](#ac-5) | n/a | n/a | `CT-0004-AC5` | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-6](#ac-6) | n/a | `IT-0004-AC6` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| [AC-7](#ac-7) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `SMOKE-0004-AC7` | n/a |
+| AC            | Unit | Integration   | Contract      | E2E | Security | Performance | Visual | Smoke            | Manual atau external |
+| ------------- | ---- | ------------- | ------------- | --- | -------- | ----------- | ------ | ---------------- | -------------------- |
+| [AC-1](#ac-1) | n/a  | n/a           | `CT-0004-AC1` | n/a | n/a      | n/a         | n/a    | n/a              | n/a                  |
+| [AC-2](#ac-2) | n/a  | n/a           | n/a           | n/a | n/a      | n/a         | n/a    | `SMOKE-0004-AC2` | n/a                  |
+| [AC-3](#ac-3) | n/a  | n/a           | `CT-0004-AC3` | n/a | n/a      | n/a         | n/a    | n/a              | n/a                  |
+| [AC-4](#ac-4) | n/a  | n/a           | `CT-0004-AC4` | n/a | n/a      | n/a         | n/a    | n/a              | n/a                  |
+| [AC-5](#ac-5) | n/a  | n/a           | `CT-0004-AC5` | n/a | n/a      | n/a         | n/a    | n/a              | n/a                  |
+| [AC-6](#ac-6) | n/a  | `IT-0004-AC6` | n/a           | n/a | n/a      | n/a         | n/a    | n/a              | n/a                  |
+| [AC-7](#ac-7) | n/a  | n/a           | n/a           | n/a | n/a      | n/a         | n/a    | `SMOKE-0004-AC7` | n/a                  |
 
 Setiap AC memiliki minimal satu jalur pembuktian. `n/a` berarti jenis test itu tidak relevan untuk AC tersebut, bukan berarti AC boleh dilewati.
 
@@ -64,20 +64,20 @@ Tidak ada unit yang diwajibkan oleh acceptance criteria saat ini.
 
 ## Integration test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                     | Scenario terencana                                                                         | Expected result                                      |
+| ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `IT-0004-AC6` | [AC-6](#ac-6) | folder src/generated/ dilindungi: aturan lint atau CI menolak edit manual (header file generated plus pemeriksaan drift). | Jalankan boundary nyata yang disebut AC memakai resource disposable, lalu lakukan cleanup. | Seluruh outcome dan failure boundary AC-6 terpenuhi. |
 
 ## Test tambahan
 
 ### Contract test
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID            | AC            | Fokus                                                                                                                                                            | Scenario terencana                                                                          | Expected result                                      |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `CT-0004-AC1` | [AC-1](#ac-1) | scripts/codegen/generate-contract-types.ts menghasilkan tipe dari bundel OpenAPI ke packages/api-contract/src/generated/; hasilnya deterministik (dua kali ge... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-1 terpenuhi. |
 | `CT-0004-AC3` | [AC-3](#ac-3) | harness contract test membuktikan cakupan dua arah: setiap operasi di kontrak punya route terimplementasi di server, dan setiap route terdaftar di server ada... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-3 terpenuhi. |
 | `CT-0004-AC4` | [AC-4](#ac-4) | contract test memvalidasi bentuk response nyata server (minimal untuk enam path awal) terhadap schema kontrak; response yang menyimpang membuat test gagal de... | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-4 terpenuhi. |
-| `CT-0004-AC5` | [AC-5](#ac-5) | request tidak valid ke endpoint mana pun menghasilkan ApiError sesuai schema, dibuktikan test. | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
+| `CT-0004-AC5` | [AC-5](#ac-5) | request tidak valid ke endpoint mana pun menghasilkan ApiError sesuai schema, dibuktikan test.                                                                   | Bandingkan request, response, schema, event, atau provider contract dengan bentuk normatif. | Seluruh outcome dan failure boundary AC-5 terpenuhi. |
 
 ### E2E
 
@@ -97,10 +97,10 @@ Tidak ada visual dan accessibility yang diwajibkan oleh acceptance criteria saat
 
 ### Smoke dan operational acceptance
 
-| ID | AC | Fokus | Scenario terencana | Expected result |
-|---|---|---|---|---|
+| ID               | AC            | Fokus                                                                                                  | Scenario terencana                                                                   | Expected result                                      |
+| ---------------- | ------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `SMOKE-0004-AC2` | [AC-2](#ac-2) | CI menjalankan generate ulang lalu git diff --exit-code pada folder generated; drift membuat CI gagal. | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-2 terpenuhi. |
-| `SMOKE-0004-AC7` | [AC-7](#ac-7) | workflow CI contract.yml menjalankan validasi kontrak (spec 0003), codegen drift, dan contract test. | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
+| `SMOKE-0004-AC7` | [AC-7](#ac-7) | workflow CI contract.yml menjalankan validasi kontrak (spec 0003), codegen drift, dan contract test.   | Jalankan artefak atau workflow pada environment bersih dan simpan bukti operasional. | Seluruh outcome dan failure boundary AC-7 terpenuhi. |
 
 ### Manual atau external proof
 
@@ -118,12 +118,12 @@ Tidak ada staged, environment, atau external proof khusus yang sudah diidentifik
 
 ## Fixture dan environment
 
-| Area | Aturan |
-|---|---|
-| Data | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata. |
-| Resource | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik. |
-| Version | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
-| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`. |
+| Area         | Aturan                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Data         | Gunakan data sintetis atau tersanitasi. Jangan memakai credential, token, atau data produksi nyata.            |
+| Resource     | Database, file, port, process, dan container harus disposable serta memiliki cleanup deterministik.            |
+| Version      | Pin versi environment yang dibuktikan. Jangan memakai label dinamis seperti `latest` sebagai bukti acceptance. |
+| Root command | Instalasi dan command test selalu dimulai dari akar repo dan satu `package.json`.                              |
 
 ## Exit criteria test
 

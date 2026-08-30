@@ -478,11 +478,11 @@ Pencarian nama object server side dari panel explorer. Done when: pencarian pada
 Inti produk: tab CodeMirror berkonteks, sesi per tab, eksekusi asinkron, autocomplete, history. Done when: multi statement, transaksi lintas eksekusi, dan posisi error bekerja di dua engine.
 
 - [x] Design it (spec): [0033](../specs/0033-query-editor-execution/index.md)
-- [ ] Build it: /develop query-editor-execution
+- [x] Build it: /develop query-editor-execution
   - [x] Kontrak eksekusi plus bentuk sel berlabel tipe plus pemecah statement per engine (AC-4, AC-6, AC-8)
   - [x] Use case eksekusi: sesi per tab, urutan statement, event WS, history (AC-4, AC-5, AC-7)
   - [x] Editor CodeMirror, konteks tab, autocomplete malas, render hasil dan error berposisi (AC-1, AC-2, AC-3, AC-6)
-  - [ ] E2e dua engine termasuk transaksi manual (AC-9)
+  - [x] E2e dua engine termasuk transaksi manual (AC-9)
 - [ ] [Verify it](../specs/0033-query-editor-execution/verify.md): /check verify query-editor-execution
 - [x] [Test it](../specs/0033-query-editor-execution/test.md): /test query-editor-execution
 
@@ -491,22 +491,22 @@ Inti produk: tab CodeMirror berkonteks, sesi per tab, eksekusi asinkron, autocom
 ResultGrid bertipe aman dengan multiple result set dan export klien. Done when: NULL, JSON, dan presisi tampil benar dan 5000 baris mulus.
 
 - [x] Design it (spec): [0034](../specs/0034-result-grid-export/index.md)
-- [ ] Build it: /develop result-grid-export
+- [x] Build it: /develop result-grid-export
   - [x] ResultGrid virtualized dengan render sel bertipe dan viewer JSON (AC-1, AC-3, AC-7)
   - [x] Sub tab result set, panel error, salin dan export klien (AC-2, AC-4, AC-5, AC-6)
-  - [ ] Test render, kinerja, dan e2e (AC-8)
+  - [x] Test render, kinerja, dan e2e (AC-8)
 - [ ] [Verify it](../specs/0034-result-grid-export/verify.md): /check verify result-grid-export
-- [ ] [Test it](../specs/0034-result-grid-export/test.md): /test result-grid-export
+- [x] [Test it](../specs/0034-result-grid-export/test.md): /test result-grid-export
 
 ### 35. Query cancel dan EXPLAIN `in-progress`
 
 Membatalkan eksekusi berjalan dan rencana eksekusi teks. Done when: query tidur dibatalkan cepat dengan sesi tetap hidup dan explain bergerbang capability.
 
 - [x] Design it (spec): [0035](../specs/0035-query-cancel-explain/index.md)
-- [ ] Build it: /develop query-cancel-explain
+- [x] Build it: /develop query-cancel-explain
   - [x] Cancel di use case query dengan konfirmasi provider dan idempotensi (AC-1, AC-2, AC-4)
   - [x] EXPLAIN per engine plus endpoint (AC-5, AC-6, AC-7)
-  - [ ] UI tombol cancel bergerbang, aksi darurat, panel explain plus test (AC-3, AC-8)
+  - [x] UI tombol cancel bergerbang, aksi darurat, panel explain plus test (AC-3, AC-8)
 - [ ] [Verify it](../specs/0035-query-cancel-explain/verify.md): /check verify query-cancel-explain
 - [x] [Test it](../specs/0035-query-cancel-explain/test.md): /test query-cancel-explain
 
@@ -515,10 +515,10 @@ Membatalkan eksekusi berjalan dan rencana eksekusi teks. Done when: query tidur 
 Riwayat otomatis dan query bernama, privat per user. Done when: pencarian riwayat, buka ulang berkonteks, dan isolasi antar user terbukti.
 
 - [x] Design it (spec): [0036](../specs/0036-query-history-saved-queries/index.md)
-- [ ] Build it: /develop query-history-saved-queries
+- [x] Build it: /develop query-history-saved-queries
   - [x] Endpoint history berfilter plus saved queries CRUD berkepemilikan (AC-1, AC-2, AC-4, AC-6)
   - [x] Halaman dua tab plus panel cepat editor plus simpan cepat (AC-5, AC-7)
-  - [ ] E2e dan test otorisasi (AC-3, AC-8)
+  - [x] E2e dan test otorisasi (AC-3, AC-8)
   - code in `apps/server/src/query`, `packages/internal-sqlite`, `packages/sdk-angular/src`, `apps/web/src/app/features/query-history`, and `tests/integration/query-history/`
 - [ ] [Verify it](../specs/0036-query-history-saved-queries/verify.md): /check verify query-history-saved-queries
 - [x] [Test it](../specs/0036-query-history-saved-queries/test.md): /test query-history-saved-queries
@@ -528,10 +528,10 @@ Riwayat otomatis dan query bernama, privat per user. Done when: pencarian riwaya
 Browse table berhalaman dengan filter terstruktur aman. Done when: table sejuta baris dibuka ringan dan injeksi lewat filter mustahil.
 
 - [x] Design it (spec): [0037](../specs/0037-data-browser-read/index.md)
-- [ ] Build it: /develop data-browser-read
+- [x] Build it: /develop data-browser-read
   - [x] Kontrak read plus penerjemah filter sort pagination di kedua provider (AC-1 sampai AC-5)
   - [x] Tab data dengan grid mode browser, filter kolom, pemilih kolom (AC-6, AC-7)
-  - [ ] Test NFR-01, injeksi, dan e2e (AC-8, AC-9)
+  - [x] Test NFR-01, injeksi, dan e2e (AC-8, AC-9)
 - [ ] [Verify it](../specs/0037-data-browser-read/verify.md): /check verify data-browser-read
 - [x] [Test it](../specs/0037-data-browser-read/test.md): /test data-browser-read
 
@@ -540,10 +540,10 @@ Browse table berhalaman dengan filter terstruktur aman. Done when: table sejuta 
 Insert, edit, delete berbasis identitas baris aman. Done when: konflik terdeteksi lewat affected count dan table tanpa PK read only dengan penjelasan.
 
 - [x] Design it (spec): [0038](../specs/0038-data-browser-write/index.md)
-- [ ] Build it: /develop data-browser-write
+- [x] Build it: /develop data-browser-write
   - [x] Penentuan rowIdentity plus mutasi berparameter dengan semantik affected dan transaksi (AC-1, AC-2, AC-3, AC-6, AC-8)
   - [x] Delete dan bulk delete berkonfirmasi berjumlah plus audit (AC-4, AC-7)
-  - [ ] Editor sel bertipe termasuk NULL dan JSON plus e2e konflik (AC-5, AC-9)
+  - [x] Editor sel bertipe termasuk NULL dan JSON plus e2e konflik (AC-5, AC-9)
 - [ ] [Verify it](../specs/0038-data-browser-write/verify.md): /check verify data-browser-write
 - [x] [Test it](../specs/0038-data-browser-write/test.md): /test data-browser-write
 
@@ -552,10 +552,10 @@ Insert, edit, delete berbasis identitas baris aman. Done when: konflik terdeteks
 Properti, create data driven per engine, drop ketik nama. Done when: pola konfirmasi destructive baku lahir dan teruji dua engine.
 
 - [x] Design it (spec): [0039](../specs/0039-database-management/index.md)
-- [ ] Build it: /develop database-management
+- [x] Build it: /develop database-management
   - [x] DatabasePort create drop properties di kedua provider (AC-1, AC-2, AC-3)
   - [x] Komponen destructive-action-confirmation plus verifikasi confirmName server plus audit (AC-3, AC-4)
-  - [ ] Halaman properti dan form create data driven plus e2e (AC-2, AC-5, AC-6)
+  - [x] Halaman properti dan form create data driven plus e2e (AC-2, AC-5, AC-6)
 - [ ] [Verify it](../specs/0039-database-management/verify.md): /check verify database-management
 - [x] [Test it](../specs/0039-database-management/test.md): /test database-management
 
@@ -564,10 +564,10 @@ Properti, create data driven per engine, drop ketik nama. Done when: pola konfir
 Schema PostgreSQL bergerbang capability, absen total di MySQL. Done when: gerbang terbukti dua arah dan drop hanya schema kosong.
 
 - [x] Design it (spec): [0040](../specs/0040-schema-management/index.md)
-- [ ] Build it: /develop schema-management
+- [x] Build it: /develop schema-management
   - [x] SchemaPort PostgreSQL create rename drop restrict (AC-1)
   - [x] Endpoint bergerbang tegas plus audit (AC-2, AC-3, AC-5)
-  - [ ] UI form dan peringatan rename plus e2e dua arah (AC-4, AC-6)
+  - [x] UI form dan peringatan rename plus e2e dua arah (AC-4, AC-6)
 - [ ] [Verify it](../specs/0040-schema-management/verify.md): /check verify schema-management
 - [x] [Test it](../specs/0040-schema-management/test.md): /test schema-management
 
@@ -576,11 +576,11 @@ Schema PostgreSQL bergerbang capability, absen total di MySQL. Done when: gerban
 Create dan alter kolom lewat change set dengan pratinjau DDL wajib. Done when: yang tampil di pratinjau persis yang dijalankan dan validasi per field bekerja.
 
 - [x] Design it (spec): [0041](../specs/0041-table-designer-columns/index.md)
-- [ ] Build it: /develop table-designer-columns
+- [x] Build it: /develop table-designer-columns
   - [x] Modul tipe engine plus kompilator change set dengan test snapshot (AC-1, AC-2, AC-3, AC-5)
   - [x] Endpoint preview apply dengan semantik transaksi per engine plus audit (AC-4, AC-6)
   - [x] UI editor kolom plus panel pratinjau plus invalidasi metadata (AC-3, AC-7)
-  - [ ] E2e dua engine lewat fixture database/browser (AC-8)
+  - [x] E2e dua engine lewat fixture database/browser (AC-8)
   - code in `apps/server/src/table-designer/`, `packages/database-mysql/src/table-designer.ts`, `packages/database-postgresql/src/table-designer.ts`, and `apps/web/src/app/features/table-designer/`
 - [ ] [Verify it](../specs/0041-table-designer-columns/verify.md): /check verify table-designer-columns
 - [x] [Test it](../specs/0041-table-designer-columns/test.md): /test table-designer-columns
@@ -590,11 +590,11 @@ Create dan alter kolom lewat change set dengan pratinjau DDL wajib. Done when: y
 PK, FK, unique, check, index komposit di mesin change set yang sama. Done when: FK dengan aturan ON dan composite unique bekerja dua engine lewat pratinjau.
 
 - [x] Design it (spec): [0042](../specs/0042-table-designer-indexes-constraints/index.md)
-- [ ] Build it: /develop table-designer-indexes-constraints
+- [x] Build it: /develop table-designer-indexes-constraints
   - [x] Perluasan change set dan kompilator plus snapshot (AC-2 sampai AC-5)
   - [x] UI tab index dan constraint plus editor FK (AC-1, AC-3, AC-5)
   - [x] Konfirmasi destructive, peringatan dampak PK FK, audit, dan invalidasi row identity (AC-6, AC-7)
-  - [ ] E2e dua engine lewat fixture database/browser (AC-8)
+  - [x] E2e dua engine lewat fixture database/browser (AC-8)
 - [ ] [Verify it](../specs/0042-table-designer-indexes-constraints/verify.md): /check verify table-designer-indexes-constraints
 - [ ] [Test it](../specs/0042-table-designer-indexes-constraints/test.md): /test table-designer-indexes-constraints
 
@@ -603,49 +603,49 @@ PK, FK, unique, check, index komposit di mesin change set yang sama. Done when: 
 Rename, truncate, drop dengan dialog berinformasi dampak. Done when: ketiganya berkonfirmasi ketik nama terverifikasi server dan teraudit.
 
 - [x] Design it (spec): [0043](../specs/0043-table-destructive-operations/index.md)
-- [ ] Build it: /develop table-destructive-operations
+- [x] Build it: /develop table-destructive-operations
   - [x] Operasi provider plus query dampak dependensi (AC-1, AC-2, AC-3)
   - [x] Endpoint dengan confirmName plus audit (AC-4)
-  - [ ] Tiga dialog berinformasi plus penanganan tab basi plus e2e (AC-1, AC-5, AC-6)
+  - [x] Tiga dialog berinformasi plus penanganan tab basi plus e2e (AC-1, AC-5, AC-6)
   - code in `packages/database-postgresql/src/table.ts`, `packages/database-mysql/src/table.ts`, `apps/server/src/table-operations/`, and `apps/web/src/app/shared/database-components/table-operation-dialog/`
 - [ ] [Verify it](../specs/0043-table-destructive-operations/verify.md): /check verify table-destructive-operations
-- [ ] [Test it](../specs/0043-table-destructive-operations/test.md): /test table-destructive-operations
+- [x] [Test it](../specs/0043-table-destructive-operations/test.md): /test table-destructive-operations
 
 ### 44. Manajemen view `in-progress`
 
 CRUD GUI penuh untuk view sesuai keputusan produk. Done when: create, ubah definisi (termasuk jalur drop create PostgreSQL berkonfirmasi), dan drop bekerja dua engine.
 
 - [x] Design it (spec): [0044](../specs/0044-view-management/index.md)
-- [ ] Build it: /develop view-management
+- [x] Build it: /develop view-management
   - [x] ViewPort kedua provider dengan analisis strategi update (AC-3)
   - [x] Endpoint bergerbang viewEditor plus audit (AC-3, AC-4, AC-5)
-  - [ ] Halaman editor view dengan pratinjau DDL plus aksi explorer plus e2e (AC-1, AC-2, AC-6, AC-7, AC-8)
-    - code in `apps/web/src/app/features/view-editor`, `apps/server/src/view-management`, and both provider `view.ts` ports; live two-engine e2e remains unproven
+  - [x] Halaman editor view dengan pratinjau DDL plus aksi explorer plus e2e (AC-1, AC-2, AC-6, AC-7, AC-8)
+    - code in `apps/web/src/app/features/view-editor`, `apps/server/src/view-management`, and both provider `view.ts` ports; live PostgreSQL/MySQL browser evidence is recorded, while full acceptance remains subject to Verify
 - [ ] [Verify it](../specs/0044-view-management/verify.md): /check verify view-management
-- [ ] [Test it](../specs/0044-view-management/test.md): /test view-management
+- [x] [Test it](../specs/0044-view-management/test.md): /test view-management
 
 ### 45. Security database principal `in-progress`
 
 Kelola role dan account database target lewat form dinamis. Done when: create, edit, reset password, drop bekerja dua engine tanpa satu pun rahasia di response.
 
 - [x] Design it (spec): [0045](../specs/0045-database-security-principals/index.md)
-- [ ] Build it: /develop database-security-principals
+- [x] Build it: /develop database-security-principals
   - [x] SecurityPort principal di kedua provider plus deklarasi form (AC-1, AC-2, AC-3)
   - [x] Reset password aman plus drop berkonfirmasi plus audit plus gerbang (AC-4 sampai AC-7)
-  - [ ] UI daftar dan form dinamis plus e2e dan test kebersihan rahasia (AC-2, AC-8)
+  - [x] UI daftar dan form dinamis plus e2e dan test kebersihan rahasia (AC-2, AC-8)
   - code in `packages/database-core/src/contracts/security.ts`, `packages/database-postgresql/src/security/`, `packages/database-mysql/src/security/`, `apps/server/src/security/`, `packages/api-contract/openapi/v1/`, `packages/sdk-angular/src/facades/security-client.ts`, and `apps/web/src/app/features/security/`
 - [ ] [Verify it](../specs/0045-database-security-principals/verify.md): /check verify database-security-principals
-- [ ] [Test it](../specs/0045-database-security-principals/test.md): /test database-security-principals
+- [x] [Test it](../specs/0045-database-security-principals/test.md): /test database-security-principals
 
 ### 46. Security database privilege `in-progress`
 
 Grant dan revoke level database dan table lewat matriks berpratinjau. Done when: efek grant terbukti nyata di server target dan revoke selalu berkonfirmasi.
 
 - [x] Design it (spec): [0046](../specs/0046-database-security-privileges/index.md)
-- [ ] Build it: /develop database-security-privileges
+- [x] Build it: /develop database-security-privileges
   - [x] Introspeksi grant efektif plus katalog privilege plus kompilator di kedua provider (AC-1, AC-2)
   - [x] Endpoint preview apply dengan konfirmasi revoke plus audit plus gerbang (AC-3 sampai AC-6)
-  - [ ] UI matriks privilege plus e2e efek nyata (AC-3, AC-7)
+  - [x] UI matriks privilege plus e2e efek nyata (AC-3, AC-7)
   - code in `packages/database-core/src/models/index.ts`, `packages/database-core/src/contracts/security.ts`, `packages/database-postgresql/src/security/`, `packages/database-mysql/src/security/`, `apps/server/src/security/`, `packages/api-contract/openapi/v1/`, `packages/sdk-angular/src/facades/security-client.ts`, and `apps/web/src/app/features/security/`
 - [ ] [Verify it](../specs/0046-database-security-privileges/verify.md): /check verify database-security-privileges
 - [x] [Test it](../specs/0046-database-security-privileges/test.md): /test database-security-privileges
@@ -657,10 +657,10 @@ Grant dan revoke level database dan table lewat matriks berpratinjau. Done when:
 Export SQL CSV JSON streaming sebagai job dengan unduhan terautentikasi. Done when: sejuta baris terekspor dengan memori datar dan cancel membersihkan.
 
 - [x] Design it (spec): [0047](../specs/0047-export-jobs/index.md)
-- [ ] Build it: /develop export-jobs
+- [x] Build it: /develop export-jobs
   - [x] Penulis format streaming plus pembaca cursor dan quoting per engine (AC-1, AC-2, AC-3)
   - [x] Executor job export plus unduhan berkadaluarsa plus pembersih temp plus audit (AC-3, AC-4, AC-5, AC-7)
-  - [ ] Dialog export, integrasi tombol grid, panel jobs plus e2e skala (AC-6, AC-8)
+  - [x] Dialog export, integrasi tombol grid, panel jobs plus e2e skala (AC-6, AC-8)
 - [ ] [Verify it](../specs/0047-export-jobs/verify.md): /check verify export-jobs
 - [x] [Test it](../specs/0047-export-jobs/test.md): /test export-jobs
 
@@ -669,10 +669,10 @@ Export SQL CSV JSON streaming sebagai job dengan unduhan terautentikasi. Done wh
 Import SQL dan CSV sebagai job dengan unggah streaming dan pemetaan kolom. Done when: roundtrip export import utuh dan kegagalan menunjuk posisi persis.
 
 - [x] Design it (spec): [0048](../specs/0048-import-jobs/index.md)
-- [ ] Build it: /develop import-jobs
+- [x] Build it: /develop import-jobs
   - [x] Unggah streaming berbatas plus pratinjau server (AC-1, AC-7)
   - [x] Executor SQL (mode transaksi, posisi error) dan CSV (pemetaan, batch, ambang gagal) (AC-2, AC-3, AC-5)
-  - [ ] Truncate first berkonfirmasi plus audit plus UI alur import plus e2e roundtrip (AC-4, AC-6, AC-8)
+  - [x] Truncate first berkonfirmasi plus audit plus UI alur import plus e2e roundtrip (AC-4, AC-6, AC-8)
 - [ ] [Verify it](../specs/0048-import-jobs/verify.md): /check verify import-jobs
 - [ ] [Test it](../specs/0048-import-jobs/test.md): /test import-jobs
 
@@ -684,7 +684,7 @@ Logical backup lewat native tool dengan deteksi jujur. Done when: backup valid d
 - [x] Build it: /develop backup
   - [x] Deteksi tool plus doctor check plus capability (AC-1, AC-7)
   - [x] Executor subprocess aman (password tanpa argv, gzip streaming, validasi artefak, manifest) (AC-2, AC-3, AC-4)
-  - [ ] Endpoint daftar unduh hapus plus audit plus UI plus e2e (AC-5, AC-6, AC-8)
+  - [x] Endpoint daftar unduh hapus plus audit plus UI plus e2e (AC-5, AC-6, AC-8)
 - [ ] [Verify it](../specs/0049-backup/verify.md): /check verify backup
 - [ ] [Test it](../specs/0049-backup/test.md): /test backup
 
@@ -693,10 +693,10 @@ Logical backup lewat native tool dengan deteksi jujur. Done when: backup valid d
 Pemulihan dari artefak dengan konfirmasi paling ketat. Done when: roundtrip backup restore identik dan dump engine salah ditolak sebelum kerusakan.
 
 - [x] Design it (spec): [0050](../specs/0050-restore/index.md)
-- [ ] Build it: /develop restore
+- [x] Build it: /develop restore
   - [x] Validasi artefak (format, engine) plus endpoint validate (AC-1)
   - [x] Executor restore (database baru opsional, subprocess, parsial jujur) plus audit started completed (AC-2, AC-4, AC-5)
-  - [ ] Konfirmasi ketik nama terverifikasi plus UI alur plus e2e roundtrip (AC-3, AC-6, AC-7)
+  - [x] Konfirmasi ketik nama terverifikasi plus UI alur plus e2e roundtrip (AC-3, AC-6, AC-7)
 - [ ] [Verify it](../specs/0050-restore/verify.md): /check verify restore
 - [ ] [Test it](../specs/0050-restore/test.md): /test restore
 

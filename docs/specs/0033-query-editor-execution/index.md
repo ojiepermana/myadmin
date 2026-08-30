@@ -112,7 +112,7 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 4. [x] Bangun editor CodeMirror (dialek, keymap, pencarian) di feature query-editor plus tab context header dan pemilih konteks, memenuhi **AC-1**, **AC-2**.
 5. [x] Bangun autocomplete berbasis cache metadata malas, memenuhi **AC-3**.
 6. [x] Render hasil sementara (tabel sederhana; grid penuh di spec 0034), pemetaan posisi error ke editor, indikator transaksi, memenuhi **AC-6**.
-7. E2e dua engine, memenuhi **AC-9**.
+7. [x] E2e dua engine, memenuhi **AC-9** (fixture PostgreSQL dan MySQL disposable telah dijalankan).
 
 ## Consequences
 
@@ -131,8 +131,8 @@ Scenario kritis dipelihara di [test.md](test.md#critical-test-scenarios) bersama
 
 ## Follow-up
 
-- [ ] Spec 0034 mengganti render hasil sementara dengan result grid foundation.
-- [ ] Spec 0035 menambah cancel dan EXPLAIN pada model eksekusi ini.
+- [x] Spec 0034 mengganti render hasil sementara dengan result grid foundation.
+- [x] Spec 0035 menambah cancel dan EXPLAIN pada model eksekusi ini.
 
 ## References
 

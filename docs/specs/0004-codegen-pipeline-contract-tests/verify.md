@@ -12,25 +12,25 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Prasyarat eksekusi
 
-| Kebutuhan     | Cara memeriksa                                                                   | Status awal     |
-| ------------- | -------------------------------------------------------------------------------- | --------------- |
-| Implementasi  | Build plan pada `index.md` selesai untuk slice yang diverifikasi.                | Belum siap      |
-| Dependency    | Semua relation `requires` pada `relation.md` sudah diterima.                     | Belum diperiksa |
-| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested.             | Belum diperiksa |
-| Test plan     | Test ID relevan pada `test.md` sudah diimplementasikan.                          | Belum siap      |
-| Environment   | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa |
+| Kebutuhan     | Cara memeriksa                                                                   | Status awal                    |
+| ------------- | -------------------------------------------------------------------------------- | ------------------------------ |
+| Implementasi  | Build plan pada `index.md` selesai untuk slice yang diverifikasi.                | Tersedia; bukti lokal tercatat |
+| Dependency    | Semua relation `requires` pada `relation.md` sudah diterima.                     | Belum diperiksa                |
+| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested.             | Belum diperiksa                |
+| Test plan     | Test ID relevan pada `test.md` sudah diimplementasikan.                          | Belum siap                     |
+| Environment   | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa                |
 
 ## Matriks verifikasi AC
 
-| AC                   | Test atau proof ID | Metode                | Bukti wajib                  | Result           |
-| -------------------- | ------------------ | --------------------- | ---------------------------- | ---------------- |
-| [AC-1](test.md#ac-1) | `CT-0004-AC1`      | Contract              | output command dan assertion | Belum dijalankan |
-| [AC-2](test.md#ac-2) | `SMOKE-0004-AC2`   | Smoke dan operational | output command dan assertion | Belum dijalankan |
-| [AC-3](test.md#ac-3) | `CT-0004-AC3`      | Contract              | output command dan assertion | Belum dijalankan |
-| [AC-4](test.md#ac-4) | `CT-0004-AC4`      | Contract              | output command dan assertion | Belum dijalankan |
-| [AC-5](test.md#ac-5) | `CT-0004-AC5`      | Contract              | output command dan assertion | Belum dijalankan |
-| [AC-6](test.md#ac-6) | `IT-0004-AC6`      | Integration           | output command dan assertion | Belum dijalankan |
-| [AC-7](test.md#ac-7) | `SMOKE-0004-AC7`   | Smoke dan operational | output command dan assertion | Belum dijalankan |
+| AC                   | Test atau proof ID | Metode                | Bukti wajib                  | Result                                      |
+| -------------------- | ------------------ | --------------------- | ---------------------------- | ------------------------------------------- |
+| [AC-1](test.md#ac-1) | `CT-0004-AC1`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`    |
+| [AC-2](test.md#ac-2) | `SMOKE-0004-AC2`   | Smoke dan operational | output command dan assertion | Lulus lokal; hosted workflow belum terbukti |
+| [AC-3](test.md#ac-3) | `CT-0004-AC3`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`    |
+| [AC-4](test.md#ac-4) | `CT-0004-AC4`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`    |
+| [AC-5](test.md#ac-5) | `CT-0004-AC5`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`    |
+| [AC-6](test.md#ac-6) | `IT-0004-AC6`      | Integration           | output command dan assertion | Lulus lokal pada `bun run test`             |
+| [AC-7](test.md#ac-7) | `SMOKE-0004-AC7`   | Smoke dan operational | output command dan assertion | Lulus lokal; hosted workflow belum terbukti |
 
 ## Urutan verifikasi
 
@@ -54,21 +54,21 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Evidence lokal terbaru
 
-| Command                                    | Result                   | Coverage                                                                                             |
-| ------------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `bun test tests/contract/contract.test.ts` | 8 pass, 0 fail           | Codegen deterministik, route coverage, response schema, format `date-time`, dan ApiError.            |
-| `bun run test:contract`                    | 68 pass, 0 fail          | Seluruh contract test yang terdaftar pada root command.                                              |
-| `bun run validate-contract`                | Lulus                    | OpenAPI, ApiError, security, pagination, capability, path, dan WebSocket contract.                   |
-| `bun run check:contract-drift`             | Lulus                    | Generated types tidak mengalami drift setelah regenerate.                                            |
-| `bun run test`                             | 551 pass, 8 skip, 0 fail | Regression suite Bun setelah perubahan. Skip hanya integration database yang gated oleh environment. |
+| Command                                    | Result                                                                              | Coverage                                                                                                      |
+| ------------------------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `bun test tests/contract/contract.test.ts` | 8 pass, 0 fail                                                                      | Codegen deterministik, route coverage, response schema, format `date-time`, dan ApiError.                     |
+| `bun run test:contract`                    | 71 pass, 0 fail, 812 assertions                                                     | Seluruh contract test yang terdaftar pada root command.                                                       |
+| `bun run validate-contract`                | Lulus                                                                               | OpenAPI, ApiError, security, pagination, capability, path, dan WebSocket contract.                            |
+| `bun run check:contract-drift`             | Lulus                                                                               | Generated types tidak mengalami drift setelah regenerate.                                                     |
+| `bun run test`                             | Run historis 645 pass; rerun fixture-terbaru **664 pass, 0 fail, 4.532 assertions** | Regression suite terbaru dengan fixture disposable aktif lulus; hosted `contract.yml` tetap belum dibuktikan. |
 
 Evidence di atas membuktikan jalur lokal. Hosted CI `contract.yml` belum memiliki run yang dapat ditautkan untuk commit kerja ini, sehingga AC-2 dan AC-7 belum diberi verdict acceptance penuh.
 
 ## Catatan eksekusi
 
-| Waktu      | Commit                         | Environment            | Hasil                                       | Evidence                                                     |
-| ---------- | ------------------------------ | ---------------------- | ------------------------------------------- | ------------------------------------------------------------ |
-| 2026-08-29 | working tree setelah `bd9ead7` | Bun 1.4.0, macOS arm64 | Jalur lokal lulus; hosted CI belum terbukti | Command dan hasil dicatat pada bagian Evidence lokal terbaru |
+| Waktu      | Commit       | Environment            | Hasil                                                                                                                                    | Evidence                                                                             |
+| ---------- | ------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 2026-08-30 | working tree | Bun 1.4.0, macOS arm64 | **71 contract test, 812 assertions** lulus setelah validate, regenerate, drift check, bundle, dan contract run; hosted CI belum terbukti | `bun run validate-contract && bun run check:contract-drift && bun run test:contract` |
 
 ## Gap dan blocker
 
