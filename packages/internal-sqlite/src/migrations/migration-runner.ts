@@ -4,13 +4,9 @@ import { withTransaction } from '../database/transaction';
 import { initialMigration } from './0001-initial';
 import { queryHistorySavedTagsMigration } from './0002-query-history-saved-tags';
 
-export interface SqliteMigration {
-  version: number;
-  name: string;
-  up: (database: Database) => void;
-  /** Stable migration content used for the immutable history checksum. */
-  checksumSource?: string;
-}
+import type { SqliteMigration } from './migration-types';
+
+export type { SqliteMigration } from './migration-types';
 
 export interface AppliedMigration {
   version: number;

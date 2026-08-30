@@ -28,6 +28,11 @@ function plan(format: PreparedBackupCommand['format'] = 'postgresql-sql'): Prepa
     args: [],
     toolVersion: '16.4',
     format,
+    // The provider supplies the header rule now, so keep exercising one here.
+    validateArtifactHeader: (header) =>
+      format === 'postgresql-sql'
+        ? /^(?:--|SET |SELECT |CREATE |BEGIN|\s*$)/m.test(header)
+        : /^(?:--|\/\*!|SET |CREATE |INSERT |LOCK TABLES|DROP TABLES)/m.test(header),
     cleanup: async () => undefined,
   };
 }

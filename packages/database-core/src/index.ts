@@ -21,5 +21,4 @@ export * from './contracts/table-operations';
 export * from './contracts/view';
 export * from './errors';
 export * from './models';
-export * from './native-tools';
 export * from './registry';

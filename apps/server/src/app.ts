@@ -52,11 +52,11 @@ import {
 } from './realtime/websocket';
 import packageManifest from '../../../package.json' with { type: 'json' };
 import {
+  prepareDataDirectory,
   resolveAssetSource,
+  serveStaticAsset,
   type AssetSource,
-} from '../../../apps/cli/src/runtime/embedded-assets';
-import { prepareDataDirectory } from '../../../apps/cli/src/runtime/data-directory';
-import { serveStaticAsset } from '../../../apps/cli/src/static-web/serve-assets';
+} from '@myadmin/runtime-assets';
 import {
   WorkspaceService,
   WorkspaceValidationError,
@@ -973,7 +973,7 @@ function registerJobsRoutes(
       const validation = validate(request);
       if (validation instanceof Response) return validation;
       const page = queryInteger(request, 'page', 1);
-      const pageSize = queryInteger(request, 'page-size', 20, 100);
+      const pageSize = queryInteger(request, 'pageSize', 20, 100);
       if (page === undefined || pageSize === undefined) {
         return apiError(request, 422, 'VALIDATION_ERROR', 'The pagination parameters are invalid.');
       }

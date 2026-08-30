@@ -6,7 +6,7 @@ import { calculateChecksums } from './checksums';
 import { compileBinaries, RELEASE_TARGETS, releaseVersion } from './compile-binary';
 import { embedWebAssets, renderEmbeddedAssetsModule } from './embed-web-assets';
 import { renderSizeReport } from './report-sizes';
-import { serveStaticAsset } from '../../apps/cli/src/static-web/serve-assets';
+import { serveStaticAsset } from '@myadmin/runtime-assets';
 
 const temporaryDirectories: string[] = [];
 
@@ -131,11 +131,15 @@ test('IT-0054-AC2 compiles every requested target with injected metadata and res
   temporaryDirectories.push(root);
   await mkdir(join(root, 'dist/web'), { recursive: true });
   await mkdir(join(root, 'apps/cli/src/runtime'), { recursive: true });
+  await mkdir(join(root, 'packages/runtime-assets/src'), { recursive: true });
   await writeFile(join(root, 'dist/web/index.html'), '<!doctype html>');
   const assetSource = 'export const embeddedAssets = {};\n';
   const buildInfoSource =
     'export const buildInfo = { version: undefined, commitHash: undefined };\n';
-  await writeFile(join(root, 'apps/cli/src/runtime/embedded-assets.generated.ts'), assetSource);
+  await writeFile(
+    join(root, 'packages/runtime-assets/src/embedded-assets.generated.ts'),
+    assetSource,
+  );
   await writeFile(join(root, 'apps/cli/src/runtime/build-info.generated.ts'), buildInfoSource);
   const commands: string[][] = [];
   const outputs = await compileBinaries({
@@ -152,7 +156,7 @@ test('IT-0054-AC2 compiles every requested target with injected metadata and res
     RELEASE_TARGETS.map((target) => `--target=bun-${target}`),
   );
   expect(
-    await readFile(join(root, 'apps/cli/src/runtime/embedded-assets.generated.ts'), 'utf8'),
+    await readFile(join(root, 'packages/runtime-assets/src/embedded-assets.generated.ts'), 'utf8'),
   ).toBe(assetSource);
   expect(await readFile(join(root, 'apps/cli/src/runtime/build-info.generated.ts'), 'utf8')).toBe(
     buildInfoSource,

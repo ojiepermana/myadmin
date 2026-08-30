@@ -1,10 +1,12 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { detectNativeTool } from '@myadmin/native-tools';
 import {
   ConnectionContext,
   DbError,
-  detectNativeTool,
+  type ArtifactHeaderValidator,
+  type BackupFormatId,
   type BackupCapability,
   type BackupPort,
   type BackupRequest,
@@ -15,6 +17,13 @@ import {
   type RestoreRequest,
 } from '@myadmin/database-core';
 import type { MysqlConnectionAdapter } from './driver/mysql-connection';
+
+/** The opaque artifact label this provider stamps on its dumps (spec 0056 AC-4). */
+export const mysqlBackupFormat: BackupFormatId = 'mysql-sql';
+
+/** A `mysqldump` artifact opens with a comment, a version guard, or a first statement. */
+export const validateMysqlArtifactHeader: ArtifactHeaderValidator = (header) =>
+  /^(?:--|\/\*!|SET |CREATE |INSERT |LOCK TABLES|DROP TABLES)/m.test(header);
 
 export interface MysqlBackupToolPaths {
   readonly mysqldumpPath?: string;
@@ -149,7 +158,8 @@ export class MysqlBackupPort implements BackupPort {
       executable: capability.backupTool.path,
       args,
       toolVersion: capability.backupTool.version ?? 'unknown',
-      format: 'mysql-sql',
+      format: mysqlBackupFormat,
+      validateArtifactHeader: validateMysqlArtifactHeader,
       cleanup: () => rm(optionDirectory, { recursive: true, force: true }),
     };
   }
@@ -204,7 +214,8 @@ export class MysqlBackupPort implements BackupPort {
         request.database,
       ],
       toolVersion: restoreTool.version ?? 'unknown',
-      format: 'mysql-sql',
+      format: mysqlBackupFormat,
+      validateArtifactHeader: validateMysqlArtifactHeader,
       cleanup: () => rm(optionDirectory, { recursive: true, force: true }),
     };
   }

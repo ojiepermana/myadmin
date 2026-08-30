@@ -1,4 +1,6 @@
-export type DatabaseEngine = 'postgresql' | 'mysql';
+import type { DatabaseEngine } from '@myadmin/kernel';
+
+export { databaseEngines, isDatabaseEngine, type DatabaseEngine } from '@myadmin/kernel';
 
 export type DatabaseObjectType =
   'database' | 'schema' | 'table' | 'view' | 'routine' | 'sequence' | 'trigger' | 'other';

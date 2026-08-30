@@ -1,14 +1,9 @@
 import type { Routes } from '@angular/router';
-import type { WorkspaceTabType } from './core/state/workspace.store';
+import type { AppRouteDefinition } from './app.routes.types';
 import { adminGuard, authGuard } from './core/auth/auth.guard';
 import { setupGateGuard } from './core/setup/setup-gate.guard';
 
-export interface AppRouteDefinition {
-  readonly id: string;
-  readonly path: string;
-  readonly title: string;
-  readonly type: WorkspaceTabType;
-}
+export type { AppRouteDefinition } from './app.routes.types';
 
 export const DEV_ROUTE: AppRouteDefinition = {
   id: 'ui-foundation',

@@ -84,7 +84,7 @@ export class BackupExecutor {
       }
       if (written <= 0)
         throw new DbError({ category: 'internal', message: 'Native backup produced no data.' });
-      await validateOutput(outputPath, options.compress, plan.format);
+      await validateOutput(outputPath, options.compress, plan.validateArtifactHeader);
       const outputStat = await stat(outputPath);
       options.reportProgress({
         phase: 'completed',
@@ -216,10 +216,18 @@ async function collectStderr(
   }
 }
 
+/**
+ * Engine neutral artifact checks plus the provider's own header check.
+ *
+ * The executor never decodes `format` (spec 0056 AC-4): emptiness and the gzip
+ * magic bytes are engine neutral, and the header shape is whatever the provider
+ * that produced the dump declared. A provider that declares no validator gets
+ * the neutral checks only.
+ */
 async function validateOutput(
   path: string,
   compressed: boolean,
-  format: PreparedBackupCommand['format'],
+  validateHeader: PreparedBackupCommand['validateArtifactHeader'],
 ): Promise<void> {
   const file = Bun.file(path);
   const bytes = new Uint8Array(await file.slice(0, compressed ? 2 : 8_192).arrayBuffer());
@@ -234,12 +242,9 @@ async function validateOutput(
     }
     return;
   }
+  if (!validateHeader) return;
   const header = new TextDecoder().decode(bytes.slice(0, 8_192));
-  const valid =
-    format === 'postgresql-sql'
-      ? /^(?:--|SET |SELECT |CREATE |BEGIN|\s*$)/m.test(header)
-      : /^(?:--|\/\*!|SET |CREATE |INSERT |LOCK TABLES|DROP TABLES)/m.test(header);
-  if (!valid)
+  if (!validateHeader(header))
     throw new DbError({
       category: 'internal',
       message: 'Backup artifact header validation failed.',

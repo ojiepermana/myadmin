@@ -12,7 +12,7 @@ import {
 import type { Connection, EncryptedCredential, InternalUnitOfWork } from '@myadmin/internal-domain';
 import { createUuidV7 } from '@myadmin/kernel';
 import type { JobContext, JobManager } from '@myadmin/jobs';
-import { BackupArtifactStore, type BackupActor } from './index';
+import { BackupArtifactStore, type BackupActor } from './backup-service';
 import { RestoreExecutor, type RestoreProcessFactory } from './restore-executor';
 
 export const RESTORE_JOB_TYPE = 'database.restore';

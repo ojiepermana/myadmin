@@ -1,4 +1,4 @@
-import type { ConnectionDescriptor } from '../contracts/connection';
+import type { ConnectionDescriptor } from '../contracts/connection-descriptor';
 
 /**
  * Short lived provider input. The secret is deliberately a non enumerable

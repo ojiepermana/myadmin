@@ -1,26 +1,7 @@
 import type { ConnectionContext } from '../connection-context';
 import type { DatabaseEngine } from '../models';
 
-export type TlsMode = 'disable' | 'require' | 'verify-ca' | 'verify-full';
-
-export interface TlsOptions {
-  mode: TlsMode;
-  ca?: string;
-  serverName?: string;
-}
-
-/** Non secret connection settings supplied by the connection manager. */
-export interface ConnectionDescriptor {
-  engine: DatabaseEngine;
-  host: string;
-  port: number;
-  user: string;
-  database?: string;
-  tls?: TlsOptions;
-  timeoutMs?: number;
-  label?: string;
-  id?: string;
-}
+export type { TlsMode, TlsOptions, ConnectionDescriptor } from './connection-descriptor';
 
 export interface ConnectionHandle {
   id: string;

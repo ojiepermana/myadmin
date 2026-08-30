@@ -1,6 +1,17 @@
+/**
+ * Native tool discovery for the backup and restore executables.
+ *
+ * This lives outside `@myadmin/database-core` on purpose (spec 0056 AC-4): the
+ * probe runs real I/O (filesystem plus a subprocess), and the core package is a
+ * contract package that must stay free of runtime I/O. The `NativeToolStatus`
+ * shape it returns still belongs to the core contract, so it is imported from
+ * there; the direction is outer module depending on inner contract.
+ */
 import { stat } from 'node:fs/promises';
 import { Redaction } from '@myadmin/crypto';
-import type { NativeToolStatus } from './contracts/backup-restore';
+import type { NativeToolStatus } from '@myadmin/database-core';
+
+export const moduleName = '@myadmin/native-tools' as const;
 
 export interface NativeToolProbeOptions {
   readonly which?: (command: string) => string | undefined;

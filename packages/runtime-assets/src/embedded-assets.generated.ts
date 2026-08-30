@@ -1,4 +1,4 @@
-import type { EmbeddedAssetMetadata, EmbeddedAssets } from './embedded-assets';
+import type { EmbeddedAssetMetadata, EmbeddedAssets } from './asset-types';
 
 /** Empty development manifest. Release builds replace this file before compilation. */
 export const embeddedAssetManifest = [] as const;

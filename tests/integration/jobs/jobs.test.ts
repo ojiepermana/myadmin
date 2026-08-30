@@ -64,7 +64,7 @@ describe('jobs HTTP API', () => {
     });
     await jobManager.whenIdle();
 
-    const list = await request('/jobs?page=1&page-size=1', { headers: { cookie } });
+    const list = await request('/jobs?page=1&pageSize=1', { headers: { cookie } });
     expect(list.status).toBe(200);
     expect(await json(list)).toMatchObject({
       page: 1,
@@ -140,7 +140,7 @@ describe('jobs HTTP API', () => {
     });
 
     const malformed = await app.handle(
-      new Request('http://localhost/jobs?page-size=0', { headers: { cookie } }),
+      new Request('http://localhost/jobs?pageSize=0', { headers: { cookie } }),
     );
     expect(malformed.status).toBe(422);
     expect(await json(malformed)).toMatchObject({ code: 'VALIDATION_ERROR' });

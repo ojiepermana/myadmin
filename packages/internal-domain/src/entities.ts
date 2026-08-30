@@ -7,8 +7,10 @@ export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 export type JsonObject = { [key: string]: JsonValue };
 
+import type { DatabaseEngine } from '@myadmin/kernel';
+
 export type UserRole = 'admin' | 'user';
-export type DatabaseEngine = 'postgresql' | 'mysql';
+export { databaseEngines, isDatabaseEngine, type DatabaseEngine } from '@myadmin/kernel';
 export type AuditResult = 'success' | 'failure' | 'denied';
 
 export interface PageRequest {

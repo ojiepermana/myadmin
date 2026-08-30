@@ -12,7 +12,7 @@ import {
   prepareDataDirectory,
   resolveDataDirectory,
   type DataDirectoryPaths,
-} from '../runtime/data-directory';
+} from '@myadmin/runtime-assets';
 import { installSignalHandlers, type ShutdownReason } from '../runtime/signal-handling';
 import {
   presentBootstrapFailure,

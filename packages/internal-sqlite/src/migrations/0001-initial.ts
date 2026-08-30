@@ -1,5 +1,5 @@
 import type { Database } from 'bun:sqlite';
-import type { SqliteMigration } from './migration-runner';
+import type { SqliteMigration } from './migration-types';
 
 export const INITIAL_SCHEMA_SQL = `
 CREATE TABLE users (

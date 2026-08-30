@@ -205,7 +205,7 @@ describe('MyAdmin Angular SDK', () => {
   it('AC-5 exposes typed job list, detail, and cancellation calls', async () => {
     const sdk = TestBed.inject(MyadminSdk);
     const list = firstValueFrom(sdk.jobs.list(2, 10));
-    const listRequest = http.expectOne('/api/v1/jobs?page=2&page-size=10');
+    const listRequest = http.expectOne('/api/v1/jobs?page=2&pageSize=10');
     expect(listRequest.request.method).toBe('GET');
     expect(listRequest.request.withCredentials).toBe(true);
     listRequest.flush({ items: [], page: 2, pageSize: 10, total: 0 } satisfies JobPage);

@@ -8,9 +8,9 @@ import {
   dataDirectoryPaths,
   prepareDataDirectory,
   resolveDataDirectory,
-} from '../src/runtime/data-directory';
+} from '@myadmin/runtime-assets';
 import { installSignalHandlers } from '../src/runtime/signal-handling';
-import { serveStaticAsset } from '../src/static-web/serve-assets';
+import { serveStaticAsset } from '@myadmin/runtime-assets';
 import { parseCliFlags } from '../src/main';
 import type { createServerApp } from '../../server/src/app';
 

@@ -57,7 +57,7 @@ const defaultRunner = async (command: string[]): Promise<number> => {
 export async function compileBinaries(options: CompileBinaryOptions = {}): Promise<string[]> {
   const root = resolve(options.repositoryRoot ?? process.cwd());
   const targets = options.targets ?? RELEASE_TARGETS;
-  const assetsOutput = resolve(root, 'apps/cli/src/runtime/embedded-assets.generated.ts');
+  const assetsOutput = resolve(root, 'packages/runtime-assets/src/embedded-assets.generated.ts');
   const buildInfoOutput = resolve(root, 'apps/cli/src/runtime/build-info.generated.ts');
   const originalAssets = await readFile(assetsOutput, 'utf8');
   const originalBuildInfo = await readFile(buildInfoOutput, 'utf8');
@@ -69,7 +69,7 @@ export async function compileBinaries(options: CompileBinaryOptions = {}): Promi
   try {
     await embedWebAssets({
       repositoryRoot: root,
-      outputPath: 'apps/cli/src/runtime/embedded-assets.generated.ts',
+      outputPath: 'packages/runtime-assets/src/embedded-assets.generated.ts',
     });
     await writeFile(buildInfoOutput, renderBuildInfoModule(version, commitHash), 'utf8');
     for (const target of targets) {

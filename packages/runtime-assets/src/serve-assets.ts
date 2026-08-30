@@ -1,10 +1,6 @@
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join } from 'node:path';
-import type {
-  AssetSource,
-  EmbeddedAssetMetadata,
-  EmbeddedAssets,
-} from '../runtime/embedded-assets';
+import type { AssetSource, EmbeddedAssetMetadata, EmbeddedAssets } from './embedded-assets';
 import { isApiPath, isSafeAssetPath, shouldUseSpaFallback } from './spa-fallback';
 
 const contentTypes: Record<string, string> = {

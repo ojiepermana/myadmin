@@ -6,7 +6,7 @@ import {
   type MigrationRunResult,
   type MigrationStatus,
 } from '@myadmin/internal-sqlite';
-import { prepareDataDirectory, resolveDataDirectory } from '../runtime/data-directory';
+import { prepareDataDirectory, resolveDataDirectory } from '@myadmin/runtime-assets';
 import type { TerminalPresenter } from '../output/terminal-presenter';
 
 export interface MigrateCommandOptions {

@@ -9,7 +9,7 @@ import {
   type ConfigEnvironment,
 } from '@myadmin/config';
 import { loadConfig } from '@myadmin/config';
-import { detectNativeTool } from '@myadmin/database-core';
+import { detectNativeTool } from '@myadmin/native-tools';
 import {
   assertKeyFilePermissions,
   KeyProviderError,
@@ -25,8 +25,13 @@ import {
   inspectSqliteDatabase,
   openDatabase,
 } from '@myadmin/internal-sqlite';
-import { assetExists, resolveAssetSource, type AssetSource } from '../runtime/embedded-assets';
-import { dataDirectoryNames, dataDirectoryPaths } from '../runtime/data-directory';
+import {
+  assetExists,
+  dataDirectoryNames,
+  dataDirectoryPaths,
+  resolveAssetSource,
+  type AssetSource,
+} from '@myadmin/runtime-assets';
 import { createDoctorOutput, presentDoctorOutput, type DoctorOutput } from '../output/diagnostics';
 import type { TerminalPresenter } from '../output/terminal-presenter';
 import { createDoctorRegistry, type CheckResult, type DoctorCheck } from '../runtime/doctor';

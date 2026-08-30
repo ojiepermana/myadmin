@@ -1,5 +1,5 @@
 import type { Database } from 'bun:sqlite';
-import type { SqliteMigration } from './migration-runner';
+import type { SqliteMigration } from './migration-types';
 
 export const QUERY_HISTORY_SAVED_TAGS_SQL = `
 ALTER TABLE saved_queries

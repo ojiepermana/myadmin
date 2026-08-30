@@ -5,12 +5,9 @@ import {
   embeddedAssets as generatedEmbeddedAssets,
 } from './embedded-assets.generated';
 
-export type EmbeddedAsset = string | Uint8Array | Blob;
-export type EmbeddedAssets = Readonly<Record<string, EmbeddedAsset>>;
-export interface EmbeddedAssetMetadata {
-  readonly hash: string;
-  readonly mimeType: string;
-}
+import type { EmbeddedAssetMetadata, EmbeddedAssets } from './asset-types';
+
+export type { EmbeddedAsset, EmbeddedAssets, EmbeddedAssetMetadata } from './asset-types';
 
 export type AssetSource =
   | { kind: 'directory'; root: string }

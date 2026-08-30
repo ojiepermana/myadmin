@@ -68,7 +68,7 @@ describe('jobs API contract', () => {
     });
     await jobManager.whenIdle();
 
-    const list = await request('/jobs?page=1&page-size=20', { headers: { cookie } });
+    const list = await request('/jobs?page=1&pageSize=20', { headers: { cookie } });
     assertResponseMatchesContract(
       document,
       operation(operations, 'listJobs'),
@@ -106,7 +106,7 @@ describe('jobs API contract', () => {
       hidden.status,
       await responsePayload(hidden),
     );
-    const invalidPage = await request('/jobs?page-size=101', { headers: { cookie } });
+    const invalidPage = await request('/jobs?pageSize=101', { headers: { cookie } });
     expect(invalidPage.status).toBe(422);
     assertResponseMatchesContract(
       document,

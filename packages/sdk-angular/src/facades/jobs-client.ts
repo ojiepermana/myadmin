@@ -12,7 +12,7 @@ export class JobsClient {
   public list(page = 1, pageSize = 20): Observable<JobPage> {
     return this.transport.request<JobPage>({
       method: 'GET',
-      path: `/jobs?page=${page}&page-size=${pageSize}`,
+      path: `/jobs?page=${page}&pageSize=${pageSize}`,
       requiresSession: true,
     });
   }

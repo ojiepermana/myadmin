@@ -1,10 +1,12 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { detectNativeTool } from '@myadmin/native-tools';
 import {
   ConnectionContext,
   DbError,
-  detectNativeTool,
+  type ArtifactHeaderValidator,
+  type BackupFormatId,
   type BackupCapability,
   type BackupPort,
   type BackupRequest,
@@ -15,6 +17,13 @@ import {
   type RestoreRequest,
 } from '@myadmin/database-core';
 import type { PostgresqlConnectionAdapter } from './connection';
+
+/** The opaque artifact label this provider stamps on its dumps (spec 0056 AC-4). */
+export const postgresqlBackupFormat: BackupFormatId = 'postgresql-sql';
+
+/** A plain `pg_dump` artifact opens with a comment, a `SET`, or a first statement. */
+export const validatePostgresqlArtifactHeader: ArtifactHeaderValidator = (header) =>
+  /^(?:--|SET |SELECT |CREATE |BEGIN|\s*$)/m.test(header);
 
 export interface PostgresqlBackupToolPaths {
   readonly pgDumpPath?: string;
@@ -159,7 +168,8 @@ export class PostgresqlBackupPort implements BackupPort {
       args,
       env,
       toolVersion: capability.backupTool.version ?? 'unknown',
-      format: 'postgresql-sql',
+      format: postgresqlBackupFormat,
+      validateArtifactHeader: validatePostgresqlArtifactHeader,
       cleanup: async () => {
         if (certificateDirectory) await rm(certificateDirectory, { recursive: true, force: true });
       },
@@ -221,7 +231,8 @@ export class PostgresqlBackupPort implements BackupPort {
       args,
       env,
       toolVersion: restoreTool.version ?? 'unknown',
-      format: 'postgresql-sql',
+      format: postgresqlBackupFormat,
+      validateArtifactHeader: validatePostgresqlArtifactHeader,
       cleanup: async () => {
         if (certificateDirectory) await rm(certificateDirectory, { recursive: true, force: true });
       },

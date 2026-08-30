@@ -7,7 +7,7 @@ import {
   CardHeaderComponent,
   CardTitleComponent,
 } from '@ojiepermana/angular/component/card';
-import { type AppRouteDefinition } from '../../app.routes.shared';
+import { type AppRouteDefinition } from '../../app.routes.types';
 
 @Component({
   selector: 'app-route-placeholder',
