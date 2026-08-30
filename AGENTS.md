@@ -36,6 +36,15 @@ Quality gates include `bun run lint`, `bun run format:check`, `bun run typecheck
 
 Specs live in `docs/specs/NNNN-title/` with `index.md`, `relation.md`, `test.md`, and `verify.md`. Build order and dependency meaning are indexed in `docs/specs/README.md`.
 
+## Scope/spec synchronization and checklist integrity
+
+- Treat `docs/scope/scope.md` as an evidence gate, not a plan or intention list. A checked Build, Test, or Verify item means that the corresponding work and its required proof have been completed and can be reproduced; an unchecked item means completion has not been established.
+- Whenever scope, an acceptance criterion, dependency, implementation boundary, test plan, verification requirement, or evidence changes, inspect the affected `docs/specs/*/{index,relation,test,verify}.md` files and `docs/scope/scope.md` in the same change. Reconcile every affected checkbox and status with the new source of truth.
+- If a changed or removed AC, test, dependency, or proof makes an existing checked item no longer relevant or no longer evidenced, uncheck or revise that item and its companion documentation. Preserve a checked item only when its current definition and evidence still prove completion; never retain it as historical or inferred completion.
+- Keep Build, Test, and Verify independent. A passing focused test, source file, screenshot, local build, or generated artifact cannot substitute for a required integration, browser, performance, hosted, clean-environment, manual, security, signing, or external proof.
+- After reconciling specs and scope, regenerate `docs/specs/ac-evidence-matrix.md` with `bun run matrix:ac` when its inputs changed, and update `docs/scope/progres.md` when the progress report is affected. Review the resulting diff for stale claims before committing.
+- Before reporting a spec as done, verify that its current `index.md`, acceptance criteria in `test.md`, evidence in `verify.md`, and scope checkboxes agree. A stale checkbox is a documentation defect that must be fixed with the implementation or evidence change.
+
 ## Rules
 
 - Apply Clean Architecture at module boundaries. Domain and application logic stay independent from frameworks and I/O, while outer layers implement inner ports.
