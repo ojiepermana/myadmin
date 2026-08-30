@@ -52,17 +52,19 @@ Repo memakai tepat satu `package.json` di akar. Istilah package internal pada in
 
 ## Pola direktori setiap spec
 
-Setiap feature spec memakai satu direktori bernomor dan tepat empat file berikut:
+Setiap feature spec memakai satu direktori bernomor dan tepat lima file berikut:
 
 ```text
 docs/specs/NNNN-nama-spec/
 |-- index.md
+|-- plan.md
 |-- relation.md
 |-- test.md
 `-- verify.md
 ```
 
 - `index.md` adalah spec utama untuk tujuan, keputusan, feature design, build plan, consequence, rationale, dan follow up.
+- `plan.md` adalah dokumen planning turunan (disusulkan setelah spec berjalan) berbentuk tabel: ringkasan progres, rencana build beserta status implementasi, dan rencana acceptance beserta status evidence. Isinya diturunkan dari `index.md`, `test.md`, `verify.md`, dan `ac-evidence-matrix.md`; ia bukan sumber kebenaran baru dan statusnya tidak boleh melebihi evidence yang tercatat.
 - `relation.md` mencatat dependency, kontrak lintas spec, konsumen downstream, environment, dan handoff.
 - `test.md` adalah sumber normatif acceptance criteria, matriks cakupan, serta daftar unit, integration, dan test khusus.
 - `verify.md` adalah rencana dan catatan pembuktian runtime. File ini menyimpan evidence serta verdict, bukan mendefinisikan ulang AC.
@@ -70,7 +72,7 @@ docs/specs/NNNN-nama-spec/
 - Seluruh dependency dan command dimiliki satu `package.json` di akar repo. Tidak ada manifest atau command package level di bawah `apps/*` maupun `packages/*`.
 
 Spec standar lintas modul (umbrella) adalah pengecualian bentuk yang disengaja:
-selain empat file di atas ia boleh memuat `rationale.md` (catatan keputusan yang
+selain lima file di atas ia boleh memuat `rationale.md` (catatan keputusan yang
 tidak dibaca saat build) dan child spec `NNNN-nama-child.md` per area. Hanya
 `index.md` yang memuat baris status; child tidak memuat status dan diatur oleh
 umbrella. `test.md` umbrella tetap satu satunya sumber AC dan test ID untuk
