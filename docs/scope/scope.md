@@ -91,7 +91,7 @@ Lint, format, test runner, hook Git, boundary check, penjaga satu manifest, dan 
 - [x] [Verify it](../specs/0002-quality-tooling-ci/verify.md): /check verify quality-tooling-ci
 - [x] [Test it](../specs/0002-quality-tooling-ci/test.md): /test quality-tooling-ci
 
-### 03. Struktur kontrak OpenAPI v1 `in-progress`
+### 03. Struktur kontrak OpenAPI v1 `done`
 
 Sumber kebenaran API: kontrak multi file, error model, security scheme, event WS. Done when: kontrak valid terbundel dengan enam path awal dan lint nya jalan di CI.
 
@@ -100,10 +100,10 @@ Sumber kebenaran API: kontrak multi file, error model, security scheme, event WS
   - [x] Kerangka kontrak, ApiError, pagination, Capability, security scheme (AC-3 sampai AC-6)
   - [x] Enam path awal dan skema event WebSocket (AC-7, AC-8)
   - [x] Redocly lint dan bundel di CI (AC-1, AC-2)
-- [ ] [Verify it](../specs/0003-openapi-contract-structure/verify.md): /check verify openapi-contract-structure
+- [x] [Verify it](../specs/0003-openapi-contract-structure/verify.md): /check verify openapi-contract-structure
 - [x] [Test it](../specs/0003-openapi-contract-structure/test.md): /test openapi-contract-structure
 
-### 04. Pipeline codegen dan contract test `in-progress`
+### 04. Pipeline codegen dan contract test `done`
 
 Tipe dari kontrak, drift check, harness kesesuaian server. Done when: drift kontrak dan endpoint bayangan menggagalkan CI.
 
@@ -113,7 +113,7 @@ Tipe dari kontrak, drift check, harness kesesuaian server. Done when: drift kont
   - [x] Harness cakupan dua arah plus validasi response ajv (AC-3, AC-4, AC-5)
   - [x] Workflow contract.yml (AC-7)
   - code in `scripts/codegen/generate-contract-types.ts`, `tests/contract/`, dan `apps/server/src/app.ts`
-- [ ] [Verify it](../specs/0004-codegen-pipeline-contract-tests/verify.md): /check verify codegen-pipeline-contract-tests
+- [x] [Verify it](../specs/0004-codegen-pipeline-contract-tests/verify.md): /check verify codegen-pipeline-contract-tests
 - [x] [Test it](../specs/0004-codegen-pipeline-contract-tests/test.md): /test codegen-pipeline-contract-tests
 
 ### 05. SDK Angular core `in-progress`

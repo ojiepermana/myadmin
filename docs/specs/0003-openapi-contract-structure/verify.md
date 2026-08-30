@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Verdict**: Belum diverifikasi
+**Verdict**: Terverifikasi
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md)
 
@@ -22,16 +22,16 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Matriks verifikasi AC
 
-| AC                   | Test atau proof ID              | Metode                          | Bukti wajib                  | Result                                                        |
-| -------------------- | ------------------------------- | ------------------------------- | ---------------------------- | ------------------------------------------------------------- |
-| [AC-1](test.md#ac-1) | `CT-0003-AC1`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
-| [AC-2](test.md#ac-2) | `CT-0003-AC2`, `SMOKE-0003-AC2` | Contract, Smoke dan operational | output command dan assertion | Contract lulus lokal; hosted/operational smoke belum terbukti |
-| [AC-3](test.md#ac-3) | `CT-0003-AC3`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
-| [AC-4](test.md#ac-4) | `CT-0003-AC4`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
-| [AC-5](test.md#ac-5) | `CT-0003-AC5`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
-| [AC-6](test.md#ac-6) | `CT-0003-AC6`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
-| [AC-7](test.md#ac-7) | `CT-0003-AC7`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
-| [AC-8](test.md#ac-8) | `CT-0003-AC8`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`                      |
+| AC                   | Test atau proof ID              | Metode                          | Bukti wajib                  | Result                                            |
+| -------------------- | ------------------------------- | ------------------------------- | ---------------------------- | ------------------------------------------------- |
+| [AC-1](test.md#ac-1) | `CT-0003-AC1`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`          |
+| [AC-2](test.md#ac-2) | `CT-0003-AC2`, `SMOKE-0003-AC2` | Contract, Smoke dan operational | output command dan assertion | Contract lokal dan hosted Contract workflow lulus |
+| [AC-3](test.md#ac-3) | `CT-0003-AC3`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`          |
+| [AC-4](test.md#ac-4) | `CT-0003-AC4`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`          |
+| [AC-5](test.md#ac-5) | `CT-0003-AC5`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`          |
+| [AC-6](test.md#ac-6) | `CT-0003-AC6`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`          |
+| [AC-7](test.md#ac-7) | `CT-0003-AC7`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`          |
+| [AC-8](test.md#ac-8) | `CT-0003-AC8`                   | Contract                        | output command dan assertion | Lulus lokal pada `bun run test:contract`          |
 
 ## Urutan verifikasi
 
@@ -62,10 +62,10 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Gap dan blocker
 
-| AC   | Gap                                                                 | Dampak                            | Tindak lanjut                                      |
-| ---- | ------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------- |
-| AC-2 | Hosted CI/operational smoke untuk workflow contract belum tersedia. | Verdict tetap belum diverifikasi. | Jalankan workflow hosted dan tautkan artifact-nya. |
+| AC  | Gap                                                                         | Dampak                                                   | Tindak lanjut                            |
+| --- | --------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------- |
+| -   | Tidak ada gap acceptance yang tersisa setelah hosted Contract run berhasil. | Spec dapat diverifikasi untuk acceptance yang tercantum. | Pertahankan tautan run sebagai evidence. |
 
 ## Verdict akhir
 
-Belum diverifikasi. Status ini hanya boleh berubah setelah setiap AC memiliki result dan evidence yang dapat ditinjau.
+Terverifikasi untuk seluruh acceptance criteria pada evidence lokal dan hosted Contract run yang ditautkan.

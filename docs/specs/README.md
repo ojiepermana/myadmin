@@ -5,17 +5,20 @@ berurutan; sebuah spec boleh dimulai bila seluruh prasyaratnya selesai. Bila
 nomor dan dependency berbeda, dependency menjadi sumber kebenaran. Status hidup
 di masing masing file spec. Indeks ini dimiliki oleh /architect.
 
-## Resolusi status 2026-08-29
+## Resolusi status 2026-08-30
 
 Enam spec yang sebelumnya berstatus `Proposed`, yaitu `0016`, `0017`, `0019`,
 `0033`, `0048`, dan `0050`, diputuskan menjadi `In Progress`. Implementasinya
 telah tersedia dan dapat diuji secara lokal, tetapi bukti acceptance belum
 lengkap pada semua AC, terutama proof visual, database nyata, dan proof
 operasional eksternal. Status tidak dinaikkan menjadi `Accepted` sebelum setiap
-AC memiliki evidence nyata dan checklist `verify.md` yang sesuai. Tidak ada spec
-yang saat ini berstatus `Proposed`. Spec standar lintas modul `0056` diratifikasi
-pada 2026-08-29 dan berstatus `Accepted` sebagai keputusan standalone di luar
-urutan build fase; adopsi codenya tetap dibuktikan lewat evidence per AC.
+AC memiliki evidence nyata dan checklist `verify.md` yang sesuai. Spec `0003`
+dan `0004` kini berstatus `Accepted` setelah Contract workflow hosted berhasil
+pada commit `2544dcd`; tautan run dan batas scope-nya dicatat pada companion
+`verify.md`. Tidak ada spec yang saat ini berstatus `Proposed`. Spec standar
+lintas modul `0056` diratifikasi pada 2026-08-29 dan berstatus `Accepted` sebagai
+keputusan standalone di luar urutan build fase; adopsi codenya tetap dibuktikan
+lewat evidence per AC.
 
 Keputusan teknis lanjutan pada tanggal yang sama: budget bundle Angular tetap
 `900kB` untuk warning dan `1MB` untuk error. Build production saat ini berada
@@ -27,8 +30,8 @@ source dan test aktif, dan batasan MySQL Bun SQL untuk `sslmode=disable` serta
 
 ## Snapshot evidence 2026-08-30
 
-Matrix acceptance terbaru mencatat **459 acceptance criteria**, dengan **401
-fully evidenced**, **32 partial**, dan **26 blocked**. Root regression mencatat
+Matrix acceptance terbaru mencatat **459 acceptance criteria**, dengan **405
+fully evidenced**, **28 partial**, dan **26 blocked**. Root regression mencatat
 **615 pass, 18 skip, 0 fail**; mock browser sweep mencatat **44 pass, 5 skip,
 0 fail**; dan real query workflow pada PostgreSQL/MySQL mencatat **4 pass, 0
 fail**.

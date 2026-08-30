@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-28
 **Spec status**: mengikuti [index.md](index.md)
-**Verdict**: Belum diverifikasi
+**Verdict**: Terverifikasi
 **Spec utama**: [index.md](index.md)
 **Dokumen terkait**: [Relation](relation.md) | [Test dan acceptance criteria](test.md)
 
@@ -22,15 +22,15 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Matriks verifikasi AC
 
-| AC                   | Test atau proof ID | Metode                | Bukti wajib                  | Result                                      |
-| -------------------- | ------------------ | --------------------- | ---------------------------- | ------------------------------------------- |
-| [AC-1](test.md#ac-1) | `CT-0004-AC1`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`    |
-| [AC-2](test.md#ac-2) | `SMOKE-0004-AC2`   | Smoke dan operational | output command dan assertion | Lulus lokal; hosted workflow belum terbukti |
-| [AC-3](test.md#ac-3) | `CT-0004-AC3`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`    |
-| [AC-4](test.md#ac-4) | `CT-0004-AC4`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`    |
-| [AC-5](test.md#ac-5) | `CT-0004-AC5`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`    |
-| [AC-6](test.md#ac-6) | `IT-0004-AC6`      | Integration           | output command dan assertion | Lulus lokal pada `bun run test`             |
-| [AC-7](test.md#ac-7) | `SMOKE-0004-AC7`   | Smoke dan operational | output command dan assertion | Lulus lokal; hosted workflow belum terbukti |
+| AC                   | Test atau proof ID | Metode                | Bukti wajib                  | Result                                         |
+| -------------------- | ------------------ | --------------------- | ---------------------------- | ---------------------------------------------- |
+| [AC-1](test.md#ac-1) | `CT-0004-AC1`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`       |
+| [AC-2](test.md#ac-2) | `SMOKE-0004-AC2`   | Smoke dan operational | output command dan assertion | Lulus lokal dan hosted Contract workflow       |
+| [AC-3](test.md#ac-3) | `CT-0004-AC3`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`       |
+| [AC-4](test.md#ac-4) | `CT-0004-AC4`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`       |
+| [AC-5](test.md#ac-5) | `CT-0004-AC5`      | Contract              | output command dan assertion | Lulus lokal pada `bun run test:contract`       |
+| [AC-6](test.md#ac-6) | `IT-0004-AC6`      | Integration           | output command dan assertion | Lulus lokal pada `bun run test`                |
+| [AC-7](test.md#ac-7) | `SMOKE-0004-AC7`   | Smoke dan operational | output command dan assertion | Lulus lokal dan hosted `contract.yml` workflow |
 
 ## Urutan verifikasi
 
@@ -62,7 +62,7 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 | `bun run check:contract-drift`             | Lulus                                                                               | Generated types tidak mengalami drift setelah regenerate.                                                     |
 | `bun run test`                             | Run historis 645 pass; rerun fixture-terbaru **664 pass, 0 fail, 4.532 assertions** | Regression suite terbaru dengan fixture disposable aktif lulus; hosted `contract.yml` tetap belum dibuktikan. |
 
-Evidence di atas membuktikan jalur lokal. Hosted CI `contract.yml` belum memiliki run yang dapat ditautkan untuk commit kerja ini, sehingga AC-2 dan AC-7 belum diberi verdict acceptance penuh.
+Evidence di atas membuktikan jalur lokal dan hosted Contract workflow pada commit `2544dcd`.
 
 ## Catatan eksekusi
 
@@ -74,11 +74,10 @@ Evidence di atas membuktikan jalur lokal. Hosted CI `contract.yml` belum memilik
 
 ## Gap dan blocker
 
-| AC         | Gap                                                                   | Dampak                                                              | Tindak lanjut                                                       |
-| ---------- | --------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| AC-2, AC-7 | Bukti hosted CI `contract.yml` untuk commit kerja ini belum tersedia. | Jalur lokal lulus, tetapi acceptance operational CI belum terbukti. | Jalankan workflow pada hosted CI dan tautkan run serta artefaknya.  |
-| Semua AC   | Evidence lokal tidak menggantikan proof external atau hosted CI.      | Verdict spec tetap belum diverifikasi.                              | Lengkapi proof yang diwajibkan lalu evaluasi ulang seluruh matriks. |
+| AC  | Gap                                                                 | Dampak                                                              | Tindak lanjut                            |
+| --- | ------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------- |
+| -   | Tidak ada gap acceptance setelah hosted Contract workflow berhasil. | Semua acceptance memiliki evidence lokal dan hosted yang ditautkan. | Pertahankan tautan run sebagai evidence. |
 
 ## Verdict akhir
 
-Belum diverifikasi. Status ini hanya boleh berubah setelah setiap AC memiliki result dan evidence yang dapat ditinjau.
+Terverifikasi untuk seluruh acceptance criteria pada evidence lokal dan hosted Contract run yang ditautkan.
