@@ -57,6 +57,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server dengan API fixture | Table Designer UI **11 passed dalam 10,6 detik**; composite index, replacement, check constraint, capability gate, dan PK refresh lulus. | [Table Designer UI evidence](../evidence/2026-08-30-table-designer-ui.md) |
+
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real workflow E2E **4 passed dalam 2,6 menit** mencakup FK, composite unique, dan drop index pada kedua engine. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
 
 | Waktu      | Commit       | Environment                                                                     | Hasil                                                                                                                                                                                                                         | Evidence                                                                                                                                                                                                                                                               |

@@ -57,6 +57,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server dengan API fixture | Table Designer UI **11 passed dalam 10,6 detik**; preview/apply, column mutation, dan refresh behavior lulus. | [Table Designer UI evidence](../evidence/2026-08-30-table-designer-ui.md) |
+
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real workflow E2E **4 passed dalam 2,6 menit** mencakup operasi table-designer provider nyata. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
 
 | Waktu      | Commit       | Environment                                                                      | Hasil                                                                                                                                                                    | Evidence                                                                                                                                                                                                                                                               |
