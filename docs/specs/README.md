@@ -28,7 +28,7 @@ source dan test aktif, dan batasan MySQL Bun SQL untuk `sslmode=disable` serta
 ## Snapshot evidence 2026-08-30
 
 Matrix acceptance terbaru mencatat **459 acceptance criteria**, dengan **401
-fully evidenced**, **28 partial**, dan **30 blocked**. Root regression mencatat
+fully evidenced**, **32 partial**, dan **26 blocked**. Root regression mencatat
 **615 pass, 18 skip, 0 fail**; mock browser sweep mencatat **44 pass, 5 skip,
 0 fail**; dan real query workflow pada PostgreSQL/MySQL mencatat **4 pass, 0
 fail**.
