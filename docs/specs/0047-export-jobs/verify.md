@@ -60,6 +60,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright dengan PostgreSQL/MySQL disposable | Real import/export E2E **2 passed dalam 7,3 detik**; SQL export/import roundtrip lulus pada kedua engine. | [Real import/export evidence](../evidence/2026-08-30-real-import-export.md) |
+
 | 2026-08-30 | working tree | Playwright local web server | Query Editor E2E **1 passed dalam 8,4 detik** membuktikan pemilihan row, clipboard, dan queue full-result export job. | [Query editor E2E evidence](../evidence/2026-08-30-query-editor-e2e.md) |
 
 | Waktu      | Commit       | Environment                                                                        | Hasil                                                                                                                                                                  | Evidence                                                                                                                                                                                                                                                                |
