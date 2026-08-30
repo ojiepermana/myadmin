@@ -37,7 +37,7 @@ workflow rehearsal and not hosted CI evidence.
 The latest root quality command `bun run test` also passed on 2026-08-30. It
 first completed the Angular production build and OpenAPI bundle, then ran
 `bun test --isolate --timeout=10000 --path-ignore-patterns='tests/e2e/**/*.spec.ts'`:
-**615 pass, 18 skip, 0 fail, and 4,095 assertions** across 151 files in 65.27
+**615 pass, 18 skip, 0 fail, and 4,095 assertions** across 151 files in 54.19
 seconds. The 18 skips are environment-dependent PostgreSQL/MySQL fixture,
 performance, or native roundtrip tests and remain explicitly unproven in this
 run.
