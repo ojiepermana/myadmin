@@ -89,11 +89,11 @@ Evidence lokal membuktikan kompilasi lima target release dan smoke database pada
 
 ## Gap dan blocker
 
-| AC                     | Gap                                                                                         | Dampak                                                                   | Tindak lanjut                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| AC-1, AC-2, AC-3, AC-7 | Local packaging dan metadata lulus pada satu target.                                        | Lima target, release workflow, dan external release proof belum lengkap. | Jalankan matrix target pada clean environment dan hosted CI.                |
-| AC-4                   | Binary smoke database-backed baru dibuktikan pada macOS ARM64 dan empat service disposable. | Clean release environment dan semua target belum terbukti.               | Ulangi smoke dari artefak release pada target environment yang disyaratkan. |
-| AC-5, AC-6             | Tag workflow, artifact upload, dan performance packaging belum dibuktikan.                  | Acceptance external dan performance tetap terbuka.                       | Lengkapi CI evidence serta benchmark yang ditetapkan.                       |
+| AC                     | Gap                                                                                                    | Dampak                                                             | Tindak lanjut                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| AC-1, AC-2, AC-3, AC-7 | Lima target local packaging, checksum, size report, dan metadata sudah lulus.                          | Release workflow hosted dan external release proof belum lengkap.  | Jalankan release workflow pada hosted CI dan verifikasi artefak publik.     |
+| AC-4                   | Binary smoke database-backed sudah dibuktikan pada macOS ARM64 dengan PostgreSQL dan MySQL disposable. | Clean release environment dan smoke seluruh target belum terbukti. | Ulangi smoke dari artefak release pada target environment yang disyaratkan. |
+| AC-5, AC-6             | Tag workflow, artifact upload, dan performance packaging belum dibuktikan.                             | Acceptance external dan performance tetap terbuka.                 | Lengkapi CI evidence serta benchmark yang ditetapkan.                       |
 
 ## Verdict akhir
 
