@@ -33,8 +33,10 @@ source dan test aktif, dan batasan MySQL Bun SQL untuk `sslmode=disable` serta
 Matrix acceptance terbaru mencatat **459 acceptance criteria**, dengan **405
 fully evidenced**, **28 partial**, dan **26 blocked**. Root regression mencatat
 **615 pass, 18 skip, 0 fail**; mock browser sweep mencatat **44 pass, 5 skip,
-0 fail**; dan real query workflow pada PostgreSQL/MySQL mencatat **4 pass, 0
-fail**.
+0 fail**; focused browser wave mencatat **28 pass, 0 fail**; integration dan
+performance wave dengan fixture PostgreSQL/MySQL mencatat **182 pass, 0 fail**;
+real export/import/restore mencatat **6 pass, 0 fail**; dan binary smoke
+macOS ARM64 dengan PostgreSQL serta MySQL masing-masing lulus.
 
 Build dan test lokal untuk feature database, Angular, security, performance,
 backup/restore, dan packaging sudah dicatat pada evidence files serta commit
