@@ -17,6 +17,15 @@ PLAYWRIGHT_HTML_OPEN=never bun run test:e2e -- \
 The macOS ARM64 binary artifact ran the required database smoke harness against
 the disposable PostgreSQL service with `--require-database`.
 
+Direct rerun from the current checkout also passed:
+
+```text
+MYADMIN_SMOKE_DATABASE_URL=<postgres-fixture-url> bun run smoke:binary -- \
+  --binary dist/binaries/macos-arm64/myadmin --require-database
+
+SMOKE binary: passed health, embedded SPA, setup, login, auth, shutdown, and doctor checks
+```
+
 - `SMOKE-0054-AC4`: the real macOS ARM64 binary passed health, embedded SPA, setup admin, login, `/auth/me`, disposable PostgreSQL connection, SIGTERM shutdown, and healthy-installation `doctor` checks.
 - `SMOKE-0054-AC6`: the same run fetched the embedded SPA successfully, so a missing embedded asset would have failed the smoke harness.
 
