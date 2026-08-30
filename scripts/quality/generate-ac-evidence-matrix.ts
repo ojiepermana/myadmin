@@ -17,11 +17,13 @@ const containerRuntimeEvidencePath = join(
   specsRoot,
   'evidence/2026-08-30-container-runtime-smoke.md',
 );
+const containerToolsEvidencePath = join(specsRoot, 'evidence/2026-08-30-container-tools-smoke.md');
 const explicitEvidencePaths = [
   e2eEvidencePath,
   followupEvidencePath,
   binarySmokeEvidencePath,
   containerRuntimeEvidencePath,
+  containerToolsEvidencePath,
   databaseEvidencePath,
   externalEvidencePath,
 ];
