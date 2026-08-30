@@ -57,6 +57,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server | Result grid performance E2E **1 passed dalam 7,3 detik**; 5.000 typed rows dirender virtual grid dalam **81,9 ms**. | [Result grid performance evidence](../evidence/2026-08-30-result-grid-performance.md) |
+
 | 2026-08-30 | working tree | Playwright local web server | Query Editor E2E **1 passed dalam 8,4 detik** membuktikan typed result grid, null/truncated state, keyboard navigation, clipboard, dan export job queue. | [Query editor E2E evidence](../evidence/2026-08-30-query-editor-e2e.md) |
 
 | Waktu      | Commit       | Environment                                                                   | Hasil                                                                                                                                                                   | Evidence                                                                                                                                                                          |
