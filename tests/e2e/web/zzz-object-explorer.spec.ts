@@ -18,6 +18,7 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC4, E2E-0031-AC5, E2E-0031-AC6, E2E-
           items: [
             {
               id: 'pg-1',
+              connectionId: 'pg-1',
               label: 'PostgreSQL fixture',
               engine: 'postgresql',
               connectionId: 'pg-1',
@@ -36,6 +37,7 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC4, E2E-0031-AC5, E2E-0031-AC6, E2E-
             },
             {
               id: 'mysql-1',
+              connectionId: 'mysql-1',
               label: 'MySQL fixture',
               engine: 'mysql',
               connectionId: 'mysql-1',
@@ -274,6 +276,51 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC4, E2E-0031-AC5, E2E-0031-AC6, E2E-
       body: JSON.stringify({ initialized: true }),
     });
   });
+  await page.route('**/api/v1/connections/status**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [
+          {
+            id: 'pg-1',
+            connectionId: 'pg-1',
+            label: 'PostgreSQL fixture',
+            engine: 'postgresql',
+            status: 'connected',
+            changedAt: '2026-08-28T12:00:00.000Z',
+            serverInfo: { engine: 'postgresql', version: 'fixture-16' },
+            capability: {
+              engine: 'postgresql',
+              version: 'fixture-16',
+              capabilities: { schemas: true, viewEditor: false },
+              reasons: { viewEditor: 'View editing is not installed.' },
+            },
+            latencyMs: 2,
+            errorCategory: null,
+            reason: null,
+          },
+          {
+            id: 'mysql-1',
+            connectionId: 'mysql-1',
+            label: 'MySQL fixture',
+            engine: 'mysql',
+            status: 'connected',
+            changedAt: '2026-08-28T12:00:00.000Z',
+            serverInfo: { engine: 'mysql', version: 'fixture-8' },
+            capability: {
+              engine: 'mysql',
+              version: 'fixture-8',
+              capabilities: { schemas: false, viewEditor: false },
+            },
+            latencyMs: 2,
+            errorCategory: null,
+            reason: null,
+          },
+        ],
+      }),
+    });
+  });
 
   const setupStatus = await page.request.get('/api/v1/setup/status');
   expect(setupStatus.ok()).toBeTruthy();
@@ -322,10 +369,7 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC4, E2E-0031-AC5, E2E-0031-AC6, E2E-
   await view.click({ button: 'right' });
   const openDefinition = page.getByRole('menuitem', { name: 'Open definition' });
   await expect(openDefinition).toBeDisabled();
-  await expect(openDefinition).toHaveAttribute(
-    'title',
-    'This provider does not support view editing.',
-  );
+  await expect(openDefinition).toHaveAttribute('title', 'View editing is not installed.');
   failNextObjectRefresh = true;
   await publicNode.getByRole('button', { name: 'Refresh node' }).click();
   await expect(publicNode.getByText('HTTP request failed')).toBeVisible();
@@ -354,6 +398,12 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC4, E2E-0031-AC5, E2E-0031-AC6, E2E-
   const orders = page.getByRole('treeitem', { name: 'orders' });
   await expect(orders).toBeVisible();
   await expect(orders.locator('.explorer-icon')).toHaveAttribute('data-kind', 'table');
+  await orders.click({ button: 'right' });
+  const browseOrders = page.getByRole('menuitem', { name: 'Browse data' });
+  await expect(browseOrders).toBeEnabled();
+  await browseOrders.click();
+  await expect(page).toHaveURL(/\/data-browser\?connection=pg-1&ref=/);
+  await page.goto('/explorer');
 
   await mysql.click();
   const mysqlSearchStartedAt = Date.now();
