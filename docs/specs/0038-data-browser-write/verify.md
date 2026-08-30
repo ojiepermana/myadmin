@@ -58,6 +58,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server dengan API fixture | Data Browser UI **2 passed dalam 7,9 detik**; insert/update/delete, conflict, dan typed editing workflow lulus. | [Data Browser UI evidence](../evidence/2026-08-30-data-browser-ui.md) |
+
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL/MySQL disposable | Real Data Browser E2E **1 passed dalam 8,0 detik**; edit JSON dan explicit `NULL` preservation lulus pada kedua engine. | [Real data browser typed evidence](../evidence/2026-08-30-real-data-browser-typed.md) |
 
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real workflow E2E **4 passed dalam 2,6 menit** mencakup write-related query and failure boundaries pada dua engine. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |

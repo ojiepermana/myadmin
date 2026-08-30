@@ -60,6 +60,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server dengan API fixture | Data Browser UI **2 passed dalam 7,9 detik**; export workflow dari result surface lulus. | [Data Browser UI evidence](../evidence/2026-08-30-data-browser-ui.md) |
+
 | 2026-08-30 | working tree | Bun dengan PostgreSQL disposable | Export performance **1 pass, 0 fail, 7 assertions**; CSV 100.000 row selesai dalam **3.913,39 ms** dan berada di bawah ambang lokal. | [Export performance evidence](../evidence/2026-08-30-export-performance.md) |
 
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL/MySQL disposable | Real import/export E2E **2 passed dalam 7,3 detik**; SQL export/import roundtrip lulus pada kedua engine. | [Real import/export evidence](../evidence/2026-08-30-real-import-export.md) |
