@@ -57,6 +57,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server | Shell browser wave **8 passed, 1 skipped dalam 14,1 detik**; resize/fold, tabs, context menu, protected routes, keyboard flow, dan responsive breakpoint lulus. | [Shell and settings E2E evidence](../evidence/2026-08-30-shell-settings-e2e.md) |
+
 | Waktu      | Commit       | Environment                                         | Hasil                                                                                                                                                            | Evidence                                                                                                                                                                               |
 | ---------- | ------------ | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-08-30 | Working tree | Bun 1.4.0, macOS arm64, Playwright local web server | **6 E2E lulus dalam 12,0 detik**; 0 gagal; context-menu dan keyboard-dialog screenshot tersedia dan diinspeksi; formal visual/accessibility review tetap terbuka | `PLAYWRIGHT_HTML_OPEN=never bun run test:e2e -- tests/e2e/web/z-shell-navigation.spec.ts`; `test-results/visual-0015-context-menu.png`, `test-results/visual-0015-keyboard-dialog.png` |

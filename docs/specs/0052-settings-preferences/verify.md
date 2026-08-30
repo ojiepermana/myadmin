@@ -56,6 +56,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server | Settings browser wave **8 passed, 1 skipped dalam 14,1 detik**; preference theme synchronization dan mode changes lulus. | [Shell and settings E2E evidence](../evidence/2026-08-30-shell-settings-e2e.md) |
+
 | 2026-08-30 | working tree | Bun 1.4.0, Playwright local web server | Settings/theme E2E **2 pass, 0 fail**; account theme sync, light/dark/system transition, dan admin policy visibility lulus | `bun run test:e2e -- tests/e2e/web/settings-preferences.spec.ts` |
 
 | Waktu      | Commit       | Environment                                                    | Hasil                                                                                                                            | Evidence                                                                                                                                                                  |
