@@ -60,6 +60,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real workflow E2E **4 passed dalam 2,6 menit** mencakup metadata dan object workflow provider nyata. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
+
 | Waktu      | Commit       | Environment                                              | Hasil                                                                                                                                                                                                               | Evidence                                                       |
 | ---------- | ------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | 2026-08-29 | Working tree | Bun 1.4.0, server route integration dengan fake provider | Data-browser route integration lulus pada read/serialization, bounded paging/sort/search/total, dan closed operator validation; view/mutation cases pada file yang sama juga lulus; **6 pass, 50 assertions** total | `bun test tests/integration/data-browser/data-browser.test.ts` |

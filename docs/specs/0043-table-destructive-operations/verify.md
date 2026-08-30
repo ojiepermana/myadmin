@@ -55,6 +55,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real workflow E2E **4 passed dalam 2,6 menit** mencakup destructive database/schema/index operation paths dan confirmation flow yang diuji. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
+
 | 2026-08-30 | Working tree | PostgreSQL 55433 dan MySQL 8.0/latest 3380/3384, disposable fixtures | **3 pass, 0 fail, 24 assertions**; service aktual menjalankan impact, truncate, rename, drop, metadata invalidation, dan audit event `table.truncated`, `table.renamed`, `table.dropped` pada ketiga target | `MYADMIN_POSTGRES_INTEGRATION=1 MYSQL_8_0_URL='mysql://root:<fixture-root-password>@127.0.0.1:3380/fixture?ssl=disable' MYSQL_LATEST_URL='mysql://root:<fixture-root-password>@127.0.0.1:3384/fixture?ssl=disable' bun test --isolate tests/integration/table-operations/real-table-operations.test.ts` |
 
 | Waktu      | Commit       | Environment                                                            | Hasil                                                                                                                                                                                                                                 | Evidence                                                                                                                         |

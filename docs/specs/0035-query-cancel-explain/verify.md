@@ -55,6 +55,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real query workflow E2E **4 passed dalam 2,6 menit** mencakup execution state, transaction lifecycle, dan failure handling pada provider nyata. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
+
 | 2026-08-30 | working tree | Playwright local web server | Query Editor E2E **1 passed dalam 8,4 detik** membuktikan cancel query dan EXPLAIN sukses/gagal melalui browser. | [Query editor E2E evidence](../evidence/2026-08-30-query-editor-e2e.md) |
 
 | Waktu      | Commit       | Environment                                                        | Hasil                                                                                                                                                                    | Evidence                                                                                                                                                                                                                                                                                                                                                                                     |

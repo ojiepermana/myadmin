@@ -55,6 +55,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real database workflow E2E **4 passed dalam 2,6 menit** mencakup create/drop database melalui UI pada PostgreSQL dan MySQL. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
+
 | 2026-08-30 | Working tree | MySQL 8.0/latest disposable 3380/3384, root fixture credential | **4 pass, 0 fail, 18 assertions** pada database management dan table-operation integration; create/list/properties/drop database nyata lulus pada kedua versi | `MYSQL_8_0_URL='mysql://root:<fixture-root-password>@127.0.0.1:3380/fixture?ssl=disable' MYSQL_LATEST_URL='mysql://root:<fixture-root-password>@127.0.0.1:3384/fixture?ssl=disable' bun test --isolate tests/integration/mysql/database-management.test.ts tests/integration/table-operations/real-table-operations.test.ts` |
 
 | Waktu      | Commit       | Environment                                                          | Hasil                                                                                                                                                       | Evidence                                                                                              |

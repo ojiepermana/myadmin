@@ -60,6 +60,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real workflow E2E **4 passed dalam 2,6 menit** mencakup object search dan database-backed explorer flow. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
+
 | 2026-08-30 | working tree | Bun 1.4.0, Playwright local web server | Mock browser Explorer/search flow **1 pass, 0 fail dalam 2,8 detik**; lazy tree, error/retry, context action, virtualized navigation, dan paginated search lulus; real two-engine workflow dicatat terpisah | `bun run test:e2e -- tests/e2e/web/zzz-object-explorer.spec.ts` |
 
 | 2026-08-30 | Working tree | Playwright local web server, PostgreSQL 55433 dan MySQL 3380 disposable | Real-browser workflow **4 pass, 0 fail dalam 2,5 menit**; Explorer metadata/lazy reveal dan search berjalan pada kedua engine, bersama view/index paths | `MYADMIN_REAL_DATABASE_E2E=1 MYADMIN_TOOLS_PG_DUMP_PATH=/Users/ojiepermana/Development/ojiepermana/myadmin/tests/fixtures/postgres-pg-dump.sh MYADMIN_TOOLS_PSQL_PATH=/Users/ojiepermana/Development/ojiepermana/myadmin/tests/fixtures/postgres-psql.sh bunx playwright test tests/e2e/web/zz-real-query-editor.spec.ts` |
