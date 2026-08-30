@@ -78,6 +78,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 | 2026-08-30 | Working tree | Bun 1.4.0, RestoreService, JobManager, temporary upload/database fixture, dan audit repository | **3 pass, 0 fail, 12 assertions**; restore service membuat target baru, mencatat started/completed audit, menolak ownership/engine mismatch, menangani native failure, dan audit tidak memuat password fixture | `bun test --isolate tests/integration/restore/restore.test.ts` |
 | 2026-08-30 | Working tree | Bun 1.4.0, RestoreExecutor dengan `/bin/sh` native subprocess dan temporary input | **3 pass, 0 fail, 9 assertions**; cancellation membunuh subprocess nyata dan melaporkan `cancelled` dengan kemungkinan partial database | `bun test --isolate packages/backup/test/restore.test.ts` |
 
+| 2026-08-30 | Working tree | Bun 1.4.0, Playwright app server, PostgreSQL 55433 dengan wrapper `pg_dump`/`psql`, MySQL disposable 3380 | **6 E2E pass, 0 fail dalam 24,4 detik**; upload restore dan native backup-to-restore kedua engine selesai sampai row verification | `MYADMIN_REAL_DATABASE_E2E=1 MYADMIN_TOOLS_PG_DUMP_PATH=$PWD/tests/fixtures/postgres-pg-dump.sh MYADMIN_TOOLS_PSQL_PATH=$PWD/tests/fixtures/postgres-psql.sh bun run test:e2e -- tests/e2e/web/zz-real-import-export.spec.ts tests/e2e/web/zz-real-restore.spec.ts` |
+
 ## Gap dan blocker
 
 | AC                                 | Gap                                                                                                         | Dampak                            | Tindak lanjut                                  |
