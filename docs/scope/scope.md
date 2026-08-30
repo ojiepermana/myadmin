@@ -762,7 +762,7 @@ Signing bergerbang sertifikat, Docker multi arch, service file, dokumentasi oper
   - [x] Dokumentasi operator lengkap, SECURITY.md, dan README (AC-6, AC-7)
   - [ ] Uji penerimaan dari artefak nyata pada VM atau container bersih (AC-8)
 - [ ] [Verify it](../specs/0055-distribution-release/verify.md): /check verify distribution-release
-- [ ] [Test it](../specs/0055-distribution-release/test.md): /test distribution-release
+- [x] [Test it](../specs/0055-distribution-release/test.md): /test distribution-release
 
 ## Deferred (V2 dan sesudahnya)
 
