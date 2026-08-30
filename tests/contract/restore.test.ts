@@ -25,6 +25,23 @@ function jsonRequest(body: unknown, headers: HeadersInit = {}): RequestInit {
 }
 
 describe('restore API contract', () => {
+  test('CT-0050-AC2 and CT-0050-AC5 expose restore request and queued job response shapes', async () => {
+    const document = await loadContract(contractPath);
+    const operations = contractOperations(document);
+    const restore = operation(operations, 'createRestore');
+    assertResponseMatchesContract(document, restore, 202, { jobId: 'restore-job-1' });
+
+    const paths = document['paths'] as Record<string, unknown>;
+    const restorePath = paths['/restore'] as Record<string, unknown>;
+    const restoreDefinition = restorePath['post'] as Record<string, unknown>;
+    const requestBody = restoreDefinition['requestBody'] as Record<string, unknown>;
+    const content = requestBody['content'] as Record<string, unknown>;
+    const jsonContent = content['application/json'] as Record<string, unknown>;
+    expect(jsonContent['schema']).toMatchObject({
+      $ref: '#/components/schemas/RestoreRequest',
+    });
+  });
+
   test('CT-0050-AC1 and CT-0050-AC3 expose owner-scoped validation and strict request errors', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);

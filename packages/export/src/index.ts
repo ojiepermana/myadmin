@@ -272,7 +272,7 @@ export class ExportService {
   }
 
   public download(actor: ExportActor, jobId: string): ExportDownload {
-    this.cleanup();
+    this.cleanup(jobId);
     const job = this.options.jobs.getForOwner(jobId, actor.id);
     if (!job) throw new ExportServiceError('EXPORT_NOT_FOUND', 'Export was not found.', 404);
     const artifact = this.artifacts.get(jobId);
@@ -292,10 +292,11 @@ export class ExportService {
     return artifact;
   }
 
-  public cleanup(): number {
+  public cleanup(excludeJobId?: string): number {
     const now = this.now().getTime();
     let removed = 0;
     for (const artifact of this.artifacts.values()) {
+      if (artifact.jobId === excludeJobId) continue;
       const grace = artifact.downloadedAt
         ? new Date(artifact.downloadedAt).getTime() + EXPORT_DOWNLOAD_GRACE_MS
         : Number.POSITIVE_INFINITY;

@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 describe('jobs API contract', () => {
-  test('CT-0028-AC5 matches the typed job response and owner error contracts', async () => {
+  test('CT-0028-AC5 and CT-0048-AC6 match the typed job response and import summary contract', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
     const jobManager = new JobManager({
@@ -52,7 +52,19 @@ describe('jobs API contract', () => {
     const jobId = jobManager.submit({
       type: 'synthetic.contract',
       ownerUserId,
-      executor: () => ({ rows: 1 }),
+      executor: () => ({
+        format: 'sql',
+        statementsSucceeded: 3,
+        statementsFailed: 0,
+        rowsSucceeded: 12,
+        rowsFailed: 0,
+        failedRows: [],
+        bytesProcessed: 256,
+        durationMs: 42,
+        partial: false,
+        cancelled: false,
+        destructive: false,
+      }),
     });
     await jobManager.whenIdle();
 
@@ -64,12 +76,27 @@ describe('jobs API contract', () => {
       await responsePayload(list),
     );
     const detail = await request(`/jobs/${jobId}`, { headers: { cookie } });
+    const detailPayload = await responsePayload(detail);
     assertResponseMatchesContract(
       document,
       operation(operations, 'getJob'),
       detail.status,
-      await responsePayload(detail),
+      detailPayload,
     );
+    expect(detailPayload).toMatchObject({
+      result: {
+        format: 'sql',
+        statementsSucceeded: 3,
+        statementsFailed: 0,
+        rowsSucceeded: 12,
+        rowsFailed: 0,
+        durationMs: 42,
+        partial: false,
+        cancelled: false,
+        destructive: false,
+      },
+    });
+    expect(JSON.stringify(detailPayload)).not.toContain('INSERT');
 
     const hidden = await request('/jobs/not-owned', { headers: { cookie } });
     expect(hidden.status).toBe(404);

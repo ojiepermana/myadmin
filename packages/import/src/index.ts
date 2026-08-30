@@ -831,44 +831,58 @@ export class ImportService {
       const abort = () =>
         void session?.provider.query?.cancel(session.handle).catch(() => undefined);
       job.signal.addEventListener('abort', abort, { once: true });
-      if (mode === 'single') {
-        await port.beginTransaction(session.handle);
-        transaction = true;
-      }
-      let found = false;
-      for await (const record of sqlRecords(fileStream(upload.path), session.provider.engine)) {
-        found = true;
-        if (job.signal.aborted) throw abortError();
-        const statementNumber = summary.statementsSucceeded + summary.statementsFailed + 1;
-        try {
-          const result = await port.executeStatement(session.handle, record.statement.sql);
-          summary.statementsSucceeded += 1;
-          summary.rowsSucceeded += result.affectedRows;
-          bytesProcessed = Math.min(record.bytesProcessed, upload.sizeBytes);
-          job.reportProgress({
-            phase: 'importing-sql',
-            current: bytesProcessed,
-            total: upload.sizeBytes,
-            message: `Executed ${summary.statementsSucceeded} statement${summary.statementsSucceeded === 1 ? '' : 's'}.`,
-          });
-        } catch (error) {
-          if (job.signal.aborted) throw abortError();
-          summary.statementsFailed += 1;
-          if (transaction) await port.rollbackTransaction(session.handle).catch(() => undefined);
-          transaction = false;
-          throw statementError(error, statementNumber, record.statement);
+      const runTransaction = async (operation: () => Promise<void>): Promise<void> => {
+        if (port.withTransaction) {
+          await port.withTransaction(session!.handle, operation);
+          return;
         }
-      }
-      if (!found)
-        throw new DbError({
-          category: 'syntax_error',
-          message: 'The SQL upload has no statements.',
-        });
+        await port.beginTransaction!(session!.handle);
+        transaction = true;
+        try {
+          await operation();
+          await port.commitTransaction!(session!.handle);
+          transaction = false;
+        } catch (error) {
+          if (transaction) await port.rollbackTransaction!(session!.handle).catch(() => undefined);
+          transaction = false;
+          throw error;
+        }
+      };
+      const executeStatements = async (): Promise<void> => {
+        let found = false;
+        for await (const record of sqlRecords(fileStream(upload.path), session!.provider.engine)) {
+          found = true;
+          if (job.signal.aborted) throw abortError();
+          const statementNumber = summary.statementsSucceeded + summary.statementsFailed + 1;
+          try {
+            const result = await port.executeStatement!(session!.handle, record.statement.sql);
+            summary.statementsSucceeded += 1;
+            summary.rowsSucceeded += result.affectedRows;
+            bytesProcessed = Math.min(record.bytesProcessed, upload.sizeBytes);
+            job.reportProgress({
+              phase: 'importing-sql',
+              current: bytesProcessed,
+              total: upload.sizeBytes,
+              message: `Executed ${summary.statementsSucceeded} statement${summary.statementsSucceeded === 1 ? '' : 's'}.`,
+            });
+          } catch (error) {
+            if (job.signal.aborted) throw abortError();
+            summary.statementsFailed += 1;
+            throw statementError(error, statementNumber, record.statement);
+          }
+        }
+        if (!found)
+          throw new DbError({
+            category: 'syntax_error',
+            message: 'The SQL upload has no statements.',
+          });
+      };
+      if (mode === 'single') await runTransaction(executeStatements);
+      else await executeStatements();
       if (job.signal.aborted) {
-        if (transaction) await port.rollbackTransaction(session.handle).catch(() => undefined);
+        if (transaction) await port.rollbackTransaction!(session.handle).catch(() => undefined);
         return this.sqlResult(summary, bytesProcessed, startedAt, true, false);
       }
-      if (transaction) await port.commitTransaction(session.handle);
       const result = this.sqlResult(summary, upload.sizeBytes, startedAt, false, false);
       this.auditCompleted(actor, input.connectionId, result, 'sql', jobId);
       return result;
@@ -928,11 +942,28 @@ export class ImportService {
           'This database provider does not support CSV imports.',
           501,
         );
-      const insertBatch = port.insertBatch;
-      const truncate = port.truncate;
-      const beginTransaction = port.beginTransaction;
-      const commitTransaction = port.commitTransaction;
-      rollbackTransaction = port.rollbackTransaction;
+      const insertBatch = port.insertBatch.bind(port);
+      const truncate = port.truncate.bind(port);
+      const beginTransaction = port.beginTransaction.bind(port);
+      const commitTransaction = port.commitTransaction.bind(port);
+      rollbackTransaction = port.rollbackTransaction.bind(port);
+      const runTransaction = async (operation: () => Promise<void>): Promise<void> => {
+        if (port.withTransaction) {
+          await port.withTransaction(session!.handle, operation);
+          return;
+        }
+        await beginTransaction(session!.handle);
+        transaction = true;
+        try {
+          await operation();
+          await commitTransaction(session!.handle);
+          transaction = false;
+        } catch (error) {
+          if (transaction) await rollbackTransaction!(session!.handle).catch(() => undefined);
+          transaction = false;
+          throw error;
+        }
+      };
       const options = input.options ?? {};
       const records = csvRecords(fileStream(upload.path), csvDelimiter(options));
       const first = await records[Symbol.asyncIterator]().next();
@@ -961,88 +992,87 @@ export class ImportService {
       const targetTypes = columns.map(
         (column) => description?.columns.find((item) => item.name === column)?.dataType,
       );
-      await beginTransaction(session.handle);
-      transaction = true;
-      if (input.truncateFirst) await truncate(session.handle, input.table);
-      let pending: { values: readonly string[]; bytesProcessed: number; rowNumber: number }[] = [];
-      let rowNumber = header ? 2 : 1;
-      const flush = async (): Promise<void> => {
-        if (pending.length === 0) return;
-        if (job.signal.aborted) throw abortError();
-        const batch = pending;
-        pending = [];
-        try {
-          const result = await insertBatch(session!.handle, {
-            table: input.table,
-            columns,
-            rows: batch.map((record) =>
-              record.values.map((value, index) =>
-                typedCsvValue(
-                  value === (options.nullLiteral ?? 'NULL') ? null : value,
-                  targetTypes[index],
+      await runTransaction(async () => {
+        if (input.truncateFirst) await truncate(session!.handle, input.table);
+        let pending: { values: readonly string[]; bytesProcessed: number; rowNumber: number }[] =
+          [];
+        let rowNumber = header ? 2 : 1;
+        const flush = async (): Promise<void> => {
+          if (pending.length === 0) return;
+          if (job.signal.aborted) throw abortError();
+          const batch = pending;
+          pending = [];
+          try {
+            const result = await insertBatch(session!.handle, {
+              table: input.table,
+              columns,
+              rows: batch.map((record) =>
+                record.values.map((value, index) =>
+                  typedCsvValue(
+                    value === (options.nullLiteral ?? 'NULL') ? null : value,
+                    targetTypes[index],
+                  ),
                 ),
               ),
-            ),
-          });
-          summary.rowsSucceeded += result.affectedRows || batch.length;
-        } catch {
-          for (const record of batch) {
-            if (job.signal.aborted) throw abortError();
-            try {
-              const result = await insertBatch(session!.handle, {
-                table: input.table,
-                columns,
-                rows: [
-                  record.values.map((value, index) =>
-                    typedCsvValue(
-                      value === (options.nullLiteral ?? 'NULL') ? null : value,
-                      targetTypes[index],
+            });
+            summary.rowsSucceeded += result.affectedRows || batch.length;
+          } catch {
+            for (const record of batch) {
+              if (job.signal.aborted) throw abortError();
+              try {
+                const result = await insertBatch(session!.handle, {
+                  table: input.table,
+                  columns,
+                  rows: [
+                    record.values.map((value, index) =>
+                      typedCsvValue(
+                        value === (options.nullLiteral ?? 'NULL') ? null : value,
+                        targetTypes[index],
+                      ),
                     ),
-                  ),
-                ],
-              });
-              summary.rowsSucceeded += result.affectedRows || 1;
-            } catch (error) {
-              summary.rowsFailed += 1;
-              if (failedRows.length < CSV_ROW_ERROR_THRESHOLD)
-                failedRows.push({ rowNumber: record.rowNumber, reason: reasonOf(error) });
-              if (summary.rowsFailed >= CSV_ROW_ERROR_THRESHOLD)
-                throw new DbError({
-                  category: 'constraint_violation',
-                  message: `CSV import stopped after ${CSV_ROW_ERROR_THRESHOLD} failed rows; first failed row is ${failedRows[0]?.rowNumber ?? record.rowNumber}.`,
+                  ],
                 });
+                summary.rowsSucceeded += result.affectedRows || 1;
+              } catch (error) {
+                summary.rowsFailed += 1;
+                if (failedRows.length < CSV_ROW_ERROR_THRESHOLD)
+                  failedRows.push({ rowNumber: record.rowNumber, reason: reasonOf(error) });
+                if (summary.rowsFailed >= CSV_ROW_ERROR_THRESHOLD)
+                  throw new DbError({
+                    category: 'constraint_violation',
+                    message: `CSV import stopped after ${CSV_ROW_ERROR_THRESHOLD} failed rows; first failed row is ${failedRows[0]?.rowNumber ?? record.rowNumber}.`,
+                  });
+              }
             }
           }
+          const bytes = batch.at(-1)?.bytesProcessed ?? 0;
+          job.reportProgress({
+            phase: 'importing-csv',
+            current: Math.min(bytes, upload.sizeBytes),
+            total: upload.sizeBytes,
+            message: `Imported ${summary.rowsSucceeded} row${summary.rowsSucceeded === 1 ? '' : 's'}.`,
+          });
+        };
+        if (!header) {
+          pending.push({
+            values: indexes.map((index) => first.value!.values[index] ?? ''),
+            bytesProcessed: first.value.bytesProcessed,
+            rowNumber: 1,
+          });
+          if (pending.length >= (options.batchSize ?? DEFAULT_CSV_BATCH_SIZE)) await flush();
         }
-        const bytes = batch.at(-1)?.bytesProcessed ?? 0;
-        job.reportProgress({
-          phase: 'importing-csv',
-          current: Math.min(bytes, upload.sizeBytes),
-          total: upload.sizeBytes,
-          message: `Imported ${summary.rowsSucceeded} row${summary.rowsSucceeded === 1 ? '' : 's'}.`,
-        });
-      };
-      if (!header) {
-        pending.push({
-          values: indexes.map((index) => first.value!.values[index] ?? ''),
-          bytesProcessed: first.value.bytesProcessed,
-          rowNumber: 1,
-        });
-        if (pending.length >= (options.batchSize ?? DEFAULT_CSV_BATCH_SIZE)) await flush();
-      }
-      for await (const record of records) {
-        pending.push({
-          values: indexes.map((index) => record.values[index] ?? ''),
-          bytesProcessed: record.bytesProcessed,
-          rowNumber,
-        });
-        rowNumber += 1;
-        if (pending.length >= (options.batchSize ?? DEFAULT_CSV_BATCH_SIZE)) await flush();
-      }
-      await flush();
-      if (job.signal.aborted) throw abortError();
-      await commitTransaction(session.handle);
-      transaction = false;
+        for await (const record of records) {
+          pending.push({
+            values: indexes.map((index) => record.values[index] ?? ''),
+            bytesProcessed: record.bytesProcessed,
+            rowNumber,
+          });
+          rowNumber += 1;
+          if (pending.length >= (options.batchSize ?? DEFAULT_CSV_BATCH_SIZE)) await flush();
+        }
+        await flush();
+        if (job.signal.aborted) throw abortError();
+      });
       const result = this.csvResult(
         summary,
         failedRows,

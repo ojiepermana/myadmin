@@ -1,12 +1,20 @@
 import { describe, expect, test } from 'bun:test';
-import type { ConnectionHandle, DatabaseProvider, DatabasePort } from '@myadmin/database-core';
+import { Elysia } from 'elysia';
+import {
+  DbError,
+  type ConnectionHandle,
+  type DatabaseProvider,
+  type DatabasePort,
+} from '@myadmin/database-core';
 import type { AuditEvent, Connection, User } from '@myadmin/internal-domain';
 import { DatabaseManagementService } from '../src/database-management/database-management';
+import { registerDatabaseManagementRoutes } from '../src/database-management/routes';
 
 function fixture() {
   const events: AuditEvent[] = [];
   let dropCalls = 0;
   let active = false;
+  let dropFailure: DbError | undefined;
   const handle: ConnectionHandle = { id: 'handle-1', openedAt: new Date() };
   const database: DatabasePort = {
     list: async () => ({ items: [] }),
@@ -16,6 +24,7 @@ function fixture() {
     create: async () => undefined,
     alter: async () => undefined,
     drop: async () => {
+      if (dropFailure) throw dropFailure;
       dropCalls += 1;
     },
   };
@@ -56,6 +65,7 @@ function fixture() {
     actor,
     events,
     setActive: (value: boolean) => (active = value),
+    setDropFailure: (value: DbError | undefined) => (dropFailure = value),
     get dropCalls() {
       return dropCalls;
     },
@@ -101,5 +111,58 @@ describe('database management service', () => {
     await value.service.drop(value.actor, 'connection-1', 'fixture', 'fixture');
     expect(value.dropCalls).toBe(1);
     expect(value.events.at(-1)).toMatchObject({ action: 'database.dropped', result: 'success' });
+  });
+
+  test('[IT-0039-AC6, SEC-0039-AC6] preserves a provider conflict when dropping a confirmed database', async () => {
+    const value = fixture();
+    value.setDropFailure(
+      new DbError({
+        category: 'conflict',
+        message: 'The database is being accessed by another connection.',
+      }),
+    );
+
+    await expect(
+      value.service.drop(value.actor, 'connection-1', 'fixture', 'fixture'),
+    ).rejects.toMatchObject({
+      category: 'conflict',
+      message: 'The database is being accessed by another connection.',
+    });
+    expect(value.dropCalls).toBe(0);
+    expect(value.events.at(-1)).toMatchObject({
+      action: 'database.dropped',
+      result: 'failure',
+    });
+  });
+
+  test('[SEC-0039-AC3] accepts same-origin CSRF from the Angular development proxy', async () => {
+    const value = fixture();
+    const actor = value.actor;
+    const application = registerDatabaseManagementRoutes(new Elysia(), '', {
+      authService: {
+        validateSession: () => ({ authenticated: true, value: { user: actor } }),
+      } as never,
+      setupService: { isInitialized: () => true },
+      service: value.service,
+      secureCookies: false,
+    });
+
+    const response = await application.handle(
+      new Request('http://127.0.0.1/connections/connection-1/databases', {
+        method: 'POST',
+        headers: {
+          cookie: 'myadmin_session=session',
+          origin: 'http://localhost:4200',
+          'sec-fetch-site': 'same-origin',
+          'x-myadmin-csrf': '1',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ name: 'proxied_database' }),
+      }),
+    );
+
+    const body = await response.text();
+    expect(response.status, body).toBe(201);
+    expect(JSON.parse(body)).toMatchObject({ name: 'proxied_database' });
   });
 });

@@ -16,7 +16,42 @@ function findOperation(operations: ContractOperation[], operationId: string): Co
 }
 
 describe('CT-0046 privilege contract', () => {
-  test('CT-0046-AC1, CT-0046-AC2, and CT-0046-AC3 expose the complete privilege surface', async () => {
+  test('CT-0045-AC1, CT-0045-AC2, CT-0045-AC3, CT-0045-AC4, and CT-0045-AC5 expose principal lifecycle responses', async () => {
+    const document = await loadContract(contractPath);
+    const operations = contractOperations(document);
+    const principal = {
+      name: 'alice',
+      type: 'user',
+      attributes: [{ key: 'canLogin', value: true }],
+      memberOf: [],
+    };
+    assertResponseMatchesContract(
+      document,
+      findOperation(operations, 'createSecurityPrincipal'),
+      201,
+      principal,
+    );
+    assertResponseMatchesContract(
+      document,
+      findOperation(operations, 'updateSecurityPrincipal'),
+      200,
+      principal,
+    );
+    assertResponseMatchesContract(
+      document,
+      findOperation(operations, 'resetSecurityPrincipalPassword'),
+      204,
+      undefined,
+    );
+    assertResponseMatchesContract(
+      document,
+      findOperation(operations, 'dropSecurityPrincipal'),
+      204,
+      undefined,
+    );
+  });
+
+  test('CT-0045-AC6, CT-0046-AC1, CT-0046-AC2, CT-0046-AC3, and CT-0046-AC6 expose the complete privilege surface', async () => {
     generateContractTypes();
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
@@ -55,6 +90,10 @@ describe('CT-0046 privilege contract', () => {
         levels: [{ scope: 'database', privileges: [{ name: 'CONNECT', label: 'Connect' }] }],
       },
     );
+    const components = document['components'] as { schemas?: Record<string, unknown> } | undefined;
+    const changeSetSchema = JSON.stringify(components?.schemas?.['GrantChangeSet'] ?? {});
+    expect(changeSetSchema).not.toContain('grantOption');
+    expect(changeSetSchema).not.toContain('column');
   });
 
   test('CT-0046-AC4 keeps preview and apply responses per statement', async () => {

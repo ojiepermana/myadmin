@@ -61,7 +61,7 @@ function tableOnly(ref: ObjectRef): void {
   if (ref.type !== 'table') invalid('Data mutations are only supported for tables');
 }
 
-function rowIdentity(
+export function resolvePostgresqlRowIdentity(
   ref: ObjectRef,
   columns: readonly DataColumn[],
   indexes: readonly { columns: string[]; primary: boolean; unique: boolean }[],
@@ -387,7 +387,7 @@ export class PostgresqlDataAdapter {
         columns: selectedColumns,
         total,
         hasMore: rows.length > (request.limit ?? POSTGRESQL_DATA_DEFAULT_PAGE_SIZE),
-        rowIdentity: rowIdentity(request.table, columns, description.indexes),
+        rowIdentity: resolvePostgresqlRowIdentity(request.table, columns, description.indexes),
       };
     });
   }
@@ -423,7 +423,7 @@ export class PostgresqlDataAdapter {
   ): Promise<MutationResult> {
     return this.withHandle(context, async (handle) => {
       const description = await this.metadata.describeTable!(handle, request.table);
-      const identity = rowIdentity(
+      const identity = resolvePostgresqlRowIdentity(
         request.table,
         description.columns as DataColumn[],
         description.indexes,
@@ -462,7 +462,7 @@ export class PostgresqlDataAdapter {
   ): Promise<MutationResult> {
     return this.withHandle(context, async (handle) => {
       const description = await this.metadata.describeTable!(handle, request.table);
-      const identity = rowIdentity(
+      const identity = resolvePostgresqlRowIdentity(
         request.table,
         description.columns as DataColumn[],
         description.indexes,
@@ -496,7 +496,7 @@ export class PostgresqlDataAdapter {
   ): Promise<MutationResult> {
     return this.withHandle(context, async (handle) => {
       const description = await this.metadata.describeTable!(handle, request.table);
-      const identity = rowIdentity(
+      const identity = resolvePostgresqlRowIdentity(
         request.table,
         description.columns as DataColumn[],
         description.indexes,
@@ -546,7 +546,7 @@ export class PostgresqlDataAdapter {
     const countQuery = buildPostgresqlDataQuery(
       { ...request, limit: 1, offset: 0, sort: [], columns: columns.map((column) => column.name) },
       columns,
-      primaryColumns,
+      [],
     );
     const from = countQuery.sql.slice(
       countQuery.sql.indexOf(' FROM '),

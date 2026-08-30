@@ -30,6 +30,30 @@ describe('data browser contract', () => {
     });
   });
 
+  test('[CT-0038-AC1, CT-0038-AC2, CT-0038-AC3, CT-0038-AC4] exposes typed row mutation operations', async () => {
+    const document = await loadContract(contractPath);
+    const operations = contractOperations(document);
+    const insert = operation(operations, 'insertDataRow');
+    const update = operation(operations, 'updateDataRow');
+    const remove = operation(operations, 'deleteDataRows');
+    expect([insert.method, update.method, remove.method]).toEqual(['post', 'patch', 'post']);
+    const mutation = { affectedRows: 1 };
+    assertResponseMatchesContract(document, insert, 200, mutation);
+    assertResponseMatchesContract(document, update, 200, mutation);
+    assertResponseMatchesContract(document, remove, 200, mutation);
+  });
+
+  test('[CT-0038-AC6] exposes a safe typed-row conversion error response', async () => {
+    const document = await loadContract(contractPath);
+    const insert = operation(contractOperations(document), 'insertDataRow');
+    assertResponseMatchesContract(document, insert, 422, {
+      code: 'DATA_INVALID',
+      message: 'Column id contains an invalid number.',
+      correlationId: 'corr-0038-invalid-number',
+      details: { column: 'id' },
+    });
+  });
+
   test('[CT-0044-AC2, CT-0044-AC3] exposes view CRUD, preview, validation, and drop contract operations', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);

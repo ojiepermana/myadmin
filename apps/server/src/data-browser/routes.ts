@@ -59,10 +59,10 @@ function cookieValue(request: Request, name: string): string | undefined {
 function sameOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
   const site = request.headers.get('sec-fetch-site');
-  return (
-    (site === null || site === 'same-origin') &&
-    (origin === null || origin === new URL(request.url).origin)
-  );
+  if (site !== null && site !== 'same-origin') return false;
+  // The Angular development proxy changes the upstream URL; the browser's
+  // same-origin fetch signal remains authoritative for that local proxy path.
+  return origin === null || origin === new URL(request.url).origin || site === 'same-origin';
 }
 function actorForRequest(
   request: Request,

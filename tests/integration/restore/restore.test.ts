@@ -131,7 +131,13 @@ function providerFor(
           supported: true,
           serverVersion: engine === 'postgresql' ? '16.4' : '8.0.36',
           backupTool: { command: 'dump', available: true },
-          restoreTool: { command: 'restore', available: true },
+          restoreTool: {
+            command: engine === 'postgresql' ? 'pg_restore' : 'mysql',
+            available: engine !== 'postgresql',
+          },
+          ...(engine === 'postgresql'
+            ? { restoreSqlTool: { command: 'psql', available: true } }
+            : {}),
           restoreSupported: true,
         };
       },
@@ -188,7 +194,7 @@ function providerFor(
   };
 }
 
-async function fixture() {
+async function fixture(exitCode = 0) {
   const directory = await mkdtemp(join(tmpdir(), 'myadmin-restore-integration-'));
   directories.push(directory);
   const database = new Database(':memory:');
@@ -220,7 +226,7 @@ async function fixture() {
         controller.close();
       },
     }),
-    exited: Promise.resolve(0),
+    exited: Promise.resolve(exitCode),
     kill: () => undefined,
   });
   const plan: PreparedRestoreCommand = {
@@ -253,7 +259,7 @@ afterEach(async () => {
 });
 
 describe('restore service integration', () => {
-  test('validates ownership and rejects a wrong engine before confirmation', async () => {
+  test('[IT-0050-AC1, SEC-0050-AC1, IT-0050-AC3] validates ownership and rejects a wrong engine before confirmation', async () => {
     const value = await fixture();
     const actor = { id: 'user-1', username: 'restore-owner', role: 'user' as const };
     const other = { id: 'user-2', username: 'other', role: 'user' as const };
@@ -278,7 +284,7 @@ describe('restore service integration', () => {
     ).rejects.toMatchObject({ code: 'RESTORE_ENGINE_MISMATCH', status: 409 });
   });
 
-  test('queues native restore, creates a new target, and records started/completed audit events', async () => {
+  test('[IT-0050-AC2, IT-0050-AC5, SEC-0050-AC5] queues native restore, creates a new target, and records redacted started/completed audit events', async () => {
     const value = await fixture();
     const actor = { id: 'user-1', username: 'restore-owner', role: 'user' as const };
     const validation = await value.service.upload(
@@ -302,10 +308,37 @@ describe('restore service integration', () => {
       partial: false,
     });
     expect(value.createdTargets).toEqual(['restored-target']);
-    expect(
-      value.store.audit
-        .query({ connectionId: 'postgresql-connection' })
-        .items.map((event) => event.action),
-    ).toEqual(['restore.completed', 'restore.started']);
+    const audit = value.store.audit.query({ connectionId: 'postgresql-connection' }).items;
+    expect(audit.map((event) => event.action)).toEqual(['restore.completed', 'restore.started']);
+    expect(JSON.stringify(audit)).not.toContain('secret');
+  });
+
+  test('[IT-0050-AC4, SEC-0050-AC7] records a redacted failure when native restore exits non-zero', async () => {
+    const value = await fixture(17);
+    const actor = { id: 'user-1', username: 'restore-owner', role: 'user' as const };
+    const validation = await value.service.upload(
+      actor,
+      new File(['-- PostgreSQL database dump\nCREATE TABLE example (id int);\n'], 'failed.sql'),
+    );
+    const queued = await value.service.create(actor, {
+      uploadId: validation.sourceId,
+      connectionId: 'postgresql-connection',
+      targetDatabase: 'restore-failure-target',
+      createNew: true,
+      confirmName: 'restore-failure-target',
+    });
+    await value.jobs.whenIdle();
+
+    expect(value.jobs.get(queued.jobId)?.state).toBe('failed');
+    const audit = value.store.audit.query({ connectionId: 'postgresql-connection' }).items;
+    expect(audit.map((event) => [event.action, event.result])).toEqual([
+      ['restore.failed', 'failure'],
+      ['restore.started', 'success'],
+    ]);
+    expect(audit[0]).toMatchObject({
+      action: 'restore.failed',
+      details: { database: 'restore-failure-target', sourceType: 'upload' },
+    });
+    expect(JSON.stringify(audit)).not.toContain('secret');
   });
 });

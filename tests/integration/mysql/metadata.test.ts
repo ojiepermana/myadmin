@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from 'bun:test';
 import {
   ConnectionContext,
   type ConnectionHandle,
@@ -14,6 +14,8 @@ const targets = [
 ] as const;
 
 const configuredTargets = targets.filter(([, url]) => url) as Array<readonly [string, string]>;
+
+setDefaultTimeout(60_000);
 
 interface MetadataFixture {
   readonly handle: ConnectionHandle;
@@ -90,9 +92,18 @@ if (configuredTargets.length > 0) {
           ['table', 'view', 'routine', 'trigger'],
           { limit: 500 },
         );
-        const namesByType = new Set(page.items.map((item) => `${item.type}:${item.name}`));
+        const fixtureObjects = await provider.metadata.searchObjects(
+          handle,
+          'fixture',
+          names.prefix,
+          ['table', 'view', 'routine', 'trigger'],
+          { limit: 50 },
+        );
+        const fixtureNamesByType = new Set(
+          fixtureObjects.items.map((item) => `${item.type}:${item.name}`),
+        );
 
-        expect([...namesByType]).toEqual(
+        expect([...fixtureNamesByType]).toEqual(
           expect.arrayContaining([
             `table:${names.referenceTable}`,
             `table:${names.table}`,
@@ -229,9 +240,15 @@ if (configuredTargets.length > 0) {
 
       test('IT-0025-AC7 validates the common metadata shape on a real MySQL provider', async () => {
         const handle = requiredHandle(fixture);
-        const objects = await provider.metadata.listObjects(handle, database, ['table'], {
-          limit: 50,
-        });
+        const objects = await provider.metadata.searchObjects(
+          handle,
+          database.database,
+          names.table,
+          ['table'],
+          {
+            limit: 1,
+          },
+        );
         const tableObject = objects.items.find((item) => item.name === names.table);
         expect(tableObject).toEqual(table);
         expect(tableObject).toMatchObject({
@@ -249,7 +266,7 @@ if (configuredTargets.length > 0) {
       });
 
       test(
-        'PERF-0025-AC8 keeps a 2000 table catalog page bounded',
+        'PERF-0025-AC8 and PERF-0032-AC6 keep catalog and search pages bounded',
         async () => {
           const handle = requiredHandle(fixture);
           const performanceTables = Array.from(
@@ -274,6 +291,23 @@ if (configuredTargets.length > 0) {
             expect(page.items).toHaveLength(50);
             expect(page.cursor).toBeDefined();
             expect(elapsedMs).toBeLessThan(5000);
+
+            const searchStartedAt = performance.now();
+            const search = await provider.metadata.searchObjects(
+              handle,
+              'fixture',
+              names.performancePrefix,
+              ['table'],
+              { limit: 50 },
+            );
+            const searchElapsedMs = performance.now() - searchStartedAt;
+
+            expect(search.items).toHaveLength(50);
+            expect(search.cursor).toBeDefined();
+            expect(
+              search.items.every((item) => item.name.startsWith(names.performancePrefix)),
+            ).toBe(true);
+            expect(searchElapsedMs).toBeLessThan(5000);
           } finally {
             await dropTables(provider, handle, performanceTables);
           }

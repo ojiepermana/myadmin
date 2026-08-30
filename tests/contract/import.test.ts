@@ -18,7 +18,7 @@ function operation(operations: ContractOperation[], operationId: string): Contra
 }
 
 describe('import API contract', () => {
-  test('CT-0048-AC1..AC4 exposes authenticated upload, preview, SQL, and CSV operations', async () => {
+  test('CT-0048-AC1, CT-0048-AC2, CT-0048-AC3, CT-0048-AC4, and CT-0048-AC7 expose bounded authenticated import operations', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
     for (const operationId of [
@@ -28,6 +28,14 @@ describe('import API contract', () => {
       'createImportCsv',
     ])
       expect(operation(operations, operationId)).toBeDefined();
+
+    const components = document['components'] as Record<string, unknown>;
+    const schemas = components['schemas'] as Record<string, unknown>;
+    const previewSchema = schemas['ImportPreview'] as Record<string, unknown>;
+    const previewProperties = previewSchema['properties'] as Record<string, unknown>;
+    const rows = previewProperties['rows'] as Record<string, unknown>;
+    expect(rows['maxItems']).toBe(20);
+    expect(rows['items']).toMatchObject({ type: 'array' });
 
     let uploadedBytes = 0;
     const fakeService = {

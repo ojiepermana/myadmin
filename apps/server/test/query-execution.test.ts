@@ -159,7 +159,7 @@ async function waitForTerminal(
 }
 
 describe('QueryExecutionService', () => {
-  test('sequences statements, preserves offsets, records failures, and writes history', async () => {
+  test('[UT-0033-AC4, UT-0033-AC6, UT-0033-AC7, UT-0033-AC8] sequences statements, preserves offsets, records failures, and writes history', async () => {
     const history = new HistoryFake();
     const executed: string[] = [];
     const gateway = new GatewayFake(async ({ sql }) => {
@@ -213,7 +213,7 @@ describe('QueryExecutionService', () => {
     await service.dispose();
   });
 
-  test('reuses one tab session so transactions span executions', async () => {
+  test('[UT-0033-AC5] reuses one tab session so transactions span executions', async () => {
     const history = new HistoryFake();
     const gateway = new GatewayFake(async () => ({ columns: [], rows: [] }));
     const service = new QueryExecutionService({
@@ -245,7 +245,7 @@ describe('QueryExecutionService', () => {
     await service.dispose();
   });
 
-  test('cancels the exact running execution and preserves completed statements', async () => {
+  test('[UT-0035-AC1, UT-0035-AC2, UT-0035-AC7] cancels the exact running execution and preserves completed statements', async () => {
     const history = new HistoryFake();
     let rejectQuery!: (error: unknown) => void;
     const queryResult = new Promise<QueryResult>((_resolve, reject) => {
@@ -313,7 +313,7 @@ describe('QueryExecutionService', () => {
     await service.dispose();
   });
 
-  test('treats late cancellation as an idempotent final-state read', async () => {
+  test('[UT-0035-AC4] treats late cancellation as an idempotent final-state read', async () => {
     const history = new HistoryFake();
     let cancelCalls = 0;
     const gateway = new GatewayFake(async () => ({ columns: [], rows: [] }), {
@@ -346,7 +346,7 @@ describe('QueryExecutionService', () => {
     await service.dispose();
   });
 
-  test('explains through the same tab session without changing transaction state', async () => {
+  test('[UT-0035-AC5, UT-0035-AC6, UT-0035-AC7] explains through the same tab session without changing transaction state', async () => {
     const history = new HistoryFake();
     const explained: Array<{ handle: ConnectionHandle; request: QueryRequest }> = [];
     const gateway = new GatewayFake(async () => ({ columns: [], rows: [] }), {

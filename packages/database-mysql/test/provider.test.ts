@@ -257,7 +257,7 @@ describe('MySQL database administration', () => {
     await connection.close(handle);
   });
 
-  test('validates and quotes database identifiers for create and drop', async () => {
+  test('UT-0039-AC2, UT-0039-AC5, and SEC-0039-AC5 validate and quote database identifiers for create and drop safely', async () => {
     const client = new FakeMysqlClient();
     const connection = new MysqlConnectionAdapter({ sqlFactory: () => client });
     const port = new MysqlDatabasePort(connection);

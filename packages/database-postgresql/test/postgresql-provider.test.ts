@@ -171,6 +171,29 @@ describe('PostgreSQL connection adapter', () => {
     expect(state.closeCalls).toBe(1);
   });
 
+  test('pins a reserved client for session queries and releases it on close', async () => {
+    const { client } = fakeClient();
+    let reserveCalls = 0;
+    let releaseCalls = 0;
+    const reserved = Object.assign(client, {
+      release: () => {
+        releaseCalls += 1;
+      },
+    });
+    client.reserve = async () => {
+      reserveCalls += 1;
+      return reserved;
+    };
+    const adapter = new PostgresqlConnectionAdapter({ sqlFactory: () => client });
+
+    const handle = await adapter.open(context());
+    await adapter.ping(handle);
+    await adapter.close(handle);
+
+    expect(reserveCalls).toBe(1);
+    expect(releaseCalls).toBe(1);
+  });
+
   test('passes every TLS mode without allowing an implicit plaintext mode', async () => {
     for (const mode of ['disable', 'require', 'verify-ca', 'verify-full'] as const) {
       const { client, state } = fakeClient();
@@ -280,12 +303,13 @@ describe('PostgreSQL capabilities', () => {
       identityColumns: true,
     });
     expect(current.capabilities.materializedViews).toBe(false);
+    expect(current.capabilities.importExport).toBe(true);
     expect(current.reasons?.backupRestore).toBe('belum tersedia');
   });
 });
 
 describe('PostgreSQL database administration', () => {
-  test('validates and quotes database identifiers for create and drop', async () => {
+  test('UT-0039-AC2, UT-0039-AC5, and SEC-0039-AC5 validate and quote database identifiers for create and drop safely', async () => {
     const { client, state } = fakeClient();
     const connection = new PostgresqlConnectionAdapter({ sqlFactory: () => client });
     const port = new PostgresqlDatabasePort(connection);

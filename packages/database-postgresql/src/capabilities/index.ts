@@ -17,7 +17,6 @@ export function createPostgresqlCapabilities(version: string): CapabilityDescrip
   const major = majorVersion(version);
   const reasons: CapabilityDescription['reasons'] = {
     backupRestore: 'belum tersedia',
-    importExport: 'belum tersedia',
     materializedViews: 'ditunda ke V2',
     vacuum: 'ditunda ke V2',
     rowLevelSecurity: 'ditunda ke V2',
@@ -37,7 +36,7 @@ export function createPostgresqlCapabilities(version: string): CapabilityDescrip
       explain: true,
       cancelQuery: true,
       backupRestore: false,
-      importExport: false,
+      importExport: true,
       principals: true,
       grants: true,
       tableComments: true,

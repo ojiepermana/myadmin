@@ -39,7 +39,7 @@ afterEach(async () => {
 });
 
 describe('restore upload validation', () => {
-  test('keeps uploads owner-scoped and rejects path traversal and invalid SQL', async () => {
+  test('UT-0050-AC1 keeps uploads owner-scoped and rejects path traversal and invalid SQL', async () => {
     const directory = await temporaryDirectory();
     const store = new RestoreUploadStore(directory);
     await expect(
@@ -63,7 +63,7 @@ describe('restore upload validation', () => {
 });
 
 describe('restore executor', () => {
-  test('streams plain and gzip input, reports progress, and redacts native errors', async () => {
+  test('UT-0050-AC2 and UT-0050-AC4 stream plain and gzip input, report progress, and redact native errors', async () => {
     const directory = await temporaryDirectory();
     const inputPath = join(directory, 'dump.sql');
     await Bun.write(inputPath, '-- PostgreSQL database dump\nCREATE TABLE example (id int);\n');
@@ -110,5 +110,36 @@ describe('restore executor', () => {
       message: expect.not.stringContaining('synthetic-secret'),
     });
     await expect(stat(inputPath)).resolves.toBeDefined();
+  });
+
+  test('IT-0050-AC4 cancels an actual Bun native subprocess and reports a partial restore', async () => {
+    const directory = await temporaryDirectory();
+    const inputPath = join(directory, 'cancelled.sql');
+    await Bun.write(inputPath, '-- PostgreSQL database dump\nCREATE TABLE example (id int);\n');
+    const controller = new AbortController();
+    const progress: string[] = [];
+    const executor = new RestoreExecutor();
+
+    const run = executor.run(
+      {
+        executable: '/bin/sh',
+        args: ['-c', 'cat >/dev/null; sleep 30'],
+        toolVersion: 'system-shell',
+        format: 'postgresql-sql',
+        cleanup: async () => undefined,
+      },
+      inputPath,
+      {
+        signal: controller.signal,
+        compressed: false,
+        reportProgress: (value) => {
+          progress.push(value.phase);
+          if (value.phase === 'restoring' && value.current === 0) controller.abort();
+        },
+      },
+    );
+
+    await expect(run).rejects.toMatchObject({ name: 'AbortError' });
+    expect(progress).toContain('cancelled');
   });
 });

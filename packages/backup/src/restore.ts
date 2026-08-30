@@ -294,7 +294,11 @@ export class RestoreService {
       vaultCredential(encrypted),
       (payload) => backup.describe(contextFor(connection, passwordFromPayload(payload))),
     );
-    if (capability.restoreSupported === false || !capability.restoreTool.available) {
+    // PostgreSQL plain SQL restores use `psql` (restoreSqlTool), while MySQL
+    // restores use the generic `mysql` restoreTool. Providers normalize that
+    // distinction into restoreSupported; checking restoreTool directly would
+    // reject valid PostgreSQL SQL restores when pg_restore is absent.
+    if (capability.restoreSupported === false) {
       throw unsupported(capability.restoreReason ?? 'The native restore tool is unavailable.');
     }
 

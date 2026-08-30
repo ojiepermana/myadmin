@@ -51,7 +51,7 @@ export function createMysqlCapabilityDescription(version: string): MysqlCapabili
       explain: true,
       cancelQuery: true,
       backupRestore: false,
-      importExport: false,
+      importExport: true,
       principals: true,
       grants: true,
       tableComments: true,
@@ -67,7 +67,6 @@ export function createMysqlCapabilityDescription(version: string): MysqlCapabili
     reasons: {
       schemas: 'MySQL memakai database sebagai schema',
       backupRestore: 'Belum tersedia sampai spec backup dan restore',
-      importExport: 'Belum tersedia sampai spec import dan export',
       ...(checkConstraints
         ? {}
         : { checkConstraints: 'CHECK constraints ditegakkan mulai MySQL 8.0.16' }),

@@ -8,6 +8,7 @@ import {
   type DataPage,
   type DataPageRequest,
   type DataPort,
+  type DataRowIdentity,
   type DatabaseProvider,
   type MetadataPort,
   ProviderRegistry,
@@ -23,7 +24,9 @@ interface ProviderFixtureOptions {
   readonly capability?: CapabilityDescription;
   readonly engine?: 'postgresql' | 'mysql';
   readonly page?: (request: DataPageRequest) => DataPage | Promise<DataPage>;
+  readonly rowIdentity?: DataRowIdentity;
   readonly view?: ViewPort;
+  readonly update?: DataPort['update'];
   readonly onMetadataInvalidated?: () => void;
 }
 
@@ -64,11 +67,13 @@ function provider(options: ProviderFixtureOptions = {}): DatabaseProvider {
         rows: [{ id: 1, display_name: 'Ada' }],
         total: { value: 1, kind: 'exact' },
         hasMore: false,
-        rowIdentity: { columns: ['id'], kind: 'primary', editable: true },
+        rowIdentity: options.rowIdentity ?? { columns: ['id'], kind: 'primary', editable: true },
       };
     },
     insert: async () => ({ affectedRows: 1 }),
-    update: async () => ({ affectedRows: 1, returning: [{ id: 1, display_name: 'Updated' }] }),
+    update:
+      options.update ??
+      (async () => ({ affectedRows: 1, returning: [{ id: 1, display_name: 'Updated' }] })),
     delete: async () => ({ affectedRows: 1 }),
     bulkDelete: async () => ({ affectedRows: 1 }),
   };
@@ -286,7 +291,42 @@ async function connectFixture(
 }
 
 describe('data browser read route', () => {
-  test('[IT-0037-AC1, IT-0037-AC2, AC-7] reads an owned connected table and serializes cells', async () => {
+  test('[IT-0038-AC1] returns the server read-only reason when a table has no row identity', async () => {
+    const app = createApp({
+      providerRegistry: new ProviderRegistry([
+        provider({
+          rowIdentity: {
+            columns: [],
+            kind: null,
+            editable: false,
+            reason: 'This table has no primary key or non nullable unique index.',
+          },
+        }),
+      ]),
+    });
+    const { headers, connectionId } = await connectFixture(app, 'read-only-admin');
+    const result = await request(
+      app,
+      '/data/read',
+      jsonInit(
+        {
+          connectionId,
+          ref: { database: 'app', schema: 'public', name: 'users', type: 'table' },
+          page: { limit: 100, offset: 0 },
+        },
+        headers,
+      ),
+    );
+    expect(result.status).toBe(200);
+    expect((await result.json()).rowIdentity).toEqual({
+      columns: [],
+      kind: null,
+      editable: false,
+      reason: 'This table has no primary key or non nullable unique index.',
+    });
+  });
+
+  test('[IT-0037-AC1, IT-0037-AC2, IT-0037-AC7] reads an owned connected table and serializes cells', async () => {
     const app = createApp({ providerRegistry: new ProviderRegistry([provider()]) });
     await request(
       app,
@@ -644,8 +684,22 @@ describe('data browser read route', () => {
 });
 
 describe('data browser write routes', () => {
-  test('[IT-0038-AC2, IT-0038-AC3, IT-0038-AC4, IT-0038-AC7, IT-0038-AC8] accepts typed insert, update, and audited delete', async () => {
-    const app = createApp({ providerRegistry: new ProviderRegistry([provider()]) });
+  test('[IT-0038-AC2, IT-0038-AC3, IT-0038-AC4, IT-0038-AC7, IT-0038-AC8, SEC-0038-AC4, SEC-0038-AC7] accepts typed insert, update, and audited delete', async () => {
+    let conflict = false;
+    const app = createApp({
+      providerRegistry: new ProviderRegistry([
+        provider({
+          update: async () => {
+            if (conflict)
+              throw new DbError({
+                category: 'conflict',
+                message: 'The row changed or no longer exists. Reload the data and try again.',
+              });
+            return { affectedRows: 1, returning: [{ id: 1, display_name: 'Updated' }] };
+          },
+        }),
+      ]),
+    });
     await request(
       app,
       '/setup/admin',
@@ -730,8 +784,115 @@ describe('data browser write routes', () => {
     );
     expect(deleted.status).toBe(200);
     expect((await deleted.json()).affectedRows).toBe(1);
+    conflict = true;
+    const conflictResponse = await request(
+      app,
+      '/data/rows',
+      jsonInit(
+        {
+          connectionId: connection.id,
+          ref,
+          identity: { id: { type: 'number', value: '1' } },
+          changes: { display_name: { type: 'string', value: 'Stale write' } },
+        },
+        headers,
+        'PATCH',
+      ),
+    );
+    expect(conflictResponse.status).toBe(409);
+    expect(await conflictResponse.json()).toMatchObject({ code: 'DATA_CONFLICT' });
     const audit = await request(app, '/audit', { headers: { cookie } });
     expect(audit.status).toBe(200);
     expect(JSON.stringify(await audit.json())).toContain('data.rows_deleted');
+  });
+
+  test('[IT-0038-AC9] exercises typed mutation and stale conflict routes for both engine providers', async () => {
+    for (const engine of ['postgresql', 'mysql'] as const) {
+      let conflict = false;
+      const app = createApp({
+        providerRegistry: new ProviderRegistry([
+          provider({
+            engine,
+            update: async () => {
+              if (conflict)
+                throw new DbError({
+                  category: 'conflict',
+                  message: 'The row changed or no longer exists. Reload the data and try again.',
+                });
+              return { affectedRows: 1, returning: [{ id: 1, display_name: 'Updated' }] };
+            },
+          }),
+        ]),
+      });
+      const { headers, connectionId } = await connectFixture(app, `write-${engine}-ac9`, engine);
+      const ref = { database: 'app', schema: 'public', name: 'users', type: 'table' };
+
+      expect(
+        (
+          await request(
+            app,
+            '/data/rows',
+            jsonInit(
+              {
+                connectionId,
+                ref,
+                values: {
+                  id: { type: 'number', value: '2' },
+                  display_name: { type: 'string', value: `${engine} row` },
+                },
+              },
+              headers,
+            ),
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await request(
+            app,
+            '/data/rows',
+            jsonInit(
+              {
+                connectionId,
+                ref,
+                identity: { id: { type: 'number', value: '1' } },
+                changes: { display_name: { type: 'string', value: 'Updated' } },
+              },
+              headers,
+              'PATCH',
+            ),
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await request(
+            app,
+            '/data/rows/delete',
+            jsonInit(
+              { connectionId, ref, identities: [{ id: { type: 'number', value: '1' } }] },
+              headers,
+            ),
+          )
+        ).status,
+      ).toBe(200);
+      conflict = true;
+      const stale = await request(
+        app,
+        '/data/rows',
+        jsonInit(
+          {
+            connectionId,
+            ref,
+            identity: { id: { type: 'number', value: '1' } },
+            changes: { display_name: { type: 'string', value: 'Stale write' } },
+          },
+          headers,
+          'PATCH',
+        ),
+      );
+      expect(stale.status).toBe(409);
+      expect(await stale.json()).toMatchObject({ code: 'DATA_CONFLICT' });
+    }
   });
 });

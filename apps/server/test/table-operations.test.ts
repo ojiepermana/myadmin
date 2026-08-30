@@ -76,7 +76,7 @@ function fixture() {
 }
 
 describe('table operations service', () => {
-  test('rejects a wrong rename confirmation before provider execution and audits denial', async () => {
+  test('[UT-0043-AC4, SEC-0043-AC4] rejects a wrong rename confirmation before provider execution and audits denial', async () => {
     const value = fixture();
     await expect(
       value.service.rename(value.actor, 'connection-1', ref, {
@@ -92,7 +92,7 @@ describe('table operations service', () => {
     expect(value.events[0]).toMatchObject({ action: 'table.renamed', result: 'denied' });
   });
 
-  test('audits successful rename, truncate, and drop operations and invalidates metadata', async () => {
+  test('[UT-0043-AC4, SEC-0043-AC6] audits successful rename, truncate, and drop operations and invalidates metadata', async () => {
     const value = fixture();
     await expect(
       value.service.rename(value.actor, 'connection-1', ref, {

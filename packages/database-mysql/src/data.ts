@@ -39,7 +39,7 @@ function tableOnly(ref: ObjectRef): void {
     invalid('Data mutations are only supported for tables');
 }
 
-function rowIdentity(
+export function resolveMysqlRowIdentity(
   ref: ObjectRef,
   columns: readonly DataColumn[],
   indexes: readonly { columns: string[]; primary: boolean; unique: boolean }[],
@@ -391,7 +391,7 @@ export class MysqlDataAdapter {
         columns: selectedColumns,
         total,
         hasMore: rows.length > limit,
-        rowIdentity: rowIdentity(request.table, columns, description.indexes),
+        rowIdentity: resolveMysqlRowIdentity(request.table, columns, description.indexes),
       };
     });
   }
@@ -428,7 +428,7 @@ export class MysqlDataAdapter {
   ): Promise<MutationResult> {
     return this.withHandle(context, async (handle) => {
       const description = await this.metadata.describeTable!(handle, request.table);
-      const identity = rowIdentity(
+      const identity = resolveMysqlRowIdentity(
         request.table,
         description.columns as DataColumn[],
         description.indexes,
@@ -473,7 +473,7 @@ export class MysqlDataAdapter {
   ): Promise<MutationResult> {
     return this.withHandle(context, async (handle) => {
       const description = await this.metadata.describeTable!(handle, request.table);
-      const identity = rowIdentity(
+      const identity = resolveMysqlRowIdentity(
         request.table,
         description.columns as DataColumn[],
         description.indexes,
@@ -501,7 +501,7 @@ export class MysqlDataAdapter {
   ): Promise<MutationResult> {
     return this.withHandle(context, async (handle) => {
       const description = await this.metadata.describeTable!(handle, request.table);
-      const identity = rowIdentity(
+      const identity = resolveMysqlRowIdentity(
         request.table,
         description.columns as DataColumn[],
         description.indexes,

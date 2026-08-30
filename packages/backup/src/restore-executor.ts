@@ -207,8 +207,22 @@ function defaultProcessFactory(
   },
 ): RestoreProcess {
   const child = Bun.spawn([...command], options);
+  const stdin = child.stdin;
+  const writable = stdin
+    ? new WritableStream<Uint8Array>({
+        write: async (chunk) => {
+          await stdin.write(chunk);
+        },
+        close: async () => {
+          await stdin.end();
+        },
+        abort: async () => {
+          await stdin.end();
+        },
+      })
+    : null;
   return {
-    stdin: child.stdin as unknown as WritableStream<Uint8Array> | null,
+    stdin: writable,
     stderr: child.stderr as ReadableStream<Uint8Array> | null,
     exited: child.exited,
     kill: (signal = 'SIGTERM') => child.kill(signal as never),

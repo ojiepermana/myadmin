@@ -25,7 +25,7 @@ function context(): ConnectionContext {
 }
 
 describe('PostgreSQL principal security adapter', () => {
-  test('maps roles and memberships without authentication material', async () => {
+  test('UT-0045-AC1 maps roles and memberships without authentication material', async () => {
     const queries: string[] = [];
     const client = ((input: string | TemplateStringsArray, ...values: unknown[]) => {
       const sql =
@@ -62,7 +62,7 @@ describe('PostgreSQL principal security adapter', () => {
     expect(queries.some((query) => query.includes('rolpassword'))).toBe(false);
   });
 
-  test('quotes identifiers and validates dynamic attributes', async () => {
+  test('UT-0045-AC2 and UT-0045-AC3 quote identifiers and validate dynamic attributes', async () => {
     const queries: string[] = [];
     const client = ((input: string | TemplateStringsArray, ...values: unknown[]) => {
       const sql =
@@ -95,7 +95,7 @@ describe('PostgreSQL principal security adapter', () => {
     ).toBe(true);
   });
 
-  test('UT-0046-AC2 exposes the provider catalog and compiles quoted changes', async () => {
+  test('UT-0046-AC1, UT-0046-AC2, and UT-0046-AC3 expose the provider catalog and compile quoted changes', async () => {
     const statements: string[] = [];
     const client = ((input: string | TemplateStringsArray, ...values: unknown[]) => {
       const sql =

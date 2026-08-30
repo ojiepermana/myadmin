@@ -260,15 +260,12 @@ export class PostgresqlViewPort implements ViewPort {
     if (change.statements.length === 0)
       throw new DbError({ category: 'internal', message: 'View change set is empty' });
     await this.withHandle(context, async (handle) => {
-      const transactional = change.strategy === 'drop_create';
-      if (transactional) await this.connection.execute(handle, 'BEGIN');
-      try {
+      const apply = async (): Promise<void> => {
         for (const statement of change.statements) await this.connection.execute(handle, statement);
-        if (transactional) await this.connection.execute(handle, 'COMMIT');
-      } catch (error) {
-        if (transactional) await this.connection.execute(handle, 'ROLLBACK').catch(() => undefined);
-        throw error;
-      }
+      };
+      if (typeof this.connection.withTransaction === 'function')
+        await this.connection.withTransaction(handle, apply);
+      else await apply();
     });
   }
 

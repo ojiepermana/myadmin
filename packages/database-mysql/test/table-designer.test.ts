@@ -49,6 +49,30 @@ function createMetadata(localType = 'int', targetType = localType) {
 const metadata = createMetadata();
 
 describe('MySQL table designer', () => {
+  test('[UT-0041-AC8] compiles every catalogued MySQL column type into one stable create DDL', async () => {
+    const connection = createConnection();
+    const designer = new MysqlTableDesigner(connection as never, metadata as never);
+    const types = await designer.types(handle);
+    const columns = types.types.map((type, index) => ({
+      name: `column_${index}`,
+      dataType: type.name,
+      nullable: true,
+      ...(type.parameters.includes('length') ? { length: 24 } : {}),
+      ...(type.parameters.includes('precision') ? { precision: 10, scale: 2 } : {}),
+    }));
+
+    const preview = await designer.preview(handle, {
+      operation: 'create',
+      ref: { database: 'app', schema: null, name: 'all_types', type: 'table' },
+      columns,
+    });
+
+    expect(preview.destructive).toBe(false);
+    const sql = preview.statements[0]?.sql ?? '';
+    for (const column of columns) expect(sql).toContain(`\`${column.name}\``);
+    expect(columns).toHaveLength(types.types.length);
+  });
+
   test('[UT-0041-AC1, UT-0041-AC3] compiles length, default, identity, and comments into one create statement', async () => {
     const connection = createConnection();
     const designer = new MysqlTableDesigner(connection as never, metadata as never);

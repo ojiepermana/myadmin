@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { Elysia } from 'elysia';
 import type {
   CapabilityDescription,
   ConnectionHandle,
@@ -7,6 +8,7 @@ import type {
 } from '@myadmin/database-core';
 import type { AuditEvent, Connection, User } from '@myadmin/internal-domain';
 import { SchemaManagementService } from '../src/schema-management/schema-management';
+import { registerSchemaManagementRoutes } from '../src/schema-management/routes';
 
 function fixture(objectCount = 0, supported = true) {
   const events: AuditEvent[] = [];
@@ -92,7 +94,7 @@ function fixture(objectCount = 0, supported = true) {
 }
 
 describe('schema management service', () => {
-  test('[IT-0040-AC2, IT-0040-AC5] carries database context and audits mutations before success', async () => {
+  test('[IT-0040-AC2, IT-0040-AC5, SEC-0040-AC5] carries database context and audits mutations before success', async () => {
     const value = fixture();
     await value.service.create(value.actor, 'connection-1', 'app', {
       name: 'reporting',
@@ -137,5 +139,36 @@ describe('schema management service', () => {
     await expect(
       unsupported.service.list(unsupported.actor, 'connection-1', 'app'),
     ).rejects.toMatchObject({ category: 'unsupported' });
+  });
+
+  test('[SEC-0040-AC3] accepts same-origin CSRF from the Angular development proxy', async () => {
+    const value = fixture();
+    const actor = value.actor;
+    const application = registerSchemaManagementRoutes(new Elysia(), '', {
+      authService: {
+        validateSession: () => ({ authenticated: true, value: { user: actor } }),
+      } as never,
+      setupService: { isInitialized: () => true },
+      service: value.service,
+      secureCookies: false,
+    });
+
+    const response = await application.handle(
+      new Request('http://127.0.0.1/connections/connection-1/databases/app/schemas', {
+        method: 'POST',
+        headers: {
+          cookie: 'myadmin_session=session',
+          origin: 'http://localhost:4200',
+          'sec-fetch-site': 'same-origin',
+          'x-myadmin-csrf': '1',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ name: 'proxied_schema' }),
+      }),
+    );
+
+    const body = await response.text();
+    expect(response.status, body).toBe(201);
+    expect(JSON.parse(body)).toMatchObject({ name: 'proxied_schema', database: 'app' });
   });
 });

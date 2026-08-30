@@ -216,7 +216,7 @@ describe('administrator audit API', () => {
     expect(serialized).toContain('[redacted]');
   });
 
-  test('SEC-0020-AC1 and SEC-0020-AC3 deny user sessions while allowing the administrator actions list', async () => {
+  test('SEC-0020-AC1, SEC-0020-AC3, and SEC-0020-AC4 deny user sessions while allowing the administrator actions list', async () => {
     const fixture = await createFixture();
     const password = 'synthetic-user-password';
     const passwordHash = await new PasswordHasher().hash(password);

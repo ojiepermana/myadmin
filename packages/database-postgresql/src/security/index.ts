@@ -439,28 +439,17 @@ export class PostgresqlSecurityAdapter implements SecurityPort {
   ): Promise<GrantApplyResult> {
     const statements = changes.map(compileGrant);
     return this.withHandle(context, async (handle) => {
-      const result: GrantApplyResult['statements'] = [];
-      let transactionStarted = false;
       try {
-        await this.connection.execute(handle, 'BEGIN');
-        transactionStarted = true;
-        for (const statement of statements) {
-          try {
+        const result = await this.connection.withTransaction(handle, async () => {
+          const applied: GrantApplyResult['statements'] = [];
+          for (const statement of statements) {
             await this.connection.execute(handle, statement.statement);
-            result.push({ ...statement, status: 'applied' });
-          } catch (error) {
-            const failure =
-              error instanceof DbError
-                ? error
-                : new DbError({ category: 'internal', message: String(error) });
-            throw failure;
+            applied.push({ ...statement, status: 'applied' });
           }
-        }
-        await this.connection.execute(handle, 'COMMIT');
+          return applied;
+        });
         return { statements: result };
       } catch (error) {
-        if (transactionStarted)
-          await this.connection.execute(handle, 'ROLLBACK').catch(() => undefined);
         const failure =
           error instanceof DbError
             ? error

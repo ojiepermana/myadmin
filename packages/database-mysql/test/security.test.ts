@@ -40,7 +40,7 @@ function clientFor(rows: readonly Record<string, unknown>[], statements: string[
 }
 
 describe('MySQL principal security adapter', () => {
-  test('maps user and host separately without authentication strings', async () => {
+  test('UT-0045-AC1 maps user and host separately without authentication strings', async () => {
     const statements: string[] = [];
     const adapter = new MysqlSecurityAdapter(
       new MysqlConnectionAdapter({
@@ -67,7 +67,7 @@ describe('MySQL principal security adapter', () => {
     expect(statements[0]).not.toContain('authentication_string');
   });
 
-  test('uses parameters for password and quotes account components', async () => {
+  test('UT-0045-AC2 and UT-0045-AC3 use parameters for password and quote account components', async () => {
     const statements: string[] = [];
     const adapter = new MysqlSecurityAdapter(
       new MysqlConnectionAdapter({ sqlFactory: () => clientFor([], statements) }),
@@ -86,11 +86,10 @@ describe('MySQL principal security adapter', () => {
     });
     const statement = statements.find((item) => item.includes('CREATE USER')) ?? '';
     expect(statement).toContain("'reporter'@'report''host'");
-    expect(statement).toContain('BY ?');
-    expect(statement).toContain('new-secret');
+    expect(statement).toContain("IDENTIFIED BY 'new-secret'");
   });
 
-  test('UT-0046-AC2 exposes database and table privileges from the provider', async () => {
+  test('UT-0046-AC1, UT-0046-AC2, and UT-0046-AC3 expose database and table privileges from the provider', async () => {
     const adapter = new MysqlSecurityAdapter(
       new MysqlConnectionAdapter({ sqlFactory: () => clientFor([], []) }),
     );

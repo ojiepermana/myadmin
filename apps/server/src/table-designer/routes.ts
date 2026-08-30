@@ -85,11 +85,9 @@ function sessionFailure(
 
 function sameOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
-  return (
-    (request.headers.get('sec-fetch-site') === null ||
-      request.headers.get('sec-fetch-site') === 'same-origin') &&
-    (origin === null || origin === new URL(request.url).origin)
-  );
+  const fetchSite = request.headers.get('sec-fetch-site');
+  if (fetchSite !== null && fetchSite !== 'same-origin') return false;
+  return origin === null || origin === new URL(request.url).origin || fetchSite === 'same-origin';
 }
 
 function protectedMutation(

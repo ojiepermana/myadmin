@@ -20,8 +20,9 @@ afterEach(async () => {
 async function service(
   stream: (request: ExportRequest) => Promise<ExportRowStream>,
   now = () => new Date(),
+  auditEntries: unknown[] = [],
 ): Promise<ExportService> {
-  const audit = { append: () => undefined };
+  const audit = { append: (entry: unknown) => auditEntries.push(entry) };
   const store = { audit } as unknown as InternalUnitOfWork;
   const quoteValue = (value: unknown): string => {
     if (typeof value === 'object' && value !== null && 'type' in value) {
@@ -68,18 +69,23 @@ const table = {
 };
 
 describe('ExportService', () => {
-  test('UT-0047-AC1 streams CSV rows to an owned artifact and reports a job immediately', async () => {
-    const instance = await service(async () => ({
-      columns: ['id', 'name'],
-      estimatedTotal: 2,
-      rows: (async function* () {
-        yield {
-          id: { type: 'number', value: '1' },
-          name: { type: 'string', value: 'Ada, Lovelace' },
-        };
-        yield { id: { type: 'number', value: '2' }, name: { type: 'string', value: 'Grace' } };
-      })(),
-    }));
+  test('UT-0047-AC1, UT-0047-AC5, SEC-0047-AC5, and SEC-0047-AC7 stream safely and audit completion', async () => {
+    const auditEntries: unknown[] = [];
+    const instance = await service(
+      async () => ({
+        columns: ['id', 'name'],
+        estimatedTotal: 2,
+        rows: (async function* () {
+          yield {
+            id: { type: 'number', value: '1' },
+            name: { type: 'string', value: 'Ada, Lovelace' },
+          };
+          yield { id: { type: 'number', value: '2' }, name: { type: 'string', value: 'Grace' } };
+        })(),
+      }),
+      undefined,
+      auditEntries,
+    );
     const result = await instance.create(
       { id: 'user-1', username: 'admin', role: 'admin' },
       {
@@ -98,9 +104,21 @@ describe('ExportService', () => {
       result.jobId,
     );
     expect(await readFile(download.path, 'utf8')).toBe('id,name\n1,"Ada, Lovelace"\n2,Grace\n');
+    expect(auditEntries).toHaveLength(1);
+    expect(auditEntries[0]).toMatchObject({
+      action: 'export.completed',
+      actorUserId: 'user-1',
+      targetType: 'export',
+      details: { format: 'csv', rowCount: 2, source: 'public.items' },
+    });
+    expect(JSON.stringify(auditEntries[0])).not.toContain('Ada');
+    expect(JSON.stringify(auditEntries[0])).not.toContain('myadmin_test_password');
+    expect(() =>
+      instance.download({ id: 'user-2', username: 'other', role: 'admin' }, result.jobId),
+    ).toThrow('Export was not found.');
   });
 
-  test('UT-0047-AC2 writes SQL structure and provider quoted values', async () => {
+  test('UT-0047-AC2, SEC-0047-AC2 writes SQL structure and provider quoted values safely', async () => {
     const instance = await service(async () => ({
       columns: ['id', 'name'],
       rows: (async function* () {
@@ -121,6 +139,33 @@ describe('ExportService', () => {
     expect(contents).toContain(
       'INSERT INTO "public"."items" ("id", "name") VALUES (\'1\', \'O\'\'Reilly\');',
     );
+  });
+
+  test('SEC-0047-AC5 rejects expired artifacts and removes their files', async () => {
+    let current = new Date();
+    const instance = await service(
+      async () => ({
+        columns: ['id'],
+        rows: (async function* () {
+          yield { id: { type: 'number', value: '1' } };
+        })(),
+      }),
+      () => current,
+    );
+    const actor = { id: 'user-1', username: 'admin', role: 'admin' as const };
+    const result = await instance.create(actor, {
+      connectionId: 'connection-1',
+      source: table,
+      format: 'csv',
+    });
+    await (instance as never as { options: { jobs: JobManager } }).options.jobs.whenIdle();
+    expect(instance.get(actor, result.jobId)).toBeDefined();
+    current = new Date(current.getTime() + 2 * 60 * 60 * 1000);
+    expect(() => instance.download(actor, result.jobId)).toThrow('expired');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await expect(
+      stat(join(directories[0]!, 'temp', 'exports', `${result.jobId}.csv`)),
+    ).rejects.toThrow();
   });
 
   test('UT-0047-AC4 cancels a stream and removes the partial artifact', async () => {

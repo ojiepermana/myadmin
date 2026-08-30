@@ -68,6 +68,30 @@ function createMetadata(localType = 'integer', targetType = localType) {
 const metadata = createMetadata();
 
 describe('PostgreSQL table designer', () => {
+  test('[UT-0041-AC8] compiles every catalogued PostgreSQL column type into one stable create DDL', async () => {
+    const connection = createConnection();
+    const designer = new PostgresqlTableDesigner(connection as never, metadata as never);
+    const types = await designer.types(handle);
+    const columns = types.types.map((type, index) => ({
+      name: `column_${index}`,
+      dataType: type.name,
+      nullable: true,
+      ...(type.parameters.includes('length') ? { length: 24 } : {}),
+      ...(type.parameters.includes('precision') ? { precision: 10, scale: 2 } : {}),
+    }));
+
+    const preview = await designer.preview(handle, {
+      operation: 'create',
+      ref: { database: 'app', schema: 'public', name: 'all_types', type: 'table' },
+      columns,
+    });
+
+    expect(preview.destructive).toBe(false);
+    const sql = preview.statements[0]?.sql ?? '';
+    for (const column of columns) expect(sql).toContain(`"${column.name}"`);
+    expect(columns).toHaveLength(types.types.length);
+  });
+
   test('[UT-0041-AC1, UT-0041-AC3] compiles a provider-neutral create change set into stable DDL', async () => {
     const connection = createConnection();
     const designer = new PostgresqlTableDesigner(connection as never, metadata as never);

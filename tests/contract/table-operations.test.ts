@@ -15,7 +15,7 @@ function operation(operations: ContractOperation[], operationId: string): Contra
 }
 
 describe('table operations contract', () => {
-  test('CT-0043-AC1 through CT-0043-AC4 expose informed mutation shapes and errors', async () => {
+  test('CT-0043-AC1, CT-0043-AC2, CT-0043-AC3, and CT-0043-AC4 expose informed mutation shapes and errors', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
     expect(operations.map((candidate) => candidate.operationId)).toEqual(

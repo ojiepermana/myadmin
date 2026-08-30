@@ -12,12 +12,15 @@ import {
   type BunSqlClient,
   type BunSqlClientFactory,
   type PostgresqlSqlOptions,
+  type ReservedBunSqlClient,
   type SqlQuery,
 } from '../driver';
 import { mapPostgresqlError } from '../mappers';
 
 interface Session {
   readonly client: BunSqlClient;
+  readonly queryClient: BunSqlClient;
+  readonly reservedClient?: ReservedBunSqlClient;
   readonly backendPid: number;
   readonly openedAt: Date;
   readonly activeQueries: Set<SqlQuery<unknown>>;
@@ -143,13 +146,22 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
     validateContext(context);
     const timeoutMs = context.descriptor.timeoutMs ?? 30_000;
     let client: BunSqlClient | undefined;
+    let reservedClient: ReservedBunSqlClient | undefined;
     try {
       client = this.sqlFactory(sqlOptions(context));
-      await withTimeout(client.connect(), timeoutMs, () => {
-        void client?.close({ timeout: 0 }).catch(() => undefined);
-      });
+      let queryClient: BunSqlClient = client;
+      if (client.reserve) {
+        reservedClient = await withTimeout(client.reserve(), timeoutMs, () => {
+          void client?.close({ timeout: 0 }).catch(() => undefined);
+        });
+        queryClient = reservedClient;
+      } else {
+        queryClient = await withTimeout(client.connect(), timeoutMs, () => {
+          void client?.close({ timeout: 0 }).catch(() => undefined);
+        });
+      }
       const result = await withTimeout(
-        client`SELECT pg_backend_pid() AS backend_pid`,
+        queryClient`SELECT pg_backend_pid() AS backend_pid`,
         timeoutMs,
         () => {
           void client?.close({ timeout: 0 }).catch(() => undefined);
@@ -165,9 +177,17 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
 
       const id = this.idFactory();
       const openedAt = new Date(this.now());
-      this.sessions.set(id, { client, backendPid, openedAt, activeQueries: new Set() });
+      this.sessions.set(id, {
+        client,
+        queryClient,
+        ...(reservedClient === undefined ? {} : { reservedClient }),
+        backendPid,
+        openedAt,
+        activeQueries: new Set(),
+      });
       return { id, openedAt, backendPid };
     } catch (error) {
+      reservedClient?.release();
       if (client) void client.close({ timeout: 0 }).catch(() => undefined);
       throw mapPostgresqlError(error, context.secret);
     }
@@ -176,6 +196,7 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
   public async close(handle: ConnectionHandle): Promise<void> {
     const session = this.session(handle);
     this.sessions.delete(handle.id);
+    session.reservedClient?.release();
     try {
       await session.client.close({ timeout: 0 });
     } catch (error) {
@@ -286,7 +307,7 @@ export class PostgresqlConnectionAdapter implements ConnectionPort {
 
   private clientFor(handle: ConnectionHandle): BunSqlClient {
     const session = this.session(handle);
-    return session.transactionClient ?? session.client;
+    return session.transactionClient ?? session.queryClient;
   }
 
   /** Uses Bun's cancellation hook and always follows with pg_cancel_backend. */

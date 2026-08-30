@@ -69,7 +69,7 @@ function fixture() {
 }
 
 describe('QueryHistoryService', () => {
-  test('filters history by owner and redacts deleted or foreign connections', () => {
+  test('UT-0036-AC1, UT-0036-AC6, and SEC-0036-AC8 filter history by owner and redact deleted or foreign connections', () => {
     const value = fixture();
     value.historyRepository.append(
       history('history-new', 'user-1', '2026-08-28T11:00:00.000Z', 'SELECT * FROM orders'),
@@ -93,7 +93,7 @@ describe('QueryHistoryService', () => {
     expect(result.items[0]).not.toHaveProperty('userId');
   });
 
-  test('creates, updates, lists, and deletes only the owner’s saved queries', () => {
+  test('UT-0036-AC4, UT-0036-AC6, and SEC-0036-AC8 create, update, list, and delete only the owner’s saved queries', () => {
     const value = fixture();
     const created = value.service.createSaved('user-1', {
       name: ' Daily orders ',
@@ -135,7 +135,7 @@ describe('QueryHistoryService', () => {
     expect(value.service.listSaved('user-1').total).toBe(0);
   });
 
-  test('rejects a saved query that references another user’s connection', () => {
+  test('UT-0036-AC4 and SEC-0036-AC6 reject a saved query that references another user’s connection', () => {
     const value = fixture();
     value.connectionRepository.create({ ...connection, id: 'connection-2', ownerUserId: 'user-2' });
 

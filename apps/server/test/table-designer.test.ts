@@ -112,7 +112,48 @@ describe('table designer service', () => {
     expect(value.events[0]).toMatchObject({ action: 'table.altered', result: 'denied' });
   });
 
-  test('[IT-0041-AC6, IT-0041-AC7, SEC-0041-AC6] audits successful changes, records dropped columns, and invalidates metadata', async () => {
+  test('[SEC-0042-AC6] requires confirmation for destructive index and constraint changes', async () => {
+    const value = fixture({
+      operation: 'alter',
+      statements: [
+        {
+          sql: 'ALTER TABLE "public"."accounts" DROP CONSTRAINT "accounts_owner_fk"',
+          destructiveConstraints: ['accounts_owner_fk'],
+        },
+        {
+          sql: 'DROP INDEX "idx_accounts_owner"',
+          destructiveIndexes: ['idx_accounts_owner'],
+        },
+      ],
+      warnings: ['Dropping a foreign key can affect referential integrity.'],
+      destructive: true,
+    });
+    const changeSet: TableChangeSet = {
+      operation: 'alter',
+      ref: { database: 'app', schema: 'public', name: 'accounts', type: 'table' },
+      alterations: [
+        { kind: 'dropConstraint', name: 'accounts_owner_fk', type: 'foreignKey' },
+        { kind: 'dropIndex', name: 'idx_accounts_owner' },
+      ],
+    };
+
+    await expect(value.service.apply(value.actor, 'connection-1', changeSet)).rejects.toMatchObject(
+      {
+        code: 'TABLE_CONFIRMATION_REQUIRED',
+        status: 409,
+        details: {
+          destructiveConstraints: ['accounts_owner_fk'],
+          destructiveIndexes: ['idx_accounts_owner'],
+          table: 'public.accounts',
+        },
+      },
+    );
+    expect(value.applyCalls).toBe(0);
+    expect(value.events).toHaveLength(1);
+    expect(value.events[0]).toMatchObject({ action: 'table.altered', result: 'denied' });
+  });
+
+  test('[IT-0041-AC6, IT-0041-AC7, SEC-0041-AC6, SEC-0041-AC8] audits successful changes without credential or SQL leakage, records dropped columns, and invalidates metadata', async () => {
     const value = fixture();
 
     await expect(
@@ -127,6 +168,8 @@ describe('table designer service', () => {
       ['table.column_dropped', 'success'],
     ]);
     expect(value.events[1]).toMatchObject({ targetRef: 'public.accounts.email' });
+    expect(JSON.stringify(value.events)).not.toContain('database-password');
+    expect(JSON.stringify(value.events)).not.toContain('DROP COLUMN');
   });
 
   test('[IT-0041-AC6, SEC-0041-AC6] records one column drop audit when a provider recreates a generated column', async () => {
@@ -179,5 +222,33 @@ describe('table designer service', () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toMatchObject({ code: 'CSRF_INVALID' });
+
+    const proxiedResponse = await application.handle(
+      new Request('http://127.0.0.1/tables/ddl/apply', {
+        method: 'POST',
+        headers: {
+          cookie: 'myadmin_session=session',
+          origin: 'http://localhost:4200',
+          'sec-fetch-site': 'same-origin',
+          'x-myadmin-csrf': '1',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          connectionId: 'connection-1',
+          changeSet: {
+            operation: 'alter',
+            ref: { database: 'app', schema: 'public', name: 'accounts', type: 'table' },
+            alterations: [
+              {
+                kind: 'add',
+                column: { name: 'created_at', dataType: 'timestamp', nullable: true },
+              },
+            ],
+          },
+        }),
+      }),
+    );
+
+    expect(proxiedResponse.status).toBe(200);
   });
 });

@@ -14,7 +14,7 @@ afterEach(async () => {
   );
 });
 
-test('MySQL backup preparation uses a strict temporary option file instead of argv credentials', async () => {
+test('UT-0049-AC1, UT-0049-AC2, and SEC-0049-AC2 use a strict temporary option file instead of argv credentials', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'myadmin-mysql-backup-'));
   directories.push(directory);
   const tool = join(directory, 'mysqldump');

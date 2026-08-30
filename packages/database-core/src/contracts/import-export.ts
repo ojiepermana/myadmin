@@ -85,5 +85,6 @@ export interface ImportExportPort {
   beginTransaction?(context: ProviderContext): Promise<void>;
   commitTransaction?(context: ProviderContext): Promise<void>;
   rollbackTransaction?(context: ProviderContext): Promise<void>;
+  withTransaction?(context: ProviderContext, operation: () => Promise<void>): Promise<void>;
   truncate?(context: ProviderContext, table: ObjectRef): Promise<void>;
 }

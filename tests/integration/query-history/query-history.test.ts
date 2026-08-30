@@ -143,7 +143,7 @@ function history(
 }
 
 describe('query history and saved query API', () => {
-  test('IT-0036-AC1, AC2, AC3, and AC6 list, filter, redact, retain, and delete history', async () => {
+  test('IT-0036-AC1, IT-0036-AC2, IT-0036-AC3, and IT-0036-AC6 list, filter, redact, retain, and delete history', async () => {
     const value = await fixture();
     value.store.connections.create(connection('connection-1', value.userId));
     value.store.queryHistory.append(
@@ -219,7 +219,7 @@ describe('query history and saved query API', () => {
     ).toBe(0);
   });
 
-  test('IT-0036-AC4 and AC6 provide private saved-query CRUD with tags and conflicts', async () => {
+  test('IT-0036-AC4 and IT-0036-AC6 provide private saved-query CRUD with tags and conflicts', async () => {
     const value = await fixture();
     const createUser = await request(
       value.app,

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   createCapabilityDescription,
+  DbError,
   type ConnectionHandle,
   type GrantChange,
   type GrantApplyResult,
@@ -46,6 +47,7 @@ function serviceFor(
   security: Partial<SecurityPort> &
     Pick<SecurityPort, 'privilegeCatalog' | 'preview' | 'apply' | 'grants'>,
   audit = new MemoryAudit(),
+  principalsCapability = true,
 ): { service: PrincipalSecurityService; audit: MemoryAudit; applied: GrantChange[][] } {
   const applied: GrantChange[][] = [];
   const providerSecurity = {
@@ -80,7 +82,7 @@ function serviceFor(
                   cancelQuery: true,
                   backupRestore: false,
                   importExport: false,
-                  principals: true,
+                  principals: principalsCapability,
                   grants: true,
                   tableComments: true,
                   generatedColumns: true,
@@ -133,6 +135,132 @@ function securityPort(overrides: Partial<SecurityPort> = {}): SecurityPort {
 }
 
 describe('0046 privilege service protections', () => {
+  test('IT-0045-AC1, IT-0045-AC2, IT-0045-AC3, IT-0045-AC4, and IT-0045-AC5 dispatch the principal lifecycle safely', async () => {
+    const audit = new MemoryAudit();
+    const calls: string[] = [];
+    const { service } = serviceFor(
+      securityPort({
+        principals: async () => {
+          calls.push('list');
+          return {
+            items: [{ name: 'analyst', type: 'role', attributes: [], memberOf: [] }],
+            total: 1,
+          };
+        },
+        describePrincipalForm: async () => {
+          calls.push('form');
+          return { create: [], edit: [] };
+        },
+        createPrincipal: async (_context, request) => {
+          calls.push(`create:${request.principal.name}`);
+        },
+        alterPrincipal: async (_context, request) => {
+          calls.push(`update:${request.principal.name}`);
+        },
+        resetCredential: async (_context, request) => {
+          calls.push(`reset:${request.principal.name}`);
+        },
+        dropPrincipal: async (_context, name) => {
+          calls.push(`drop:${name}`);
+        },
+      }),
+      audit,
+    );
+
+    await expect(service.list(actor, 'connection-1', {})).resolves.toMatchObject({
+      items: [{ name: 'analyst' }],
+      total: 1,
+    });
+    await expect(service.form(actor, 'connection-1')).resolves.toEqual({ create: [], edit: [] });
+    await expect(
+      service.create(actor, 'connection-1', {
+        name: 'analyst',
+        attributes: [],
+        credential: 'synthetic-principal-secret',
+      }),
+    ).resolves.toMatchObject({ name: 'analyst', type: 'other' });
+    await expect(
+      service.update(actor, 'connection-1', { name: 'analyst', changes: [] }),
+    ).resolves.toMatchObject({ name: 'analyst', type: 'other' });
+    await service.reset(actor, 'connection-1', 'analyst', 'synthetic-rotated-secret');
+    await service.drop(actor, 'connection-1', 'analyst');
+
+    expect(calls).toEqual([
+      'list',
+      'form',
+      'create:analyst',
+      'update:analyst',
+      'reset:analyst',
+      'drop:analyst',
+    ]);
+    expect(audit.events.map((event) => event.action)).toEqual([
+      'security.principal_created',
+      'security.principal_updated',
+      'security.credential_reset',
+      'security.principal_dropped',
+    ]);
+    expect(JSON.stringify(audit.events)).not.toContain('synthetic-principal-secret');
+    expect(JSON.stringify(audit.events)).not.toContain('synthetic-rotated-secret');
+  });
+
+  test('IT-0045-AC6 maps provider permission denial to a safe API error', async () => {
+    const application = registerSecurityRoutes(new Elysia(), '', {
+      authService: {
+        validateSession: () => ({
+          authenticated: true,
+          value: { user: actor, session: { id: 'session-1' } },
+        }),
+      } as never,
+      setupService: { isInitialized: () => true },
+      securityService: {
+        create: async () => {
+          throw new DbError({
+            category: 'permission_denied',
+            message: 'permission denied for database principal operation',
+          });
+        },
+      } as never,
+    });
+
+    const response = await application.handle(
+      new Request('http://localhost/security/principals', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+          'x-myadmin-csrf': '1',
+        },
+        body: JSON.stringify({ connectionId: 'connection-1', name: 'analyst', attributes: [] }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      details: { category: 'permission_denied' },
+    });
+  });
+
+  test('SEC-0045-AC6 rejects principal operations when the provider capability is unavailable', async () => {
+    let listed = false;
+    const { service } = serviceFor(
+      securityPort({
+        principals: async () => {
+          listed = true;
+          return { items: [], total: 0 };
+        },
+      }),
+      new MemoryAudit(),
+      false,
+    );
+
+    await expect(service.list(actor, 'connection-1', {})).rejects.toMatchObject({
+      code: 'SECURITY_UNSUPPORTED',
+      status: 501,
+    });
+    expect(listed).toBe(false);
+  });
+
   test('SEC-0046-AC3 rejects a state changing request without CSRF', async () => {
     const application = registerSecurityRoutes(new Elysia(), '', {
       authService: {
@@ -153,6 +281,32 @@ describe('0046 privilege service protections', () => {
     );
     expect(response.status).toBe(403);
     expect(await response.json()).toMatchObject({ code: 'CSRF_REQUIRED' });
+  });
+
+  test('SEC-0045-AC6 accepts same-origin CSRF from the Angular development proxy', async () => {
+    const application = registerSecurityRoutes(new Elysia(), '', {
+      authService: {
+        validateSession: () => ({
+          authenticated: true,
+          value: { user: actor, session: { id: 'session-1' } },
+        }),
+      } as never,
+      setupService: { isInitialized: () => true },
+      securityService: { apply: async () => ({ statements: [] }) } as never,
+    });
+    const response = await application.handle(
+      new Request('http://localhost/security/grants/apply', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://127.0.0.1:4200',
+          'sec-fetch-site': 'same-origin',
+          'x-myadmin-csrf': '1',
+        },
+        body: JSON.stringify({ connectionId: 'connection-1', changeSet: { changes: [change] } }),
+      }),
+    );
+    expect(response.status).toBe(200);
   });
 
   test('UT-0046-AC6 validates the provider catalog again on the server', async () => {
@@ -178,7 +332,7 @@ describe('0046 privilege service protections', () => {
     expect(applied).toEqual([]);
   });
 
-  test('SEC-0046-AC5 audits each result before returning the batch', async () => {
+  test('IT-0046-AC5 and SEC-0046-AC5 audit each result before returning the batch', async () => {
     const audit = new MemoryAudit();
     const { service } = serviceFor(securityPort(), audit);
     await expect(
@@ -193,5 +347,46 @@ describe('0046 privilege service protections', () => {
       connectionId: 'connection-1',
       details: { principal: 'analyst', scope: 'database', privilege: 'CONNECT' },
     });
+  });
+
+  test('IT-0045-AC7, SEC-0045-AC4, SEC-0045-AC5, and SEC-0045-AC7 audit principal reset and drop without credential material', async () => {
+    const audit = new MemoryAudit();
+    const resetRequests: unknown[] = [];
+    const droppedNames: string[] = [];
+    const { service } = serviceFor(
+      securityPort({
+        resetCredential: async (_context, request) => {
+          resetRequests.push(request);
+        },
+        dropPrincipal: async (_context, name) => {
+          droppedNames.push(name);
+        },
+      }),
+      audit,
+    );
+    const secret = 'synthetic-principal-reset-secret';
+
+    await service.reset(actor, 'connection-1', 'analyst', secret);
+    await service.drop(actor, 'connection-1', 'analyst');
+
+    expect(resetRequests).toHaveLength(1);
+    expect(droppedNames).toEqual(['analyst']);
+    expect(audit.events.map((event) => event.action)).toEqual([
+      'security.credential_reset',
+      'security.principal_dropped',
+    ]);
+    expect(JSON.stringify(audit.events)).not.toContain(secret);
+    expect(audit.events).toMatchObject([
+      {
+        connectionId: 'connection-1',
+        targetRef: 'connection-1:analyst',
+        details: { credentialChanged: true },
+      },
+      {
+        connectionId: 'connection-1',
+        targetRef: 'connection-1:analyst',
+        details: { principalName: 'analyst' },
+      },
+    ]);
   });
 });

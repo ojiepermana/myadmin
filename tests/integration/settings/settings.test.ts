@@ -102,7 +102,7 @@ function historyEntry(userId: string, id: string, executedAt: Date) {
   };
 }
 
-describe('IT-0052-AC1, IT-0052-AC3, and IT-0052-AC4 settings API', () => {
+describe('IT-0052-AC1, IT-0052-AC2, IT-0052-AC3, IT-0052-AC4, SEC-0052-AC1, and SEC-0052-AC4 settings API', () => {
   test('serves scoped defaults, validates closed keys, and audits admin writes', async () => {
     const { application, cookie, database: value } = await initializedApp();
 
@@ -181,7 +181,7 @@ describe('IT-0052-AC1, IT-0052-AC3, and IT-0052-AC4 settings API', () => {
   });
 });
 
-describe('IT-0052-AC6 runtime settings consumer', () => {
+describe('IT-0052-AC6 and IT-0052-AC7 runtime settings consumer', () => {
   test('uses the current cached service value for history retention', async () => {
     const { application, cookie, database: value, store } = await initializedApp();
     const admin = store.users.findByUsername('settings-admin');
@@ -207,7 +207,7 @@ describe('IT-0052-AC6 runtime settings consumer', () => {
   });
 });
 
-describe('SEC-0052-AC3 and SEC-0052-AC5 settings authorization', () => {
+describe('SEC-0052-AC3, SEC-0052-AC5, and SEC-0052-AC7 settings authorization', () => {
   test('rejects a regular user from application settings while allowing preferences', async () => {
     const { application, cookie: adminCookie, store } = await initializedApp();
     const passwordHash = await new PasswordHasher().hash('synthetic-user-password');

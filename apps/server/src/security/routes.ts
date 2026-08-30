@@ -1,6 +1,7 @@
 import { SESSION_COOKIE_NAME, type AuthService, type SessionValidation } from '@myadmin/auth';
 import {
-  DbError,
+  isDbError,
+  type DbError,
   type GrantChange,
   type GrantScope,
   type ObjectRef,
@@ -41,6 +42,17 @@ function apiError(
   const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
   return jsonResponse({ code, message, correlationId, ...(details ? { details } : {}) }, status);
 }
+function databaseError(
+  value: unknown,
+): value is { category: DbError['category']; message: string } {
+  if (isDbError(value)) return true;
+  return (
+    record(value) &&
+    value['name'] === 'DbError' &&
+    typeof value['category'] === 'string' &&
+    typeof value['message'] === 'string'
+  );
+}
 function cookieValue(request: Request): string | undefined {
   for (const cookie of request.headers.get('cookie')?.split(';') ?? []) {
     const separator = cookie.indexOf('=');
@@ -73,7 +85,7 @@ function csrfAllowed(request: Request): boolean {
   return (
     request.headers.get('x-myadmin-csrf') === '1' &&
     (fetchSite === null || fetchSite === 'same-origin') &&
-    (origin === null || origin === new URL(request.url).origin)
+    (origin === null || origin === new URL(request.url).origin || fetchSite === 'same-origin')
   );
 }
 function record(value: unknown): value is Record<string, unknown> {
@@ -240,7 +252,7 @@ function grantChangeSet(value: unknown): GrantSecurityChangeSet | undefined {
 function errorResponse(request: Request, error: unknown): Response {
   if (error instanceof SecurityServiceError)
     return apiError(request, error.status, error.code, error.message, error.details);
-  if (error instanceof DbError) {
+  if (databaseError(error)) {
     if (error.category === 'permission_denied')
       return apiError(request, 403, 'PERMISSION_DENIED', error.message, {
         category: error.category,

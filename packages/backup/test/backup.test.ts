@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { readFile, stat, writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { BackupArtifactStore, BackupExecutor } from '../src';
+import { BackupArtifactStore, BackupExecutor, BackupService } from '../src';
 import type { PreparedBackupCommand } from '@myadmin/database-core';
 
 const directories: string[] = [];
@@ -39,7 +39,7 @@ afterEach(async () => {
 });
 
 describe('backup artifact store', () => {
-  test('writes a safe manifest, lists only the owner artifacts, and requires exact delete confirmation', async () => {
+  test('UT-0049-AC5 and SEC-0049-AC5 write a safe manifest, list only owner artifacts, and require exact delete confirmation', async () => {
     const directory = await temporaryDirectory();
     const store = new BackupArtifactStore(directory);
     const allocation = await store.allocate(
@@ -71,8 +71,50 @@ describe('backup artifact store', () => {
   });
 });
 
+describe('backup service capability safeguards', () => {
+  test('UT-0049-AC7 and IT-0049-AC7 report unsupported providers before submitting a job', async () => {
+    const directory = await temporaryDirectory();
+    let submitCalls = 0;
+    const actor = { id: 'user-1', username: 'admin', role: 'admin' as const };
+    const connection = {
+      id: 'connection-1',
+      ownerUserId: 'user-1',
+      engine: 'postgresql',
+    };
+    const service = new BackupService({
+      store: {
+        connections: { findById: () => connection },
+        audit: { append: () => undefined },
+      } as never,
+      providers: { get: () => ({ engine: 'postgresql' }) } as never,
+      vault: {} as never,
+      jobs: {
+        submit: () => {
+          submitCalls += 1;
+          return 'unexpected-job';
+        },
+      } as never,
+      dataDirectory: directory,
+    });
+
+    await expect(service.inspect(actor, connection.id)).resolves.toMatchObject({
+      supported: false,
+      reason: 'The database provider does not support backup.',
+    });
+    await expect(
+      service.create(actor, {
+        connectionId: connection.id,
+        database: 'app',
+        scope: 'both',
+        compress: true,
+      }),
+    ).rejects.toMatchObject({ code: 'BACKUP_UNSUPPORTED', status: 501 });
+    expect(submitCalls).toBe(0);
+  });
+});
+
 describe('backup executor', () => {
-  test('streams plain SQL output and reports progress without exposing command environment', async () => {
+  test('UT-0049-AC2 and UT-0049-AC3 stream plain SQL output and report progress without exposing command environment', async () => {
     const directory = await temporaryDirectory();
     const outputPath = join(directory, 'backup.sql');
     const progress: string[] = [];
@@ -93,7 +135,7 @@ describe('backup executor', () => {
     expect(progress).toContain('completed');
   });
 
-  test('streams gzip output and removes the partial artifact after a failed native process', async () => {
+  test('UT-0049-AC3, UT-0049-AC4, and SEC-0049-AC4 stream gzip output and redact a failed native process', async () => {
     const directory = await temporaryDirectory();
     const compressedPath = join(directory, 'backup.sql.gz');
     const executor = new BackupExecutor({
@@ -129,5 +171,61 @@ describe('backup executor', () => {
       }),
     ).rejects.toMatchObject({ message: expect.not.stringContaining('synthetic-secret') });
     await expect(stat(failedPath)).rejects.toThrow();
+  });
+
+  test('UT-0049-AC3 cancels a native backup and removes the partial artifact', async () => {
+    const directory = await temporaryDirectory();
+    const outputPath = join(directory, 'cancelled.sql');
+    const controller = new AbortController();
+    let killed = false;
+    const executor = new BackupExecutor({
+      processFactory: () => ({
+        stdout: stream('-- PostgreSQL database dump\n'),
+        stderr: stream(''),
+        exited: Promise.resolve(143),
+        kill: () => {
+          killed = true;
+        },
+      }),
+    });
+
+    const run = executor.run(plan(), outputPath, {
+      signal: controller.signal,
+      compress: false,
+      reportProgress: (progress) => {
+        if (progress.phase === 'dumping' && progress.current === 0) controller.abort();
+      },
+    });
+    await expect(run).rejects.toMatchObject({ name: 'AbortError' });
+    expect(killed).toBe(true);
+    await expect(stat(outputPath)).rejects.toThrow();
+  });
+
+  test('IT-0049-AC3 cancels an actual Bun native subprocess and removes the partial artifact', async () => {
+    const directory = await temporaryDirectory();
+    const outputPath = join(directory, 'native-cancelled.sql');
+    const controller = new AbortController();
+    const executor = new BackupExecutor();
+
+    const run = executor.run(
+      {
+        executable: '/bin/sh',
+        args: ['-c', "printf '%s\\n' '-- PostgreSQL database dump'; sleep 30"],
+        toolVersion: 'system-shell',
+        format: 'postgresql-sql',
+        cleanup: async () => undefined,
+      },
+      outputPath,
+      {
+        signal: controller.signal,
+        compress: false,
+        reportProgress: (progress) => {
+          if (progress.phase === 'dumping' && progress.current === 0) controller.abort();
+        },
+      },
+    );
+
+    await expect(run).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(stat(outputPath)).rejects.toThrow();
   });
 });

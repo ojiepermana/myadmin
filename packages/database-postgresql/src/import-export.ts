@@ -173,6 +173,12 @@ export class PostgresqlImportExportAdapter implements ImportExportPort {
     return this.executeCommand(context, 'ROLLBACK');
   }
 
+  public withTransaction(context: ProviderContext, operation: () => Promise<void>): Promise<void> {
+    return this.withHandle(context, async (handle) => {
+      await this.connection.withTransaction(handle, operation);
+    });
+  }
+
   public truncate(context: ProviderContext, table: ObjectRef): Promise<void> {
     return this.executeCommand(context, `TRUNCATE TABLE ${tableName(table)}`);
   }

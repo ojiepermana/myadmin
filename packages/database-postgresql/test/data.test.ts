@@ -4,6 +4,7 @@ import {
   buildPostgresqlDataQuery,
   buildPostgresqlInsertQuery,
   buildPostgresqlUpdateQuery,
+  resolvePostgresqlRowIdentity,
 } from '../src/data';
 
 const columns: readonly DataColumnMetadata[] = [
@@ -14,6 +15,23 @@ const table = { database: 'app', schema: 'public', name: 'users', type: 'table' 
 
 describe('PostgreSQL data query builder', () => {
   const identity: DataRowIdentity = { columns: ['id'], kind: 'primary', editable: true };
+
+  test('[UT-0038-AC1] marks a table without a usable identity as read only', () => {
+    const result = resolvePostgresqlRowIdentity(
+      { ...table, name: 'audit_log' },
+      [
+        { name: 'event', dataType: 'text', nullable: false },
+        { name: 'request_id', dataType: 'text', nullable: true },
+      ],
+      [],
+    );
+    expect(result).toEqual({
+      columns: [],
+      kind: null,
+      editable: false,
+      reason: 'This table has no primary key or non nullable unique index.',
+    });
+  });
 
   test('[UT-0037-AC2, SEC-0037-AC8] keeps values out of SQL and quotes identifiers', () => {
     const request: DataPageRequest = {

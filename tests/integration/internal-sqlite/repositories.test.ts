@@ -292,7 +292,7 @@ describe('IT-0009-AC3 and IT-0009-AC7 repository round trips', () => {
 });
 
 describe('IT-0009-AC3 parameterized mappers', () => {
-  test('round trips values containing SQL syntax without executing them', async () => {
+  test('SEC-0009-AC3 rejects SQL-shaped values without executing them', async () => {
     const database = await migratedDatabase();
     const users = new SqliteUserRepository(database);
     const groups = new SqliteServerGroupRepository(database);

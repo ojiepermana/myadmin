@@ -236,7 +236,7 @@ describe('connection manager integration', () => {
     expect(new TextDecoder().decode(credential?.ciphertext)).not.toContain('database-password');
   });
 
-  test('IT-0026-AC3 and SEC-0026-AC3 test transient and saved credentials without writing transient secrets', async () => {
+  test('IT-0026-AC3, IT-0051-AC3, SEC-0051-AC3, and SEC-0026-AC3 test transient and saved credentials without writing transient secrets', async () => {
     const value = await fixture();
     const transient = await request(
       value.app,

@@ -351,13 +351,16 @@ export class MysqlSecurityAdapter implements SecurityPort {
   ): Promise<void> {
     const { user, host } = account(request);
     const options = compileOptions(request.principal.attributes);
-    const suffix =
-      request.credential === undefined ? options : `${options ? `${options} ` : ''}BY ?`;
+    // MySQL does not accept parameter markers in CREATE/ALTER USER password
+    // clauses. Escape the value as a SQL string; provider errors and audit
+    // payloads still never include the statement or credential.
+    const credentialClause =
+      request.credential === undefined ? '' : `IDENTIFIED BY ${sqlString(request.credential)}`;
+    const suffix = [credentialClause, options].filter(Boolean).join(' ');
     await this.withHandle(context, (handle) =>
       this.connection.execute(
         handle,
         `CREATE USER ${sqlString(user)}@${sqlString(host)}${suffix ? ` ${suffix}` : ''}`,
-        request.credential === undefined ? [] : [request.credential],
       ),
     );
   }
@@ -383,8 +386,7 @@ export class MysqlSecurityAdapter implements SecurityPort {
     await this.withHandle(context, (handle) =>
       this.connection.execute(
         handle,
-        `ALTER USER ${sqlString(user)}@${sqlString(host)} IDENTIFIED BY ?`,
-        [request.credential],
+        `ALTER USER ${sqlString(user)}@${sqlString(host)} IDENTIFIED BY ${sqlString(request.credential!)}`,
       ),
     );
   }

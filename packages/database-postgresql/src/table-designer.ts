@@ -988,7 +988,7 @@ export class PostgresqlTableDesigner implements TableDesignerPort {
         explain: true,
         cancelQuery: true,
         backupRestore: false,
-        importExport: false,
+        importExport: true,
         principals: true,
         grants: true,
         tableComments: true,

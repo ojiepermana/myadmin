@@ -89,7 +89,7 @@ async function setup(
 }
 
 describe('ImportService', () => {
-  test('UT-0048-AC1 streams uploads, preserves metadata, and enforces the limit while reading', async () => {
+  test('UT-0048-AC1 and SEC-0048-AC1 enforce upload limits while streaming', async () => {
     const { service } = await setup({ maxBytes: 8 });
     const upload = await service.upload(actor, {
       fileName: 'seed.csv',
@@ -106,7 +106,7 @@ describe('ImportService', () => {
     ).rejects.toMatchObject({ code: 'IMPORT_UPLOAD_TOO_LARGE', status: 413 });
   });
 
-  test('UT-0048-AC1 rejects mismatched types and hides another owner upload', async () => {
+  test('SEC-0048-AC1 rejects mismatched types and hides another owner upload', async () => {
     const { service } = await setup();
     await expect(
       service.upload(actor, {
@@ -184,7 +184,7 @@ describe('ImportService', () => {
     ).toBe(4);
   });
 
-  test('UT-0048-AC4 requires the exact table name before truncate and audits destructive completion', async () => {
+  test('UT-0048-AC4, SEC-0048-AC4, and SEC-0048-AC6 gate and audit destructive truncate without row data', async () => {
     const { service, manager, commands, audits } = await setup();
     const upload = await service.upload(actor, {
       fileName: 'rows.csv',
@@ -213,9 +213,11 @@ describe('ImportService', () => {
     expect(audits).toEqual(
       expect.arrayContaining([expect.objectContaining({ action: 'import.completed' })]),
     );
+    expect(JSON.stringify(audits)).not.toContain('Ada');
+    expect(JSON.stringify(audits)).not.toContain('rows.csv');
   });
 
-  test('UT-0048-AC7 returns only a bounded server preview', async () => {
+  test('UT-0048-AC7 and SEC-0048-AC7 return only a bounded server preview', async () => {
     const { service } = await setup();
     const upload = await service.upload(actor, {
       fileName: 'rows.csv',

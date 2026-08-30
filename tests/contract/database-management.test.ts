@@ -21,7 +21,7 @@ const apiError = {
 };
 
 describe('database management contract', () => {
-  test('CT-0039-AC2 through CT-0039-AC4 expose provider options and safe mutation shapes', async () => {
+  test('CT-0039-AC2, CT-0039-AC3, and CT-0039-AC4 expose provider options and safe mutation shapes', async () => {
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
     expect(operations.map((candidate) => candidate.operationId)).toEqual(

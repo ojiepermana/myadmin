@@ -237,7 +237,7 @@ describe('connection lifecycle integration', () => {
     );
   });
 
-  test('IT-0027-AC1, IT-0027-AC2, IT-0027-AC3, IT-0027-AC4, SEC-0027-AC1, SEC-0027-AC3, and SEC-0027-AC7 use saved and transient credentials safely', async () => {
+  test('IT-0027-AC1, IT-0027-AC2, IT-0027-AC3, IT-0027-AC4, IT-0051-AC1, IT-0051-AC5, SEC-0027-AC1, SEC-0027-AC3, SEC-0051-AC5, and SEC-0027-AC7 use saved and transient credentials safely', async () => {
     const value = await fixture();
     const saved = await request(
       value.app,
@@ -330,7 +330,7 @@ describe('connection lifecycle integration', () => {
     expect(value.openSecrets).toHaveLength(3);
   });
 
-  test('IT-0027-AC5, IT-0027-AC8, IT-0027-AC9, and SEC-0027-AC8 recover errors and audit safe lifecycle events', async () => {
+  test('IT-0027-AC5, IT-0027-AC8, IT-0027-AC9, IT-0051-AC7, and SEC-0027-AC8 recover errors and audit safe lifecycle events', async () => {
     const value = await fixture();
     const created = await request(
       value.app,

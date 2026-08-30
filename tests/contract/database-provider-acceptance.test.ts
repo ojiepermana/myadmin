@@ -88,6 +88,36 @@ describe('database core acceptance contract', () => {
     }
   });
 
+  test('CT-0021-AC8 documents every port behavior and unsupported boundary', async () => {
+    const contracts = await Bun.file(
+      'docs/specs/0021-database-core-contracts/port-contracts.md',
+    ).text();
+    const ports = [
+      'ConnectionPort',
+      'CapabilityPort',
+      'MetadataPort',
+      'DatabasePort',
+      'SchemaPort',
+      'TablePort',
+      'TableDesignerPort',
+      'TableOperationsPort',
+      'ViewPort',
+      'DataPort',
+      'QueryPort',
+      'SecurityPort',
+      'ImportExportPort',
+      'BackupPort` / `BackupRestorePort',
+      'MonitoringPort',
+    ];
+
+    for (const port of ports) expect(contracts).toContain(port);
+    expect(contracts).toContain(
+      'capability terkait `false` dan melempar `DbError` berkategori `unsupported`',
+    );
+    expect(contracts).toContain('Capability adalah guard kejujuran');
+    expect(contracts).toContain('Port tidak menyediakan operasi audit update/delete');
+  });
+
   test('UT-0021-AC3 keeps the capability vocabulary closed', () => {
     const description = createCapabilityDescription({
       engine: 'postgresql',
@@ -337,7 +367,7 @@ describe('PostgreSQL acceptance contract', () => {
       identityColumns: true,
       checkConstraints: true,
       backupRestore: false,
-      importExport: false,
+      importExport: true,
     });
     expect(current.reasons?.backupRestore).toBe('belum tersedia');
   });

@@ -14,7 +14,7 @@ afterEach(async () => {
   );
 });
 
-test('PostgreSQL backup preparation keeps the password out of argv and emits safe dump flags', async () => {
+test('UT-0049-AC1, UT-0049-AC2, and SEC-0049-AC2 keep the password out of argv and emit safe PostgreSQL dump flags', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'myadmin-pg-backup-'));
   directories.push(directory);
   const tool = join(directory, 'pg_dump');

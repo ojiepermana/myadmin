@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import type { DataColumnMetadata, DataPageRequest } from '@myadmin/database-core';
-import { buildMysqlDataQuery, buildMysqlInsertQuery, buildMysqlUpdateQuery } from '../src/data';
+import {
+  buildMysqlDataQuery,
+  buildMysqlInsertQuery,
+  buildMysqlUpdateQuery,
+  resolveMysqlRowIdentity,
+} from '../src/data';
 import type { DataRowIdentity } from '@myadmin/database-core';
 
 const columns: readonly DataColumnMetadata[] = [
@@ -11,6 +16,20 @@ const table = { database: 'app`unsafe', schema: null, name: 'users', type: 'view
 
 describe('MySQL data query builder', () => {
   const identity: DataRowIdentity = { columns: ['id'], kind: 'primary', editable: true };
+
+  test('[UT-0038-AC1] marks a table without a usable identity as read only', () => {
+    const result = resolveMysqlRowIdentity(
+      { ...table, type: 'table' },
+      [{ name: 'event', dataType: 'varchar(255)', nullable: false }],
+      [],
+    );
+    expect(result).toEqual({
+      columns: [],
+      kind: null,
+      editable: false,
+      reason: 'This table has no primary key or non nullable unique index.',
+    });
+  });
   test('[UT-0037-AC2, SEC-0037-AC8] quotes identifiers and binds an IN filter', () => {
     const request: DataPageRequest = {
       table,
@@ -82,5 +101,24 @@ describe('MySQL data query builder', () => {
     );
     expect(query.sql).toBe('INSERT INTO `app``unsafe`.`users` () VALUES ()');
     expect(query.parameters).toEqual([]);
+  });
+
+  test('[UT-0038-AC6, SEC-0038-AC6] rejects invalid numbers and binary values with a column-specific error', () => {
+    const mutationTable = { ...table, type: 'table' as const };
+    expect(() =>
+      buildMysqlInsertQuery(
+        { table: mutationTable, values: { id: { type: 'number', value: 'not-a-number' } } },
+        columns,
+      ),
+    ).toThrow('Column id contains an invalid number');
+    expect(() =>
+      buildMysqlInsertQuery(
+        {
+          table: mutationTable,
+          values: { id: { type: 'bytes', value: 'AA==', encoding: 'base64' } },
+        },
+        columns,
+      ),
+    ).toThrow('Column id is binary and read only in V1');
   });
 });

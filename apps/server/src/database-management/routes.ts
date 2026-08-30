@@ -74,10 +74,10 @@ function sessionFailure(
 function sameOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
   const fetchSite = request.headers.get('sec-fetch-site');
-  return (
-    (fetchSite === null || fetchSite === 'same-origin') &&
-    (origin === null || origin === new URL(request.url).origin)
-  );
+  if (fetchSite !== null && fetchSite !== 'same-origin') return false;
+  // The Angular development proxy changes the upstream request URL. A
+  // browser-provided same-origin fetch signal remains authoritative there.
+  return origin === null || origin === new URL(request.url).origin || fetchSite === 'same-origin';
 }
 
 function actorForRequest(
