@@ -61,6 +61,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server dengan API fixture | Backup/Restore UI **1 passed dalam 6,3 detik**; capability, cancel, unavailable-tool, validation, confirmation, dan job state lulus. | [Backup and Restore UI evidence](../evidence/2026-08-30-backup-restore-ui.md) |
+
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL/MySQL disposable dan native wrapper | Real backup E2E **4 passed dalam 20,2 detik**; native backup-to-restore roundtrip lulus pada PostgreSQL dan MySQL. | [Real backup and restore evidence](../evidence/2026-08-30-real-backup-restore.md) |
 
 | Waktu      | Commit       | Environment                                                                                                                 | Hasil                                                                                                                                                                                   | Evidence                                                                                                                                                                                                                                                                                                                                  |
