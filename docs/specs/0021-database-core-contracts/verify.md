@@ -63,6 +63,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 | 2026-08-30 | Working tree | Bun 1.4.0, macOS arm64, provider-neutral contract suite | **23 pass, 224 assertions**; core ports, documented port contracts, closed capabilities, secret boundaries, normalized errors, provider registry, dan PostgreSQL/MySQL source boundaries lulus | `bun test tests/contract/database-provider-acceptance.test.ts` |
 | 2026-08-30 | Working tree | Dokumentasi `database-core`                             | Ringkasan perilaku seluruh port dan cross-port invariants tersedia untuk review; ini menyiapkan artefak manual, bukan menggantikan sign-off reviewer                                           | `port-contracts.md`                                            |
 
+Focused rerun pada 2026-08-30 lulus **44 pass, 0 fail, 321 assertions** secara gabungan dan mencakup provider-neutral ports, capability vocabulary, normalized errors, secret boundary, serta cross-provider contract; detail command ada di [foundation wave evidence](../evidence/2026-08-30-foundation-wave.md).
+
 ## Gap dan blocker
 
 | AC        | Gap                                                                                                                | Dampak                          | Tindak lanjut                                 |

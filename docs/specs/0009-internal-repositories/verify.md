@@ -63,6 +63,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 | 2026-08-30 | Working tree | Bun 1.4.0, SQLite integration                       | **8 pass, 33 assertions**; domain boundary, roundtrip, constraints, credential cascade, parameterized SQL, rollback, retention/pagination, dan audit append-only lulus        | `bun test tests/integration/internal-sqlite/repositories.test.ts`                                                  |
 | 2026-08-30 | Working tree | Bun 1.4.0, repository/kernel dan SQLite integration | **18 pass, 0 fail, 97 assertions**; repository/kernel suite dan SQLite migration, transaction, retention, pagination, owner scoping, serta append-only fake boundary lulus    | `bun run test:internal-sqlite`                                                                                     |
 
+Focused rerun pada 2026-08-30 lulus **44 pass, 0 fail, 321 assertions** secara gabungan untuk SQLite repository/migration, administrator audit, dan database-core contract; detail command ada di [foundation wave evidence](../evidence/2026-08-30-foundation-wave.md).
+
 ## Gap dan blocker
 
 | AC        | Gap                                                                                  | Dampak                          | Tindak lanjut                                                          |

@@ -62,6 +62,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 | 2026-08-29 | Working tree | Bun 1.4.0, local audit integration/security and Playwright                 | Audit integration **5 pass, 33 assertions**; browser audit flow **1 pass**; filter, pagination, redaction, authorization, index benchmark, dan safe-event detail lulus | `bun test tests/integration/audit/audit-admin.test.ts`; `bun run test:e2e -- tests/e2e/web/z-audit-admin.spec.ts`     |
 | 2026-08-30 | Working tree | Bun 1.4.0, audit unit, security, administrator integration, dan Playwright | Administrator audit test subset **23 pass, 0 fail, 95 assertions**; filter, pagination, redaction, authorization, dan 100k-row index benchmark lulus                   | `bun test packages/audit/test tests/security/redaction/redaction.test.ts tests/integration/audit/audit-admin.test.ts` |
 
+Focused rerun pada 2026-08-30 lulus **44 pass, 0 fail, 321 assertions** secara gabungan dan mencakup filter, pagination, redaction, authorization, serta benchmark audit 100k rows; detail command ada di [foundation wave evidence](../evidence/2026-08-30-foundation-wave.md).
+
 ## Gap dan blocker
 
 | AC                  | Gap                                                                          | Dampak                                     | Tindak lanjut                                                          |
