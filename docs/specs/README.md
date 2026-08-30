@@ -25,6 +25,22 @@ date-time RFC3339 menggunakan mode penuh AJV, alias `vi.*` tidak tersisa pada
 source dan test aktif, dan batasan MySQL Bun SQL untuk `sslmode=disable` serta
 `caching_sha2_password` sudah didokumentasikan di spec provider.
 
+## Snapshot evidence 2026-08-30
+
+Matrix acceptance terbaru mencatat **459 acceptance criteria**, dengan **401
+fully evidenced**, **28 partial**, dan **30 blocked**. Root regression mencatat
+**615 pass, 18 skip, 0 fail**; mock browser sweep mencatat **44 pass, 5 skip,
+0 fail**; dan real query workflow pada PostgreSQL/MySQL mencatat **4 pass, 0
+fail**.
+
+Build dan test lokal untuk feature database, Angular, security, performance,
+backup/restore, dan packaging sudah dicatat pada evidence files serta commit
+terpisah. Status spec yang masih `in-progress` tidak dinaikkan hanya dari bukti
+lokal bila acceptance masih membutuhkan hosted CI, clean platform/VM,
+signing/notarization, release nyata, atau manual/external sign-off. Rincian
+terbaru berada di [acceptance matrix](ac-evidence-matrix.md) dan
+[evidence index](evidence/2026-08-29-e2e.md).
+
 Sumber kebutuhan: [v1-feature-specification.md](../../plan/v1-feature-specification.md), [struktur.md](../../plan/struktur.md), [feature.md](../../plan/feature.md). Folder rencana hidup di `plan/` pada akar repo.
 
 Repo memakai tepat satu `package.json` di akar. Istilah package internal pada indeks dan spec berarti modul source di bawah `packages/*`, bukan package manager package dengan manifest sendiri.
