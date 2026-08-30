@@ -4,6 +4,7 @@ import { AuditClient } from '../facades/audit-client';
 import { BackupClient } from '../facades/backup-client';
 import { ConnectionsClient } from '../facades/connections-client';
 import { ExplorerClient } from '../facades/explorer-client';
+import { SchemasClient } from '../facades/schemas-client';
 import { DatabasesClient } from '../facades/databases-client';
 import { HealthClient } from '../facades/health-client';
 import { JobsClient } from '../facades/jobs-client';
@@ -53,6 +54,7 @@ export function provideMyadminSdk(
     ImportClient,
     TableOperationsClient,
     ExplorerClient,
+    SchemasClient,
     DatabasesClient,
     MyadminSdk,
   ];

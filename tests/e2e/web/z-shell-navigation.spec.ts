@@ -22,7 +22,7 @@ async function signIn(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/(?:workspace|query-editor)(?:\?.*)?$/);
 }
 
-test('E2E-0015-AC2 resizes and folds the shell panels', async ({ page }) => {
+test('E2E-0015-AC2 and VIS-0015-AC2 resizes and folds the shell panels', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await signIn(page);
   await page.goto('/workspace');
@@ -56,6 +56,7 @@ test('E2E-0015-AC2 resizes and folds the shell panels', async ({ page }) => {
   await expect(page.getByText('Activity panel', { exact: true })).not.toBeVisible();
   await page.getByRole('button', { name: 'Show activity panel' }).click();
   await expect(page.getByText('Activity panel', { exact: true })).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual-0015-shell-1280.png', fullPage: true });
 });
 
 test('E2E-0015-AC3 opens, switches, isolates, and closes host tabs', async ({ page }) => {
@@ -93,6 +94,7 @@ test('E2E-0015-AC4 opens a single context menu and closes it with Escape', async
   await contextTarget.click({ button: 'right' });
   await expect(page.getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Open backup and restore' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual-0015-context-menu.png', fullPage: true });
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menuitem', { name: 'Keyboard shortcuts' })).not.toBeVisible();
 
@@ -100,6 +102,36 @@ test('E2E-0015-AC4 opens a single context menu and closes it with Escape', async
   await page.keyboard.press('Shift+F10');
   await expect(page.getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeVisible();
   await page.keyboard.press('Escape');
+});
+
+test('E2E-0015-AC5 loads every protected V1 feature route', async ({ page }) => {
+  await signIn(page);
+  const paths = [
+    'connections',
+    'workspace',
+    'explorer',
+    'database',
+    'schema',
+    'table-designer',
+    'data-browser',
+    'query-editor',
+    'view-editor',
+    'query-history',
+    'security',
+    'import-export',
+    'backup-restore',
+    'monitoring',
+    'audit',
+    'settings',
+    'change-password',
+    'users',
+  ];
+
+  for (const path of paths) {
+    await page.goto(`/${path}`);
+    await expect(page).toHaveURL(new RegExp(`/${path}(?:\\?.*)?$`));
+    await expect(page.getByRole('main')).toBeVisible();
+  }
 });
 
 test('E2E-0015-AC7 drives shell navigation and dialogs from the keyboard', async ({ page }) => {
@@ -120,6 +152,35 @@ test('E2E-0015-AC7 drives shell navigation and dialogs from the keyboard', async
   await expect(page.getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Keyboard shortcuts' }).click();
   await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual-0015-keyboard-dialog.png', fullPage: true });
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).not.toBeVisible();
+});
+
+test('VIS-0015-AC8 keeps the shell usable at 1024px and overlays the sidebar below the breakpoint', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await signIn(page);
+  await page.goto('/workspace');
+
+  const sidebar = page.locator('[data-panel-id="sidebar-panel"]');
+  await expect(sidebar).toHaveCSS('position', 'relative');
+  await expect(sidebar).toBeVisible();
+
+  await page.setViewportSize({ width: 1023, height: 768 });
+  await expect(sidebar).toHaveCSS('position', 'absolute');
+  const navigationToggle = page.getByRole('button', { name: 'Toggle primary navigation' });
+  await expect(navigationToggle).toHaveAttribute('aria-expanded', 'false');
+
+  await navigationToggle.click();
+  await expect(navigationToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(sidebar).toHaveCSS('visibility', 'visible');
+  const backdrop = page.getByRole('button', { name: 'Close primary navigation' });
+  await expect(backdrop).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual-0015-shell-1024.png', fullPage: true });
+
+  await backdrop.click();
+  await expect(navigationToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(sidebar).toHaveCSS('visibility', 'hidden');
 });

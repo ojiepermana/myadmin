@@ -112,7 +112,7 @@
         </caption>
         <colgroup>
           <col class="result-grid-selection-column" />
-          @for (column of columns(); track column.name) {
+          @for (column of columns(); track $index) {
             <col [style.width.px]="columnWidth(column.name)" />
           }
         </colgroup>
@@ -121,7 +121,7 @@
             <th scope="col" class="result-grid-selection-header" role="columnheader">
               <span class="sr-only">Select row</span>
             </th>
-            @for (column of columns(); track column.name) {
+            @for (column of columns(); track $index) {
               <th
                 scope="col"
                 role="columnheader"
@@ -176,7 +176,7 @@
                 (click)="toggleRow(entry.originalIndex, $event)"
               />
             </td>
-            @for (column of columns(); track column.name; let columnIndex = $index) {
+            @for (column of columns(); track $index; let columnIndex = $index) {
               <td
                 class="result-grid-cell"
                 role="gridcell"
@@ -185,7 +185,7 @@
                 [class.result-grid-null-cell]="isNull(entry.row[column.name])"
                 [attr.aria-colindex]="columnIndex + 2"
                 [attr.aria-label]="column.name + ': ' + cellPreview(entry.row[column.name])"
-                (click)="activateCell(entry.row[column.name], column.name)"
+                (click)="activateCell(entry.row[column.name], column.name, $event)"
                 (dblclick)="editCell(entry.originalIndex, column.name, $event)"
                 (keydown)="onCellKeydown($event, entry.row[column.name], column.name)"
               >

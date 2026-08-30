@@ -134,9 +134,8 @@ export class DataBrowser {
   );
   protected readonly totalLabel = computed(() => {
     const total = this.response()?.total;
-    return total
-      ? `${total.kind === 'estimate' ? 'About ' : ''}${total.value.toLocaleString()} rows`
-      : '';
+    if (!total) return '';
+    return `${total.kind === 'estimate' ? 'About ' : ''}${total.value.toLocaleString()} row${total.value === 1 ? '' : 's'}`;
   });
   protected readonly pageLabel = computed(() => this.pageIndex() + 1);
   protected readonly editable = computed(

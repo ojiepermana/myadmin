@@ -525,6 +525,7 @@ export class TableDesigner {
       this.confirmState.set(false);
       const ref = this.ref();
       if (ref) this.workspace.markTableTabsStale(ref);
+      await this.load();
       await this.explorer.refreshRoot();
     } catch (error) {
       this.errorState.set(messageFor(error));

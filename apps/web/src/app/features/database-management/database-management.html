@@ -178,7 +178,7 @@
               (change)="onInput($any(field.key), $event)"
             >
               <option value="">Use provider default</option>
-              @for (value of field.values; track value) {
+              @for (value of field.values; track $index) {
                 <option [value]="value">{{ value }}</option>
               }
             </select>

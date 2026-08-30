@@ -33,9 +33,12 @@ const result: QueryResult = {
 };
 
 describe('ResultGrid display and export helpers', () => {
-  it('AC-0034-AC3 distinguishes NULL, empty strings, binary sizes, and formatted JSON', () => {
+  it('[UT-0034-AC3, SEC-0034-AC3] keeps typed values textual while distinguishing NULL, empty strings, binary sizes, and formatted JSON', () => {
     expect(cellText({ type: 'null', value: null })).toBe('NULL');
     expect(cellText({ type: 'string', value: '' })).toBe('');
+    expect(cellText({ type: 'string', value: '<img src=x onerror=alert(1)>' })).toBe(
+      '<img src=x onerror=alert(1)>',
+    );
     expect(cellText({ type: 'bytes', value: 'AP8Q', encoding: 'base64' })).toBe('Binary (3 bytes)');
     expect(formatJsonCell(result.rows[0]?.['payload'])).toContain('"ok": true');
     expect(cellPreview({ type: 'string', value: 'x'.repeat(161) })).toHaveLength(160);
@@ -63,7 +66,7 @@ describe('ResultGrid display and export helpers', () => {
     expect(tsv).toContain('NULL\tvalue\tNULL\tNULL\tsecond');
   });
 
-  it('AC-0034-AC5 exports JSON with nulls, structured values, and lossless numeric strings', () => {
+  it('UT-0034-AC5 exports JSON with nulls, structured values, and lossless numeric strings', () => {
     const exported = JSON.parse(rowsToJson(result, result.rows)) as Array<Record<string, unknown>>;
 
     expect(exported).toEqual([
@@ -78,7 +81,7 @@ describe('ResultGrid display and export helpers', () => {
     ]);
   });
 
-  it('AC-0034-AC8 derives a column type from the first non-null typed cell', () => {
+  it('UT-0034-AC8 derives a column type from the first non-null typed cell', () => {
     expect(columnType(result, 'id')).toBe('number');
     expect(columnType(result, 'empty')).toBe('string');
     expect(columnType(result, 'payload')).toBe('json');

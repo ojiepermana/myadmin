@@ -1,6 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ScrollingModule } from '@angular/cdk/scrolling';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import {
   ConnectionsClient,
   type ConnectionStatus,
@@ -35,6 +35,7 @@ import { ExplorerStore } from './explorer.store';
   styleUrl: './object-explorer.scss',
 })
 export class ObjectExplorer {
+  @ViewChild(CdkVirtualScrollViewport) private readonly explorerViewport?: CdkVirtualScrollViewport;
   protected readonly store = inject(ExplorerStore);
   private readonly connections = inject(ConnectionsClient);
   private readonly router = inject(Router);
@@ -126,7 +127,21 @@ export class ObjectExplorer {
     }
     this.focusedId.set(node.id);
     this.menuNode.set(node);
-    queueMicrotask(() => document.getElementById(this.domId(node.id))?.focus());
+    const index = this.store.visibleNodes().findIndex((candidate) => candidate.id === node.id);
+    const focusRevealedNode = (attempt = 0): void => {
+      if (index >= 0) {
+        this.explorerViewport?.checkViewportSize();
+        this.explorerViewport?.scrollToIndex(index, 'auto');
+      }
+      const element = document.getElementById(this.domId(node.id));
+      if (element) {
+        element.scrollIntoView({ block: 'nearest' });
+        element.focus();
+      } else if (attempt < 3) {
+        setTimeout(() => focusRevealedNode(attempt + 1), 0);
+      }
+    };
+    setTimeout(() => focusRevealedNode(), 0);
   }
 
   protected selectSearchResult(result: ExplorerSearchResult): void {

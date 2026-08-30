@@ -67,7 +67,7 @@ describe('explorer view actions', () => {
 });
 
 describe('explorer table actions', () => {
-  test('offers all destructive table actions only for a connected table', () => {
+  test('[UT-0043-AC5] offers all destructive table actions only for a connected table', () => {
     const actions = new ExplorerActionRegistry(['table-designer']).actionsFor(
       node({
         label: 'accounts',
@@ -85,7 +85,7 @@ describe('explorer table actions', () => {
     );
   });
 
-  test('disables destructive table actions with the connection reason when offline', () => {
+  test('[UT-0043-AC5] disables destructive table actions with the connection reason when offline', () => {
     const actions = new ExplorerActionRegistry(['table-designer']).actionsFor(
       node({
         objectType: 'table',

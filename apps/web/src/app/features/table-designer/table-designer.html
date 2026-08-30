@@ -418,7 +418,7 @@
                           )
                         "
                       >
-                        @for (rule of types()!.rules.onDelete; track rule) {
+                        @for (rule of types()!.rules.onDelete; track $index) {
                           <option [value]="rule">{{ rule }}</option>
                         }
                       </select></label
@@ -434,7 +434,7 @@
                           )
                         "
                       >
-                        @for (rule of types()!.rules.onUpdate; track rule) {
+                        @for (rule of types()!.rules.onUpdate; track $index) {
                           <option [value]="rule">{{ rule }}</option>
                         }
                       </select></label
@@ -461,7 +461,7 @@
           @if (result.warnings.length) {
             <div class="warning-box">
               <strong>Review warnings</strong>
-              @for (warning of result.warnings; track warning) {
+              @for (warning of result.warnings; track $index) {
                 <p>{{ warning }}</p>
               }
             </div>
@@ -508,15 +508,15 @@
       </p>
       <ul>
         @for (statement of preview()?.statements ?? []; track $index) {
-          @for (column of statement.destructiveColumns ?? []; track column) {
+          @for (column of statement.destructiveColumns ?? []; track $index) {
             <li>{{ column }} on {{ tableName() }}</li>
           }
         }
         @for (statement of preview()?.statements ?? []; track $index) {
-          @for (index of statement.destructiveIndexes ?? []; track index) {
+          @for (index of statement.destructiveIndexes ?? []; track $index) {
             <li>Index {{ index }} on {{ tableName() }}</li>
           }
-          @for (constraint of statement.destructiveConstraints ?? []; track constraint) {
+          @for (constraint of statement.destructiveConstraints ?? []; track $index) {
             <li>Constraint {{ constraint }} on {{ tableName() }}</li>
           }
         }

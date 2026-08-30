@@ -279,7 +279,7 @@
           (change)="editText.set($any($event.target).value)"
           aria-label="Enum value"
         >
-          @for (option of editEnumOptions(); track option) {
+          @for (option of editEnumOptions(); track $index) {
             <option [value]="option">{{ option }}</option>
           }
         </select>
@@ -366,7 +366,7 @@
               [value]="insertValues()[column.name] ?? enumOptions(column.dataType)[0]"
               (change)="updateInsertValue(column.name, $any($event.target).value)"
             >
-              @for (option of enumOptions(column.dataType); track option) {
+              @for (option of enumOptions(column.dataType); track $index) {
                 <option [value]="option">{{ option }}</option>
               }
             </select>

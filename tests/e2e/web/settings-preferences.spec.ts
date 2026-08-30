@@ -6,8 +6,17 @@ const adminCredentials = {
 };
 
 async function signIn(page: Page): Promise<void> {
+  const status = await page.request.get('/api/v1/setup/status');
+  expect(status.ok()).toBe(true);
+  if (!((await status.json()) as { initialized: boolean }).initialized) {
+    const setup = await page.request.post('/api/v1/setup/admin', { data: adminCredentials });
+    expect(setup.status()).toBe(201);
+  }
   await page.goto('/settings');
-  await expect(page).toHaveURL(/\/login(?:\?returnUrl=)?$/);
+  await expect(page).toHaveURL(/\/(?:login(?:\?returnUrl=)?|setup)$/);
+  if (new URL(page.url()).pathname === '/setup') {
+    await page.goto('/login');
+  }
   await page.getByLabel('Username').fill(adminCredentials.username);
   await page.getByLabel('Password').fill(adminCredentials.password);
   await page.getByLabel('Password').press('Enter');
@@ -69,9 +78,13 @@ test('E2E-0014-AC2 changes light, dark, and system modes without navigation', as
 
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect(page.locator('html')).toHaveAttribute('theme-mode', 'dark');
+  await page.getByRole('button', { name: 'Dismiss notification' }).click();
+  await page.screenshot({ path: 'test-results/visual-0014-dark.png', fullPage: true });
 
   await page.locator('#settings-theme').selectOption('light');
   await expect(page.locator('html')).toHaveAttribute('theme-mode', 'light');
+  await page.getByRole('button', { name: 'Dismiss notification' }).click();
+  await page.screenshot({ path: 'test-results/visual-0014-light.png', fullPage: true });
   expect(page.url()).toBe(initialUrl);
   expect(navigations).toBe(0);
 });

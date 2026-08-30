@@ -106,6 +106,7 @@ export class ResultGrid {
   protected readonly selectedRows = signal<ReadonlySet<number>>(new Set());
   private readonly lastSelectedRow = signal<number | null>(null);
   protected readonly fullCell = signal<FullCellValue | null>(null);
+  private cellActivationTimer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly copyFormat = signal<ResultExportFormat>('tsv');
   protected readonly status = signal<string | null>(null);
@@ -247,6 +248,10 @@ export class ResultGrid {
 
   protected editCell(rowIndex: number, column: string, event: MouseEvent): void {
     if (!this.editable() || event.button !== 0) return;
+    if (this.cellActivationTimer !== undefined) {
+      clearTimeout(this.cellActivationTimer);
+      this.cellActivationTimer = undefined;
+    }
     event.preventDefault();
     event.stopPropagation();
     this.dataBrowserEditRequested.emit({ rowIndex, column });
@@ -318,8 +323,13 @@ export class ResultGrid {
     await this.writeClipboard(cellText(fullCell.cell), `Copied ${fullCell.column}.`);
   }
 
-  protected activateCell(cell: QueryCell | undefined, column: string): void {
-    void this.copyCell(cell, column);
+  protected activateCell(cell: QueryCell | undefined, column: string, event?: MouseEvent): void {
+    if (event?.detail && event.detail > 1) return;
+    if (this.cellActivationTimer !== undefined) clearTimeout(this.cellActivationTimer);
+    this.cellActivationTimer = setTimeout(() => {
+      this.cellActivationTimer = undefined;
+      void this.copyCell(cell, column);
+    }, 220);
   }
 
   protected onCellKeydown(event: KeyboardEvent, cell: QueryCell | undefined, column: string): void {

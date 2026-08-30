@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const webPort = process.env['MYADMIN_WEB_PORT'] || '4200';
+const webConfiguration = process.env['MYADMIN_E2E_WEB_CONFIGURATION'] || 'production';
 const configuredDataDirectory = process.env['MYADMIN_E2E_DATA_DIR'];
 const e2eDataDirectory = configuredDataDirectory ?? mkdtempSync(join(tmpdir(), 'myadmin-e2e-'));
 process.env['MYADMIN_E2E_DATA_DIR'] = e2eDataDirectory;
@@ -32,7 +33,7 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: `bun x ng serve web --configuration production --host 127.0.0.1 --port ${webPort} --proxy-config apps/web/proxy.conf.json`,
+      command: `bun x ng serve web --configuration ${webConfiguration} --host 127.0.0.1 --port ${webPort} --proxy-config apps/web/proxy.conf.json`,
       env: {
         MYADMIN_WEB_HOST: '127.0.0.1',
         MYADMIN_WEB_PORT: webPort,

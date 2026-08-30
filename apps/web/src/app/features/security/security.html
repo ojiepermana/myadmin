@@ -120,13 +120,25 @@
                 <Badge [variant]="capabilityEnabled(connection) ? 'secondary' : 'outline'">{{
                   capabilityEnabled(connection) ? 'Principal management available' : 'Unavailable'
                 }}</Badge>
-                @if (capabilityEnabled(connection)) {
-                  <button Button type="button" (click)="openCreate()">New principal</button>
-                }
+                <button
+                  Button
+                  type="button"
+                  (click)="openCreate()"
+                  [disabled]="!capabilityEnabled(connection)"
+                  [attr.aria-describedby]="'principal-capability-reason'"
+                  [attr.title]="
+                    capabilityEnabled(connection)
+                      ? 'Create a database principal'
+                      : capabilityReason(connection)
+                  "
+                >
+                  New principal
+                </button>
               </div>
             </div>
             @if (!capabilityEnabled(connection)) {
               <p
+                id="principal-capability-reason"
                 class="mt-5 rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground"
               >
                 {{ capabilityReason(connection) }} Connect this target with a credential that can

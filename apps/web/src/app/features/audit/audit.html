@@ -89,7 +89,7 @@
               (ngModelChange)="setActions($event)"
               name="action"
             >
-              @for (action of actions(); track action) {
+              @for (action of actions(); track $index) {
                 <option NativeSelectOption [value]="action">{{ action }}</option>
               }
             </select>

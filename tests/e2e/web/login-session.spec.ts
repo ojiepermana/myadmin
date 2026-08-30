@@ -3,6 +3,17 @@ import { expect, test } from '../fixtures';
 test('E2E-0017-AC8 and VIS-0017-AC8 guard the workspace and clear expired client state', async ({
   page,
 }) => {
+  const setupStatus = await page.request.get('/api/v1/setup/status');
+  expect(setupStatus.ok()).toBe(true);
+  if (!((await setupStatus.json()) as { initialized: boolean }).initialized) {
+    const setup = await page.request.post('/api/v1/setup/admin', {
+      data: {
+        username: 'browser-admin',
+        password: 'synthetic-browser-password',
+      },
+    });
+    expect(setup.status()).toBe(201);
+  }
   await page.goto('/workspace');
   await expect(page).toHaveURL(/\/login(?:\?returnUrl=)?$/);
   await expect(page.getByRole('heading', { name: 'Sign in to your workspace' })).toBeVisible();

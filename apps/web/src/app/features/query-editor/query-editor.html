@@ -264,6 +264,14 @@
             <p class="text-xs text-muted-foreground">Text execution plan</p>
           }
         </div>
+        @if (exportMessage()) {
+          <p
+            class="mx-5 mb-3 rounded-md border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-primary sm:mx-7"
+            role="status"
+          >
+            {{ exportMessage() }}
+          </p>
+        }
         @if (errorPosition() !== null) {
           <button type="button" class="query-action query-action-danger" (click)="jumpToError()">
             Jump to error

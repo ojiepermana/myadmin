@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { WorkspaceStore } from '../../core/state/workspace.store';
+import { queryTabDescriptor } from './query-tab-descriptor';
 
 export interface QueryTabLaunchInput {
   readonly sql: string;
@@ -20,20 +21,7 @@ export class QueryTabLauncher {
 
   open(input: QueryTabLaunchInput): void {
     const id = `query-editor-${crypto.randomUUID()}`;
-    this.workspace.openTab({
-      id,
-      type: 'query-editor',
-      title: input.title?.trim() || 'SQL editor',
-      context: {
-        route: '/query-editor',
-        draftSql: input.sql,
-        ...(input.connectionId ? { connectionId: input.connectionId } : {}),
-        ...(input.database ? { database: input.database } : {}),
-        ...(input.schema ? { schema: input.schema } : {}),
-        ...(input.connectionMissing ? { connectionMissing: true } : {}),
-        ...(input.savedQueryName ? { savedQueryName: input.savedQueryName } : {}),
-      },
-    });
+    this.workspace.openTab(queryTabDescriptor(id, input));
     void this.router.navigate(['/query-editor'], { queryParams: { tab: id } });
   }
 }

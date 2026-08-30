@@ -1,8 +1,9 @@
 import { expect, test } from '../fixtures';
 
-test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC6, E2E-0031-AC7, E2E-0031-AC8, E2E-0032-AC3, E2E-0032-AC4, E2E-0032-AC5, and E2E-0032-AC6 render provider-driven lazy trees and paginated search results', async ({
+test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC4, E2E-0031-AC5, E2E-0031-AC6, E2E-0031-AC7, E2E-0031-AC8, PERF-0031-AC7, E2E-0044-AC4, VIS-0031-AC4, E2E-0032-AC3, E2E-0032-AC4, E2E-0032-AC5, and E2E-0032-AC6 render provider-driven lazy trees and paginated search results', async ({
   page,
 }) => {
+  let failNextObjectRefresh = false;
   await page.route('**/api/v1/connections*', async (route) => {
     const pathname = new URL(route.request().url()).pathname;
     if (pathname.includes('/databases')) {
@@ -194,6 +195,18 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC6, E2E-0031-AC7, E2E-
     });
   });
   await page.route('**/api/v1/connections/pg-1/schemas/public/objects*', async (route) => {
+    if (failNextObjectRefresh) {
+      failNextObjectRefresh = false;
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'TEMPORARY_FAILURE',
+          message: 'Metadata temporarily unavailable',
+        }),
+      });
+      return;
+    }
     const url = new URL(route.request().url());
     await route.fulfill({
       status: 200,
@@ -210,19 +223,38 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC6, E2E-0031-AC7, E2E-
               ],
               cursor: null,
             }
-          : {
-              items: [
-                {
-                  kind: 'object-group',
-                  database: 'app',
-                  schema: 'public',
-                  objectType: 'table',
-                  name: 'table',
-                  hasChildren: true,
-                },
-              ],
-              cursor: null,
-            },
+          : url.searchParams.get('type') === 'view'
+            ? {
+                items: [
+                  {
+                    kind: 'object',
+                    ref: { database: 'app', schema: 'public', name: 'daily_sales', type: 'view' },
+                    hasChildren: false,
+                  },
+                ],
+                cursor: null,
+              }
+            : {
+                items: [
+                  {
+                    kind: 'object-group',
+                    database: 'app',
+                    schema: 'public',
+                    objectType: 'table',
+                    name: 'table',
+                    hasChildren: true,
+                  },
+                  {
+                    kind: 'object-group',
+                    database: 'app',
+                    schema: 'public',
+                    objectType: 'view',
+                    name: 'Views',
+                    hasChildren: true,
+                  },
+                ],
+                cursor: null,
+              },
       ),
     });
   });
@@ -243,6 +275,14 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC6, E2E-0031-AC7, E2E-
     });
   });
 
+  const setupStatus = await page.request.get('/api/v1/setup/status');
+  expect(setupStatus.ok()).toBeTruthy();
+  if (!((await setupStatus.json()) as { initialized: boolean }).initialized) {
+    const setup = await page.request.post('/api/v1/setup/admin', {
+      data: { username: 'browser-admin', password: 'synthetic-browser-password' },
+    });
+    expect(setup.status()).toBe(201);
+  }
   const login = await page.request.post('/api/v1/auth/login', {
     data: { username: 'browser-admin', password: 'synthetic-browser-password' },
   });
@@ -272,6 +312,25 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC6, E2E-0031-AC7, E2E-
     .click();
   await expect(page.getByRole('treeitem', { name: 'public' })).toBeVisible();
   await expect(page.getByRole('treeitem', { name: 'Schemas' })).toHaveCount(0);
+  const publicNode = page.getByRole('treeitem', { name: 'public' });
+  await publicNode.getByRole('button', { name: 'Expand public' }).click();
+  await expect(page.getByRole('treeitem', { name: 'Views' })).toBeVisible();
+  const views = page.getByRole('treeitem', { name: 'Views' });
+  await views.getByRole('button', { name: 'Expand Views' }).click();
+  const view = page.getByRole('treeitem', { name: 'daily_sales' });
+  await expect(view).toBeVisible();
+  await view.click({ button: 'right' });
+  const openDefinition = page.getByRole('menuitem', { name: 'Open definition' });
+  await expect(openDefinition).toBeDisabled();
+  await expect(openDefinition).toHaveAttribute(
+    'title',
+    'This provider does not support view editing.',
+  );
+  failNextObjectRefresh = true;
+  await publicNode.getByRole('button', { name: 'Refresh node' }).click();
+  await expect(publicNode.getByText('HTTP request failed')).toBeVisible();
+  await publicNode.getByRole('button', { name: 'Try again' }).click();
+  await expect(publicNode.getByText('HTTP request failed')).toHaveCount(0);
 
   await postgres.focus();
   await postgres.press('ArrowLeft');
@@ -283,20 +342,27 @@ test('E2E-0031-AC2, E2E-0031-AC3, E2E-0031-AC5, E2E-0031-AC6, E2E-0031-AC7, E2E-
 
   await postgres.click();
   const search = page.getByLabel('Search objects');
+  const postgresSearchStartedAt = Date.now();
   await search.fill('orders');
   const postgresResult = page.getByRole('option', { name: /orders in app/i });
   await expect(postgresResult).toBeVisible();
+  expect(Date.now() - postgresSearchStartedAt).toBeLessThan(3000);
   await expect(page.getByRole('option')).toHaveCount(50);
   await page.getByRole('button', { name: 'Load more results' }).click();
   await expect(page.getByRole('option')).toHaveCount(100);
   await postgresResult.click();
-  await expect(page.getByRole('treeitem', { name: 'orders' })).toBeVisible();
+  const orders = page.getByRole('treeitem', { name: 'orders' });
+  await expect(orders).toBeVisible();
+  await expect(orders.locator('.explorer-icon')).toHaveAttribute('data-kind', 'table');
 
   await mysql.click();
+  const mysqlSearchStartedAt = Date.now();
   await search.fill('accounts');
   const mysqlResult = page.getByRole('option', { name: /accounts in shop/i });
   await expect(mysqlResult).toBeVisible();
+  expect(Date.now() - mysqlSearchStartedAt).toBeLessThan(3000);
   await expect(page.getByRole('option')).toHaveCount(50);
   await mysqlResult.click();
   await expect(page.getByRole('treeitem', { name: 'accounts' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual-0031-explorer.png', fullPage: true });
 });

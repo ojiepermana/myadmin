@@ -195,7 +195,7 @@
             </caption>
             <thead>
               <tr>
-                @for (column of currentPreview.columns || []; track column) {
+                @for (column of currentPreview.columns || []; track $index) {
                   <th class="border-b border-border p-2 font-semibold">{{ column }}</th>
                 }
               </tr>

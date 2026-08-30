@@ -36,4 +36,13 @@ describe('table designer UI structure', () => {
     expect(component).toContain('this.indexes().map(({ originalName, method, ...index })');
     expect(component).toContain('void method;');
   });
+
+  it('UT-0041-AC7 refreshes explorer metadata after a successful apply', async () => {
+    const component = await readFile(componentPath, 'utf8');
+
+    expect(component).toContain(
+      "this.noticeState.set('Table changes applied. Explorer metadata was refreshed.')",
+    );
+    expect(component).toContain('await this.explorer.refreshRoot();');
+  });
 });

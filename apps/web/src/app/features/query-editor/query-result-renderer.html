@@ -29,7 +29,7 @@
         </caption>
         <thead class="bg-muted/20 text-muted-foreground">
           <tr>
-            @for (column of statement.result.columns; track column) {
+            @for (column of statement.result.columns; track $index) {
               <th class="whitespace-nowrap border-b border-border px-3 py-2 font-semibold">
                 {{ column }}
               </th>
@@ -39,7 +39,7 @@
         <tbody>
           @for (row of statement.result.rows; track $index) {
             <tr class="border-b border-border/60 last:border-0">
-              @for (column of statement.result.columns; track column) {
+              @for (column of statement.result.columns; track $index) {
                 <td
                   class="whitespace-pre-wrap px-3 py-2 align-top"
                   [class]="cellClass(row[column])"

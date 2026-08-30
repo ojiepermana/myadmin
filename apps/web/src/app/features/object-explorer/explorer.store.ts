@@ -8,7 +8,7 @@ import {
   type ExplorerObjectType,
   type ExplorerSearchResult,
 } from '@myadmin/sdk-angular';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, type Observable } from 'rxjs';
 import { ConnectionStatusStore } from '../../core/connections/connection-status.store';
 import type { ExplorerNode } from './explorer-actions';
 import { ExplorerTreeState } from './explorer-tree-state';
@@ -60,9 +60,13 @@ function idSegment(value: string): string {
   return encodeURIComponent(value);
 }
 
+type RootPage<T> = { items: readonly T[]; total: number | null };
+
 /** Owns only explorer presentation state; provider metadata remains on the server. */
 @Injectable({ providedIn: 'root' })
 export class ExplorerStore {
+  private static readonly ROOT_PAGE_SIZE = 100;
+
   private readonly connectionsClient = inject(ConnectionsClient);
   private readonly explorerClient = inject(ExplorerClient);
   private readonly connectionStatuses = inject(ConnectionStatusStore);
@@ -113,14 +117,14 @@ export class ExplorerStore {
     this.loadError.set(null);
     try {
       const [connectionsPage, groupsPage] = await Promise.all([
-        firstValueFrom(this.connectionsClient.list()),
-        firstValueFrom(this.connectionsClient.listGroups()),
+        this.listAll((page, pageSize) => this.connectionsClient.list(page, pageSize)),
+        this.listAll((page, pageSize) => this.connectionsClient.listGroups(page, pageSize)),
       ]);
       await this.connectionStatuses.refresh();
       const state: Record<string, ExplorerNode> = {};
       const rootIds: string[] = [];
-      const groups = (groupsPage.items ?? []) as Array<{ id: string; name: string }>;
-      const connections = (connectionsPage.items ?? []) as Connection[];
+      const groups = groupsPage as Array<{ id: string; name: string }>;
+      const connections = connectionsPage as Connection[];
       for (const group of groups) {
         const groupId = `group:${group.id}`;
         const groupConnections = connections.filter(
@@ -198,6 +202,26 @@ export class ExplorerStore {
     await this.load();
   }
 
+  private async listAll<T>(
+    request: (page: number, pageSize: number) => Observable<RootPage<T>>,
+  ): Promise<T[]> {
+    const items: T[] = [];
+    let page = 1;
+    while (true) {
+      const response = await firstValueFrom(request(page, ExplorerStore.ROOT_PAGE_SIZE));
+      const pageItems = [...(response.items ?? [])];
+      items.push(...pageItems);
+      if (
+        pageItems.length === 0 ||
+        (response.total !== null && items.length >= response.total) ||
+        pageItems.length < ExplorerStore.ROOT_PAGE_SIZE
+      ) {
+        return items;
+      }
+      page += 1;
+    }
+  }
+
   public search(query: string, connectionId: string | null): void {
     this.searchController.setQuery(connectionId, query);
   }
@@ -243,14 +267,16 @@ export class ExplorerStore {
       (child) => child.kind === 'object-group' && child.objectType === result.type,
     );
     if (!group) return null;
-    return this.findChild(
+    const revealed = await this.findChild(
       group,
       (child) =>
         child.kind === 'object' &&
         child.ref?.name === result.name &&
         child.ref?.type === result.type &&
         child.ref?.schema === result.schema,
+      true,
     );
+    return revealed ?? this.materializeSearchResult(group, result);
   }
 
   private connectionNode(
@@ -347,10 +373,13 @@ export class ExplorerStore {
     }
   }
 
-  private async ensureNodeLoaded(node: ExplorerNode | null): Promise<ExplorerNode | null> {
+  private async ensureNodeLoaded(
+    node: ExplorerNode | null,
+    refresh = false,
+  ): Promise<ExplorerNode | null> {
     if (!node) return null;
-    if (!node.loaded || !node.expanded || node.error) {
-      const loaded = await this.fetchChildren(node, false);
+    if (!node.loaded || !node.expanded || node.error || refresh) {
+      const loaded = await this.fetchChildren(node, false, refresh);
       if (!loaded) return null;
     }
     return this.nodeFor(node.id);
@@ -359,19 +388,61 @@ export class ExplorerStore {
   private async findChild(
     parent: ExplorerNode,
     predicate: (child: ExplorerNode) => boolean,
+    refresh = false,
   ): Promise<ExplorerNode | null> {
-    let current = await this.ensureNodeLoaded(parent);
+    let current = await this.ensureNodeLoaded(parent, refresh);
     while (current) {
       const child = current.childIds
         .map((id) => this.nodeFor(id))
         .find((candidate): candidate is ExplorerNode => candidate !== null && predicate(candidate));
       if (child) return child;
       if (!current.cursor) return null;
-      const loaded = await this.fetchChildren(current, true);
+      const loaded = await this.fetchChildren(current, true, refresh);
       if (!loaded) return null;
       current = this.nodeFor(current.id);
     }
     return null;
+  }
+
+  private materializeSearchResult(
+    parent: ExplorerNode,
+    result: ExplorerSearchResult,
+  ): ExplorerNode {
+    const currentParent = this.nodeFor(parent.id) ?? parent;
+    const id = `${currentParent.id}/object/${idSegment(result.type)}/${idSegment(result.schema ?? '')}/${idSegment(result.name)}`;
+    const node = emptyNodeState(
+      id,
+      currentParent.id,
+      currentParent.connectionId,
+      'object',
+      result.name,
+      currentParent.depth + 1,
+      result.type === 'table',
+      {
+        database: result.database,
+        schema: result.schema,
+        objectType: objectType(result.type),
+        ref: result,
+      },
+    );
+    this.tree.update((state) => {
+      if (state[id]) return state;
+      return {
+        ...state,
+        [id]: node,
+        [currentParent.id]: {
+          ...currentParent,
+          expanded: true,
+          loaded: true,
+          loading: false,
+          error: null,
+          childIds: currentParent.childIds.includes(id)
+            ? currentParent.childIds
+            : [...currentParent.childIds, id],
+        },
+      };
+    });
+    return this.nodeFor(id) ?? node;
   }
 
   private fetchPage(node: ExplorerNode, cursor: string | null, refresh: boolean) {

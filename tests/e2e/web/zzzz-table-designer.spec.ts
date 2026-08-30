@@ -24,7 +24,7 @@ const catalog = {
   },
 };
 
-async function mockTableDesignerShell(page: Page): Promise<void> {
+async function mockTableDesignerShell(page: Page, withDataTab = false): Promise<void> {
   await page.route('**/api/v1/setup/status', async (route) => {
     await route.fulfill({
       status: 200,
@@ -81,6 +81,19 @@ async function mockTableDesignerShell(page: Page): Promise<void> {
             title: 'Table designer',
             context: { route: requestedRoute, connectionId: 'pg-1' },
           },
+          ...(withDataTab
+            ? [
+                {
+                  id: 'data-accounts',
+                  type: 'data-browser',
+                  title: 'accounts',
+                  context: {
+                    route: `/data-browser?connection=pg-1&ref=${encodeURIComponent(JSON.stringify({ database: 'app', schema: 'public', name: 'accounts', type: 'table' }))}`,
+                    connectionId: 'pg-1',
+                  },
+                },
+              ]
+            : []),
         ],
         activeTabId: tabId,
         panels: { sidebarWidth: 22, bottomHeight: 24, sidebarCollapsed: false },
@@ -269,4 +282,697 @@ test('E2E-0041-AC2 and E2E-0041-AC7 loads described columns and refreshes after 
     page.getByRole('status').filter({ hasText: 'Explorer metadata was refreshed' }),
   ).toBeVisible();
   expect(refreshed).toBe(true);
+});
+
+test('E2E-0041-AC4 requires destructive confirmation before applying a dropped column', async ({
+  page,
+}) => {
+  const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+  let applyBody: unknown;
+  await mockTableDesignerShell(page);
+  await page.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        columns: [
+          { name: 'id', dataType: 'integer', nullable: false },
+          { name: 'legacy_code', dataType: 'varchar(40)', nullable: true },
+        ],
+        indexes: [],
+        constraints: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/ddl/preview', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        operation: 'alter',
+        statements: [
+          {
+            sql: 'ALTER TABLE "public"."accounts" DROP COLUMN "legacy_code"',
+            destructiveColumns: ['legacy_code'],
+          },
+        ],
+        warnings: [],
+        destructive: true,
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/ddl/apply', async (route) => {
+    applyBody = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        operation: 'alter',
+        transactional: true,
+        committed: true,
+        statements: [
+          {
+            index: 0,
+            sql: 'ALTER TABLE "public"."accounts" DROP COLUMN "legacy_code"',
+            status: 'success',
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter`,
+  );
+  await expect(page.getByRole('heading', { name: 'Design table' })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove column' }).nth(1).click();
+  await page.getByRole('button', { name: 'Preview SQL' }).click();
+  await expect(page.getByText('ALTER TABLE "public"."accounts" DROP COLUMN')).toBeVisible();
+  await page.getByRole('button', { name: 'Apply reviewed changes' }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Apply destructive table changes?' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('legacy_code on accounts')).toBeVisible();
+  await expect(applyBody).toBeUndefined();
+  await dialog.getByRole('button', { name: 'Confirm destructive apply' }).click();
+  await expect(page.locator('main.table-designer-page').getByRole('status')).toContainText(
+    'Table changes applied.',
+  );
+  expect(applyBody).toMatchObject({
+    connectionId: 'pg-1',
+    confirmDestructive: true,
+    changeSet: {
+      alterations: [{ kind: 'drop', name: 'legacy_code' }],
+    },
+  });
+});
+
+test('E2E-0043-AC1, E2E-0043-AC2, and E2E-0043-AC5 require exact confirmation for truncate', async ({
+  page,
+}) => {
+  const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+  let truncateBody: unknown;
+  await mockTableDesignerShell(page);
+  await page.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        columns: [{ name: 'id', dataType: 'integer', nullable: false, isIdentity: true }],
+        indexes: [],
+        constraints: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/impact', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        estimatedRows: 42,
+        restartIdentitySupported: true,
+        views: [],
+        incomingForeignKeys: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/truncate', async (route) => {
+    truncateBody = route.request().postDataJSON();
+    await route.fulfill({ status: 204, body: '' });
+  });
+
+  await page.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter&action=truncate`,
+  );
+  await expect(page.getByRole('heading', { name: 'Design table' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Truncate table' })).toBeVisible();
+  await expect(page.getByText('About 42 rows will be removed.')).toBeVisible();
+  const confirm = page.getByRole('dialog', { name: 'Truncate table' }).getByRole('button', {
+    name: 'Truncate table',
+  });
+  await expect(confirm).toBeDisabled();
+  await page
+    .getByRole('dialog', { name: 'Truncate table' })
+    .getByLabel(/Type accounts exactly/)
+    .fill('accounts');
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+  await expect(page.locator('main.table-designer-page').getByRole('status')).toContainText(
+    'Table truncated.',
+  );
+  expect(truncateBody).toEqual({
+    connectionId: 'pg-1',
+    ref,
+    restartIdentity: false,
+    confirmName: 'accounts',
+  });
+});
+
+test('E2E-0043-AC6 marks an open data tab as requiring reload after truncate', async ({ page }) => {
+  const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+  await mockTableDesignerShell(page, true);
+  await page.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        columns: [{ name: 'id', dataType: 'integer', nullable: false }],
+        indexes: [],
+        constraints: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/impact', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        estimatedRows: 1,
+        restartIdentitySupported: true,
+        views: [],
+        incomingForeignKeys: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/truncate', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+
+  await page.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter&action=truncate`,
+  );
+  await page
+    .getByRole('dialog', { name: 'Truncate table' })
+    .getByLabel(/Type accounts exactly/)
+    .fill('accounts');
+  await page
+    .getByRole('dialog', { name: 'Truncate table' })
+    .getByRole('button', { name: 'Truncate table' })
+    .click();
+  await expect(
+    page.locator('[role="tab"][id$="data-accounts"]').getByTitle('Reload required'),
+  ).toBeVisible();
+});
+
+test('E2E-0043-AC3 shows known drop dependencies and forwards exact confirmation', async ({
+  page,
+}) => {
+  const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+  let dropBody: unknown;
+  await mockTableDesignerShell(page);
+  await page.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ref, columns: [], indexes: [], constraints: [] }),
+    });
+  });
+  await page.route('**/api/v1/tables/impact', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        estimatedRows: 42,
+        restartIdentitySupported: true,
+        views: [{ database: 'app', schema: 'public', name: 'account_summary', type: 'view' }],
+        incomingForeignKeys: [
+          {
+            ref: { database: 'app', schema: 'public', name: 'invoices', type: 'table' },
+            constraintName: 'invoices_account_fk',
+          },
+        ],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/drop', async (route) => {
+    dropBody = route.request().postDataJSON();
+    await route.fulfill({ status: 204, body: '' });
+  });
+
+  await page.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter&action=drop`,
+  );
+  const dialog = page.getByRole('dialog', { name: 'Drop table' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('account_summary')).toBeVisible();
+  await expect(dialog.getByText('invoices (invoices_account_fk)')).toBeVisible();
+  await expect(dialog.getByText('CASCADE is not offered.')).toBeVisible();
+  const confirm = dialog.getByRole('button', { name: 'Drop table', exact: true });
+  await expect(confirm).toBeDisabled();
+  await dialog.getByLabel(/Type accounts exactly/).fill('accounts');
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+
+  await expect(page).toHaveURL(/\/explorer\?notice=/);
+  await expect(page.getByText('Table public.accounts was dropped.')).toBeVisible();
+  expect(dropBody).toEqual({ connectionId: 'pg-1', ref, confirmName: 'accounts' });
+});
+
+test('E2E-0042-AC1 and E2E-0042-AC3 build an ordered composite index before preview', async ({
+  page,
+}) => {
+  const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+  let previewBody: unknown;
+  await mockTableDesignerShell(page);
+  await page.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        columns: [
+          { name: 'tenant_id', dataType: 'integer', nullable: false },
+          { name: 'email', dataType: 'varchar(120)', nullable: false },
+        ],
+        indexes: [],
+        constraints: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/ddl/preview', async (route) => {
+    previewBody = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        operation: 'alter',
+        statements: [
+          {
+            sql: 'CREATE INDEX "idx_accounts_tenant_email" ON "public"."accounts" ("tenant_id", "email")',
+          },
+        ],
+        warnings: [],
+        destructive: false,
+      }),
+    });
+  });
+
+  await page.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter`,
+  );
+  await expect(page.getByRole('heading', { name: 'Design table' })).toBeVisible();
+  await page.getByRole('button', { name: /Indexes/ }).click();
+  await page.getByRole('button', { name: 'Add index' }).click();
+  const indexCard = page.locator('.structure-card').first();
+  await indexCard.locator('input').nth(0).fill('idx_accounts_tenant_email');
+  await indexCard.locator('input').nth(2).fill('tenant_id, email');
+  await page.getByRole('button', { name: 'Preview SQL' }).click();
+  await expect(page.getByText('CREATE INDEX "idx_accounts_tenant_email"')).toBeVisible();
+  expect(previewBody).toMatchObject({
+    changeSet: {
+      alterations: [
+        {
+          kind: 'addIndex',
+          index: {
+            name: 'idx_accounts_tenant_email',
+            columns: ['tenant_id', 'email'],
+            unique: false,
+          },
+        },
+      ],
+    },
+  });
+});
+
+test('E2E-0042-AC2 models an index change as drop plus add and previews both statements', async ({
+  page,
+}) => {
+  const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+  let previewBody: unknown;
+  await mockTableDesignerShell(page);
+  await page.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        columns: [
+          { name: 'tenant_id', dataType: 'integer', nullable: false },
+          { name: 'email', dataType: 'varchar(120)', nullable: false },
+        ],
+        indexes: [
+          {
+            name: 'idx_accounts_tenant',
+            columns: ['tenant_id'],
+            unique: false,
+            primary: false,
+          },
+        ],
+        constraints: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/ddl/preview', async (route) => {
+    previewBody = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        operation: 'alter',
+        statements: [
+          {
+            sql: 'DROP INDEX "idx_accounts_tenant"',
+            destructiveIndexes: ['idx_accounts_tenant'],
+          },
+          {
+            sql: 'CREATE INDEX "idx_accounts_tenant_email" ON "public"."accounts" ("tenant_id", "email")',
+          },
+        ],
+        warnings: ['Changing an index is compiled as a drop followed by an add.'],
+        destructive: true,
+      }),
+    });
+  });
+
+  await page.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter`,
+  );
+  await expect(page.getByRole('heading', { name: 'Design table' })).toBeVisible();
+  await page.getByRole('button', { name: /Indexes/ }).click();
+  const indexCard = page.locator('.structure-card').first();
+  await indexCard.locator('input').nth(0).fill('idx_accounts_tenant_email');
+  await indexCard.locator('input').nth(2).fill('tenant_id, email');
+  await page.getByRole('button', { name: 'Preview SQL' }).click();
+
+  await expect(page.getByText('DROP INDEX "idx_accounts_tenant"')).toBeVisible();
+  await expect(page.getByText('CREATE INDEX "idx_accounts_tenant_email"')).toBeVisible();
+  await expect(
+    page.getByText('Changing an index is compiled as a drop followed by an add.'),
+  ).toBeVisible();
+  expect(previewBody).toMatchObject({
+    changeSet: {
+      alterations: [
+        { kind: 'dropIndex', name: 'idx_accounts_tenant' },
+        {
+          kind: 'addIndex',
+          index: {
+            name: 'idx_accounts_tenant_email',
+            columns: ['tenant_id', 'email'],
+            unique: false,
+          },
+        },
+      ],
+    },
+  });
+});
+
+test('E2E-0042-AC4 previews check expressions and gates unsupported MySQL checks', async ({
+  page,
+}) => {
+  const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+  let previewBody: unknown;
+  await mockTableDesignerShell(page);
+  await page.route('**/api/v1/tables/ddl/types', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...catalog,
+        capability: {
+          ...catalog.capability,
+          capabilities: { ...catalog.capability.capabilities, checkConstraints: true },
+        },
+      }),
+    });
+  });
+  await page.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        columns: [{ name: 'balance', dataType: 'numeric', nullable: false }],
+        indexes: [],
+        constraints: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/ddl/preview', async (route) => {
+    previewBody = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        operation: 'alter',
+        statements: [
+          {
+            sql: 'ALTER TABLE "public"."accounts" ADD CONSTRAINT "ck_accounts_balance" CHECK (balance >= 0)',
+          },
+        ],
+        warnings: [],
+        destructive: false,
+      }),
+    });
+  });
+
+  await page.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter`,
+  );
+  await expect(page.getByRole('heading', { name: 'Design table' })).toBeVisible();
+  await page.getByRole('button', { name: /Constraints/ }).click();
+  await page.getByRole('button', { name: 'Add check' }).click();
+  const checkCard = page.locator('.structure-card').first();
+  await checkCard.locator('input').first().fill('ck_accounts_balance');
+  await checkCard.getByRole('textbox', { name: 'Check expression' }).fill('balance >= 0');
+  await page.getByRole('button', { name: 'Preview SQL' }).click();
+  await expect(
+    page.getByText('ALTER TABLE "public"."accounts" ADD CONSTRAINT "ck_accounts_balance"'),
+  ).toBeVisible();
+  expect(previewBody).toMatchObject({
+    changeSet: {
+      alterations: [
+        {
+          kind: 'addConstraint',
+          constraint: { type: 'check', name: 'ck_accounts_balance', expression: 'balance >= 0' },
+        },
+      ],
+    },
+  });
+
+  const mysqlPage = await page.context().newPage();
+  await mockTableDesignerShell(mysqlPage);
+  await mysqlPage.route('**/api/v1/tables/ddl/types', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...catalog,
+        capability: {
+          ...catalog.capability,
+          engine: 'mysql',
+          capabilities: { ...catalog.capability.capabilities, checkConstraints: false },
+          reasons: { checkConstraints: 'MySQL version does not enforce CHECK constraints.' },
+        },
+      }),
+    });
+  });
+  await mysqlPage.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ref, columns: [], indexes: [], constraints: [] }),
+    });
+  });
+  await mysqlPage.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter`,
+  );
+  await mysqlPage.getByRole('button', { name: /Constraints/ }).click();
+  await expect(mysqlPage.getByRole('button', { name: 'Add check' })).toBeDisabled();
+  await expect(
+    mysqlPage.getByText('MySQL version does not enforce CHECK constraints.'),
+  ).toBeVisible();
+  await mysqlPage.close();
+});
+
+test('E2E-0042-AC7 refreshes data-browser row identity after adding a primary key', async ({
+  page,
+}) => {
+  const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+  let applied = false;
+  let applyBody: unknown;
+  await mockTableDesignerShell(page);
+  await page.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        columns: [
+          { name: 'id', dataType: 'integer', nullable: false },
+          { name: 'email', dataType: 'varchar(120)', nullable: false },
+        ],
+        indexes: applied
+          ? [{ name: 'accounts_pk', columns: ['id'], unique: true, primary: true }]
+          : [],
+        constraints: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/ddl/preview', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        operation: 'alter',
+        statements: [
+          {
+            sql: 'ALTER TABLE "public"."accounts" ADD CONSTRAINT "accounts_pk" PRIMARY KEY ("id")',
+          },
+        ],
+        warnings: [],
+        destructive: false,
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/ddl/apply', async (route) => {
+    applyBody = route.request().postDataJSON();
+    applied = true;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        operation: 'alter',
+        transactional: true,
+        committed: true,
+        statements: [
+          {
+            index: 0,
+            sql: 'ALTER TABLE "public"."accounts" ADD CONSTRAINT "accounts_pk" PRIMARY KEY ("id")',
+            status: 'success',
+          },
+        ],
+      }),
+    });
+  });
+  await page.route('**/api/v1/data/read', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        columns: ['id', 'email'],
+        columnsMeta: [
+          {
+            name: 'id',
+            dataType: 'integer',
+            nullable: false,
+            isIdentity: false,
+            isGenerated: false,
+          },
+          {
+            name: 'email',
+            dataType: 'varchar(120)',
+            nullable: false,
+            isIdentity: false,
+            isGenerated: false,
+          },
+        ],
+        rows: [
+          {
+            id: { type: 'number', value: '1' },
+            email: { type: 'string', value: 'ada@example.test' },
+          },
+        ],
+        total: { kind: 'exact', value: 1 },
+        page: { limit: 100, offset: 0, hasMore: false },
+        rowIdentity: applied
+          ? { columns: ['id'], kind: 'primary', editable: true }
+          : {
+              columns: [],
+              kind: null,
+              editable: false,
+              reason: 'This table has no primary key or non nullable unique index.',
+            },
+      }),
+    });
+  });
+
+  await page.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter`,
+  );
+  await expect(page.getByRole('heading', { name: 'Design table' })).toBeVisible();
+  await page.getByRole('button', { name: /Constraints/ }).click();
+  await page.getByRole('button', { name: 'Add PK' }).click();
+  const primaryKeyCard = page.locator('.structure-card').first();
+  await primaryKeyCard.locator('input').nth(0).fill('accounts_pk');
+  await primaryKeyCard.locator('input').nth(1).fill('id');
+  await page.getByRole('button', { name: 'Preview SQL' }).click();
+  await expect(page.getByText('ADD CONSTRAINT "accounts_pk" PRIMARY KEY')).toBeVisible();
+  await page.getByRole('button', { name: 'Apply reviewed changes' }).click();
+  await expect(
+    page.getByText('Table changes applied. Explorer metadata was refreshed.', { exact: true }),
+  ).toBeVisible();
+  expect(applyBody).toMatchObject({
+    changeSet: { alterations: [{ kind: 'addConstraint', constraint: { type: 'primaryKey' } }] },
+  });
+
+  await page.goto(`/data-browser?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}`);
+  await expect(page.getByRole('button', { name: 'Add row' })).toBeVisible();
+  await expect(
+    page.getByText('Read only: This table has no primary key or non nullable unique index.'),
+  ).toHaveCount(0);
+});
+
+test('E2E-0043-AC1 and E2E-0043-AC5 rename a table after impact review and exact confirmation', async ({
+  page,
+}) => {
+  const ref = { database: 'app', schema: 'public', name: 'accounts', type: 'table' as const };
+  const renamed = { ...ref, name: 'customer_accounts' };
+  let renameBody: unknown;
+  await mockTableDesignerShell(page);
+  await page.route('**/api/v1/connections/pg-1/objects/describe*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ref, columns: [], indexes: [], constraints: [] }),
+    });
+  });
+  await page.route('**/api/v1/tables/impact', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ref,
+        estimatedRows: 12,
+        restartIdentitySupported: true,
+        views: [{ database: 'app', schema: 'public', name: 'account_summary', type: 'view' }],
+        incomingForeignKeys: [],
+      }),
+    });
+  });
+  await page.route('**/api/v1/tables/rename', async (route) => {
+    renameBody = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(renamed),
+    });
+  });
+
+  await page.goto(
+    `/table-designer?connection=pg-1&ref=${encodeURIComponent(JSON.stringify(ref))}&mode=alter&action=rename`,
+  );
+  const dialog = page.getByRole('dialog', { name: 'Rename table' });
+  await expect(dialog).toBeVisible();
+  await expect(page.getByText('Views, incoming foreign keys, and saved queries')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Rename table' })).toBeDisabled();
+  await dialog.getByLabel('New table name').fill('customer_accounts');
+  await dialog.getByLabel(/Type accounts exactly/).fill('accounts');
+  await expect(dialog.getByRole('button', { name: 'Rename table' })).toBeEnabled();
+  await dialog.getByRole('button', { name: 'Rename table' }).click();
+  await expect(page.locator('main.table-designer-page').getByRole('status')).toContainText(
+    'Table renamed.',
+  );
+  expect(renameBody).toEqual({
+    connectionId: 'pg-1',
+    ref,
+    newName: 'customer_accounts',
+    confirmName: 'accounts',
+  });
 });

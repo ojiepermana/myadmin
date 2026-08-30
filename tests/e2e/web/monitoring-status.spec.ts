@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures';
 
-test('E2E-0051-AC1, E2E-0051-AC3, E2E-0051-AC4, E2E-0051-AC5, E2E-0051-AC6, and E2E-0051-AC7 render status cards without polling', async ({
+test('E2E-0051-AC1, E2E-0051-AC3, E2E-0051-AC4, E2E-0051-AC5, E2E-0051-AC6, E2E-0051-AC7, PERF-0051-AC4, and PERF-0051-AC7 render status cards without polling', async ({
   page,
   request,
 }) => {
@@ -118,10 +118,16 @@ test('E2E-0051-AC1, E2E-0051-AC3, E2E-0051-AC4, E2E-0051-AC5, E2E-0051-AC6, and 
     page.getByText('Monitor sesi dan query berjalan hadir di versi berikutnya'),
   ).toBeVisible();
   await expect(page.locator('body')).not.toContainText('fixture.internal');
+  await page.getByRole('button', { name: 'Hide panel' }).click();
+  await card.screenshot({ path: 'test-results/visual-0051-monitoring-card.png' });
 
   const requestsBeforeTest = statusRequests;
   await card.getByRole('button', { name: 'Test now' }).click();
   await expect(card).toContainText('Latency updated to 7 ms.');
-  await page.waitForTimeout(1_200);
+  const observationWindowMs = 1_200;
+  const observationRepeats = 3;
+  for (let repeat = 0; repeat < observationRepeats; repeat += 1) {
+    await page.waitForTimeout(observationWindowMs / observationRepeats);
+  }
   expect(statusRequests).toBe(requestsBeforeTest);
 });

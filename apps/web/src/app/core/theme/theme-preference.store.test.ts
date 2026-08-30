@@ -36,7 +36,7 @@ describe('ThemePreferenceStore', () => {
     TestBed.resetTestingModule();
   });
 
-  it('uses system by default and changes mode without a reload', () => {
+  it('UT-0052-AC2 uses local preference by default and changes mode without a reload', () => {
     const store = TestBed.inject(ThemePreferenceStore);
     const modeService = TestBed.inject(ThemeModeService);
 

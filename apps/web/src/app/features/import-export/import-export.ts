@@ -58,6 +58,7 @@ export class ImportExport {
       this.realtimeStops.clear();
     });
     void this.load();
+    void this.loadConnections();
   }
 
   protected async load(): Promise<void> {

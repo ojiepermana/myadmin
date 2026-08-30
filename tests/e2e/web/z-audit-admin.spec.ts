@@ -3,6 +3,14 @@ import { expect, test } from '../fixtures';
 test('E2E-0020-AC1, E2E-0020-AC4, E2E-0020-AC5, and E2E-0020-AC7 review a real audited operation', async ({
   page,
 }) => {
+  const setupStatus = await page.request.get('/api/v1/setup/status');
+  expect(setupStatus.ok()).toBe(true);
+  if (!((await setupStatus.json()) as { initialized: boolean }).initialized) {
+    const setup = await page.request.post('/api/v1/setup/admin', {
+      data: { username: 'browser-admin', password: 'synthetic-browser-password' },
+    });
+    expect(setup.status()).toBe(201);
+  }
   await page.goto('/login');
   const failedLoginStatus = await page.evaluate(async () => {
     const response = await fetch('/api/v1/auth/login', {
