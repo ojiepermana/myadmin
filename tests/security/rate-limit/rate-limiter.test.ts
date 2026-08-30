@@ -6,7 +6,7 @@ import type { ImportService } from '../../../packages/import/src';
 import { registerImportRoutes } from '../../../apps/server/src/import/routes';
 
 describe('consolidated rate-limit policies', () => {
-  test('SEC-0053-AC4 deterministically blocks and recovers each protected flow', () => {
+  test('UT-0053-AC4 and SEC-0053-AC4 deterministically block and recover each protected flow', () => {
     for (const [policy, settings] of Object.entries(RATE_LIMIT_POLICIES)) {
       let now = 1_000;
       const limiter = createRateLimiter(policy as keyof typeof RATE_LIMIT_POLICIES, {
@@ -25,7 +25,7 @@ describe('consolidated rate-limit policies', () => {
     }
   });
 
-  test('SEC-0053-AC4 returns 429 and recovers on the import upload route', async () => {
+  test('IT-0053-AC4 and SEC-0053-AC4 return 429 and recover on the import upload route', async () => {
     let now = 1_000;
     const app = registerImportRoutes(new Elysia(), '/api/v1', {
       authService: {

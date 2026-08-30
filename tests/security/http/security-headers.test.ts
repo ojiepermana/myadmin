@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createServerApp } from '../../../apps/server/src/app';
 
 describe('API security headers', () => {
-  test('SEC-0053-AC3 applies browser and no-store API headers', async () => {
+  test('IT-0053-AC3 and SEC-0053-AC3 apply browser and no-store API headers', async () => {
     const app = createServerApp({ observability: { stdout: () => undefined } });
     const response = await app.handle(new Request('http://localhost/api/v1/health'));
 

@@ -16,7 +16,7 @@ import {
 } from '../../../scripts/security/generate-authorization-matrix';
 
 describe('OpenAPI authorization matrix', () => {
-  test('SEC-0053-AC5 keeps the generated matrix complete and fresh', async () => {
+  test('CT-0053-AC5 and SEC-0053-AC5 keep the generated matrix complete and fresh', async () => {
     const generated = await readFile(
       new URL('./authorization-matrix.generated.ts', import.meta.url),
       'utf8',

@@ -65,7 +65,7 @@ describe('PostgreSQL metadata performance', () => {
     await provider.connection.close(handle);
   });
 
-  test('[PERF-0023-AC8] keeps a 100 object page below the one second threshold', async () => {
+  test('[PERF-0023-AC8 and PERF-0032-AC6] keep metadata pages and search below one second', async () => {
     const startedAt = performance.now();
     const page = await provider.metadata.listObjects(handle!, schemaRef, ['table'], { limit: 100 });
     const elapsedMs = performance.now() - startedAt;
@@ -73,5 +73,20 @@ describe('PostgreSQL metadata performance', () => {
     expect(page.items).toHaveLength(100);
     expect(page.cursor).toBe('100');
     expect(elapsedMs).toBeLessThan(1000);
+
+    const searchStartedAt = performance.now();
+    const search = await provider.metadata.searchObjects(
+      handle!,
+      schemaRef,
+      'metadata_table_1',
+      ['table'],
+      { limit: 50 },
+    );
+    const searchElapsedMs = performance.now() - searchStartedAt;
+
+    expect(search.items).toHaveLength(50);
+    expect(search.cursor).toBeDefined();
+    expect(search.items.every((item) => item.name.includes('metadata_table_1'))).toBe(true);
+    expect(searchElapsedMs).toBeLessThan(1000);
   });
 });

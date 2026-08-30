@@ -9,6 +9,33 @@ async function text(path: string): Promise<string> {
 }
 
 describe('distribution release invariants', () => {
+  test('IT-0053-AC8 and SMOKE-0053-AC8 wire the complete security workflow gate', async () => {
+    const workflow = await text('.github/workflows/security.yml');
+    expect(workflow).toContain('runs-on: ubuntu-latest');
+    expect(workflow).toContain('bun install --frozen-lockfile');
+    expect(workflow).toContain('bun run security:scan-secrets');
+    expect(workflow).toContain('bun run security:authorization-matrix --check');
+    expect(workflow).toContain('bun run validate-contract');
+    expect(workflow).toContain('bun run check:contract-drift');
+    expect(workflow).toContain('bun run test:security');
+  });
+
+  test('IT-0054-AC5 wires the release build behind all required quality jobs', async () => {
+    const workflow = await text('.github/workflows/release.yml');
+    expect(workflow).toContain('build:\n    needs: [ci, contract, integration, security]');
+    expect(workflow).toContain('bun run build:web:release');
+    expect(workflow).toContain('bun run build:binaries -- --target=${{ matrix.target }}');
+    expect(workflow).toContain('bun run smoke:binary -- --binary');
+    expect(workflow).toContain('actions/upload-artifact@v4');
+  });
+
+  test('IT-0054-AC7 packages the platform README beside every binary artifact', async () => {
+    const workflow = await text('.github/workflows/release.yml');
+    expect(workflow).toContain('cp release/README.md dist/binaries/${{ matrix.target }}/README.md');
+    expect(await text('release/README.md')).toContain('myadmin serve');
+    expect(await text('release/README.md')).toContain('checksums.txt');
+  });
+
   test('IT-0055-AC1 publishes checksums, changelog notes, and release assets', async () => {
     const workflow = await text('.github/workflows/release.yml');
     expect(workflow).toContain('contents: write');

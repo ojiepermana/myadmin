@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { calculateChecksums } from './checksums';
 import { compileBinaries, RELEASE_TARGETS, releaseVersion } from './compile-binary';
 import { embedWebAssets, renderEmbeddedAssetsModule } from './embed-web-assets';
+import { renderSizeReport } from './report-sizes';
 import { serveStaticAsset } from '../../apps/cli/src/static-web/serve-assets';
 
 const temporaryDirectories: string[] = [];
@@ -55,7 +56,7 @@ test('IT-0054-AC1 serves embedded content with its manifest MIME and cache heade
   expect(response.headers.get('cache-control')).toContain('immutable');
 });
 
-test('UT-0054-AC2 and AC-3 keep the five target matrix and release metadata deterministic', () => {
+test('UT-0054-AC2 and UT-0054-AC3 keep the five target matrix and release metadata deterministic', () => {
   expect(RELEASE_TARGETS).toEqual([
     'linux-x64',
     'linux-arm64',
@@ -67,7 +68,7 @@ test('UT-0054-AC2 and AC-3 keep the five target matrix and release metadata dete
   expect(renderEmbeddedAssetsModule([])).toContain('embeddedAssetMetadata');
 });
 
-test('UT-0054-AC3 writes sorted SHA-256 entries for compiled binaries', async () => {
+test('UT-0054-AC3, IT-0054-AC3 writes deterministic sorted SHA-256 entries for compiled binaries', async () => {
   const root = await mkdtemp(join(tmpdir(), 'myadmin-packaging-'));
   temporaryDirectories.push(root);
   await mkdir(join(root, 'dist/binaries/linux-x64'), { recursive: true });
@@ -81,6 +82,47 @@ test('UT-0054-AC3 writes sorted SHA-256 entries for compiled binaries', async ()
   ]);
   expect(await readFile(result.outputPath, 'utf8')).toMatch(
     /^[a-f0-9]{64}[ ]{2}dist\/binaries\/linux-x64\/myadmin\n/,
+  );
+  const firstChecksum = await readFile(result.outputPath, 'utf8');
+  const second = await calculateChecksums({ repositoryRoot: root });
+  expect(await readFile(second.outputPath, 'utf8')).toBe(firstChecksum);
+});
+
+test('SEC-0054-AC3 excludes non-binary files from the checksum manifest', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'myadmin-packaging-'));
+  temporaryDirectories.push(root);
+  await mkdir(join(root, 'dist/binaries/macos-arm64'), { recursive: true });
+  await writeFile(join(root, 'dist/binaries/macos-arm64/myadmin'), 'binary');
+  await writeFile(join(root, 'dist/binaries/macos-arm64/secret.txt'), 'synthetic-secret');
+
+  const result = await calculateChecksums({ repositoryRoot: root });
+
+  expect(result.entries).toHaveLength(1);
+  expect(await readFile(result.outputPath, 'utf8')).not.toContain('secret.txt');
+  expect(await readFile(result.outputPath, 'utf8')).not.toContain('synthetic-secret');
+});
+
+test('IT-0054-AC6 renders a deterministic size report for every binary target', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'myadmin-packaging-'));
+  temporaryDirectories.push(root);
+  for (const [index, target] of RELEASE_TARGETS.entries()) {
+    const directory = join(root, 'dist/binaries', target);
+    await mkdir(directory, { recursive: true });
+    await writeFile(
+      join(directory, target === 'windows-x64' ? 'myadmin.exe' : 'myadmin'),
+      'x'.repeat(index + 1),
+    );
+  }
+  expect(await renderSizeReport(root)).toBe(
+    [
+      '| Target | Size | Artifact |',
+      '| --- | ---: | --- |',
+      '| linux-arm64 | 2 bytes | dist/binaries/linux-arm64/myadmin |',
+      '| linux-x64 | 1 byte | dist/binaries/linux-x64/myadmin |',
+      '| macos-arm64 | 4 bytes | dist/binaries/macos-arm64/myadmin |',
+      '| macos-x64 | 3 bytes | dist/binaries/macos-x64/myadmin |',
+      '| windows-x64 | 5 bytes | dist/binaries/windows-x64/myadmin.exe |',
+    ].join('\n'),
   );
 });
 

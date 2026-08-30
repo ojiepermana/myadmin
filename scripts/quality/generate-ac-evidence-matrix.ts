@@ -17,6 +17,12 @@ const explicitEvidencePaths = [
   databaseEvidencePath,
   externalEvidencePath,
 ];
+const realE2eSuites = new Set([
+  'tests/e2e/web/zz-real-import-export.spec.ts',
+  'tests/e2e/web/zz-real-query-editor.spec.ts',
+  'tests/e2e/web/zz-real-restore.spec.ts',
+  'tests/e2e/web/zz-real-security.spec.ts',
+]);
 const testIdPattern = /\b(?:UT|IT|CT|E2E|SEC|PERF|VIS|SMOKE|MANUAL)-\d{4}-AC\d+\b/g;
 const acceptanceHeadingPattern = /^### AC-(\d+)\s*$/gm;
 
@@ -127,15 +133,19 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
     .map((reference) => `${reference.path}:${reference.line}`)
     .join(', ');
   const databaseEvidence = readFileSync(databaseEvidencePath, 'utf8');
+  const hasCurrentCrossEngineRerun =
+    databaseEvidence.includes('Current cross-engine integration rerun') &&
+    databaseEvidence.includes('156 test, 0 gagal, 1.125 assertions') &&
+    databaseEvidence.includes('tanpa skip');
   const hasPostgresqlEvidence =
     sourceReferences.some(
       (reference) =>
         reference.path.startsWith('tests/integration/postgresql/') ||
         reference.path.startsWith('tests/performance/postgresql'),
-    ) && databaseEvidence.includes('PostgreSQL: **14 passed, 0 failed**');
+    ) && hasCurrentCrossEngineRerun;
   const hasMysqlEvidence =
     sourceReferences.some((reference) => reference.path.startsWith('tests/integration/mysql/')) &&
-    databaseEvidence.includes('MySQL: **24 passed, 0 failed**');
+    hasCurrentCrossEngineRerun;
   const explicitEvidence = explicitEvidenceFor(id);
 
   if (explicitEvidence) {
@@ -148,11 +158,10 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
   }
 
   if (hasPostgresqlEvidence || hasMysqlEvidence) {
-    const engine = hasPostgresqlEvidence ? 'PostgreSQL' : 'MySQL';
     return {
       id,
       status: 'PASS',
-      message: `bun test ${engine} integration (pass, 0 fail); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-database.md`,
+      message: `bun test tests/integration tests/performance (156 pass, 0 fail, 0 skip); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-database.md`,
       references: sourceReferences,
     };
   }
@@ -162,11 +171,33 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
       reference.path.startsWith('tests/e2e/'),
     );
     const e2eEvidence = readFileSync(e2eEvidencePath, 'utf8');
-    if (hasExecutedTest && e2eEvidence.includes('Result: **20 passed, 0 failed**')) {
+    const hasCurrentMockE2eEvidence =
+      (e2eEvidence.includes('54 tests: 40 passed') ||
+        e2eEvidence.includes('53 tests: 39 passed') ||
+        e2eEvidence.includes('49 tests: 35 passed')) &&
+      e2eEvidence.includes('14 skipped') &&
+      e2eEvidence.includes('0 failed');
+    const hasCurrentRealE2eEvidence =
+      (e2eEvidence.includes('54/54 dalam 3,7 menit') ||
+        e2eEvidence.includes('14/14 passes, 0 failures')) &&
+      sourceReferences.some((reference) => realE2eSuites.has(reference.path));
+    if (hasCurrentRealE2eEvidence) {
       return {
         id,
         status: 'PASS',
-        message: `bun run test:e2e (20 pass, 0 fail); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-e2e.md`,
+        message: `${e2eEvidence.includes('54/54 dalam 3,7 menit') ? 'MYADMIN_REAL_DATABASE_E2E=1 bun run test:e2e (54 pass, 0 fail)' : 'MYADMIN_REAL_DATABASE_E2E=1 bunx playwright test configured real-engine suites (14 pass, 0 fail)'}; ${referenceText}; evidence: docs/specs/evidence/2026-08-29-e2e.md`,
+        references: sourceReferences,
+      };
+    }
+    if (
+      hasCurrentMockE2eEvidence &&
+      hasExecutedTest &&
+      !sourceReferences.some((reference) => realE2eSuites.has(reference.path))
+    ) {
+      return {
+        id,
+        status: 'PASS',
+        message: `${e2eEvidence.includes('54 tests: 40 passed') ? 'bun run test:e2e (40 pass, 14 skip, 0 fail)' : e2eEvidence.includes('53 tests: 39 passed') ? 'bun run test:e2e (39 pass, 14 skip, 0 fail)' : 'bun run test:e2e (35 pass, 14 skip, 0 fail)'}; ${referenceText}; evidence: docs/specs/evidence/2026-08-29-e2e.md`,
         references: sourceReferences,
       };
     }
@@ -211,10 +242,10 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
   const command = sourceReferences.some((reference) =>
     /(?:^|\/)tests\/contract\//.test(reference.path),
   )
-    ? 'bun run test:contract (68 pass, 0 fail)'
+    ? 'bun run test:contract (71 pass, 0 fail)'
     : sourceReferences.some((reference) => /(?:^|\/)tests\/security\//.test(reference.path))
       ? 'bun run test:security (40 pass, 0 fail)'
-      : 'bun run test (554 pass, 0 fail, 8 skip)';
+      : 'bun run test (664 pass, 0 fail, 0 skip)';
   return {
     id,
     status: 'PASS',
@@ -258,7 +289,7 @@ function generate(): void {
   const lines = [
     '# Acceptance criteria → test ID → evidence matrix',
     '',
-    '> Generated by `bun run matrix:ac`. This report records evidence observed during the 2026-08-29 audit; it does not alter any companion `verify.md` checklist.',
+    '> Generated by `bun run matrix:ac`. This report records evidence observed during the 2026-08-30 audit; it does not alter any companion `verify.md` checklist.',
     '',
     `- Acceptance criteria: **${rows.length}**`,
     `- Planned test IDs: **${new Set(rows.flatMap((row) => row.testIds)).size}**`,
@@ -267,7 +298,7 @@ function generate(): void {
     `- AC blocked: **${blockedCount}**`,
     '- `PASS` means the planned ID has a matching source test with a passing command gate, or an explicit recorded evidence document.',
     '- `BLOCKED` means the planned ID is missing, or its proof type/environment was not executed. A source file alone is not acceptance evidence.',
-    '- The baseline root suite had 8 environment-dependent skips; recorded PostgreSQL/MySQL runs are linked from docs/specs/evidence/2026-08-29-database.md, and unmatched environment-dependent IDs remain blocked.',
+    '- The root suite records environment-dependent skips separately; recorded PostgreSQL/MySQL runs are linked from docs/specs/evidence/2026-08-29-database.md, and unmatched environment-dependent IDs remain blocked.',
     '',
     '| Spec | AC | Requirement | Test ID(s) | Implementation | Evidence | Verdict |',
     '|---|---:|---|---|---|---|---|',

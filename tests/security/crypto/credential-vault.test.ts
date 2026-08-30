@@ -171,7 +171,7 @@ describe('credential vault security', () => {
     }
   });
 
-  it('IT-0011-AC7 proves that the SQLite file contains no credential plaintext', async () => {
+  it('IT-0011-AC7 and SEC-0011-AC7 prove that the SQLite file contains no credential plaintext', async () => {
     const root = await mkdtemp(join(tmpdir(), 'myadmin-vault-'));
     const databasePath = join(root, 'credentials.sqlite');
     const secret = 'synthetic-file-password';

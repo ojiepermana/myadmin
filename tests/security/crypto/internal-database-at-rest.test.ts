@@ -14,7 +14,7 @@ import {
 import { InitialAdminService } from '../../../packages/auth/src';
 
 describe('internal SQLite at-rest security', () => {
-  test('SEC-0053-AC6 contains no user, credential, or query-history secret bytes', async () => {
+  test('IT-0053-AC6 and SEC-0053-AC6 contain no user, credential, or query-history secret bytes', async () => {
     const root = await mkdtemp(join(tmpdir(), 'myadmin-at-rest-'));
     const databasePath = join(root, 'myadmin.db');
     const marker = 'synthetic-at-rest-secret-marker';

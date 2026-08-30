@@ -23,7 +23,8 @@ export async function renderSizeReport(repositoryRoot = process.cwd()): Promise<
     files.map(async (file) => {
       const target = relative(binaryRoot, file).split(sep).join('/').split('/')[0] ?? 'unknown';
       const bytes = (await stat(file)).size;
-      return `| ${target} | ${bytes.toLocaleString('en-US')} bytes | ${relative(root, file).split(sep).join('/')} |`;
+      const unit = bytes === 1 ? 'byte' : 'bytes';
+      return `| ${target} | ${bytes.toLocaleString('en-US')} ${unit} | ${relative(root, file).split(sep).join('/')} |`;
     }),
   );
   return ['| Target | Size | Artifact |', '| --- | ---: | --- |', ...rows.sort()].join('\n');

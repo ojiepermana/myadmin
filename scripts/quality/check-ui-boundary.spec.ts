@@ -5,7 +5,7 @@ import { describe, expect, it } from 'bun:test';
 import { checkUiBoundary } from './check-ui-boundary';
 
 describe('UI boundary check', () => {
-  it('rejects a second design system import and generic shared components', () => {
+  it('[IT-0014-AC7] rejects a second design system import and generic shared components', () => {
     const root = mkdtempSync(join(tmpdir(), 'myadmin-ui-boundary-'));
     try {
       mkdirSync(join(root, 'app', 'shared'), { recursive: true });
@@ -21,7 +21,7 @@ describe('UI boundary check', () => {
     }
   });
 
-  it('allows foundation imports and domain shared files', () => {
+  it('[IT-0014-AC7] allows foundation imports and domain shared files', () => {
     const root = mkdtempSync(join(tmpdir(), 'myadmin-ui-boundary-'));
     try {
       mkdirSync(join(root, 'app', 'shared'), { recursive: true });

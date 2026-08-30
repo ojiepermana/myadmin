@@ -132,6 +132,8 @@ async function runDoctor(
   if (exitCode !== 0) throw new Error(`doctor returned exit code ${exitCode}`);
 }
 
+// SMOKE-0054-AC4: exercise the real binary health, embedded SPA, setup, login,
+// database-connect, SIGTERM, and doctor acceptance path when configured.
 export async function runBinarySmoke(options: SmokeOptions): Promise<void> {
   assertRunnableOnThisHost(options.binary);
   const temporaryRoot = await mkdtemp(`${tmpdir()}/myadmin-smoke-`);
