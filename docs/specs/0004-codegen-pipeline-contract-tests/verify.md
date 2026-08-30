@@ -54,23 +54,23 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Evidence lokal terbaru
 
-| Command                                    | Result                                                                              | Coverage                                                                                                      |
-| ------------------------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `bun test tests/contract/contract.test.ts` | 8 pass, 0 fail                                                                      | Codegen deterministik, route coverage, response schema, format `date-time`, dan ApiError.                     |
-| `bun run test:contract`                    | 71 pass, 0 fail, 812 assertions                                                     | Seluruh contract test yang terdaftar pada root command.                                                       |
-| `bun run validate-contract`                | Lulus                                                                               | OpenAPI, ApiError, security, pagination, capability, path, dan WebSocket contract.                            |
-| `bun run check:contract-drift`             | Lulus                                                                               | Generated types tidak mengalami drift setelah regenerate.                                                     |
-| `bun run test`                             | Run historis 645 pass; rerun fixture-terbaru **664 pass, 0 fail, 4.532 assertions** | Regression suite terbaru dengan fixture disposable aktif lulus; hosted `contract.yml` tetap belum dibuktikan. |
+| Command                                    | Result                                                                              | Coverage                                                                                  |
+| ------------------------------------------ | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `bun test tests/contract/contract.test.ts` | 8 pass, 0 fail                                                                      | Codegen deterministik, route coverage, response schema, format `date-time`, dan ApiError. |
+| `bun run test:contract`                    | 71 pass, 0 fail, 812 assertions                                                     | Seluruh contract test yang terdaftar pada root command.                                   |
+| `bun run validate-contract`                | Lulus                                                                               | OpenAPI, ApiError, security, pagination, capability, path, dan WebSocket contract.        |
+| `bun run check:contract-drift`             | Lulus                                                                               | Generated types tidak mengalami drift setelah regenerate.                                 |
+| `bun run test`                             | Run historis 645 pass; rerun fixture-terbaru **664 pass, 0 fail, 4.532 assertions** | Regression suite terbaru dengan fixture disposable aktif lulus.                           |
 
 Evidence di atas membuktikan jalur lokal dan hosted Contract workflow pada commit `2544dcd`.
 
 ## Catatan eksekusi
 
-| 2026-08-30 | working tree | Bun 1.4.0, generated contract lokal | Test foundation **20 pass, 0 fail, 538 assertions**; `SMOKE-0004-AC2` drift check dan `SMOKE-0004-AC7` workflow wiring lulus secara lokal. Hosted `contract.yml` run tetap belum dibuktikan. | `bun test --isolate tests/contract/foundation-acceptance.test.ts` |
+| 2026-08-30 | working tree | Bun 1.4.0, generated contract lokal | Test foundation **20 pass, 0 fail, 538 assertions**; `SMOKE-0004-AC2` drift check dan `SMOKE-0004-AC7` workflow wiring lulus secara lokal. | `bun test --isolate tests/contract/foundation-acceptance.test.ts` |
 
-| Waktu      | Commit       | Environment            | Hasil                                                                                                                                    | Evidence                                                                             |
-| ---------- | ------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 2026-08-30 | working tree | Bun 1.4.0, macOS arm64 | **71 contract test, 812 assertions** lulus setelah validate, regenerate, drift check, bundle, dan contract run; hosted CI belum terbukti | `bun run validate-contract && bun run check:contract-drift && bun run test:contract` |
+| Waktu      | Commit    | Environment                                      | Hasil                                                                                                                                                          | Evidence                                                                                                                                                                     |
+| ---------- | --------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-30 | `2544dcd` | Bun 1.4.0, macOS arm64 dan hosted GitHub Actions | **71 contract test, 812 assertions** lulus setelah validate, regenerate, drift check, bundle, dan contract run; hosted `contract.yml` run `33288273267` sukses | `bun run validate-contract && bun run check:contract-drift && bun run test:contract`; [hosted Contract run](https://github.com/ojiepermana/myadmin/actions/runs/33288273267) |
 
 ## Gap dan blocker
 
