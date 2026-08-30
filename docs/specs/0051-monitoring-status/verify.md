@@ -59,6 +59,7 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 ## Catatan eksekusi
 
 | 2026-08-30 | working tree | Playwright local web server dengan API fixture | Monitoring E2E **1 passed dalam 7,4 detik**; status cards, realtime update tanpa polling, latency history, test-now, dan redaction/network assertions lulus. | [Monitoring E2E evidence](../evidence/2026-08-30-monitoring-e2e.md) |
+| 2026-08-30 | working tree | Playwright local web server | Combined shell/monitoring smoke **9 passed dalam 14,3 detik**; monitoring rendering dan no-polling check lulus bersama keyboard/ARIA smoke. | [Shell accessibility smoke evidence](../evidence/2026-08-30-shell-accessibility-smoke.md) |
 
 | 2026-08-30 | working tree | Bun dengan PostgreSQL disposable | Provider performance **3 pass, 0 fail, 15 assertions dalam 2,39 detik**; sepuluh status call ringan lulus pada ambang lokal. | [Provider performance evidence](../evidence/2026-08-30-provider-performance.md) |
 

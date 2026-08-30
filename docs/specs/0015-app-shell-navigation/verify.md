@@ -57,7 +57,7 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Catatan eksekusi
 
-| 2026-08-30 | working tree | Playwright local web server | Shell browser wave **8 passed, 1 skipped dalam 14,1 detik**; resize/fold, tabs, context menu, protected routes, keyboard flow, dan responsive breakpoint lulus. | [Shell and settings E2E evidence](../evidence/2026-08-30-shell-settings-e2e.md) |
+| 2026-08-30 | working tree | Playwright local web server | Shell browser wave **9 passed dalam 14,3 detik**; resize/fold, tabs, context menu, protected routes, keyboard flow, responsive breakpoint, theme, dan monitoring smoke lulus. | [Shell accessibility smoke evidence](../evidence/2026-08-30-shell-accessibility-smoke.md) |
 
 | Waktu      | Commit       | Environment                                         | Hasil                                                                                                                                                            | Evidence                                                                                                                                                                               |
 | ---------- | ------------ | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -67,9 +67,9 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Gap dan blocker
 
-| AC         | Gap                                                      | Dampak                            | Tindak lanjut                        |
-| ---------- | -------------------------------------------------------- | --------------------------------- | ------------------------------------ |
-| AC-4, AC-7 | Formal accessibility/cross-browser review belum lengkap. | Verdict tetap belum diverifikasi. | Lengkapi review formal yang tersisa. |
+| AC         | Gap                                                                                              | Dampak                            | Tindak lanjut                        |
+| ---------- | ------------------------------------------------------------------------------------------------ | --------------------------------- | ------------------------------------ |
+| AC-4, AC-7 | Formal accessibility/cross-browser review belum lengkap; smoke lokal belum merupakan audit WCAG. | Verdict tetap belum diverifikasi. | Lengkapi review formal yang tersisa. |
 
 ## Verdict akhir
 

@@ -61,6 +61,7 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 | 2026-08-30 | working tree | Playwright development configuration | UI foundation demo **1 passed dalam 6,4 detik**; dev route, foundation status, light/dark mode, dan screenshot visual lulus. | [UI foundation demo evidence](../evidence/2026-08-30-ui-foundation-demo.md) |
 
 | 2026-08-30 | working tree | Playwright local web server | Shell/settings browser wave **8 passed, 1 skipped dalam 14,1 detik**; theme sync dan mode light/dark/system lulus. | [Shell and settings E2E evidence](../evidence/2026-08-30-shell-settings-e2e.md) |
+| 2026-08-30 | working tree | Playwright local web server | Accessibility-oriented shell smoke **9 passed dalam 14,3 detik**; theme, landmark, keyboard, ARIA state, dan responsive checks lulus. | [Shell accessibility smoke evidence](../evidence/2026-08-30-shell-accessibility-smoke.md) |
 
 | 2026-08-30 | working tree | Bun 1.4.0, Playwright local web server | **2 pass, 0 fail**; account theme sync dan light/dark/system mode transition tanpa navigation lulus | `bun run test:e2e -- tests/e2e/web/settings-preferences.spec.ts` |
 
