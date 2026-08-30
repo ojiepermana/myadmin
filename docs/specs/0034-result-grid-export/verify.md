@@ -57,6 +57,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server | Query Editor E2E **1 passed dalam 8,4 detik** membuktikan typed result grid, null/truncated state, keyboard navigation, clipboard, dan export job queue. | [Query editor E2E evidence](../evidence/2026-08-30-query-editor-e2e.md) |
+
 | Waktu      | Commit       | Environment                                                                   | Hasil                                                                                                                                                                   | Evidence                                                                                                                                                                          |
 | ---------- | ------------ | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-08-29 | Working tree | Bun 1.4.0, ResultGrid unit tests                                              | 5 pass, 0 fail; display formatting, lossless numeric comparison, CSV/TSV/JSON export, dan type inference lulus                                                          | `apps/web/test/result-grid.test.ts`; `docs/specs/evidence/2026-08-29-browser.md`                                                                                                  |
