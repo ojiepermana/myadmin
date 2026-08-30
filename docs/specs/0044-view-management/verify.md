@@ -57,6 +57,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server dengan API fixture | View Editor UI **1 passed dalam 6,6 detik**; validation, DDL preview/update, safeguard, capability gate, dan explorer action lulus. | [View Editor UI evidence](../evidence/2026-08-30-view-editor-ui.md) |
+
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real view workflow E2E **4 passed dalam 2,6 menit** mencakup preview/confirmation PostgreSQL dan create/drop MySQL melalui UI. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
 
 | Waktu      | Commit       | Environment                                                        | Hasil                                                                                                                                                                        | Evidence                                                                                                                                                                                            |
