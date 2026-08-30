@@ -62,8 +62,11 @@
 | 53  | Hardening keamanan lintas fitur             | F    | in-progress |
 | 54  | Packaging binary dan smoke test             | F    | in-progress |
 | 55  | Distribusi dan release                      | F    | in-progress |
+| 56  | Standar runtime Bun dan reaktivitas Angular | X    | in-progress |
 
 Status in-progress berarti desainnya selesai (spec ada); pindah ke done saat Build, Verify, dan Test tercentang.
+
+Fase X adalah pekerjaan lintas modul yang tidak berada pada urutan build fase A sampai F. Nomornya identifier katalog, bukan urutan build.
 
 ## Fase A. Fondasi
 
@@ -763,6 +766,24 @@ Signing bergerbang sertifikat, Docker multi arch, service file, dokumentasi oper
   - [ ] Uji penerimaan dari artefak nyata pada VM atau container bersih (AC-8)
 - [ ] [Verify it](../specs/0055-distribution-release/verify.md): /check verify distribution-release
 - [x] [Test it](../specs/0055-distribution-release/test.md): /test distribution-release
+
+## Fase X. Standar lintas modul
+
+### 56. Standar runtime Bun dan reaktivitas Angular `in-progress`
+
+Satu standar bersama untuk runtime Bun, cancellation, lifecycle Elysia, kontrak operation, read model Angular, dan fondasi UI, diadopsi bertahap per area. Done when: setiap area punya pola kanonis yang ditegakkan gate, dan cutover kontrak v2 berjalan sekali setelah seluruh gate lulus.
+
+- [x] Design it (spec): [0056](../specs/0056-bun-angular-runtime-standard/index.md)
+- [ ] Build it: /develop bun-angular-runtime-standard
+  - [x] Netralitas kontrak core dan batas modul: probe native tools keluar dari `database-core`, format backup opaque, `DatabaseEngine` kanonik tunggal, siklus `apps/server` dan `apps/cli` putus, enam aturan dependency cruiser baru (AC-4, AC-10)
+  - [ ] Port Bun SQL dan cancellation nyata sampai mekanisme provider, timeout dari config (AC-1, AC-2, AC-3)
+  - [ ] Bun I/O streaming, sink log asynchronous, smoke asset pada target rilis (AC-5, AC-6, AC-7)
+  - [ ] Composition root Elysia, helper HTTP bersama, shutdown terurut idempotent (AC-8, AC-9, AC-11)
+  - [ ] Kontrak operation v2, idempotency, owner only, version header, WebSocket v2 (AC-12 sampai AC-17)
+  - [ ] Read model Angular signal first, gate zoneless, aksesibilitas, fondasi UI dan capability gap (AC-18 sampai AC-22)
+  - code in `packages/kernel/src/database`, `packages/native-tools/src`, `packages/runtime-assets/src`, `packages/database-core/src/contracts`, `tooling/dependency-cruiser.cjs`, and `tests/quality/runtime-standard-0056.test.ts`
+- [ ] [Verify it](../specs/0056-bun-angular-runtime-standard/verify.md): /check verify bun-angular-runtime-standard
+- [ ] [Test it](../specs/0056-bun-angular-runtime-standard/test.md): /test bun-angular-runtime-standard
 
 ## Deferred (V2 dan sesudahnya)
 

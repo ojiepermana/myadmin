@@ -36,6 +36,38 @@ Dokumen ini adalah rencana pembuktian. Semua checklist tetap kosong sampai bukti
 4. [ ] Cutover v2 hanya dilakukan setelah semua gate di atas lulus dan v1 dihapus sesuai switch sekali.
 5. [ ] Rollback ke artefak rilis sebelumnya diuji atau dinyatakan blocked dengan alasan environment.
 
+## Slice 1, netralitas core dan batas modul, 2026-08-30
+
+Langkah ini diturunkan dari AC-4 dan AC-10. Semua sudah dijalankan pada slice pertama; centang menandai bukti yang benar benar diamati, bukan rencana.
+
+### Commands
+
+- [x] `bun run typecheck` → exit 0, seluruh apps, packages, scripts, dan tests → AC-4, AC-10
+- [x] `bun run lint` → exit 0 → AC-4, AC-10
+- [x] `bun run check:boundaries` → `no dependency violations found (425 modules, 1656 dependencies cruised)`, termasuk enam aturan baru → AC-10
+- [x] `bun test tests/quality/runtime-standard-0056.test.ts` → 9 pass, 0 fail → AC-4, AC-10
+- [x] `bun run test` → 624 pass, 18 skip, 0 fail → AC-4, AC-10
+- [x] `bun run test:contract` → 76 pass, 0 fail, termasuk `/jobs` dengan nama parameter kontrak → AC-10
+- [x] `bun test scripts/build/packaging.test.ts` → 8 pass, 0 fail, jalur asset rilis tetap utuh setelah modul pindah → AC-10
+
+### Pemeriksaan perilaku
+
+- [x] Probe native tools dijalankan dari `@myadmin/native-tools`: tool yang tidak ada melaporkan `available: false` dengan alasan aman, tool nyata melaporkan versinya → AC-4
+- [x] Graf modul nyata menunjukkan `packages/database-core/**` tidak memiliki dependency ke `node:fs` maupun `node:child_process` → AC-4
+- [x] Tiap provider mendeklarasikan format artifact sendiri dan aturan header sendiri; executor tidak lagi mendekode nama engine → AC-4
+- [x] `isDatabaseEngine` dari `@myadmin/kernel`, `@myadmin/database-core`, dan `@myadmin/internal-domain` adalah referensi fungsi yang sama → AC-4
+- [x] Graf modul nyata menunjukkan nol edge dari `apps/server/**` ke `apps/cli/**` → AC-10
+- [x] Graf modul nyata menunjukkan nol edge dari `packages/**` ke `apps/**` → AC-10
+- [x] Graf modul nyata menunjukkan nol deep import lintas package; semua lewat `src/index.ts` → AC-10
+
+### Belum dibuktikan pada slice ini
+
+- [ ] AC-1, AC-2, AC-3 belum dikerjakan: port query typed, cancellation nyata sampai provider, dan timeout dari config.
+- [ ] AC-7 dan AC-25 tetap membutuhkan smoke pada target binary rilis; belum dijalankan pada slice ini.
+- [ ] Aturan larangan driver npm di core bersifat preventif: tidak ada driver npm di repo saat ini, jadi belum ada pelanggaran nyata yang membuktikannya menolak.
+
 ## Verdict
 
-Keputusan diratifikasi engineer pada 2026-08-29; status di `index.md` menjadi `Accepted`. Ratifikasi hanya memberlakukan standarnya. Seluruh checklist di atas tetap kosong sampai bukti benar benar dijalankan, dan adopsi code mengikuti status feature slice yang akan didaftarkan pada scope.
+Keputusan diratifikasi engineer pada 2026-08-29; status di `index.md` menjadi `Accepted`. Ratifikasi hanya memberlakukan standarnya.
+
+Slice 1 (AC-4 dan AC-10) sudah diimplementasikan dan dibuktikan lokal pada 2026-08-30 dengan bukti di atas. Dua puluh tiga AC lain tetap belum terbukti. Checklist Preflight, Runtime proof, Contract and browser proof, serta Release proof di atas tetap kosong sampai area masing masing dikerjakan dan dibuktikan pada environment yang sesuai.
