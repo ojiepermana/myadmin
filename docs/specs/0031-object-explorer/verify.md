@@ -60,6 +60,8 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server dengan API fixture | Object Explorer/Search UI **1 passed dalam 8,7 detik**; lazy tree, capability actions, pagination, refresh, dan visual capture lulus. | [Object Explorer UI evidence](../evidence/2026-08-30-object-explorer-ui.md) |
+
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real workflow E2E **4 passed dalam 2,6 menit** mencakup object search dan database-backed explorer flow. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
 
 | 2026-08-30 | working tree | Bun 1.4.0, Playwright local web server | Mock browser Explorer/search flow **1 pass, 0 fail dalam 2,8 detik**; lazy tree, error/retry, context action, virtualized navigation, dan paginated search lulus; real two-engine workflow dicatat terpisah | `bun run test:e2e -- tests/e2e/web/zzz-object-explorer.spec.ts` |
