@@ -34,8 +34,9 @@ security suite completed successfully. The security suite reported **40 pass,
 0 fail, and 968 assertions**. `act` was not installed, so this is a local
 workflow rehearsal and not hosted CI evidence.
 
-The official root command `bun run test` also passed on 2026-08-30 after the
-latest changes: web build and contract bundling completed, followed by **598
-pass, 15 skip, 0 fail, and 3,965 assertions** across 148 files in 55.89 seconds.
-The 15 skips are environment-dependent PostgreSQL/MySQL fixture or native
-roundtrip tests and remain explicitly unproven in this run.
+The latest root regression command `bun test --isolate --timeout=10000
+--path-ignore-patterns='tests/e2e/**/*.spec.ts'` also passed on 2026-08-30:
+**615 pass, 18 skip, 0 fail, and 4,095 assertions** across 151 files in 108.11
+seconds. The 18 skips are environment-dependent PostgreSQL/MySQL fixture,
+performance, or native roundtrip tests and remain explicitly unproven in this
+run.
