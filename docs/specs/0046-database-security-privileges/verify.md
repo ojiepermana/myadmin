@@ -56,6 +56,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server dengan API fixture | Database security UI **2 passed dalam 6,7 detik**; privilege matrix, grant/revoke preview, confirmation, dan apply workflow lulus. | [Database security UI evidence](../evidence/2026-08-30-security-ui.md) |
+
 | 2026-08-30 | working tree | Bun 1.4.0, MySQL 8.0/latest disposable 3380/3384, fixture user dengan TLS require | **22 pass, 0 fail, 72 assertions**; provider contract, TLS, redaction, principal lifecycle, view, cancel, dan grant/revoke effect lulus pada kedua versi | `MYADMIN_MYSQL_SECURITY_INTEGRATION=1 MYSQL_8_0_URL='mysql://fixture:<fixture-password>@127.0.0.1:3380/fixture?sslmode=require' MYSQL_LATEST_URL='mysql://fixture:<fixture-password>@127.0.0.1:3384/fixture?sslmode=require' bun test --isolate tests/integration/mysql/provider.test.ts` |
 
 | Waktu      | Commit       | Environment                                                                      | Hasil                                                                                                                                                          | Evidence                                                                                                                                                                                                                                                           |
