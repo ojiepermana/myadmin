@@ -13,10 +13,15 @@ const databaseEvidencePath = join(specsRoot, 'evidence/2026-08-29-database.md');
 const latestDatabaseEvidencePath = join(specsRoot, 'evidence/2026-08-30-database-rerun.md');
 const externalEvidencePath = join(specsRoot, 'evidence/2026-08-29-external.md');
 const binarySmokeEvidencePath = join(specsRoot, 'evidence/2026-08-30-binary-smoke-e2e.md');
+const containerRuntimeEvidencePath = join(
+  specsRoot,
+  'evidence/2026-08-30-container-runtime-smoke.md',
+);
 const explicitEvidencePaths = [
   e2eEvidencePath,
   followupEvidencePath,
   binarySmokeEvidencePath,
+  containerRuntimeEvidencePath,
   databaseEvidencePath,
   externalEvidencePath,
 ];
