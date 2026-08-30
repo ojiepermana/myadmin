@@ -55,6 +55,8 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Catatan eksekusi
 
+| 2026-08-30 | working tree | Playwright local web server dengan API fixture | Schema Management UI **2 passed dalam 6,5 detik**; CRUD safeguards dan MySQL unsupported boundary lulus. | [Database and Schema UI evidence](../evidence/2026-08-30-database-schema-ui.md) |
+
 | 2026-08-30 | working tree | Playwright dengan PostgreSQL dan MySQL disposable | Real schema workflow E2E **4 passed dalam 2,6 menit** mencakup create/rename/drop schema dan unsupported boundary MySQL. | [Real query workflow evidence](../evidence/2026-08-30-real-query-workflows.md) |
 
 | Waktu      | Commit       | Environment                                                                        | Hasil                                                                                                                                                                 | Evidence                                                                                                                                                                                                                                                                                                                                     |
