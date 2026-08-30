@@ -596,7 +596,7 @@ PK, FK, unique, check, index komposit di mesin change set yang sama. Done when: 
   - [x] Konfirmasi destructive, peringatan dampak PK FK, audit, dan invalidasi row identity (AC-6, AC-7)
   - [x] E2e dua engine lewat fixture database/browser (AC-8)
 - [ ] [Verify it](../specs/0042-table-designer-indexes-constraints/verify.md): /check verify table-designer-indexes-constraints
-- [ ] [Test it](../specs/0042-table-designer-indexes-constraints/test.md): /test table-designer-indexes-constraints
+- [x] [Test it](../specs/0042-table-designer-indexes-constraints/test.md): /test table-designer-indexes-constraints
 
 ### 43. Operasi destructive table `in-progress`
 
@@ -674,7 +674,7 @@ Import SQL dan CSV sebagai job dengan unggah streaming dan pemetaan kolom. Done 
   - [x] Executor SQL (mode transaksi, posisi error) dan CSV (pemetaan, batch, ambang gagal) (AC-2, AC-3, AC-5)
   - [x] Truncate first berkonfirmasi plus audit plus UI alur import plus e2e roundtrip (AC-4, AC-6, AC-8)
 - [ ] [Verify it](../specs/0048-import-jobs/verify.md): /check verify import-jobs
-- [ ] [Test it](../specs/0048-import-jobs/test.md): /test import-jobs
+- [x] [Test it](../specs/0048-import-jobs/test.md): /test import-jobs
 
 ### 49. Backup `in-progress`
 
@@ -686,7 +686,7 @@ Logical backup lewat native tool dengan deteksi jujur. Done when: backup valid d
   - [x] Executor subprocess aman (password tanpa argv, gzip streaming, validasi artefak, manifest) (AC-2, AC-3, AC-4)
   - [x] Endpoint daftar unduh hapus plus audit plus UI plus e2e (AC-5, AC-6, AC-8)
 - [ ] [Verify it](../specs/0049-backup/verify.md): /check verify backup
-- [ ] [Test it](../specs/0049-backup/test.md): /test backup
+- [x] [Test it](../specs/0049-backup/test.md): /test backup
 
 ### 50. Restore `in-progress`
 
@@ -698,7 +698,7 @@ Pemulihan dari artefak dengan konfirmasi paling ketat. Done when: roundtrip back
   - [x] Executor restore (database baru opsional, subprocess, parsial jujur) plus audit started completed (AC-2, AC-4, AC-5)
   - [x] Konfirmasi ketik nama terverifikasi plus UI alur plus e2e roundtrip (AC-3, AC-6, AC-7)
 - [ ] [Verify it](../specs/0050-restore/verify.md): /check verify restore
-- [ ] [Test it](../specs/0050-restore/test.md): /test restore
+- [x] [Test it](../specs/0050-restore/test.md): /test restore
 
 ### 51. Monitoring status dasar `in-progress`
 
@@ -737,7 +737,7 @@ Standar redaction, header keamanan, matriks otorisasi, gerbang security.yml. Don
   - [x] Header keamanan plus konsolidasi rate limiter (AC-3, AC-4)
   - [x] Matriks otorisasi dari kontrak, test at rest, kelengkapan audit destructive, security.yml (AC-5 sampai AC-8)
 - [ ] [Verify it](../specs/0053-security-hardening/verify.md): /check verify security-hardening
-- [ ] [Test it](../specs/0053-security-hardening/test.md): /test security-hardening
+- [x] [Test it](../specs/0053-security-hardening/test.md): /test security-hardening
 
 ### 54. Packaging binary dan smoke test `in-progress`
 
