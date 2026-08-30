@@ -70,9 +70,9 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 
 ## Gap dan blocker
 
-| AC                                       | Gap                                                                                                | Dampak                            | Tindak lanjut                                |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------- |
-| AC-1, AC-2, AC-4, AC-5, AC-6, AC-7, AC-8 | UI E2E, audit, invalid-definition, capability, dan beberapa contract/security proof belum lengkap. | Verdict tetap belum diverifikasi. | Lengkapi proof UI dan boundary yang tersisa. |
+| AC                                       | Gap                                                                                                                                                                                      | Dampak                            | Tindak lanjut                                                     |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------- |
+| AC-1, AC-2, AC-4, AC-5, AC-6, AC-7, AC-8 | UI fixture E2E dan real-provider view workflow sudah tersedia, termasuk preview/CRUD dan capability paths; beberapa contract/security proof serta manual acceptance masih belum lengkap. | Verdict tetap belum diverifikasi. | Lengkapi contract/security mapping dan manual proof yang tersisa. |
 
 ## Verdict akhir
 
