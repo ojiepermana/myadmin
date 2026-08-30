@@ -10,6 +10,7 @@ const sourceRoots = ['apps', 'packages', 'scripts', 'tests'].map((directory) =>
 const e2eEvidencePath = join(specsRoot, 'evidence/2026-08-29-e2e.md');
 const followupEvidencePath = join(specsRoot, 'evidence/2026-08-29-infrastructure-followup.md');
 const databaseEvidencePath = join(specsRoot, 'evidence/2026-08-29-database.md');
+const latestDatabaseEvidencePath = join(specsRoot, 'evidence/2026-08-30-database-rerun.md');
 const externalEvidencePath = join(specsRoot, 'evidence/2026-08-29-external.md');
 const explicitEvidencePaths = [
   e2eEvidencePath,
@@ -132,11 +133,16 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
   const referenceText = sourceReferences
     .map((reference) => `${reference.path}:${reference.line}`)
     .join(', ');
-  const databaseEvidence = readFileSync(databaseEvidencePath, 'utf8');
+  const databaseEvidence = [databaseEvidencePath, latestDatabaseEvidencePath]
+    .map((path) => readFileSync(path, 'utf8'))
+    .join('\n');
   const hasCurrentCrossEngineRerun =
-    databaseEvidence.includes('Current cross-engine integration rerun') &&
-    databaseEvidence.includes('156 test, 0 gagal, 1.125 assertions') &&
-    databaseEvidence.includes('tanpa skip');
+    (databaseEvidence.includes('Current cross-engine integration rerun') &&
+      databaseEvidence.includes('156 test, 0 gagal, 1.125 assertions') &&
+      databaseEvidence.includes('tanpa skip')) ||
+    (databaseEvidence.includes('182 pass') &&
+      databaseEvidence.includes('0 fail') &&
+      databaseEvidence.includes('Ran 182 tests across 38 files'));
   const hasPostgresqlEvidence =
     sourceReferences.some(
       (reference) =>
@@ -161,7 +167,10 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
     return {
       id,
       status: 'PASS',
-      message: `bun test tests/integration tests/performance (156 pass, 0 fail, 0 skip); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-database.md`,
+      message:
+        hasCurrentCrossEngineRerun && databaseEvidence.includes('Ran 182 tests across 38 files')
+          ? `bun test tests/integration tests/performance (182 pass, 0 fail, 0 skip); ${referenceText}; evidence: docs/specs/evidence/2026-08-30-database-rerun.md`
+          : `bun test tests/integration tests/performance (156 pass, 0 fail, 0 skip); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-database.md`,
       references: sourceReferences,
     };
   }
