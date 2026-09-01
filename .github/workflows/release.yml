@@ -261,7 +261,7 @@ jobs:
           cp dist/binaries/linux-x64/myadmin dist/docker/amd64/myadmin
           cp dist/binaries/linux-arm64/myadmin dist/docker/arm64/myadmin
           chmod 0755 dist/docker/amd64/myadmin dist/docker/arm64/myadmin
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
