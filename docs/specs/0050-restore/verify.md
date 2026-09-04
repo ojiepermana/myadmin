@@ -93,3 +93,7 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 ## Verdict akhir
 
 Belum diverifikasi. Status ini hanya boleh berubah setelah setiap AC memiliki result dan evidence yang dapat ditinjau.
+
+## Catatan audit 2026-09-04
+
+Audit 2026-09-04 menemukan upload restore dibuffer penuh di memori sampai 512 MB, tanpa expiry, dan tidak dibersihkan setelah restore selesai. Perbaikan dan buktinya ada pada [spec 0057 AC-5](../0057-audit-remediation-wave-1/test.md#ac-5).

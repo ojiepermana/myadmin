@@ -69,6 +69,11 @@ Declined: additional Agent Skill and MCP discovery
 
 ## Context files
 
-<!-- Nested AGENTS.md files are listed here as they are created -->
+- [apps/server/AGENTS.md](apps/server/AGENTS.md): Elysia composition root, route modules, per handler auth, realtime channels
+- [apps/web/AGENTS.md](apps/web/AGENTS.md): Angular zoneless app, adding a page, route params, component test harness
+- [packages/sdk-angular/AGENTS.md](packages/sdk-angular/AGENTS.md): SDK transport, facade registration, realtime client
+- [packages/database-core/AGENTS.md](packages/database-core/AGENTS.md): provider contracts, quoting and binding rules, integration test environment
+- [packages/internal-sqlite/AGENTS.md](packages/internal-sqlite/AGENTS.md): migrations, repositories, unit of work
+- [tests/AGENTS.md](tests/AGENTS.md): test tiers, environment variables, e2e ordering, side effects
 
 _Drafted by /audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite._

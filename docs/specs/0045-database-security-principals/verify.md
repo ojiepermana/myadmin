@@ -80,3 +80,7 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 ## Verdict akhir
 
 Belum diverifikasi. Status ini hanya boleh berubah setelah setiap AC memiliki result dan evidence yang dapat ditinjau.
+
+## Catatan audit 2026-09-04
+
+Audit 2026-09-04 menemukan `ALTER USER ... IDENTIFIED WITH plugin` tanpa `BY` mengosongkan kredensial akun, dan `CREATE USER` menggabungkan dua opsi autentikasi yang gagal parse. Keduanya dikonfirmasi pada MySQL 9.7.1 nyata: `authentication_string` turun dari 70 byte menjadi 0. Klaim verifikasi edit principal pada file ini tidak valid untuk periode sebelum perbaikan. Perbaikan dan buktinya ada pada [spec 0057 AC-3](../0057-audit-remediation-wave-1/test.md#ac-3).

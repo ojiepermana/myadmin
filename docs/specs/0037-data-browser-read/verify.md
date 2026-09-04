@@ -88,3 +88,7 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 ## Verdict akhir
 
 Belum diverifikasi. Status ini hanya boleh berubah setelah setiap AC memiliki result dan evidence yang dapat ditinjau.
+
+## Catatan audit 2026-09-04
+
+Audit 2026-09-04 menemukan klausa `ESCAPE` PostgreSQL menghasilkan dua backslash pada teks SQL runtime, sehingga filter `contains`, `startsWith`, `endsWith`, dan pencarian teks gagal dengan `invalid escape string` pada server nyata. Klaim verifikasi jalur filter dan search pada file ini tidak valid untuk periode sebelum perbaikan. Perbaikan dan buktinya ada pada [spec 0057 AC-1](../0057-audit-remediation-wave-1/test.md#ac-1); jalur ini perlu diverifikasi ulang terhadap PostgreSQL nyata sebelum verdict apa pun dinaikkan.

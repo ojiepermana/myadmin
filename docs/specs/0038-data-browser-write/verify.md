@@ -90,3 +90,7 @@ Tidak ada manual atau external proof khusus yang diidentifikasi. Pemeriksaan rev
 ## Verdict akhir
 
 Belum diverifikasi. Status ini hanya boleh berubah setelah setiap AC memiliki result dan evidence yang dapat ditinjau.
+
+## Catatan audit 2026-09-04
+
+Audit 2026-09-04 menemukan identitas baris dikonversi lewat `Number()`, sehingga kunci integer di atas 2^53 kehilangan presisi dan sebuah UPDATE atau DELETE dapat mengenai baris lain. Pada PostgreSQL nyata satu identitas bahkan cocok dengan dua baris. Klaim verifikasi jalur tulis pada file ini tidak valid untuk periode sebelum perbaikan. Perbaikan dan buktinya ada pada [spec 0057 AC-2](../0057-audit-remediation-wave-1/test.md#ac-2).

@@ -101,3 +101,7 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 ## Verdict akhir
 
 Belum diverifikasi. Status ini hanya boleh berubah setelah setiap AC memiliki result dan evidence yang dapat ditinjau.
+
+## Catatan audit 2026-09-04
+
+Audit 2026-09-04 menemukan subprocess backup mewarisi seluruh environment server, termasuk `MYADMIN_MASTER_KEY`, dan nama database dikirim posisional ke `mysqldump` tanpa pemisah `--` maupun validasi. Perbaikan dan buktinya ada pada [spec 0057 AC-6 dan AC-7](../0057-audit-remediation-wave-1/test.md#ac-6).

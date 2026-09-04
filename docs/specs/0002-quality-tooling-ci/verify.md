@@ -12,27 +12,27 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Prasyarat eksekusi
 
-| Kebutuhan | Cara memeriksa | Status awal |
-|---|---|---|
-| Implementasi | Build plan pada `index.md` selesai untuk slice yang diverifikasi. | Belum siap |
-| Dependency | Semua relation `requires` pada `relation.md` sudah diterima. | Belum diperiksa |
-| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested. | Belum diperiksa |
-| Test plan | Test ID relevan pada `test.md` sudah diimplementasikan. | Belum siap |
-| Environment | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa |
+| Kebutuhan     | Cara memeriksa                                                                   | Status awal     |
+| ------------- | -------------------------------------------------------------------------------- | --------------- |
+| Implementasi  | Build plan pada `index.md` selesai untuk slice yang diverifikasi.                | Belum siap      |
+| Dependency    | Semua relation `requires` pada `relation.md` sudah diterima.                     | Belum diperiksa |
+| Root manifest | Tepat satu `package.json` ada di akar dan tidak ada manifest nested.             | Belum diperiksa |
+| Test plan     | Test ID relevan pada `test.md` sudah diimplementasikan.                          | Belum siap      |
+| Environment   | Service, database, browser, VM, certificate, atau akun yang dibutuhkan tersedia. | Belum diperiksa |
 
 ## Matriks verifikasi AC
 
-| AC | Test atau proof ID | Metode | Bukti wajib | Result |
-|---|---|---|---|---|
-| [AC-1](test.md#ac-1) | `SMOKE-0002-AC1` | Smoke dan operational | output command dan assertion | Belum dijalankan |
-| [AC-2](test.md#ac-2) | `IT-0002-AC2` | Integration | output command dan assertion | Belum dijalankan |
-| [AC-3](test.md#ac-3) | `IT-0002-AC3` | Integration | output command dan assertion | Belum dijalankan |
-| [AC-4](test.md#ac-4) | `SMOKE-0002-AC4` | Smoke dan operational | output command dan assertion | Belum dijalankan |
-| [AC-5](test.md#ac-5) | `E2E-0002-AC5` | E2E | output command dan assertion | Belum dijalankan |
-| [AC-6](test.md#ac-6) | `IT-0002-AC6` | Integration | output command dan assertion | Belum dijalankan |
-| [AC-7](test.md#ac-7) | `SMOKE-0002-AC7` | Smoke dan operational | output command dan assertion | Belum dijalankan |
-| [AC-8](test.md#ac-8) | `MANUAL-0002-AC8` | Manual atau external | review manusia atau artefak eksternal | Belum dijalankan |
-| [AC-9](test.md#ac-9) | `IT-0002-AC9`, `SMOKE-0002-AC9` | Integration, Smoke dan operational | output command dan assertion | Belum dijalankan |
+| AC                   | Test atau proof ID              | Metode                             | Bukti wajib                           | Result           |
+| -------------------- | ------------------------------- | ---------------------------------- | ------------------------------------- | ---------------- |
+| [AC-1](test.md#ac-1) | `SMOKE-0002-AC1`                | Smoke dan operational              | output command dan assertion          | Belum dijalankan |
+| [AC-2](test.md#ac-2) | `IT-0002-AC2`                   | Integration                        | output command dan assertion          | Belum dijalankan |
+| [AC-3](test.md#ac-3) | `IT-0002-AC3`                   | Integration                        | output command dan assertion          | Belum dijalankan |
+| [AC-4](test.md#ac-4) | `SMOKE-0002-AC4`                | Smoke dan operational              | output command dan assertion          | Belum dijalankan |
+| [AC-5](test.md#ac-5) | `E2E-0002-AC5`                  | E2E                                | output command dan assertion          | Belum dijalankan |
+| [AC-6](test.md#ac-6) | `IT-0002-AC6`                   | Integration                        | output command dan assertion          | Belum dijalankan |
+| [AC-7](test.md#ac-7) | `SMOKE-0002-AC7`                | Smoke dan operational              | output command dan assertion          | Belum dijalankan |
+| [AC-8](test.md#ac-8) | `MANUAL-0002-AC8`               | Manual atau external               | review manusia atau artefak eksternal | Belum dijalankan |
+| [AC-9](test.md#ac-9) | `IT-0002-AC9`, `SMOKE-0002-AC9` | Integration, Smoke dan operational | output command dan assertion          | Belum dijalankan |
 
 ## Urutan verifikasi
 
@@ -44,30 +44,34 @@ Verifikasi membuktikan perilaku implementasi terhadap seluruh acceptance criteri
 
 ## Pemeriksaan otomatis
 
-| Area | Command source | Expected result |
-|---|---|---|
-| Integration | Script root yang didaftarkan pada satu `package.json` | Resource nyata disposable dipakai dan cleanup lulus. |
-| E2E | Script root yang didaftarkan pada satu `package.json` | Semua `E2E-0002-*` lulus dan memiliki assertion yang menutup AC. |
+| Area                  | Command source                                        | Expected result                                                         |
+| --------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| Integration           | Script root yang didaftarkan pada satu `package.json` | Resource nyata disposable dipakai dan cleanup lulus.                    |
+| E2E                   | Script root yang didaftarkan pada satu `package.json` | Semua `E2E-0002-*` lulus dan memiliki assertion yang menutup AC.        |
 | Smoke dan operational | Script root yang didaftarkan pada satu `package.json` | Artefak atau workflow berjalan pada environment bersih yang ditetapkan. |
 
 ## Pemeriksaan manual, staged, environment, atau external
 
-| ID | AC | Langkah atau dependency | Expected result | Evidence |
-|---|---|---|---|---|
+| ID                  | AC                   | Langkah atau dependency                                                        | Expected result                                                                     | Evidence  |
+| ------------------- | -------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | --------- |
 | `EVIDENCE-0002-AC8` | [AC-8](test.md#ac-8) | Review outcome AC secara langsung dan catat alasan bila tidak dapat diotomasi. | Seluruh kewajiban AC terbukti tanpa mengganti external proof dengan simulasi lokal. | Belum ada |
 
 ## Catatan eksekusi
 
-| Waktu | Commit | Environment | Hasil | Evidence |
-|---|---|---|---|---|
-| Belum dijalankan | Belum ada | Belum ada | Belum ada | Belum ada |
+| Waktu            | Commit    | Environment | Hasil     | Evidence  |
+| ---------------- | --------- | ----------- | --------- | --------- |
+| Belum dijalankan | Belum ada | Belum ada   | Belum ada | Belum ada |
 
 ## Gap dan blocker
 
-| AC | Gap | Dampak | Tindak lanjut |
-|---|---|---|---|
+| AC            | Gap                                                             | Dampak                        | Tindak lanjut                                                    |
+| ------------- | --------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------- |
 | Belum dinilai | Verifikasi belum dijalankan karena implementasi belum tersedia. | Belum ada verdict acceptance. | Jalankan `/check verify` setelah build dan test relevan selesai. |
 
 ## Verdict akhir
 
 Belum diverifikasi. Status ini hanya boleh berubah setelah setiap AC memiliki result dan evidence yang dapat ditinjau.
+
+## Catatan audit 2026-09-04
+
+Audit 2026-09-04 menemukan matrix acceptance memberi PASS hanya karena token ID muncul di file source, termasuk ID di dalam judul `test.skip(...)`, dan memuat angka hasil yang dikodekan keras. Klaim bukti apa pun yang bersandar pada matrix sebelum 2026-09-05 tidak dapat dipercaya. Generator sekarang membaca hasil `bun test --reporter=junit`; setelah perbaikan, jumlah AC yang terbukti penuh turun dari 407 menjadi 272. Perbaikan dan buktinya ada pada [spec 0057 AC-11 sampai AC-15](../0057-audit-remediation-wave-1/test.md#ac-11).
