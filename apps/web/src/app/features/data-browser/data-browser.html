@@ -130,6 +130,15 @@
     </p>
   }
 
+  @if (notice(); as text) {
+    <p
+      class="border-b border-border/70 bg-muted/15 px-5 py-2 text-xs text-muted-foreground"
+      role="status"
+    >
+      {{ text }}
+    </p>
+  }
+
   @if (!ref || !connectionId) {
     <section
       class="m-5 rounded-xl border border-dashed border-border bg-muted/15 p-8 text-center sm:m-7"
@@ -349,7 +358,7 @@
   <DialogContent>
     <div class="grid max-h-[55vh] gap-4 overflow-y-auto">
       @for (column of insertableColumns(); track column.name) {
-        <label class="grid gap-1.5 text-sm">
+        <label class="grid gap-1.5 text-sm" [for]="'insert-field-' + column.name">
           <span class="font-medium"
             >{{ column.name }}
             <span class="text-muted-foreground">({{ column.dataType }})</span></span
@@ -357,12 +366,14 @@
           @if (column.dataType.toLowerCase().includes('json')) {
             <textarea
               class="min-h-24 rounded-md border border-input bg-background p-3 font-mono text-sm"
+              [id]="'insert-field-' + column.name"
               [value]="insertValues()[column.name] ?? ''"
               (input)="updateInsertValue(column.name, $any($event.target).value)"
             ></textarea>
           } @else if (enumOptions(column.dataType).length > 0) {
             <select
               class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              [id]="'insert-field-' + column.name"
               [value]="insertValues()[column.name] ?? enumOptions(column.dataType)[0]"
               (change)="updateInsertValue(column.name, $any($event.target).value)"
             >
@@ -373,6 +384,7 @@
           } @else if (column.dataType.toLowerCase().includes('bool')) {
             <select
               class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              [id]="'insert-field-' + column.name"
               [value]="insertValues()[column.name] ?? 'false'"
               (change)="updateInsertValue(column.name, $any($event.target).value)"
             >
@@ -382,6 +394,7 @@
           } @else {
             <input
               class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              [id]="'insert-field-' + column.name"
               [type]="
                 column.dataType
                   .toLowerCase()

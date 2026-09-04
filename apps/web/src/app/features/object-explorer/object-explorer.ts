@@ -42,6 +42,12 @@ export class ObjectExplorer {
   private readonly actionRegistry = new ExplorerActionRegistry();
   private readonly route = inject(ActivatedRoute);
   protected readonly focusedId = signal<string | null>(null);
+  /**
+   * Index of the search result that currently holds focus. A listbox option
+   * must declare `aria-selected`, and this list navigates by focus, so the
+   * focused option is the selected one (spec 0057 AC-14).
+   */
+  protected readonly focusedSearchIndex = signal<number | null>(null);
   protected readonly menuNode = signal<ExplorerNode | null>(null);
   protected readonly actionError = signal<string | null>(null);
   protected readonly notice = signal<string | null>(null);

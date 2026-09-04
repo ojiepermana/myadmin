@@ -123,6 +123,8 @@ export class QueryEditor implements AfterViewInit {
   protected readonly loadingMetadata = signal(false);
   protected readonly metadataMessage = signal<string | null>(null);
   protected readonly message = signal<string | null>(null);
+  /** Success and informational text, kept out of the destructive `message` channel. */
+  protected readonly notice = signal<string | null>(null);
   protected readonly explainLoading = signal(false);
   protected readonly explainResult = signal<QueryExplainResponse | null>(null);
   protected readonly explainMessage = signal<string | null>(null);
@@ -255,6 +257,7 @@ export class QueryEditor implements AfterViewInit {
       ...(mode === 'statementAtCursor' ? { cursorOffset: selection.head } : {}),
     };
     this.message.set(null);
+    this.notice.set(null);
     this.explainResult.set(null);
     this.explainMessage.set(null);
     this.stopWatching?.();
@@ -410,6 +413,7 @@ export class QueryEditor implements AfterViewInit {
     }
     this.saving.set(true);
     this.message.set(null);
+    this.notice.set(null);
     try {
       const created = await firstValueFrom(
         this.sdk.query.createSaved({
@@ -422,7 +426,7 @@ export class QueryEditor implements AfterViewInit {
       );
       this.workspace.updateTabContext(this.tabId, { savedQueryName: created.name });
       this.saveOpen.set(false);
-      this.notice(`Saved “${created.name}”.`);
+      this.setNotice(`Saved “${created.name}”.`);
       await this.loadQuickLibrary();
     } catch (error) {
       if (this.errorCode(error) === 'SAVED_QUERY_NAME_CONFLICT') {
@@ -460,7 +464,7 @@ export class QueryEditor implements AfterViewInit {
       this.workspace.updateTabContext(this.tabId, { savedQueryName: updated.name });
       this.overwriteOpen.set(false);
       this.overwriteTarget.set(null);
-      this.notice(`Updated “${updated.name}”.`);
+      this.setNotice(`Updated “${updated.name}”.`);
       await this.loadQuickLibrary();
     } catch (error) {
       this.message.set(
@@ -536,6 +540,7 @@ export class QueryEditor implements AfterViewInit {
     const execution = this.execution();
     if (!execution || !this.canCancel()) return;
     this.message.set(null);
+    this.notice.set(null);
     try {
       const current = await firstValueFrom(this.sdk.query.cancel(execution.executionId));
       this.execution.set(current);
@@ -581,7 +586,7 @@ export class QueryEditor implements AfterViewInit {
     this.disconnecting.set(true);
     try {
       const result = await firstValueFrom(this.sdk.query.closeSession(this.tabId, true));
-      this.message.set(
+      this.setNotice(
         result.closed
           ? 'The tab provider session was disconnected.'
           : 'There is no provider session to disconnect.',
@@ -721,8 +726,8 @@ export class QueryEditor implements AfterViewInit {
       .filter((tag) => tag.length > 0);
   }
 
-  private notice(text: string): void {
-    this.message.set(text);
+  private setNotice(text: string): void {
+    this.notice.set(text);
   }
 
   private errorCode(error: unknown): string | undefined {

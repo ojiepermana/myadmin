@@ -159,10 +159,12 @@
               <NavigationHeaderTitle title="MyAdmin" subtitle="Database workspace" />
             </NavigationHeader>
             <NavigationContent class="py-3" />
-            <NavigationFooter class="border-t border-border/60">
-              <NavigationFooterInitial name="Ada Lovelace" initials="AL" />
-              <NavigationFooterTitle title="Ada Lovelace" subtitle="Admin placeholder" />
-            </NavigationFooter>
+            @if (authSession.currentUser(); as user) {
+              <NavigationFooter class="border-t border-border/60">
+                <NavigationFooterInitial [name]="user.username" [initials]="userInitials()" />
+                <NavigationFooterTitle [title]="user.username" [subtitle]="user.role" />
+              </NavigationFooter>
+            }
           </NavigationSidebar>
 
           <ng-template NavigationIcon let-icon>
@@ -538,9 +540,6 @@
           <button MenuItem type="button" (click)="goToRoute('users')">User management</button>
         }
       }
-      <button MenuItem type="button" (click)="errorPresenter.presentUnknown(null)">
-        Preview error boundary
-      </button>
     </MenuGroup>
     <MenuSeparator />
     <MenuGroup>

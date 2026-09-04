@@ -12,6 +12,14 @@
       an owned background job.
     </p>
   </header>
+  @if (notice(); as text) {
+    <p
+      class="rounded-md border border-border bg-muted/15 p-3 text-sm text-muted-foreground"
+      role="status"
+    >
+      {{ text }}
+    </p>
+  }
   @if (message()) {
     <p
       class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"

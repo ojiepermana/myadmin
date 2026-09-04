@@ -105,6 +105,12 @@ export class DataBrowser {
   protected readonly loading = signal(false);
   protected readonly canceled = signal(false);
   protected readonly error = signal<string | null>(null);
+  /**
+   * Success messages live apart from `error`. They used to share it, so a
+   * delete that worked replaced the whole grid with a destructive panel and a
+   * `Try again` button, and a screen reader announced it as an alert.
+   */
+  protected readonly notice = signal<string | null>(null);
   protected readonly columnPickerOpen = signal(false);
   protected readonly exportOpen = signal(false);
   protected readonly exportFormat = signal<'csv' | 'json' | 'sql'>('csv');
@@ -418,7 +424,7 @@ export class DataBrowser {
       next: (result) => {
         this.deleteRows.set(null);
         this.read();
-        this.error.set(
+        this.notice.set(
           `${result.affectedRows} row${result.affectedRows === 1 ? '' : 's'} deleted.`,
         );
       },

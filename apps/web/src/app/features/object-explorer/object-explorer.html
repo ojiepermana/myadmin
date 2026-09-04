@@ -70,7 +70,11 @@
             <h2 class="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {{ group.label }}
             </h2>
-            <div class="overflow-hidden rounded-md border border-border/70">
+            <div
+              class="overflow-hidden rounded-md border border-border/70"
+              role="listbox"
+              [attr.aria-label]="group.label"
+            >
               @for (
                 result of group.items;
                 track result.type +
@@ -84,8 +88,13 @@
                 <div
                   class="search-result"
                   role="option"
+                  [attr.aria-selected]="
+                    focusedSearchIndex() === store.searchResults().indexOf(result)
+                  "
                   tabindex="0"
                   [id]="searchResultId(result, store.searchResults().indexOf(result))"
+                  (focus)="focusedSearchIndex.set(store.searchResults().indexOf(result))"
+                  (blur)="focusedSearchIndex.set(null)"
                   [attr.aria-label]="result.name + ' in ' + result.database"
                   appContextMenu
                   [ContextMenuTrigger]="nodeMenu"
@@ -184,6 +193,7 @@
           [class.explorer-row-selected]="focusedId() === node.id"
           [id]="domId(node.id)"
           role="treeitem"
+          [attr.aria-selected]="focusedId() === node.id"
           [attr.aria-level]="node.depth + 1"
           [attr.aria-expanded]="node.hasChildren ? node.expanded : null"
           [attr.aria-label]="displayName(node)"

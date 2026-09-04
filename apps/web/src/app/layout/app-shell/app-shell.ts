@@ -114,6 +114,16 @@ import { ConnectionStatusStore } from '../../core/connections/connection-status.
 export class AppShell {
   protected readonly themePreference = inject(ThemePreferenceStore);
   protected readonly errorPresenter = inject(ErrorPresenterService);
+
+  /** Up to two letters from the signed in username, for the sidebar footer. */
+  protected readonly userInitials = computed(() => {
+    const username = this.authSession.currentUser()?.username ?? '';
+    const parts = username.split(/[\s._-]+/u).filter(Boolean);
+    const letters = (parts.length > 1 ? [parts[0], parts[1]] : [username]).map((part) =>
+      (part ?? '').charAt(0),
+    );
+    return letters.join('').toUpperCase() || '?';
+  });
   protected readonly workspace = inject(WorkspaceStore);
   protected readonly authSession = inject(AuthSessionStore);
   protected readonly connectionStatuses = inject(ConnectionStatusStore);

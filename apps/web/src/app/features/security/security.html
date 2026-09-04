@@ -335,6 +335,7 @@
                   <label
                     class="grid gap-2 text-sm font-medium"
                     [class.md:col-span-2]="field.type === 'text' && field.key === 'name'"
+                    [for]="'principal-field-' + field.key"
                     ><span
                       >{{ field.label }}
                       @if (field.required) {
@@ -345,6 +346,7 @@
                       <span class="flex items-center gap-3 rounded-md border border-input px-3 py-2"
                         ><input
                           type="checkbox"
+                          [id]="'principal-field-' + field.key"
                           [checked]="fieldValue(field.key) === true"
                           (change)="setValue(field.key, $any($event.target).checked)"
                         /><span class="font-normal text-muted-foreground">Enabled</span></span
@@ -352,6 +354,7 @@
                     } @else {
                       <input
                         class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        [id]="'principal-field-' + field.key"
                         [type]="fieldType(field.type)"
                         [value]="fieldValue(field.key)"
                         [required]="field.required === true"

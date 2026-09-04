@@ -27,6 +27,8 @@ export class ImportExport {
   protected readonly jobs = signal<readonly Job[]>([]);
   protected readonly loading = signal(true);
   protected readonly message = signal<string | null>(null);
+  /** Success and informational text, kept out of the destructive `message` channel. */
+  protected readonly notice = signal<string | null>(null);
   protected readonly connections = signal<readonly Connection[]>([]);
   protected readonly selectedConnectionId = signal('');
   protected readonly file = signal<File | null>(null);
@@ -120,6 +122,7 @@ export class ImportExport {
   protected async uploadFile(file: File): Promise<void> {
     this.uploading.set(true);
     this.message.set(null);
+    this.notice.set(null);
     try {
       const upload = await firstValueFrom(this.imports.upload(file));
       this.upload.set(upload);
@@ -170,6 +173,7 @@ export class ImportExport {
     }
     this.importing.set(true);
     this.message.set(null);
+    this.notice.set(null);
     try {
       if (this.format() === 'sql') {
         await firstValueFrom(
@@ -214,7 +218,7 @@ export class ImportExport {
         await firstValueFrom(this.imports.createCsv(request));
       }
       await this.load();
-      this.message.set('Import job queued.');
+      this.notice.set('Import job queued.');
     } catch (error) {
       this.message.set(error instanceof Error ? error.message : 'The import could not be started.');
     } finally {

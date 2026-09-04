@@ -1,4 +1,18 @@
-@import '@ojiepermana/angular-theme/theme-full.css';
+/*
+ * Only the theme axes this product actually uses.
+ *
+ * `theme-full.css` ships 18 accent palettes and 9 neutral families so an app can
+ * switch them at runtime. MyAdmin pins `color: 'brand'` and `neutral: 'slate'`
+ * in `core/theme/theme.config.ts` and exposes only light/dark/system to the
+ * user, so the rest was dead weight in the initial bundle (spec 0057 AC-15).
+ * Neutral is imported after accent, which is the order the theme package
+ * requires for the shared neutral tokens to win.
+ */
+@import '@ojiepermana/angular-theme/theme.css';
+@import '@ojiepermana/angular-theme/styles/css/color/brand.css';
+@import '@ojiepermana/angular-theme/styles/css/neutral/slate.css';
+@import '@ojiepermana/angular-theme/styles/css/radius/index.css';
+@import '@ojiepermana/angular-theme/styles/css/space/index.css';
 @import 'tailwindcss';
 @import '@ojiepermana/angular-theme/styles/css/base/tailwind.css';
 @source '../../../node_modules/@ojiepermana/angular-component';

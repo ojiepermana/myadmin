@@ -142,14 +142,15 @@
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
     role="presentation"
-    (click)="closeCreate()"
+    (click)="$event.target === $event.currentTarget && closeCreate()"
+    (keydown.escape)="closeCreate()"
+    tabindex="-1"
   >
     <section
       class="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-schema-title"
-      (click)="$event.stopPropagation()"
     >
       <h2 id="create-schema-title" class="text-xl font-semibold">Create schema</h2>
       <p class="mt-2 text-sm text-muted-foreground">
@@ -194,14 +195,15 @@
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
     role="presentation"
-    (click)="closeRename()"
+    (click)="$event.target === $event.currentTarget && closeRename()"
+    (keydown.escape)="closeRename()"
+    tabindex="-1"
   >
     <section
       class="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-labelledby="rename-schema-title"
-      (click)="$event.stopPropagation()"
     >
       <h2 id="rename-schema-title" class="text-xl font-semibold">Rename schema</h2>
       <p class="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
@@ -244,14 +246,15 @@
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
     role="presentation"
-    (click)="closeDrop()"
+    (click)="$event.target === $event.currentTarget && closeDrop()"
+    (keydown.escape)="closeDrop()"
+    tabindex="-1"
   >
     <section
       class="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-labelledby="drop-schema-title"
-      (click)="$event.stopPropagation()"
     >
       <app-destructive-action-confirmation
         [targetKind]="'schema'"
