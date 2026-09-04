@@ -103,7 +103,21 @@ function openSocket(port: number, cookie: string): Promise<WebSocket> {
   });
 }
 
-function nextMessage(socket: WebSocket, timeoutMs = 1_000): Promise<Record<string, unknown>> {
+/**
+ * Polls until `predicate` holds. Replaces the fixed sleeps this suite used to
+ * rely on, which is what made it fail on hosted runners while passing locally
+ * (spec 0057 AC-13).
+ */
+async function waitFor(predicate: () => boolean, label: string, timeoutMs = 10_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  throw new Error(`Timed out waiting for ${label}`);
+}
+
+function nextMessage(socket: WebSocket, timeoutMs = 10_000): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(
       () => reject(new Error('Timed out waiting for realtime event')),
@@ -169,11 +183,21 @@ describe('realtime WebSocket integration', () => {
           reportProgress({ phase: 'work', current: 2, total: 2 });
         },
       });
-      await new Promise((resolve) => setTimeout(resolve, 20));
       socket.send(JSON.stringify({ type: 'subscribe', channel: `jobs.${jobId}` }));
+      await waitFor(
+        () => value.realtimeHub.hasSubscriber(value.userId, `jobs.${jobId}`),
+        `a subscription to jobs.${jobId}`,
+      );
       releaseBlocker();
       await value.jobs.whenIdle();
-      await new Promise((resolve) => setTimeout(resolve, 30));
+      // The terminal state event is the last one this channel emits, so its
+      // arrival is the signal that every earlier event has been delivered.
+      await waitFor(
+        () =>
+          received.filter((message) => message['channel'] === `jobs.${jobId}`).at(-1)?.['event'] ===
+          'job.state',
+        `the terminal job.state event on jobs.${jobId}`,
+      );
 
       const matching = received.filter((message) => message['channel'] === `jobs.${jobId}`);
       expect(matching.every((message) => message['type'] === 'event')).toBe(true);
@@ -248,7 +272,10 @@ describe('realtime WebSocket integration', () => {
     try {
       const event = nextMessage(reconnected);
       reconnected.send(JSON.stringify({ type: 'subscribe', channel: 'connections.status' }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await waitFor(
+        () => value.realtimeHub.hasSubscriber(value.userId, 'connections.status'),
+        'a resubscription to connections.status',
+      );
       value.realtimeHub.publish({
         event: 'connection.status',
         channel: 'connections.status',

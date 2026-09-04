@@ -1,17 +1,21 @@
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { dirname, join, relative, resolve } from 'node:path';
+import { isEvidenced, readTestResults, type TestOutcome } from './test-results';
 
 const repositoryRoot = resolve(import.meta.dir, '../..');
 const specsRoot = join(repositoryRoot, 'docs/specs');
 const outputPath = join(specsRoot, 'ac-evidence-matrix.md');
+/** Where `bun run matrix:ac:run` writes the JUnit reports this generator reads. */
+const testResultsDirectory = join(repositoryRoot, 'dist/test-results');
 const sourceRoots = ['apps', 'packages', 'scripts', 'tests'].map((directory) =>
   join(repositoryRoot, directory),
 );
 const e2eEvidencePath = join(specsRoot, 'evidence/2026-08-29-e2e.md');
 const followupEvidencePath = join(specsRoot, 'evidence/2026-08-29-infrastructure-followup.md');
 const databaseEvidencePath = join(specsRoot, 'evidence/2026-08-29-database.md');
-const latestDatabaseEvidencePath = join(specsRoot, 'evidence/2026-08-30-database-rerun.md');
 const externalEvidencePath = join(specsRoot, 'evidence/2026-08-29-external.md');
+const auditWaveOneEvidencePath = join(specsRoot, 'evidence/2026-09-05-audit-wave-1.md');
 const binarySmokeEvidencePath = join(specsRoot, 'evidence/2026-08-30-binary-smoke-e2e.md');
 const containerRuntimeEvidencePath = join(
   specsRoot,
@@ -26,13 +30,8 @@ const explicitEvidencePaths = [
   containerToolsEvidencePath,
   databaseEvidencePath,
   externalEvidencePath,
+  auditWaveOneEvidencePath,
 ];
-const realE2eSuites = new Set([
-  'tests/e2e/web/zz-real-import-export.spec.ts',
-  'tests/e2e/web/zz-real-query-editor.spec.ts',
-  'tests/e2e/web/zz-real-restore.spec.ts',
-  'tests/e2e/web/zz-real-security.spec.ts',
-]);
 const testIdPattern = /\b(?:UT|IT|CT|E2E|SEC|PERF|VIS|SMOKE|MANUAL)-\d{4}-AC\d+\b/g;
 const acceptanceHeadingPattern = /^### AC-(\d+)\s*$/gm;
 
@@ -136,114 +135,58 @@ function explicitEvidenceFor(
   return undefined;
 }
 
-function evidenceFor(id: string, references: Map<string, SourceReference[]>): TestIdEvidence {
+function evidenceFor(
+  id: string,
+  references: Map<string, SourceReference[]>,
+  results: Map<string, TestOutcome>,
+): TestIdEvidence {
   const sourceReferences = references.get(id) ?? [];
-  const type = id.split('-')[0];
   const referenceText = sourceReferences
     .map((reference) => `${reference.path}:${reference.line}`)
     .join(', ');
-  const databaseEvidence = [databaseEvidencePath, latestDatabaseEvidencePath]
-    .map((path) => readFileSync(path, 'utf8'))
-    .join('\n');
-  const hasCurrentCrossEngineRerun =
-    (databaseEvidence.includes('Current cross-engine integration rerun') &&
-      databaseEvidence.includes('156 test, 0 gagal, 1.125 assertions') &&
-      databaseEvidence.includes('tanpa skip')) ||
-    (databaseEvidence.includes('182 pass') &&
-      databaseEvidence.includes('0 fail') &&
-      databaseEvidence.includes('Ran 182 tests across 38 files'));
-  const hasPostgresqlEvidence =
-    sourceReferences.some(
-      (reference) =>
-        reference.path.startsWith('tests/integration/postgresql/') ||
-        reference.path.startsWith('tests/performance/postgresql'),
-    ) && hasCurrentCrossEngineRerun;
-  const hasMysqlEvidence =
-    sourceReferences.some((reference) => reference.path.startsWith('tests/integration/mysql/')) &&
-    hasCurrentCrossEngineRerun;
-  const explicitEvidence = explicitEvidenceFor(id);
+  const outcome = results.get(id);
 
+  // A test that actually ran is the strongest evidence there is, and it is
+  // checked first so a recorded document can never override a red run.
+  if (outcome && outcome.failed > 0) {
+    return {
+      id,
+      status: 'BLOCKED',
+      message: `test gagal saat dijalankan (${outcome.failed} fail di ${outcome.suites.join(', ')})`,
+      references: sourceReferences,
+    };
+  }
+  if (isEvidenced(outcome)) {
+    return {
+      id,
+      status: 'PASS',
+      message: `dijalankan dan lulus (${outcome!.passed} test di ${outcome!.suites.join(', ')})${referenceText ? `; ${referenceText}` : ''}`,
+      references: sourceReferences,
+    };
+  }
+  if (outcome && outcome.skipped > 0) {
+    // The bug this generator was built around: a skipped test used to count.
+    return {
+      id,
+      status: 'BLOCKED',
+      message: `test dilewati saat dijalankan (${outcome.skipped} skip di ${outcome.suites.join(', ')}); skip bukan bukti`,
+      references: sourceReferences,
+    };
+  }
+
+  // Proofs no test can produce: hosted CI, signing, a clean machine, a human
+  // sign off. These stay valid, but they are labelled as recorded documents
+  // rather than dressed up as test runs.
+  const explicitEvidence = explicitEvidenceFor(id);
   if (explicitEvidence) {
     return {
       id,
       status: 'PASS',
-      message: `${explicitEvidence.detail}; evidence: ${relative(repositoryRoot, explicitEvidence.path)}`,
+      message: `proof tercatat: ${explicitEvidence.detail}; evidence: ${relative(repositoryRoot, explicitEvidence.path)}`,
       references: sourceReferences,
     };
   }
 
-  if (hasPostgresqlEvidence || hasMysqlEvidence) {
-    return {
-      id,
-      status: 'PASS',
-      message:
-        hasCurrentCrossEngineRerun && databaseEvidence.includes('Ran 182 tests across 38 files')
-          ? `bun test tests/integration tests/performance (182 pass, 0 fail, 0 skip); ${referenceText}; evidence: docs/specs/evidence/2026-08-30-database-rerun.md`
-          : `bun test tests/integration tests/performance (156 pass, 0 fail, 0 skip); ${referenceText}; evidence: docs/specs/evidence/2026-08-29-database.md`,
-      references: sourceReferences,
-    };
-  }
-
-  if (type === 'E2E') {
-    const hasExecutedTest = sourceReferences.some((reference) =>
-      reference.path.startsWith('tests/e2e/'),
-    );
-    const e2eEvidence = readFileSync(e2eEvidencePath, 'utf8');
-    const hasCurrentMockE2eEvidence =
-      (e2eEvidence.includes('54 tests: 40 passed') ||
-        e2eEvidence.includes('53 tests: 39 passed') ||
-        e2eEvidence.includes('49 tests: 35 passed')) &&
-      e2eEvidence.includes('14 skipped') &&
-      e2eEvidence.includes('0 failed');
-    const hasCurrentRealE2eEvidence =
-      (e2eEvidence.includes('54/54 dalam 3,7 menit') ||
-        e2eEvidence.includes('14/14 passes, 0 failures')) &&
-      sourceReferences.some((reference) => realE2eSuites.has(reference.path));
-    if (hasCurrentRealE2eEvidence) {
-      return {
-        id,
-        status: 'PASS',
-        message: `${e2eEvidence.includes('54/54 dalam 3,7 menit') ? 'MYADMIN_REAL_DATABASE_E2E=1 bun run test:e2e (54 pass, 0 fail)' : 'MYADMIN_REAL_DATABASE_E2E=1 bunx playwright test configured real-engine suites (14 pass, 0 fail)'}; ${referenceText}; evidence: docs/specs/evidence/2026-08-29-e2e.md`,
-        references: sourceReferences,
-      };
-    }
-    if (
-      hasCurrentMockE2eEvidence &&
-      hasExecutedTest &&
-      !sourceReferences.some((reference) => realE2eSuites.has(reference.path))
-    ) {
-      return {
-        id,
-        status: 'PASS',
-        message: `${e2eEvidence.includes('54 tests: 40 passed') ? 'bun run test:e2e (40 pass, 14 skip, 0 fail)' : e2eEvidence.includes('53 tests: 39 passed') ? 'bun run test:e2e (39 pass, 14 skip, 0 fail)' : 'bun run test:e2e (35 pass, 14 skip, 0 fail)'}; ${referenceText}; evidence: docs/specs/evidence/2026-08-29-e2e.md`,
-        references: sourceReferences,
-      };
-    }
-    return {
-      id,
-      status: 'BLOCKED',
-      message: hasExecutedTest
-        ? 'bun run test:e2e belum memiliki evidence run yang cocok'
-        : 'planned E2E ID belum ditemukan pada source test',
-      references: sourceReferences,
-    };
-  }
-  if (type === 'MANUAL' || type === 'VIS' || type === 'PERF' || type === 'SMOKE') {
-    if (sourceReferences.length > 0) {
-      return {
-        id,
-        status: 'PARTIAL',
-        message: `local source evidence tersedia (${referenceText}), tetapi proof khusus yang diwajibkan belum lengkap`,
-        references: sourceReferences,
-      };
-    }
-    return {
-      id,
-      status: 'BLOCKED',
-      message: 'proof manual, visual, performance, atau smoke khusus belum tersedia',
-      references: sourceReferences,
-    };
-  }
   if (sourceReferences.length === 0) {
     return {
       id,
@@ -252,30 +195,11 @@ function evidenceFor(id: string, references: Map<string, SourceReference[]>): Te
       references: sourceReferences,
     };
   }
-  if (
-    sourceReferences.some((reference) =>
-      /tests\/integration\/(?:mysql|postgresql)\//.test(reference.path),
-    )
-  ) {
-    return {
-      id,
-      status: 'BLOCKED',
-      message: 'suite database disposable membutuhkan environment URL yang belum aktif',
-      references: sourceReferences,
-    };
-  }
 
-  const command = sourceReferences.some((reference) =>
-    /(?:^|\/)tests\/contract\//.test(reference.path),
-  )
-    ? 'bun run test:contract (71 pass, 0 fail)'
-    : sourceReferences.some((reference) => /(?:^|\/)tests\/security\//.test(reference.path))
-      ? 'bun run test:security (40 pass, 0 fail)'
-      : 'bun run test (664 pass, 0 fail, 0 skip)';
   return {
     id,
-    status: 'PASS',
-    message: `${command}; ${referenceText}`,
+    status: 'PARTIAL',
+    message: `test ada di source tetapi belum terlihat dijalankan pada report yang tersedia (${referenceText})`,
     references: sourceReferences,
   };
 }
@@ -292,15 +216,42 @@ function renderImplementation(evidence: TestIdEvidence): string {
     .join('<br>');
 }
 
-function generate(): void {
+/**
+ * Formats the rendered matrix the way `matrix:ac` does, so `--check` compares
+ * like with like instead of failing on formatting alone.
+ */
+function prettify(markdown: string): string {
+  const temporary = join(repositoryRoot, `docs/specs/ac-matrix-check.${process.pid}.md`);
+  mkdirSync(dirname(temporary), { recursive: true });
+  try {
+    writeFileSync(temporary, markdown);
+    const result = spawnSync('bunx', ['prettier', '--write', temporary], {
+      cwd: repositoryRoot,
+      stdio: 'ignore',
+    });
+    if (result.status !== 0) return markdown;
+    return readFileSync(temporary, 'utf8');
+  } finally {
+    rmSync(temporary, { force: true });
+  }
+}
+
+function generate(check: boolean): void {
   const rows = readdirSync(specsRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && /^\d{4}-/.test(entry.name))
     .sort((left, right) => left.name.localeCompare(right.name))
     .flatMap((entry) => parseSpec(join(specsRoot, entry.name, 'test.md')));
   const references = indexSourceReferences();
+  const results = readTestResults(testResultsDirectory);
+  if (results.size === 0) {
+    console.warn(
+      `No JUnit reports under ${relative(repositoryRoot, testResultsDirectory)}. ` +
+        'Run `bun run matrix:ac:run` first, or every acceptance ID reads as not executed.',
+    );
+  }
   const evidenceRows = rows.map((row) => ({
     row,
-    evidence: row.testIds.map((id) => evidenceFor(id, references)),
+    evidence: row.testIds.map((id) => evidenceFor(id, references, results)),
   }));
   const passCount = evidenceRows.filter(({ evidence }) =>
     evidence.every((item) => item.status === 'PASS'),
@@ -316,17 +267,16 @@ function generate(): void {
   const lines = [
     '# Acceptance criteria → test ID → evidence matrix',
     '',
-    '> Generated by `bun run matrix:ac`. This report records evidence observed during the 2026-08-30 audit; it does not alter any companion `verify.md` checklist.',
+    '> Generated by `bun run matrix:ac`, which reads the JUnit reports written by `bun run matrix:ac:run`. It does not alter any companion `verify.md` checklist.',
     '',
     `- Acceptance criteria: **${rows.length}**`,
     `- Planned test IDs: **${new Set(rows.flatMap((row) => row.testIds)).size}**`,
     `- AC fully evidenced: **${passCount}**`,
     `- AC partially evidenced: **${partialCount}**`,
     `- AC blocked: **${blockedCount}**`,
-    '- `PASS` means the planned ID has a matching source test with a passing command gate, or an explicit recorded evidence document.',
-    '- `PARTIAL` means local/source evidence exists, but the required proof type or environment is incomplete.',
-    '- `BLOCKED` means the planned ID is missing, or its proof type/environment was not executed. A source file alone is not acceptance evidence.',
-    '- The root suite records environment-dependent skips separately; recorded PostgreSQL/MySQL runs are linked from docs/specs/evidence/2026-08-29-database.md, and unmatched environment-dependent IDs remain blocked.',
+    '- `PASS` means a test carrying that ID actually ran and passed in the reports read here, or a recorded document proves something no test can (hosted CI, signing, a clean machine, a human sign off).',
+    '- `PARTIAL` means a test carrying the ID exists in source but was not seen executed in the available reports.',
+    '- `BLOCKED` means the ID is missing from source, or its test ran and failed, or the runner skipped it. A skip is never evidence, and neither is a source file on its own.',
     '',
     '| Spec | AC | Requirement | Test ID(s) | Implementation | Evidence | Verdict |',
     '|---|---:|---|---|---|---|---|',
@@ -343,10 +293,36 @@ function generate(): void {
     );
   }
 
-  writeFileSync(outputPath, `${lines.join('\n')}\n`);
+  const rendered = `${lines.join('\n')}\n`;
+
+  if (check) {
+    // The committed matrix is a generated document, so CI must be able to fail
+    // when it drifts from what the generator would write today (spec 0057 AC-12).
+    // `matrix:ac` prettifies its output, so the comparison is made against the
+    // prettified render rather than the raw one.
+    let committed = '';
+    try {
+      committed = readFileSync(outputPath, 'utf8');
+    } catch {
+      console.error(
+        `${relative(repositoryRoot, outputPath)} is missing. Run \`bun run matrix:ac\`.`,
+      );
+      process.exit(1);
+    }
+    if (prettify(rendered) !== committed) {
+      console.error(
+        `${relative(repositoryRoot, outputPath)} is out of date. Run \`bun run matrix:ac\` and commit the result.`,
+      );
+      process.exit(1);
+    }
+    console.log(`${relative(repositoryRoot, outputPath)} matches the generator.`);
+    return;
+  }
+
+  writeFileSync(outputPath, rendered);
   console.log(
     `Wrote ${rows.length} acceptance criteria to ${relative(repositoryRoot, outputPath)}`,
   );
 }
 
-if (import.meta.main) generate();
+if (import.meta.main) generate(process.argv.includes('--check'));

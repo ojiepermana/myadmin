@@ -1,4 +1,6 @@
-const files = process.argv.slice(2).filter((file) => /\.(?:[cm]?[jt]s|tsx)$/.test(file));
+// `.html` is included so angular-eslint's template rules run over Angular
+// templates, not just over the component classes.
+const files = process.argv.slice(2).filter((file) => /\.(?:[cm]?[jt]s|tsx|html)$/.test(file));
 const targets = files.length
   ? files
   : ['apps', 'packages', 'scripts', 'tooling', 'tests', 'playwright.config.ts'];

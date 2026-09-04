@@ -4,6 +4,12 @@ on:
   push:
   pull_request:
 
+concurrency:
+  # One run per ref. A newer push cancels the run it supersedes, so a red result
+  # is never a stale run and the queue cannot back up (spec 0057 AC-13).
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

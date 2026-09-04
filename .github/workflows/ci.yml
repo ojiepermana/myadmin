@@ -4,6 +4,12 @@ on:
   push:
   pull_request:
 
+concurrency:
+  # One run per ref. A newer push cancels the run it supersedes, so a red result
+  # is never a stale run and the queue cannot back up (spec 0057 AC-13).
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -40,3 +46,11 @@ jobs:
 
       - name: Run unit tests
         run: bun run test
+
+      - name: Record acceptance test results
+        run: bun run matrix:ac:run
+
+      - name: Check the acceptance evidence matrix is current
+        # A generated document that is committed needs a gate, or it drifts
+        # silently (spec 0057 AC-12).
+        run: bun run matrix:ac:check

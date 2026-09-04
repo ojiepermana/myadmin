@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { generateContractTypes } from '../../scripts/codegen/generate-contract-types';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   assertResponseMatchesContract,
   contractOperations,
@@ -52,7 +55,7 @@ describe('CT-0046 privilege contract', () => {
   });
 
   test('CT-0045-AC6, CT-0046-AC1, CT-0046-AC2, CT-0046-AC3, and CT-0046-AC6 expose the complete privilege surface', async () => {
-    generateContractTypes();
+    generateContractTypes(join(await mkdtemp(join(tmpdir(), 'myadmin-contract-')), 'openapi.ts'));
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
     expect(operations.map((item) => item.operationId)).toEqual(
@@ -97,7 +100,7 @@ describe('CT-0046 privilege contract', () => {
   });
 
   test('CT-0046-AC4 keeps preview and apply responses per statement', async () => {
-    generateContractTypes();
+    generateContractTypes(join(await mkdtemp(join(tmpdir(), 'myadmin-contract-')), 'openapi.ts'));
     const document = await loadContract(contractPath);
     const operations = contractOperations(document);
     const statement = {

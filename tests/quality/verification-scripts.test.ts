@@ -1,4 +1,4 @@
-import { mkdir, readFile, symlink, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -37,14 +37,20 @@ describe('manifest verification', () => {
 
 describe('dependency boundary verification', () => {
   it('IT-0002-AC6 fails on an import from database-core to a concrete provider', async () => {
-    const fixture = join(process.cwd(), 'packages/database-core/src/quality-boundary-fixture.ts');
+    // The boundary check cruises the real module graph, so the fixture has to
+    // live inside it. It goes under a git ignored directory so a crashed run
+    // leaves an ignored file rather than a modified tracked source file
+    // (spec 0057 AC-11).
+    const fixtureDirectory = join(process.cwd(), 'packages/database-core/src/__boundary_fixture__');
+    const fixture = join(fixtureDirectory, 'quality-boundary-fixture.ts');
 
     try {
+      await mkdir(fixtureDirectory, { recursive: true });
       await writeFile(fixture, "import '@myadmin/database-postgresql';\n");
 
       expect(await runBoundaryCheck(process.cwd(), { stdio: 'ignore' })).not.toBe(0);
     } finally {
-      await unlink(fixture);
+      await rm(fixtureDirectory, { recursive: true, force: true });
     }
   });
 

@@ -1,6 +1,8 @@
 import { spawnSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { generateContractTypes } from '../../scripts/codegen/generate-contract-types';
 import '@angular/compiler';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
@@ -286,19 +288,27 @@ describe('spec 0004 codegen and contract pipeline acceptance', () => {
     expectSuccess(drift, 'git diff --exit-code generated contract types');
   });
 
-  test('IT-0004-AC6 protects generated output with a header and temporary regeneration path', async () => {
-    const generated = await readFile(
+  test('IT-0004-AC6 protects generated output with a header and an atomic write', async () => {
+    const committed = await readFile(
       join(repositoryRoot, 'packages/api-contract/src/generated/openapi.ts'),
       'utf8',
     );
-    const generator = await readFile(
-      join(repositoryRoot, 'scripts/codegen/generate-contract-types.ts'),
-      'utf8',
-    );
-    expect(generated).toContain('auto-generated');
-    expect(generator).toContain('`${generatedFile}.${process.pid}.${randomUUID()}.tmp`');
-    expect(generator).toContain('renameSync(temporaryFile, generatedFile)');
-  });
+    expect(committed).toContain('auto-generated');
+
+    // Exercised, not read from the generator's source text: the old assertions
+    // quoted two literals out of the implementation, so renaming a local
+    // variable broke them with no behaviour change (spec 0057 AC-11, CI-7).
+    const directory = await mkdtemp(join(tmpdir(), 'myadmin-codegen-'));
+    try {
+      const output = join(directory, 'openapi.ts');
+      generateContractTypes(output);
+      expect(await readFile(output, 'utf8')).toContain('auto-generated');
+      // Nothing partial is left behind, which is what the temporary path buys.
+      expect((await readdir(directory)).filter((entry) => entry.endsWith('.tmp'))).toEqual([]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }, 30_000);
 
   test('SMOKE-0004-AC7 wires contract validation, bundling, drift, and tests into contract CI', async () => {
     const workflow = await readFile(join(repositoryRoot, '.github/workflows/contract.yml'), 'utf8');
