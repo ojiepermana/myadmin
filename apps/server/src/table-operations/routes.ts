@@ -1,9 +1,9 @@
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import type { ObjectRef } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import type { ConnectionActor } from '../connections/connection-manager';
 import { tableOperationsErrorResponse, type TableOperationsService } from './table-operations';
+import { apiError, jsonResponse as json } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -14,24 +14,6 @@ export interface TableOperationsRouteOptions {
   readonly setupService: SetupService | undefined;
   readonly service: TableOperationsService;
   readonly secureCookies: boolean;
-}
-
-function json(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function apiError(request: Request, status: number, code: string, message: string): Response {
-  return json(
-    {
-      code,
-      message,
-      correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
-    },
-    status,
-  );
 }
 
 function cookieValue(request: Request): string | undefined {
@@ -49,7 +31,7 @@ function actorForRequest(
   options: TableOperationsRouteOptions,
 ): ConnectionActor | Response {
   if (!options.setupService?.isInitialized()) {
-    return apiError(request, 409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
+    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
   }
   const validation = options.authService.validateSession(cookieValue(request));
   if (!validation.authenticated) return sessionFailure(request, validation, options.secureCookies);
@@ -97,7 +79,7 @@ function protectedMutation(
   if (actor instanceof Response) return actor;
   return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin(request)
     ? actor
-    : apiError(request, 403, 'CSRF_INVALID', 'The request could not be verified.');
+    : apiError(403, 'CSRF_INVALID', 'The request could not be verified.');
 }
 
 async function readJson(request: Request): Promise<unknown> {
@@ -192,12 +174,7 @@ export function registerTableOperationsRoutes(
       if (actor instanceof Response) return actor;
       const value = requestParts(await readJson(request));
       if (!value)
-        return apiError(
-          request,
-          422,
-          'TABLE_VALIDATION_FAILED',
-          'connectionId and ref are required.',
-        );
+        return apiError(422, 'TABLE_VALIDATION_FAILED', 'connectionId and ref are required.');
       try {
         return json(await options.service.impact(actor, value.connectionId, value.ref));
       } catch (error) {
@@ -208,8 +185,7 @@ export function registerTableOperationsRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const value = renameRequest(await readJson(request));
-      if (!value)
-        return apiError(request, 422, 'TABLE_VALIDATION_FAILED', 'The rename request is invalid.');
+      if (!value) return apiError(422, 'TABLE_VALIDATION_FAILED', 'The rename request is invalid.');
       try {
         return json(
           await options.service.rename(actor, value.connectionId, value.ref, {
@@ -226,12 +202,7 @@ export function registerTableOperationsRoutes(
       if (actor instanceof Response) return actor;
       const value = truncateRequest(await readJson(request));
       if (!value)
-        return apiError(
-          request,
-          422,
-          'TABLE_VALIDATION_FAILED',
-          'The truncate request is invalid.',
-        );
+        return apiError(422, 'TABLE_VALIDATION_FAILED', 'The truncate request is invalid.');
       try {
         await options.service.truncate(actor, value.connectionId, value.ref, {
           restartIdentity: value.restartIdentity,
@@ -246,8 +217,7 @@ export function registerTableOperationsRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const value = dropRequest(await readJson(request));
-      if (!value)
-        return apiError(request, 422, 'TABLE_VALIDATION_FAILED', 'The drop request is invalid.');
+      if (!value) return apiError(422, 'TABLE_VALIDATION_FAILED', 'The drop request is invalid.');
       try {
         await options.service.drop(actor, value.connectionId, value.ref, value.confirmName);
         return new Response(null, { status: 204 });

@@ -259,6 +259,21 @@ export class RealtimeHub {
     return this.connections.get(this.connectionKey(socket))?.subscriptions.size ?? 0;
   }
 
+  /**
+   * Whether any live connection for `userId` is subscribed to `channel`.
+   *
+   * A `subscribe` command is not acknowledged, so an integration test had no way
+   * to know when the server had processed one and slept a fixed 20ms instead.
+   * That sleep is what made the realtime suite flaky on hosted runners
+   * (spec 0057 AC-13). This is a read only seam, like `subscriptionCount`.
+   */
+  public hasSubscriber(userId: string, channel: RealtimeChannel): boolean {
+    for (const connection of this.byUser.get(userId) ?? []) {
+      if (!connection.closed && connection.subscriptions.has(channel)) return true;
+    }
+    return false;
+  }
+
   /** Deterministic heartbeat seam used by unit tests and by the interval callback. */
   public heartbeatTick(socket: RealtimeSocket, now = this.now()): void {
     const connection = this.connections.get(this.connectionKey(socket));

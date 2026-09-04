@@ -160,9 +160,14 @@ describe('backup route capability safeguards', () => {
         headers: { cookie: 'myadmin_session=session', 'x-correlation-id': 'corr-0049' },
       }),
     );
-    const body = await response.json();
+    const body = (await response.json()) as { code: string; correlationId: string };
     expect(response.status).toBe(501);
-    expect(body).toMatchObject({ code: 'BACKUP_UNSUPPORTED', correlationId: 'corr-0049' });
+    expect(body.code).toBe('BACKUP_UNSUPPORTED');
+    // The correlation id is the server's own, not the one the client asked for
+    // (spec 0057 AC-8): a client supplied id never appears in the logs, so
+    // echoing it made every reported id unfindable.
+    expect(body.correlationId).not.toBe('corr-0049');
+    expect(response.headers.get('x-correlation-id')).toBe(body.correlationId);
     expect(JSON.stringify(body)).not.toContain('secret-password');
     unregister();
   });

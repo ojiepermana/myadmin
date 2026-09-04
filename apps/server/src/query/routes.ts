@@ -1,6 +1,5 @@
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import { DbError } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import type { QueryHistoryFilter } from '@myadmin/internal-domain';
 import {
@@ -16,6 +15,7 @@ import {
   type SavedQueryInput,
   type SavedQueryPatch,
 } from './query-history';
+import { apiError, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -29,20 +29,8 @@ export interface QueryRouteOptions {
   readonly secureCookies: boolean;
 }
 
-function jsonResponse(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 function noContentResponse(): Response {
   return new Response(null, { status: 204 });
-}
-
-function apiError(request: Request, status: number, code: string, message: string): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId }, status);
 }
 
 function cookieValue(request: Request, name: string): string | undefined {
@@ -73,11 +61,11 @@ function actorForRequest(
   options: QueryRouteOptions,
 ): Extract<SessionValidation, { authenticated: true }> | Response {
   if (!options.setupService?.isInitialized()) {
-    return apiError(request, 409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
+    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
   }
   const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
   if (!validation.authenticated) {
-    return apiError(request, 401, validation.code, 'A valid session is required.');
+    return apiError(401, validation.code, 'A valid session is required.');
   }
   return validation;
 }
@@ -292,15 +280,15 @@ function metadataInput(request: Request): QueryAutocompleteInput | null {
 
 function queryErrorResponse(request: Request, error: unknown): Response {
   if (error instanceof QueryExecutionServiceError) {
-    return apiError(request, error.status, error.code, error.message);
+    return apiError(error.status, error.code, error.message);
   }
   if (error instanceof QueryHistoryServiceError) {
-    return apiError(request, error.status, error.code, error.message);
+    return apiError(error.status, error.code, error.message);
   }
   if (error instanceof DbError) {
-    return apiError(request, 502, `DB_${error.category.toUpperCase()}`, error.message);
+    return apiError(502, `DB_${error.category.toUpperCase()}`, error.message);
   }
-  return apiError(request, 500, 'QUERY_OPERATION_FAILED', 'The query operation failed.');
+  return apiError(500, 'QUERY_OPERATION_FAILED', 'The query operation failed.');
 }
 
 /** Registers query execution, lazy metadata, and tab session lifecycle routes. */
@@ -314,10 +302,9 @@ export function registerQueryRoutes(
     .post(path('/query/executions'), async ({ request }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const body = startInput(await readJson(request));
-      if (!body)
-        return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
+      if (!body) return apiError(422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
       try {
         return jsonResponse(
           { executionId: options.queryService.start(actor.value.user, body) },
@@ -331,20 +318,18 @@ export function registerQueryRoutes(
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
       const id = (params as { id?: unknown }).id;
-      if (typeof id !== 'string')
-        return apiError(request, 404, 'QUERY_NOT_FOUND', 'Query not found.');
+      if (typeof id !== 'string') return apiError(404, 'QUERY_NOT_FOUND', 'Query not found.');
       const execution = options.queryService.getForOwner(id, actor.value.user.id);
       return execution === undefined
-        ? apiError(request, 404, 'QUERY_NOT_FOUND', 'Query not found.')
+        ? apiError(404, 'QUERY_NOT_FOUND', 'Query not found.')
         : jsonResponse(execution);
     })
     .post(path('/query/executions/:id/cancel'), async ({ request, params }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const id = (params as { id?: unknown }).id;
-      if (typeof id !== 'string')
-        return apiError(request, 404, 'QUERY_NOT_FOUND', 'Query not found.');
+      if (typeof id !== 'string') return apiError(404, 'QUERY_NOT_FOUND', 'Query not found.');
       try {
         return jsonResponse(await options.queryService.cancel(id, actor.value.user.id));
       } catch (error) {
@@ -354,10 +339,9 @@ export function registerQueryRoutes(
     .post(path('/query/explain'), async ({ request }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const body = explainInput(await readJson(request));
-      if (!body)
-        return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
+      if (!body) return apiError(422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
       try {
         return jsonResponse(await options.queryService.explain(actor.value.user, body));
       } catch (error) {
@@ -368,8 +352,7 @@ export function registerQueryRoutes(
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
       const input = metadataInput(request);
-      if (!input)
-        return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
+      if (!input) return apiError(422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
       try {
         return jsonResponse(await options.queryService.autocomplete(actor.value.user, input));
       } catch (error) {
@@ -379,16 +362,16 @@ export function registerQueryRoutes(
     .post(path('/query/sessions/:id/close'), async ({ request, params }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const id = (params as { id?: unknown }).id;
       if (typeof id !== 'string')
-        return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
+        return apiError(422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
       const value = await readJson(request);
       if (value !== undefined && (!isRecord(value) || !hasOnlyKeys(value, ['force']))) {
-        return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
+        return apiError(422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
       }
       if (isRecord(value) && value['force'] !== undefined && typeof value['force'] !== 'boolean') {
-        return apiError(request, 422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
+        return apiError(422, 'QUERY_VALIDATION_FAILED', 'The request is invalid.');
       }
       try {
         const closed = await options.queryService.closeSession(
@@ -410,7 +393,7 @@ export function registerQueryRoutes(
       if (actor instanceof Response) return actor;
       const query = historyQuery(request);
       if (!query)
-        return apiError(request, 422, 'QUERY_HISTORY_VALIDATION_FAILED', 'The request is invalid.');
+        return apiError(422, 'QUERY_HISTORY_VALIDATION_FAILED', 'The request is invalid.');
       try {
         return jsonResponse(
           options.historyService!.listHistory(actor.value.user.id, query.filter, query.page),
@@ -422,10 +405,10 @@ export function registerQueryRoutes(
     .delete(path('/query/history/:id'), ({ request, params }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const id = (params as { id?: unknown }).id;
       if (typeof id !== 'string' || id.length === 0) {
-        return apiError(request, 422, 'QUERY_HISTORY_VALIDATION_FAILED', 'The request is invalid.');
+        return apiError(422, 'QUERY_HISTORY_VALIDATION_FAILED', 'The request is invalid.');
       }
       try {
         options.historyService!.deleteHistoryEntry(actor.value.user.id, id);
@@ -437,7 +420,7 @@ export function registerQueryRoutes(
     .delete(path('/query/history'), ({ request }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       try {
         options.historyService!.deleteHistory(actor.value.user.id);
         return noContentResponse();
@@ -449,8 +432,7 @@ export function registerQueryRoutes(
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
       const page = pageQuery(request);
-      if (!page)
-        return apiError(request, 422, 'SAVED_QUERY_VALIDATION_FAILED', 'The request is invalid.');
+      if (!page) return apiError(422, 'SAVED_QUERY_VALIDATION_FAILED', 'The request is invalid.');
       try {
         return jsonResponse(options.historyService!.listSaved(actor.value.user.id, page));
       } catch (error) {
@@ -460,15 +442,10 @@ export function registerQueryRoutes(
     .post(path('/query/saved'), async ({ request }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const input = savedQueryInput(await readJson(request));
       if (!input)
-        return apiError(
-          request,
-          422,
-          'SAVED_QUERY_VALIDATION_FAILED',
-          'The request body is invalid.',
-        );
+        return apiError(422, 'SAVED_QUERY_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         return jsonResponse(options.historyService!.createSaved(actor.value.user.id, input), 201);
       } catch (error) {
@@ -478,16 +455,11 @@ export function registerQueryRoutes(
     .patch(path('/query/saved/:id'), async ({ request, params }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const id = (params as { id?: unknown }).id;
       const input = savedQueryPatch(await readJson(request));
       if (typeof id !== 'string' || id.length === 0 || !input) {
-        return apiError(
-          request,
-          422,
-          'SAVED_QUERY_VALIDATION_FAILED',
-          'The request body is invalid.',
-        );
+        return apiError(422, 'SAVED_QUERY_VALIDATION_FAILED', 'The request body is invalid.');
       }
       try {
         return jsonResponse(options.historyService!.updateSaved(actor.value.user.id, id, input));
@@ -498,10 +470,10 @@ export function registerQueryRoutes(
     .delete(path('/query/saved/:id'), ({ request, params }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const id = (params as { id?: unknown }).id;
       if (typeof id !== 'string' || id.length === 0) {
-        return apiError(request, 422, 'SAVED_QUERY_VALIDATION_FAILED', 'The request is invalid.');
+        return apiError(422, 'SAVED_QUERY_VALIDATION_FAILED', 'The request is invalid.');
       }
       try {
         options.historyService!.deleteSaved(actor.value.user.id, id);

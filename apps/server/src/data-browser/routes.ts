@@ -12,7 +12,6 @@ import {
   type QueryCell,
   type ObjectRef,
 } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import {
   ConnectionManagerError,
@@ -20,6 +19,7 @@ import {
   type ConnectionManagerService,
 } from '../connections/connection-manager';
 import { DataBrowserService } from './data-browser';
+import { apiError, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -36,18 +36,6 @@ export interface DataBrowserRouteOptions {
   readonly auditWriter?: AuditWriter;
 }
 
-function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
-}
-function apiError(request: Request, status: number, code: string, message: string): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId }, status, {
-    'x-correlation-id': correlationId,
-  });
-}
 function cookieValue(request: Request, name: string): string | undefined {
   for (const cookie of request.headers.get('cookie')?.split(';') ?? []) {
     const separator = cookie.indexOf('=');
@@ -69,11 +57,11 @@ function actorForRequest(
   options: DataBrowserRouteOptions,
 ): Extract<SessionValidation, { authenticated: true }> | Response {
   if (!options.setupService?.isInitialized())
-    return apiError(request, 409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
+    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
   const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
   return validation.authenticated
     ? validation
-    : apiError(request, 401, validation.code, 'A valid session is required.');
+    : apiError(401, validation.code, 'A valid session is required.');
 }
 function csrfAllowed(request: Request): boolean {
   return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin(request);
@@ -384,10 +372,9 @@ function mutationInput(
 }
 function errorResponse(request: Request, error: unknown): Response {
   if (error instanceof ConnectionManagerError)
-    return apiError(request, error.status, error.code, error.message);
+    return apiError(error.status, error.code, error.message);
   if (error instanceof DbError)
     return apiError(
-      request,
       error.category === 'syntax_error' || error.category === 'constraint_violation'
         ? 422
         : error.category === 'not_found'
@@ -402,7 +389,7 @@ function errorResponse(request: Request, error: unknown): Response {
           : `DB_${error.category.toUpperCase()}`,
       error.message,
     );
-  return apiError(request, 500, 'DATA_MUTATION_FAILED', 'The data mutation failed.');
+  return apiError(500, 'DATA_MUTATION_FAILED', 'The data mutation failed.');
 }
 
 type ParsedRoute = {
@@ -431,16 +418,15 @@ export function registerDataBrowserRoutes(
       if (!request) return new Response('Request is unavailable', { status: 500 });
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
       let body: unknown;
       try {
         body = await request.json();
       } catch {
-        return apiError(request, 422, 'DATA_VALIDATION_FAILED', 'The request body is invalid.');
+        return apiError(422, 'DATA_VALIDATION_FAILED', 'The request body is invalid.');
       }
       const parsed = kind === 'read' ? requestInput(body) : mutationInput(body, kind);
-      if (!parsed)
-        return apiError(request, 422, 'DATA_VALIDATION_FAILED', 'The request body is invalid.');
+      if (!parsed) return apiError(422, 'DATA_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         const normalized: ParsedRoute =
           'input' in parsed

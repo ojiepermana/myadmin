@@ -1,6 +1,5 @@
 import { SESSION_COOKIE_NAME, type AuthService, type SessionValidation } from '@myadmin/auth';
 import type { DataFilter, DataSort, ObjectRef } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import {
   ExportServiceError,
   type ExportCreateInput,
@@ -8,6 +7,7 @@ import {
   serializeJob,
 } from '@myadmin/export';
 import type { AnyElysia } from 'elysia';
+import { apiError as error, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -18,20 +18,6 @@ export interface ExportRouteOptions {
   readonly setupService: SetupService | undefined;
   readonly service: ExportService;
   readonly secureCookies: boolean;
-}
-
-function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
-}
-
-function error(request: Request, status: number, code: string, message: string): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId }, status, {
-    'x-correlation-id': correlationId,
-  });
 }
 
 function cookie(request: Request): string | undefined {
@@ -58,11 +44,11 @@ function session(
   options: ExportRouteOptions,
 ): Response | Extract<SessionValidation, { authenticated: true }> {
   if (!options.setupService?.isInitialized())
-    return error(request, 409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
+    return error(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
   const validation = options.authService.validateSession(cookie(request));
   return validation.authenticated
     ? validation
-    : error(request, 401, validation.code, 'A valid session is required.');
+    : error(401, validation.code, 'A valid session is required.');
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -200,8 +186,8 @@ function input(value: unknown): ExportCreateInput | undefined {
 
 function serviceError(request: Request, caught: unknown): Response {
   if (caught instanceof ExportServiceError)
-    return error(request, caught.status, caught.code, caught.message);
-  return error(request, 500, 'EXPORT_FAILED', 'The export operation could not be completed.');
+    return error(caught.status, caught.code, caught.message);
+  return error(500, 'EXPORT_FAILED', 'The export operation could not be completed.');
 }
 
 export function registerExportRoutes(
@@ -214,10 +200,9 @@ export function registerExportRoutes(
     .post(path('/export'), async ({ request }) => {
       const authorization = session(request, options);
       if (authorization instanceof Response) return authorization;
-      if (!csrf(request)) return error(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrf(request)) return error(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const parsed = input(await request.json().catch(() => undefined));
-      if (!parsed)
-        return error(request, 422, 'EXPORT_VALIDATION_FAILED', 'The request body is invalid.');
+      if (!parsed) return error(422, 'EXPORT_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         return jsonResponse(await options.service.create(authorization.value.user, parsed), 202);
       } catch (caught) {
@@ -233,7 +218,7 @@ export function registerExportRoutes(
       );
       return job
         ? jsonResponse(serializeJob(job))
-        : error(request, 404, 'EXPORT_NOT_FOUND', 'Export was not found.');
+        : error(404, 'EXPORT_NOT_FOUND', 'Export was not found.');
     })
     .get(path('/export/:id/download'), async ({ request, params }) => {
       const authorization = session(request, options);

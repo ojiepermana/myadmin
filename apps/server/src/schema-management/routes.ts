@@ -1,5 +1,4 @@
 import type { AuthService } from '@myadmin/auth';
-import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import type { ConnectionActor } from '../connections/connection-manager';
 import {
@@ -7,6 +6,7 @@ import {
   type SchemaCreateInput,
   type SchemaManagementService,
 } from './schema-management';
+import { apiError, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -17,18 +17,6 @@ export interface SchemaManagementRouteOptions {
   readonly setupService: SetupService | undefined;
   readonly service: SchemaManagementService;
   readonly secureCookies: boolean;
-}
-
-function jsonResponse(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function apiError(request: Request, status: number, code: string, message: string): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId }, status);
 }
 
 function cookieValue(request: Request): string | undefined {
@@ -46,11 +34,10 @@ function actorForRequest(
   options: SchemaManagementRouteOptions,
 ): ConnectionActor | Response {
   if (!options.setupService?.isInitialized())
-    return apiError(request, 409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
+    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
   const validation = options.authService.validateSession(cookieValue(request));
   if (!validation.authenticated) {
     return apiError(
-      request,
       401,
       validation.code,
       validation.code === 'SESSION_EXPIRED'
@@ -114,7 +101,7 @@ function protectedActor(
   if (actor instanceof Response) return actor;
   return csrfAllowed(request)
     ? actor
-    : apiError(request, 403, 'CSRF_INVALID', 'The request could not be verified.');
+    : apiError(403, 'CSRF_INVALID', 'The request could not be verified.');
 }
 
 /** Registers capability gated schema create, rename, and exact confirmation drop routes. */
@@ -130,7 +117,7 @@ export function registerSchemaManagementRoutes(
       if (actor instanceof Response) return actor;
       const input = createInput(await request.json().catch(() => undefined));
       if (!input)
-        return apiError(request, 422, 'SCHEMA_VALIDATION_FAILED', 'The schema request is invalid.');
+        return apiError(422, 'SCHEMA_VALIDATION_FAILED', 'The schema request is invalid.');
       try {
         return jsonResponse(await options.service.create(actor, params.id, params.db, input), 201);
       } catch (error) {
@@ -141,7 +128,7 @@ export function registerSchemaManagementRoutes(
       const actor = protectedActor(request, options);
       if (actor instanceof Response) return actor;
       const input = renameInput(await request.json().catch(() => undefined));
-      if (!input) return apiError(request, 422, 'SCHEMA_VALIDATION_FAILED', 'newName is required.');
+      if (!input) return apiError(422, 'SCHEMA_VALIDATION_FAILED', 'newName is required.');
       try {
         return jsonResponse(
           await options.service.rename(actor, params.id, params.db, params.name, input),
@@ -155,7 +142,7 @@ export function registerSchemaManagementRoutes(
       if (actor instanceof Response) return actor;
       const confirmName = confirmInput(await request.json().catch(() => undefined));
       if (confirmName === null)
-        return apiError(request, 422, 'SCHEMA_VALIDATION_FAILED', 'confirmName is required.');
+        return apiError(422, 'SCHEMA_VALIDATION_FAILED', 'confirmName is required.');
       try {
         await options.service.drop(actor, params.id, params.db, params.name, confirmName);
         return new Response(null, { status: 204 });

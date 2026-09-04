@@ -1,6 +1,5 @@
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import { DbError, type MetadataObjectType } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import {
   ConnectionManagerError,
@@ -14,6 +13,7 @@ import {
   type ExplorerSearchInput,
   type SearchObjectType,
 } from './object-explorer';
+import { apiError, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -25,26 +25,6 @@ export interface ObjectExplorerRouteOptions {
   readonly connectionManager: Pick<ConnectionManagerService, 'withConnectedProvider'>;
   readonly secureCookies: boolean;
   readonly explorerService?: ObjectExplorerService;
-}
-
-function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
-}
-
-function apiError(
-  request: Request,
-  status: number,
-  code: string,
-  message: string,
-  details?: Record<string, unknown>,
-): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId, ...(details ? { details } : {}) }, status, {
-    'x-correlation-id': correlationId,
-  });
 }
 
 function cookieValue(request: Request, name: string): string | undefined {
@@ -65,7 +45,6 @@ function sessionFailure(
 ): Response {
   void secureCookies;
   return apiError(
-    request,
     401,
     validation.code,
     validation.code === 'SESSION_EXPIRED'
@@ -80,7 +59,6 @@ function actorForRequest(
 ): ConnectionActor | Response {
   if (!options.setupService?.isInitialized())
     return apiError(
-      request,
       409,
       'SETUP_REQUIRED',
       'Create the initial administrator before using this application.',
@@ -92,10 +70,10 @@ function actorForRequest(
 
 function explorerError(request: Request, error: unknown): Response {
   if (error instanceof ConnectionManagerError)
-    return apiError(request, error.status, error.code, error.message, error.details);
+    return apiError(error.status, error.code, error.message, error.details);
   if (error instanceof DbError)
-    return apiError(request, 502, 'DB_ERROR', error.message, { category: error.category });
-  return apiError(request, 500, 'OBJECT_EXPLORER_FAILED', 'The metadata operation failed.');
+    return apiError(502, 'DB_ERROR', error.message, { category: error.category });
+  return apiError(500, 'OBJECT_EXPLORER_FAILED', 'The metadata operation failed.');
 }
 
 function pageInput(request: Request): ExplorerPageInput | null {
@@ -185,7 +163,7 @@ function withPage(
   const input = pageInput(request);
   if (!input)
     return Promise.resolve(
-      apiError(request, 422, 'EXPLORER_VALIDATION_FAILED', 'The page query is invalid.'),
+      apiError(422, 'EXPLORER_VALIDATION_FAILED', 'The page query is invalid.'),
     );
   return operation(actor, input)
     .then((value) => jsonResponse(value))
@@ -207,7 +185,6 @@ export function registerObjectExplorerRoutes(
       const input = searchInput(request);
       if (!input)
         return apiError(
-          request,
           422,
           'EXPLORER_SEARCH_VALIDATION_FAILED',
           'The object search query is invalid.',
@@ -272,23 +249,13 @@ export function registerObjectExplorerRoutes(
       const url = new URL(request.url);
       const ref = parseObjectRef(url.searchParams.get('ref'));
       if (!ref)
-        return apiError(
-          request,
-          422,
-          'EXPLORER_VALIDATION_FAILED',
-          'The object reference is invalid.',
-        );
+        return apiError(422, 'EXPLORER_VALIDATION_FAILED', 'The object reference is invalid.');
       const refresh = ['1', 'true'].includes(url.searchParams.get('refresh') ?? '');
       if (
         url.searchParams.has('refresh') &&
         !['1', 'true', '0', 'false'].includes(url.searchParams.get('refresh')!)
       )
-        return apiError(
-          request,
-          422,
-          'EXPLORER_VALIDATION_FAILED',
-          'The refresh query is invalid.',
-        );
+        return apiError(422, 'EXPLORER_VALIDATION_FAILED', 'The refresh query is invalid.');
       try {
         return jsonResponse(await explorer.describeObject(actor, params.id, ref, refresh));
       } catch (error) {

@@ -1,6 +1,5 @@
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import { DbError } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import {
   ConnectionManagerError,
@@ -12,6 +11,7 @@ import {
   type ServerGroupInput,
   type ServerGroupPatch,
 } from './connection-manager';
+import { apiError, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -22,28 +22,6 @@ export interface ConnectionRouteOptions {
   readonly setupService: SetupService | undefined;
   readonly connectionManager: ConnectionManagerService;
   readonly secureCookies: boolean;
-}
-
-function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
-}
-
-function apiError(
-  request: Request,
-  status: number,
-  code: string,
-  message: string,
-  details?: Record<string, unknown>,
-  headers?: HeadersInit,
-): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId, ...(details ? { details } : {}) }, status, {
-    'x-correlation-id': correlationId,
-    ...headers,
-  });
 }
 
 function cookieValue(request: Request, name: string): string | undefined {
@@ -63,7 +41,6 @@ function sessionFailure(
   secureCookies: boolean,
 ): Response {
   return apiError(
-    request,
     401,
     validation.code,
     validation.code === 'SESSION_EXPIRED'
@@ -296,7 +273,6 @@ function actorForRequest(
 ): ConnectionActor | Response {
   if (!options.setupService?.isInitialized())
     return apiError(
-      request,
       409,
       'SETUP_REQUIRED',
       'Create the initial administrator before using this application.',
@@ -308,28 +284,27 @@ function actorForRequest(
 
 function connectionErrorResponse(request: Request, error: unknown): Response {
   if (error instanceof ConnectionManagerError) {
-    return apiError(request, error.status, error.code, error.message, error.details);
+    return apiError(error.status, error.code, error.message, error.details);
   }
   if (error instanceof DbError) {
-    return apiError(request, 502, 'DB_ERROR', error.message, {
+    return apiError(502, 'DB_ERROR', error.message, {
       category: error.category,
       ...(error.position === undefined ? {} : { position: error.position }),
     });
   }
   return apiError(
-    request,
     500,
     'CONNECTION_MANAGER_FAILED',
     'The connection operation could not be completed.',
   );
 }
 
-function invalidBody(request: Request): Response {
-  return apiError(request, 422, 'CONNECTION_VALIDATION_FAILED', 'The request body is invalid.');
+function invalidBody(): Response {
+  return apiError(422, 'CONNECTION_VALIDATION_FAILED', 'The request body is invalid.');
 }
 
-function csrfError(request: Request): Response {
-  return apiError(request, 403, 'CSRF_INVALID', 'The request could not be verified.');
+function csrfError(): Response {
+  return apiError(403, 'CSRF_INVALID', 'The request could not be verified.');
 }
 
 function protectedMutation(
@@ -338,7 +313,7 @@ function protectedMutation(
 ): ConnectionActor | Response {
   const actor = actorForRequest(request, options);
   if (actor instanceof Response) return actor;
-  return csrfAllowed(request) ? actor : csrfError(request);
+  return csrfAllowed(request) ? actor : csrfError();
 }
 
 /** Registers the spec 0026 connection and server group HTTP surface. */
@@ -371,7 +346,7 @@ export function registerConnectionRoutes(
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
       const page = pageQuery(request);
-      if (!page) return invalidBody(request);
+      if (!page) return invalidBody();
       try {
         return options.connectionManager.listConnections(actor, page.page, page.pageSize);
       } catch (error) {
@@ -382,7 +357,7 @@ export function registerConnectionRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const body = createInput(await readJson(request));
-      if (!body) return invalidBody(request);
+      if (!body) return invalidBody();
       try {
         return jsonResponse(
           await options.connectionManager.createConnection(
@@ -402,7 +377,7 @@ export function registerConnectionRoutes(
       if (actor instanceof Response) return actor;
       const body = await readJson(request);
       if (!isRecord(body) || !hasOnlyKeys(body, ['connectionId', 'secret', ...connectionKeys]))
-        return invalidBody(request);
+        return invalidBody();
       try {
         if (body['connectionId'] !== undefined) {
           if (
@@ -410,8 +385,8 @@ export function registerConnectionRoutes(
             body['connectionId'].length === 0 ||
             body['secret'] !== undefined
           )
-            return invalidBody(request);
-          if (connectionKeys.some((key) => body[key] !== undefined)) return invalidBody(request);
+            return invalidBody();
+          if (connectionKeys.some((key) => body[key] !== undefined)) return invalidBody();
           return jsonResponse(
             await options.connectionManager.testConnection(actor, {
               connectionId: body['connectionId'],
@@ -422,7 +397,7 @@ export function registerConnectionRoutes(
           Object.fromEntries(connectionKeys.map((key) => [key, body[key]])),
         );
         if (!input || (body['secret'] !== undefined && typeof body['secret'] !== 'string'))
-          return invalidBody(request);
+          return invalidBody();
         return jsonResponse(
           await options.connectionManager.testConnection(
             actor,
@@ -438,7 +413,7 @@ export function registerConnectionRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const body = lifecycleInput(await readJson(request));
-      if (!body) return invalidBody(request);
+      if (!body) return invalidBody();
       try {
         return jsonResponse(await options.connectionManager.connect(actor, params.id, body.secret));
       } catch (error) {
@@ -449,7 +424,7 @@ export function registerConnectionRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const body = lifecycleInput(await readJson(request));
-      if (!body) return invalidBody(request);
+      if (!body) return invalidBody();
       try {
         return jsonResponse(await options.connectionManager.disconnect(actor, params.id));
       } catch (error) {
@@ -460,7 +435,7 @@ export function registerConnectionRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const body = lifecycleInput(await readJson(request));
-      if (!body) return invalidBody(request);
+      if (!body) return invalidBody();
       try {
         return jsonResponse(
           await options.connectionManager.reconnect(actor, params.id, body.secret),
@@ -473,7 +448,7 @@ export function registerConnectionRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const body = patchInput(await readJson(request));
-      if (!body) return invalidBody(request);
+      if (!body) return invalidBody();
       try {
         return jsonResponse(
           await options.connectionManager.updateConnection(actor, params.id, body),
@@ -496,7 +471,7 @@ export function registerConnectionRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const body = duplicateInput(await readJson(request));
-      if (!body) return invalidBody(request);
+      if (!body) return invalidBody();
       try {
         return jsonResponse(
           await options.connectionManager.duplicateConnection(actor, params.id, body),
@@ -510,7 +485,7 @@ export function registerConnectionRoutes(
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
       const page = pageQuery(request);
-      if (!page) return invalidBody(request);
+      if (!page) return invalidBody();
       try {
         return options.connectionManager.listGroups(actor, page.page, page.pageSize);
       } catch (error) {
@@ -521,7 +496,7 @@ export function registerConnectionRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const body = groupInput(await readJson(request));
-      if (!body) return invalidBody(request);
+      if (!body) return invalidBody();
       try {
         return jsonResponse(options.connectionManager.createGroup(actor, body), 201);
       } catch (error) {
@@ -532,7 +507,7 @@ export function registerConnectionRoutes(
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
       const body = groupPatch(await readJson(request));
-      if (!body) return invalidBody(request);
+      if (!body) return invalidBody();
       try {
         return jsonResponse(options.connectionManager.updateGroup(actor, params.id, body));
       } catch (error) {

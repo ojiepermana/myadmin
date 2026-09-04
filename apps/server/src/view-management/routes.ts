@@ -1,6 +1,5 @@
 import type { AuditWriter } from '@myadmin/audit';
 import { DbError, type ObjectRef } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import type { AnyElysia } from 'elysia';
 import {
@@ -13,6 +12,7 @@ import {
   ViewManagementService,
   type ViewMutationInput,
 } from './view-management';
+import { apiError, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -25,26 +25,6 @@ export interface ViewRouteOptions {
   readonly secureCookies: boolean;
   readonly auditWriter?: AuditWriter;
   readonly viewService?: ViewManagementService;
-}
-
-function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
-}
-
-function apiError(
-  request: Request,
-  status: number,
-  code: string,
-  message: string,
-  details?: Record<string, unknown>,
-): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId, ...(details ? { details } : {}) }, status, {
-    'x-correlation-id': correlationId,
-  });
 }
 
 function cookieValue(request: Request, name: string): string | undefined {
@@ -62,7 +42,6 @@ function sessionFailure(
   validation: Extract<SessionValidation, { authenticated: false }>,
 ): Response {
   return apiError(
-    request,
     401,
     validation.code,
     validation.code === 'SESSION_EXPIRED'
@@ -75,7 +54,6 @@ function sessionFailure(
 function actorForRequest(request: Request, options: ViewRouteOptions): ConnectionActor | Response {
   if (!options.setupService?.isInitialized())
     return apiError(
-      request,
       409,
       'SETUP_REQUIRED',
       'Create the initial administrator before using this application.',
@@ -175,9 +153,9 @@ function decodeRef(value: unknown): ObjectRef | null {
 
 function errorResponse(request: Request, error: unknown): Response {
   if (error instanceof ViewManagementError)
-    return apiError(request, error.status, error.code, error.message, error.details);
+    return apiError(error.status, error.code, error.message, error.details);
   if (error instanceof ConnectionManagerError)
-    return apiError(request, error.status, error.code, error.message, error.details);
+    return apiError(error.status, error.code, error.message, error.details);
   if (error instanceof DbError) {
     const status =
       error.category === 'permission_denied'
@@ -191,18 +169,13 @@ function errorResponse(request: Request, error: unknown): Response {
               : error.category === 'unsupported'
                 ? 501
                 : 502;
-    return apiError(request, status, 'DB_ERROR', error.message, {
+    return apiError(status, 'DB_ERROR', error.message, {
       category: error.category,
       ...(error.position === undefined ? {} : { position: error.position }),
       ...(error.sqlState === undefined ? {} : { sqlState: error.sqlState }),
     });
   }
-  return apiError(
-    request,
-    500,
-    'VIEW_OPERATION_FAILED',
-    'The view operation could not be completed.',
-  );
+  return apiError(500, 'VIEW_OPERATION_FAILED', 'The view operation could not be completed.');
 }
 
 function csrfAllowed(request: Request): boolean {
@@ -233,7 +206,7 @@ export function registerViewRoutes(
       ? value
       : csrfAllowed(request)
         ? value
-        : apiError(request, 403, 'CSRF_INVALID', 'The request could not be verified.');
+        : apiError(403, 'CSRF_INVALID', 'The request could not be verified.');
   };
 
   return application
@@ -244,12 +217,7 @@ export function registerViewRoutes(
       const params = new URL(request.url).searchParams;
       const database = params.get('database');
       if (!connection || !database)
-        return apiError(
-          request,
-          422,
-          'VIEW_VALIDATION_FAILED',
-          'connectionId and database are required.',
-        );
+        return apiError(422, 'VIEW_VALIDATION_FAILED', 'connectionId and database are required.');
       const schema = params.get('schema');
       const parent: ObjectRef = {
         database,
@@ -269,7 +237,7 @@ export function registerViewRoutes(
       const connection = connectionId(request);
       const ref = decodeRef((params as { ref?: unknown }).ref);
       if (!connection || !ref)
-        return apiError(request, 422, 'VIEW_VALIDATION_FAILED', 'The view reference is invalid.');
+        return apiError(422, 'VIEW_VALIDATION_FAILED', 'The view reference is invalid.');
       try {
         return jsonResponse(await service.get(current, connection, ref));
       } catch (error) {
@@ -280,8 +248,7 @@ export function registerViewRoutes(
       const current = mutationActor(request);
       if (current instanceof Response) return current;
       const input = createInput(await readJson(request));
-      if (!input)
-        return apiError(request, 422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
+      if (!input) return apiError(422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         return jsonResponse(await service.create(current, input), 201);
       } catch (error) {
@@ -293,7 +260,7 @@ export function registerViewRoutes(
       if (current instanceof Response) return current;
       const body = await readJson(request);
       if (!record(body) || !exactKeys(body, ['connectionId', 'ref', 'definitionSql', 'operation']))
-        return apiError(request, 422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
+        return apiError(422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
       const ref = objectRef(body['ref']);
       if (
         !ref ||
@@ -301,7 +268,7 @@ export function registerViewRoutes(
         typeof body['definitionSql'] !== 'string' ||
         (body['operation'] !== 'create' && body['operation'] !== 'alter')
       )
-        return apiError(request, 422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
+        return apiError(422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         const input = {
           connectionId: body['connectionId'],
@@ -327,7 +294,7 @@ export function registerViewRoutes(
         typeof body['connectionId'] !== 'string' ||
         typeof body['definitionSql'] !== 'string'
       )
-        return apiError(request, 422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
+        return apiError(422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         return jsonResponse(
           await service.validate(current, {
@@ -348,10 +315,9 @@ export function registerViewRoutes(
         !exactKeys(body, ['connectionId', 'ref']) ||
         typeof body['connectionId'] !== 'string'
       )
-        return apiError(request, 422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
+        return apiError(422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
       const ref = objectRef(body['ref']);
-      if (!ref)
-        return apiError(request, 422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
+      if (!ref) return apiError(422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         return jsonResponse(await service.previewDrop(current, body['connectionId'], ref));
       } catch (error) {
@@ -363,8 +329,7 @@ export function registerViewRoutes(
       if (current instanceof Response) return current;
       const ref = decodeRef((params as { ref?: unknown }).ref);
       const input = ref ? updateInput(await readJson(request), ref) : null;
-      if (!input)
-        return apiError(request, 422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
+      if (!input) return apiError(422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         return jsonResponse(await service.alter(current, input));
       } catch (error) {
@@ -383,7 +348,7 @@ export function registerViewRoutes(
         typeof body['connectionId'] !== 'string' ||
         typeof body['confirmName'] !== 'string'
       )
-        return apiError(request, 422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
+        return apiError(422, 'VIEW_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         await service.drop(current, body['connectionId'], ref, body['confirmName']);
         return new Response(null, { status: 204 });

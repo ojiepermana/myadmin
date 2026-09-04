@@ -6,7 +6,6 @@ import {
   type SessionValidation,
 } from '@myadmin/auth';
 import type { CsvImportOptions, ObjectRef } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import {
   ImportServiceError,
   type ImportCsvInput,
@@ -14,6 +13,7 @@ import {
   type ImportSqlInput,
 } from '@myadmin/import';
 import type { AnyElysia } from 'elysia';
+import { apiError as error, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -25,27 +25,6 @@ export interface ImportRouteOptions {
   readonly service: ImportService;
   readonly secureCookies: boolean;
   readonly uploadRateLimiter?: InMemoryRateLimiter;
-}
-
-function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
-}
-
-function error(
-  request: Request,
-  status: number,
-  code: string,
-  message: string,
-  headers?: HeadersInit,
-): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId }, status, {
-    'x-correlation-id': correlationId,
-    ...headers,
-  });
 }
 
 function cookie(request: Request): string | undefined {
@@ -77,11 +56,11 @@ function session(
   options: ImportRouteOptions,
 ): Response | Extract<SessionValidation, { authenticated: true }> {
   if (!options.setupService?.isInitialized())
-    return error(request, 409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
+    return error(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
   const validation = options.authService.validateSession(cookie(request));
   return validation.authenticated
     ? validation
-    : error(request, 401, validation.code, 'A valid session is required.');
+    : error(401, validation.code, 'A valid session is required.');
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -207,8 +186,8 @@ function previewOptions(request: Request): CsvImportOptions | undefined {
 
 function serviceError(request: Request, caught: unknown): Response {
   if (caught instanceof ImportServiceError)
-    return error(request, caught.status, caught.code, caught.message);
-  return error(request, 500, 'IMPORT_FAILED', 'The import operation could not be completed.');
+    return error(caught.status, caught.code, caught.message);
+  return error(500, 'IMPORT_FAILED', 'The import operation could not be completed.');
 }
 
 function bytes(value: string): Uint8Array {
@@ -339,13 +318,13 @@ export function registerImportRoutes(
     .post(path('/import/upload'), async ({ request }) => {
       const rateLimit = limiter.consume(clientIp(request));
       if (!rateLimit.allowed) {
-        return error(request, 429, 'RATE_LIMITED', 'Too many import uploads. Try again later.', {
+        return error(429, 'RATE_LIMITED', 'Too many import uploads. Try again later.', undefined, {
           'retry-after': String(rateLimit.retryAfterSeconds),
         });
       }
       const authorization = session(request, options);
       if (authorization instanceof Response) return authorization;
-      if (!csrf(request)) return error(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrf(request)) return error(403, 'CSRF_INVALID', 'CSRF is invalid.');
       try {
         return jsonResponse(
           await options.service.upload(authorization.value.user, await multipartFile(request)),
@@ -364,7 +343,7 @@ export function registerImportRoutes(
         !uploadId ||
         (new URL(request.url).searchParams.get('format') === 'csv' && parsedOptions === undefined)
       )
-        return error(request, 422, 'IMPORT_VALIDATION_FAILED', 'The preview request is invalid.');
+        return error(422, 'IMPORT_VALIDATION_FAILED', 'The preview request is invalid.');
       try {
         return jsonResponse(
           await options.service.preview(
@@ -381,15 +360,10 @@ export function registerImportRoutes(
     .post(path('/import/sql'), async ({ request }) => {
       const authorization = session(request, options);
       if (authorization instanceof Response) return authorization;
-      if (!csrf(request)) return error(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrf(request)) return error(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const input = sqlInput(await request.json().catch(() => undefined));
       if (!input)
-        return error(
-          request,
-          422,
-          'IMPORT_VALIDATION_FAILED',
-          'The SQL import request is invalid.',
-        );
+        return error(422, 'IMPORT_VALIDATION_FAILED', 'The SQL import request is invalid.');
       try {
         return jsonResponse(await options.service.createSql(authorization.value.user, input), 202);
       } catch (caught) {
@@ -399,15 +373,10 @@ export function registerImportRoutes(
     .post(path('/import/csv'), async ({ request }) => {
       const authorization = session(request, options);
       if (authorization instanceof Response) return authorization;
-      if (!csrf(request)) return error(request, 403, 'CSRF_INVALID', 'CSRF is invalid.');
+      if (!csrf(request)) return error(403, 'CSRF_INVALID', 'CSRF is invalid.');
       const input = csvInput(await request.json().catch(() => undefined));
       if (!input)
-        return error(
-          request,
-          422,
-          'IMPORT_VALIDATION_FAILED',
-          'The CSV import request is invalid.',
-        );
+        return error(422, 'IMPORT_VALIDATION_FAILED', 'The CSV import request is invalid.');
       try {
         return jsonResponse(await options.service.createCsv(authorization.value.user, input), 202);
       } catch (caught) {

@@ -5,7 +5,6 @@ import {
   type SessionValidation,
 } from '@myadmin/auth';
 import { DbError } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import {
   BackupServiceError,
   RestoreServiceError,
@@ -16,6 +15,7 @@ import {
   type RestoreValidateInput,
 } from '@myadmin/backup';
 import type { AnyElysia } from 'elysia';
+import { apiError, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -27,26 +27,6 @@ export interface BackupRouteOptions {
   readonly backupService: BackupService;
   readonly restoreService?: RestoreService;
   readonly secureCookies: boolean;
-}
-
-function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
-}
-
-function apiError(
-  request: Request,
-  status: number,
-  code: string,
-  message: string,
-  details?: Record<string, unknown>,
-): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId, ...(details ? { details } : {}) }, status, {
-    'x-correlation-id': correlationId,
-  });
 }
 
 function cookieValue(request: Request, name: string): string | undefined {
@@ -77,12 +57,11 @@ function session(
   options: BackupRouteOptions,
 ): Response | Extract<SessionValidation, { authenticated: true }> {
   if (!options.setupService?.isInitialized()) {
-    return apiError(request, 409, 'SETUP_REQUIRED', 'Complete initial setup before using backups.');
+    return apiError(409, 'SETUP_REQUIRED', 'Complete initial setup before using backups.');
   }
   const validation = options.authService.validateSession(cookieValue(request, SESSION_COOKIE_NAME));
   if (validation.authenticated) return validation;
   return apiError(
-    request,
     401,
     validation.code,
     validation.code === 'SESSION_EXPIRED'
@@ -200,20 +179,15 @@ function pageParameter(
 
 function errorResponse(request: Request, error: unknown): Response {
   if (error instanceof RestoreServiceError) {
-    return apiError(request, error.status, error.code, error.message, error.details);
+    return apiError(error.status, error.code, error.message, error.details);
   }
   if (error instanceof BackupServiceError) {
-    return apiError(request, error.status, error.code, error.message, error.details);
+    return apiError(error.status, error.code, error.message, error.details);
   }
   if (error instanceof DbError) {
-    return apiError(request, 502, `DB_${error.category.toUpperCase()}`, error.message);
+    return apiError(502, `DB_${error.category.toUpperCase()}`, error.message);
   }
-  return apiError(
-    request,
-    500,
-    'BACKUP_OPERATION_FAILED',
-    'The backup operation could not be completed.',
-  );
+  return apiError(500, 'BACKUP_OPERATION_FAILED', 'The backup operation could not be completed.');
 }
 
 function actor(value: AuthenticatedSession['user']) {
@@ -232,9 +206,9 @@ export function registerBackupRoutes(
       const current = session(request, options);
       if (current instanceof Response) return current;
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       const input = createInput(await readJson(request));
-      if (!input) return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+      if (!input) return apiError(422, 'VALIDATION_ERROR', 'The request body is invalid.');
       try {
         return jsonResponse(
           await options.backupService.create(actor(current.value.user), input),
@@ -248,8 +222,7 @@ export function registerBackupRoutes(
       const current = session(request, options);
       if (current instanceof Response) return current;
       const connectionId = new URL(request.url).searchParams.get('connectionId');
-      if (!connectionId)
-        return apiError(request, 422, 'VALIDATION_ERROR', 'connectionId is required.');
+      if (!connectionId) return apiError(422, 'VALIDATION_ERROR', 'connectionId is required.');
       return options.backupService
         .inspect(actor(current.value.user), connectionId)
         .catch((error) => errorResponse(request, error));
@@ -261,7 +234,7 @@ export function registerBackupRoutes(
       const page = pageParameter(search.get('page'), 1, 10_000);
       const pageSize = pageParameter(search.get('pageSize'), 20, 100);
       if (page === undefined || pageSize === undefined)
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The pagination parameters are invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The pagination parameters are invalid.');
       return options.backupService
         .list(actor(current.value.user), page, pageSize)
         .catch((error) => errorResponse(request, error));
@@ -288,14 +261,14 @@ export function registerBackupRoutes(
       const current = session(request, options);
       if (current instanceof Response) return current;
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       const body = await readJson(request);
       if (
         !record(body) ||
         Object.keys(body).some((key) => key !== 'confirmName') ||
         typeof body['confirmName'] !== 'string'
       ) {
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The request body is invalid.');
       }
       try {
         await options.backupService.delete(
@@ -312,20 +285,20 @@ export function registerBackupRoutes(
       const current = session(request, options);
       if (current instanceof Response) return current;
       if (!options.restoreService) {
-        return apiError(request, 503, 'RESTORE_UNSUPPORTED', 'Restore is unavailable.');
+        return apiError(503, 'RESTORE_UNSUPPORTED', 'Restore is unavailable.');
       }
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       try {
         if (request.headers.get('content-type')?.startsWith('multipart/form-data')) {
           const form = await request.formData();
           const file = form.get('file');
           if (!(file instanceof Blob)) {
-            return apiError(request, 422, 'VALIDATION_ERROR', 'A restore file is required.');
+            return apiError(422, 'VALIDATION_ERROR', 'A restore file is required.');
           }
           const connectionId = form.get('connectionId');
           if (connectionId !== null && typeof connectionId !== 'string') {
-            return apiError(request, 422, 'VALIDATION_ERROR', 'connectionId is invalid.');
+            return apiError(422, 'VALIDATION_ERROR', 'connectionId is invalid.');
           }
           const validation = await options.restoreService.upload(
             actor(current.value.user),
@@ -341,8 +314,7 @@ export function registerBackupRoutes(
           );
         }
         const input = restoreSourceInput(await readJson(request));
-        if (!input)
-          return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+        if (!input) return apiError(422, 'VALIDATION_ERROR', 'The request body is invalid.');
         return jsonResponse(
           await options.restoreService.validate(actor(current.value.user), input),
         );
@@ -354,12 +326,12 @@ export function registerBackupRoutes(
       const current = session(request, options);
       if (current instanceof Response) return current;
       if (!options.restoreService) {
-        return apiError(request, 503, 'RESTORE_UNSUPPORTED', 'Restore is unavailable.');
+        return apiError(503, 'RESTORE_UNSUPPORTED', 'Restore is unavailable.');
       }
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       const input = restoreCreateInput(await readJson(request));
-      if (!input) return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+      if (!input) return apiError(422, 'VALIDATION_ERROR', 'The request body is invalid.');
       try {
         return jsonResponse(
           await options.restoreService.create(actor(current.value.user), input),

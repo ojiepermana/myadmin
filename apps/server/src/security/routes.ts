@@ -8,7 +8,6 @@ import {
   type PrincipalAttribute,
   type PrincipalAttributeValue,
 } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import {
   SecurityServiceError,
@@ -16,6 +15,7 @@ import {
   type PrincipalSecurityInput,
   type PrincipalSecurityService,
 } from './security';
+import { apiError, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -26,22 +26,6 @@ export interface SecurityRouteOptions {
   readonly securityService: PrincipalSecurityService;
 }
 
-function jsonResponse(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-function apiError(
-  request: Request,
-  status: number,
-  code: string,
-  message: string,
-  details?: Record<string, unknown>,
-): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse({ code, message, correlationId, ...(details ? { details } : {}) }, status);
-}
 function databaseError(
   value: unknown,
 ): value is { category: DbError['category']; message: string } {
@@ -66,12 +50,11 @@ function actor(
   options: SecurityRouteOptions,
 ): Response | Extract<SessionValidation, { authenticated: true }> {
   if (!options.setupService?.isInitialized())
-    return apiError(request, 409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
+    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
   const validation = options.authService.validateSession(cookieValue(request));
   return validation.authenticated
     ? validation
     : apiError(
-        request,
         401,
         validation.code,
         validation.code === 'SESSION_EXPIRED'
@@ -251,32 +234,27 @@ function grantChangeSet(value: unknown): GrantSecurityChangeSet | undefined {
 }
 function errorResponse(request: Request, error: unknown): Response {
   if (error instanceof SecurityServiceError)
-    return apiError(request, error.status, error.code, error.message, error.details);
+    return apiError(error.status, error.code, error.message, error.details);
   if (databaseError(error)) {
     if (error.category === 'permission_denied')
-      return apiError(request, 403, 'PERMISSION_DENIED', error.message, {
+      return apiError(403, 'PERMISSION_DENIED', error.message, {
         category: error.category,
       });
     if (error.category === 'conflict' || error.category === 'constraint_violation')
-      return apiError(request, 409, 'PRINCIPAL_CONFLICT', error.message, {
+      return apiError(409, 'PRINCIPAL_CONFLICT', error.message, {
         category: error.category,
       });
     if (error.category === 'syntax_error')
-      return apiError(request, 422, 'VALIDATION_ERROR', error.message, {
+      return apiError(422, 'VALIDATION_ERROR', error.message, {
         category: error.category,
       });
     if (error.category === 'unsupported')
-      return apiError(request, 501, 'SECURITY_UNSUPPORTED', error.message);
-    return apiError(request, 502, `DB_${error.category.toUpperCase()}`, error.message, {
+      return apiError(501, 'SECURITY_UNSUPPORTED', error.message);
+    return apiError(502, `DB_${error.category.toUpperCase()}`, error.message, {
       category: error.category,
     });
   }
-  return apiError(
-    request,
-    500,
-    'SECURITY_OPERATION_FAILED',
-    'The database principal operation failed.',
-  );
+  return apiError(500, 'SECURITY_OPERATION_FAILED', 'The database principal operation failed.');
 }
 
 /** HTTP surface for owner authorized, capability gated database principal administration. */
@@ -292,12 +270,7 @@ export function registerSecurityRoutes(
       if (current instanceof Response) return current;
       const input = pageQuery(request);
       if (!input)
-        return apiError(
-          request,
-          422,
-          'VALIDATION_ERROR',
-          'connectionId and pagination are required.',
-        );
+        return apiError(422, 'VALIDATION_ERROR', 'connectionId and pagination are required.');
       return options.securityService
         .list(current.value.user, input.connectionId, input)
         .then((value) => jsonResponse(value))
@@ -307,8 +280,7 @@ export function registerSecurityRoutes(
       const current = actor(request, options);
       if (current instanceof Response) return current;
       const connectionId = new URL(request.url).searchParams.get('connectionId');
-      if (!connectionId)
-        return apiError(request, 422, 'VALIDATION_ERROR', 'connectionId is required.');
+      if (!connectionId) return apiError(422, 'VALIDATION_ERROR', 'connectionId is required.');
       return options.securityService
         .form(current.value.user, connectionId)
         .then((value) => jsonResponse(value))
@@ -318,8 +290,7 @@ export function registerSecurityRoutes(
       const current = actor(request, options);
       if (current instanceof Response) return current;
       const connectionId = new URL(request.url).searchParams.get('connectionId');
-      if (!connectionId)
-        return apiError(request, 422, 'VALIDATION_ERROR', 'connectionId is required.');
+      if (!connectionId) return apiError(422, 'VALIDATION_ERROR', 'connectionId is required.');
       return options.securityService
         .grants(current.value.user, connectionId, String((params as { name: string }).name))
         .then((value) => jsonResponse({ items: value, total: value.length }))
@@ -329,8 +300,7 @@ export function registerSecurityRoutes(
       const current = actor(request, options);
       if (current instanceof Response) return current;
       const connectionId = new URL(request.url).searchParams.get('connectionId');
-      if (!connectionId)
-        return apiError(request, 422, 'VALIDATION_ERROR', 'connectionId is required.');
+      if (!connectionId) return apiError(422, 'VALIDATION_ERROR', 'connectionId is required.');
       return options.securityService
         .privilegeCatalog(current.value.user, connectionId)
         .then((value) => jsonResponse(value))
@@ -340,13 +310,13 @@ export function registerSecurityRoutes(
       const current = actor(request, options);
       if (current instanceof Response) return current;
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       const body = await request.json().catch(() => undefined);
       const connectionId =
         record(body) && typeof body['connectionId'] === 'string' ? body['connectionId'] : undefined;
       const changeSet = record(body) ? grantChangeSet(body['changeSet']) : undefined;
       if (!connectionId || !changeSet)
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The privilege change set is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The privilege change set is invalid.');
       return options.securityService
         .preview(current.value.user, connectionId, changeSet)
         .then((value) => jsonResponse(value))
@@ -356,13 +326,13 @@ export function registerSecurityRoutes(
       const current = actor(request, options);
       if (current instanceof Response) return current;
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       const body = await request.json().catch(() => undefined);
       const connectionId =
         record(body) && typeof body['connectionId'] === 'string' ? body['connectionId'] : undefined;
       const changeSet = record(body) ? grantChangeSet(body['changeSet']) : undefined;
       if (!connectionId || !changeSet)
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The privilege change set is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The privilege change set is invalid.');
       return options.securityService
         .apply(current.value.user, connectionId, changeSet)
         .then((value) => jsonResponse(value))
@@ -372,10 +342,9 @@ export function registerSecurityRoutes(
       const current = actor(request, options);
       if (current instanceof Response) return current;
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       const input = createInput(await request.json().catch(() => undefined));
-      if (!input)
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The principal request is invalid.');
+      if (!input) return apiError(422, 'VALIDATION_ERROR', 'The principal request is invalid.');
       return options.securityService
         .create(current.value.user, input.connectionId, input)
         .then((value) => jsonResponse(value, 201))
@@ -385,11 +354,11 @@ export function registerSecurityRoutes(
       const current = actor(request, options);
       if (current instanceof Response) return current;
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       const connectionId = new URL(request.url).searchParams.get('connectionId');
       const input = changeInput(await request.json().catch(() => undefined));
       if (!connectionId || !input)
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The principal change set is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The principal change set is invalid.');
       return options.securityService
         .update(current.value.user, connectionId, {
           name: String((params as { name: string }).name),
@@ -402,7 +371,7 @@ export function registerSecurityRoutes(
       const current = actor(request, options);
       if (current instanceof Response) return current;
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       const connectionId = new URL(request.url).searchParams.get('connectionId');
       const body = await request.json().catch(() => undefined);
       if (
@@ -412,7 +381,7 @@ export function registerSecurityRoutes(
         typeof body['newPassword'] !== 'string' ||
         !body['newPassword']
       )
-        return apiError(request, 422, 'VALIDATION_ERROR', 'A new password is required.');
+        return apiError(422, 'VALIDATION_ERROR', 'A new password is required.');
       return options.securityService
         .reset(
           current.value.user,
@@ -427,7 +396,7 @@ export function registerSecurityRoutes(
       const current = actor(request, options);
       if (current instanceof Response) return current;
       if (!csrfAllowed(request))
-        return apiError(request, 403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
       const connectionId = new URL(request.url).searchParams.get('connectionId');
       const body = await request.json().catch(() => undefined);
       if (
@@ -436,11 +405,10 @@ export function registerSecurityRoutes(
         Object.keys(body).some((key) => key !== 'confirmName') ||
         typeof body['confirmName'] !== 'string'
       )
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The confirmation is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The confirmation is invalid.');
       const name = String((params as { name: string }).name);
       if (body['confirmName'] !== name)
         return apiError(
-          request,
           409,
           'CONFIRMATION_MISMATCH',
           'Type the principal name exactly to confirm deletion.',

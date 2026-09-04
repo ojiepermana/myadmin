@@ -18,7 +18,7 @@ import {
   type UpdateUserRoleStatusInput,
 } from '@myadmin/auth';
 import { AuditAdminReader, AuditWriter, isAuditAction } from '@myadmin/audit';
-import { CredentialVault, createKeyProvider, Redaction } from '@myadmin/crypto';
+import { CredentialVault, createKeyProvider } from '@myadmin/crypto';
 import { BackupService, RestoreService } from '@myadmin/backup';
 import { ExportService } from '@myadmin/export';
 import { ImportService } from '@myadmin/import';
@@ -35,7 +35,6 @@ import {
   SqliteUnitOfWork,
 } from '@myadmin/internal-sqlite';
 import {
-  createCorrelationId,
   getCorrelationId,
   installObservability,
   type ObservabilityOptions,
@@ -87,6 +86,7 @@ import { registerTableDesignerRoutes } from './table-designer/routes';
 import { registerImportRoutes } from './import/routes';
 import { TableOperationsService } from './table-operations/table-operations';
 import { registerTableOperationsRoutes } from './table-operations/routes';
+import { apiError, jsonResponse } from './http';
 
 export const defaultHost = '127.0.0.1';
 export const defaultPort = 8080;
@@ -220,28 +220,7 @@ const connectionManagerCleanupStops = new WeakMap<object, () => Promise<void>>()
 const queryExecutionCleanupStops = new WeakMap<object, () => Promise<void>>();
 const exportCleanupStops = new WeakMap<object, () => void>();
 const importCleanupStops = new WeakMap<object, () => void>();
-
-function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
-}
-
-function apiError(
-  _request: Request,
-  status: number,
-  code: string,
-  message: string,
-  details?: Record<string, unknown>,
-  headers?: HeadersInit,
-): Response {
-  const correlationId = getCorrelationId() ?? createCorrelationId();
-  return jsonResponse({ code, message, correlationId, ...(details ? { details } : {}) }, status, {
-    'x-correlation-id': correlationId,
-    ...headers,
-  });
-}
+const restoreCleanupStops = new WeakMap<object, () => void>();
 
 function isCredentials(value: unknown): value is Credentials {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
@@ -371,7 +350,7 @@ function sessionFailureResponse(
     validation.code === 'SESSION_EXPIRED'
       ? 'Your session has expired.'
       : 'A valid session is required.';
-  return apiError(request, 401, validation.code, message, undefined, {
+  return apiError(401, validation.code, message, undefined, {
     'set-cookie': clearSessionCookie(secureCookies),
   });
 }
@@ -383,7 +362,6 @@ function authErrorResponse(request: Request, error: unknown, secureCookies: bool
       headers['retry-after'] = String(error.retryAfterSeconds);
     }
     return apiError(
-      request,
       error.code === 'RATE_LIMITED' ? 429 : error.code === 'VALIDATION_FAILED' ? 422 : 401,
       error.code,
       error.message,
@@ -391,24 +369,18 @@ function authErrorResponse(request: Request, error: unknown, secureCookies: bool
       headers,
     );
   }
-  return apiError(
-    request,
-    500,
-    'AUTH_FAILED',
-    'Authentication could not be completed.',
-    undefined,
-    { 'set-cookie': clearSessionCookie(secureCookies) },
-  );
+  return apiError(500, 'AUTH_FAILED', 'Authentication could not be completed.', undefined, {
+    'set-cookie': clearSessionCookie(secureCookies),
+  });
 }
 
 function userManagementErrorResponse(request: Request, error: unknown): Response {
   if (error instanceof UserManagementError) {
     const status =
       error.code === 'VALIDATION_FAILED' ? 422 : error.code === 'USER_NOT_FOUND' ? 404 : 409;
-    return apiError(request, status, error.code, error.message, error.details);
+    return apiError(status, error.code, error.message, error.details);
   }
   return apiError(
-    request,
     500,
     'USER_MANAGEMENT_FAILED',
     'The user management operation could not be completed.',
@@ -418,14 +390,13 @@ function userManagementErrorResponse(request: Request, error: unknown): Response
 function initialAdminErrorResponse(request: Request, error: unknown): Response {
   if (error instanceof InitialAdminError) {
     const status = error.code === 'VALIDATION_FAILED' ? 422 : 409;
-    return apiError(request, status, error.code, error.message, error.details);
+    return apiError(status, error.code, error.message, error.details);
   }
-  return apiError(request, 500, 'INITIAL_ADMIN_FAILED', 'The administrator could not be created.');
+  return apiError(500, 'INITIAL_ADMIN_FAILED', 'The administrator could not be created.');
 }
 
-function setupRequiredResponse(request: Request): Response {
+function setupRequiredResponse(): Response {
   return apiError(
-    request,
     409,
     'SETUP_REQUIRED',
     'Create the initial administrator before using this application.',
@@ -453,8 +424,8 @@ function isMutation(request: Request): boolean {
   return !['GET', 'HEAD', 'OPTIONS'].includes(request.method);
 }
 
-function csrfFailureResponse(request: Request): Response {
-  return apiError(request, 403, 'CSRF_INVALID', 'The request could not be verified.');
+function csrfFailureResponse(): Response {
+  return apiError(403, 'CSRF_INVALID', 'The request could not be verified.');
 }
 
 function authenticatedSession(
@@ -464,9 +435,9 @@ function authenticatedSession(
   secureCookies: boolean,
 ): Extract<SessionValidation, { authenticated: true }> | Response {
   if (!authService) {
-    return apiError(request, 500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
+    return apiError(500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
   }
-  if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+  if (!setupAvailable(setupService)) return setupRequiredResponse();
 
   const validation = authService.validateSession(sessionToken(request));
   if (!validation.authenticated) {
@@ -492,18 +463,13 @@ function settingsErrorResponse(request: Request, error: unknown): Response {
         : error.code === 'UNKNOWN_KEY'
           ? 'SETTINGS_KEY_UNKNOWN'
           : 'SETTINGS_KEY_INVALID';
-    return apiError(request, 422, code, error.message);
+    return apiError(422, code, error.message);
   }
-  return apiError(
-    request,
-    500,
-    'SETTINGS_FAILED',
-    'The settings operation could not be completed.',
-  );
+  return apiError(500, 'SETTINGS_FAILED', 'The settings operation could not be completed.');
 }
 
-function forbiddenAdminResponse(request: Request): Response {
-  return apiError(request, 403, 'FORBIDDEN', 'Administrator access is required.');
+function forbiddenAdminResponse(): Response {
+  return apiError(403, 'FORBIDDEN', 'Administrator access is required.');
 }
 
 function noContentResponse(): Response {
@@ -520,9 +486,9 @@ function requireAdmin(
   const validation = authenticatedSession(request, setupService, authService, secureCookies);
   if (validation instanceof Response) return validation;
   if (validation.value.user.role !== 'admin') {
-    return apiError(request, 403, 'FORBIDDEN', 'Administrator access is required.');
+    return apiError(403, 'FORBIDDEN', 'Administrator access is required.');
   }
-  if (mutation && !csrfAllowed(request)) return csrfFailureResponse(request);
+  if (mutation && !csrfAllowed(request)) return csrfFailureResponse();
   return validation.value;
 }
 
@@ -617,9 +583,9 @@ function parseAuditQuery(request: Request): {
 
 function workspaceErrorResponse(request: Request, error: unknown): Response {
   if (error instanceof WorkspaceValidationError) {
-    return apiError(request, 422, error.code, error.message);
+    return apiError(422, error.code, error.message);
   }
-  return apiError(request, 500, 'WORKSPACE_FAILED', 'Workspace state could not be saved.');
+  return apiError(500, 'WORKSPACE_FAILED', 'Workspace state could not be saved.');
 }
 
 async function readWorkspaceBody(request: Request): Promise<unknown> {
@@ -673,7 +639,7 @@ function registerAuditRoutes(
       const authorization = requireAdmin(request, setupService, authService, secureCookies);
       if (authorization instanceof Response) return authorization;
       if (!auditRepository) {
-        return apiError(request, 500, 'AUDIT_UNAVAILABLE', 'Audit data is unavailable.');
+        return apiError(500, 'AUDIT_UNAVAILABLE', 'Audit data is unavailable.');
       }
       return jsonResponse({ actions: new AuditAdminReader(auditRepository).actions() });
     })
@@ -681,7 +647,7 @@ function registerAuditRoutes(
       const authorization = requireAdmin(request, setupService, authService, secureCookies);
       if (authorization instanceof Response) return authorization;
       if (!auditRepository) {
-        return apiError(request, 500, 'AUDIT_UNAVAILABLE', 'Audit data is unavailable.');
+        return apiError(500, 'AUDIT_UNAVAILABLE', 'Audit data is unavailable.');
       }
 
       try {
@@ -693,12 +659,12 @@ function registerAuditRoutes(
         return jsonResponse(result);
       } catch (error) {
         if (error instanceof AuditQueryValidationError) {
-          return apiError(request, 422, 'VALIDATION_ERROR', error.message, {
+          return apiError(422, 'VALIDATION_ERROR', error.message, {
             field: error.field,
             reason: error.reason,
           });
         }
-        return apiError(request, 500, 'AUDIT_QUERY_FAILED', 'Audit data could not be loaded.');
+        return apiError(500, 'AUDIT_QUERY_FAILED', 'Audit data could not be loaded.');
       }
     });
 }
@@ -716,38 +682,38 @@ function registerWorkspaceRoutes(
   return application
     .get(path('/workspace'), ({ request }) => {
       if (!authService) {
-        return apiError(request, 500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
+        return apiError(500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
       }
-      if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+      if (!setupAvailable(setupService)) return setupRequiredResponse();
 
       const validation = authService.validateSession(sessionToken(request));
       if (!validation.authenticated) {
         return sessionFailureResponse(request, validation, secureCookies);
       }
       if (!workspaceService) {
-        return apiError(request, 500, 'WORKSPACE_UNAVAILABLE', 'Workspace is unavailable.');
+        return apiError(500, 'WORKSPACE_UNAVAILABLE', 'Workspace is unavailable.');
       }
 
       try {
         const result = workspaceService.get(validation.value.user.id);
         return jsonResponse(result.state, 200, workspaceHeaders(result));
       } catch {
-        return apiError(request, 500, 'WORKSPACE_FAILED', 'Workspace state could not be loaded.');
+        return apiError(500, 'WORKSPACE_FAILED', 'Workspace state could not be loaded.');
       }
     })
     .put(path('/workspace'), async ({ request }) => {
       if (!authService) {
-        return apiError(request, 500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
+        return apiError(500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
       }
-      if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+      if (!setupAvailable(setupService)) return setupRequiredResponse();
 
       const validation = authService.validateSession(sessionToken(request));
       if (!validation.authenticated) {
         return sessionFailureResponse(request, validation, secureCookies);
       }
-      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       if (!workspaceService) {
-        return apiError(request, 500, 'WORKSPACE_UNAVAILABLE', 'Workspace is unavailable.');
+        return apiError(500, 'WORKSPACE_UNAVAILABLE', 'Workspace is unavailable.');
       }
 
       try {
@@ -769,21 +735,20 @@ function registerSetupRoutes(
   const path = (suffix: string) => `${prefix}${suffix}`;
 
   return application
-    .get(path('/setup/status'), ({ request }) => {
+    .get(path('/setup/status'), () => {
       if (!service) {
-        return apiError(request, 500, 'SETUP_STATUS_UNAVAILABLE', 'Setup status is unavailable.');
+        return apiError(500, 'SETUP_STATUS_UNAVAILABLE', 'Setup status is unavailable.');
       }
       try {
         return { initialized: service.isInitialized() };
       } catch {
-        return apiError(request, 500, 'SETUP_STATUS_UNAVAILABLE', 'Setup status is unavailable.');
+        return apiError(500, 'SETUP_STATUS_UNAVAILABLE', 'Setup status is unavailable.');
       }
     })
     .post(path('/setup/admin'), async ({ request }) => {
       const rateLimit = rateLimiter.consume(clientIp(request));
       if (!rateLimit.allowed) {
         return apiError(
-          request,
           429,
           'RATE_LIMITED',
           'Too many setup attempts. Try again later.',
@@ -792,12 +757,12 @@ function registerSetupRoutes(
         );
       }
       if (!service) {
-        return apiError(request, 500, 'INITIAL_ADMIN_UNAVAILABLE', 'Setup is unavailable.');
+        return apiError(500, 'INITIAL_ADMIN_UNAVAILABLE', 'Setup is unavailable.');
       }
 
       const input = setupInput(await readJson(request));
       if (!input) {
-        return apiError(request, 422, 'VALIDATION_FAILED', 'The request body is invalid.');
+        return apiError(422, 'VALIDATION_FAILED', 'The request body is invalid.');
       }
 
       try {
@@ -821,13 +786,13 @@ function registerAuthRoutes(
   return application
     .post(path('/auth/login'), async ({ request }) => {
       if (!authService) {
-        return apiError(request, 500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
+        return apiError(500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
       }
-      if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+      if (!setupAvailable(setupService)) return setupRequiredResponse();
 
       const body = await readJson(request);
       if (!isCredentials(body)) {
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The request body is invalid.');
       }
 
       const input: AuthLoginInput = { ...body, ipAddress: clientIp(request) };
@@ -842,19 +807,19 @@ function registerAuthRoutes(
     })
     .post(path('/auth/change-password'), async ({ request }) => {
       if (!authService) {
-        return apiError(request, 500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
+        return apiError(500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
       }
-      if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+      if (!setupAvailable(setupService)) return setupRequiredResponse();
 
       const validation = authService.validateSession(sessionToken(request));
       if (!validation.authenticated) {
         return sessionFailureResponse(request, validation, secureCookies);
       }
-      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      if (!csrfAllowed(request)) return csrfFailureResponse();
 
       const body = await readJson(request);
       if (!isChangePasswordInput(body)) {
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The request body is invalid.');
       }
 
       try {
@@ -870,15 +835,15 @@ function registerAuthRoutes(
     })
     .post(path('/auth/logout'), async ({ request }) => {
       if (!authService) {
-        return apiError(request, 500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
+        return apiError(500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
       }
-      if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+      if (!setupAvailable(setupService)) return setupRequiredResponse();
 
       const validation = authService.validateSession(sessionToken(request));
       if (!validation.authenticated) {
         return sessionFailureResponse(request, validation, secureCookies);
       }
-      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      if (!csrfAllowed(request)) return csrfFailureResponse();
 
       try {
         authService.logout(sessionToken(request));
@@ -893,9 +858,9 @@ function registerAuthRoutes(
     })
     .get(path('/auth/me'), ({ request }) => {
       if (!authService) {
-        return apiError(request, 500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
+        return apiError(500, 'AUTH_UNAVAILABLE', 'Authentication is unavailable.');
       }
-      if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+      if (!setupAvailable(setupService)) return setupRequiredResponse();
 
       const validation = authService.validateSession(sessionToken(request));
       if (!validation.authenticated) {
@@ -922,23 +887,18 @@ function queryInteger(
   return parsed;
 }
 
-function jobNotFoundResponse(request: Request): Response {
-  return apiError(request, 404, 'JOB_NOT_FOUND', 'Job was not found.');
+function jobNotFoundResponse(): Response {
+  return apiError(404, 'JOB_NOT_FOUND', 'Job was not found.');
 }
 
 function jobManagerErrorResponse(request: Request, error: unknown): Response {
   if (error instanceof JobManagerError) {
-    if (error.code === 'JOB_NOT_FOUND') return jobNotFoundResponse(request);
+    if (error.code === 'JOB_NOT_FOUND') return jobNotFoundResponse();
     if (error.code === 'JOB_NOT_CANCELLABLE' || error.code === 'JOB_ALREADY_FINISHED') {
-      return apiError(request, 409, error.code, error.message);
+      return apiError(409, error.code, error.message);
     }
   }
-  return apiError(
-    request,
-    500,
-    'JOB_OPERATION_FAILED',
-    'The job operation could not be completed.',
-  );
+  return apiError(500, 'JOB_OPERATION_FAILED', 'The job operation could not be completed.');
 }
 
 function jobResponse(job: Job) {
@@ -959,9 +919,9 @@ function registerJobsRoutes(
     request: Request,
   ): Response | Extract<SessionValidation, { authenticated: true }> => {
     if (!authService) {
-      return apiError(request, 500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
+      return apiError(500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
     }
-    if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+    if (!setupAvailable(setupService)) return setupRequiredResponse();
     const validation = authService.validateSession(sessionToken(request));
     if (!validation.authenticated)
       return sessionFailureResponse(request, validation, secureCookies);
@@ -975,7 +935,7 @@ function registerJobsRoutes(
       const page = queryInteger(request, 'page', 1);
       const pageSize = queryInteger(request, 'pageSize', 20, 100);
       if (page === undefined || pageSize === undefined) {
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The pagination parameters are invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The pagination parameters are invalid.');
       }
       const result = jobManager.listByOwner(validation.value.user.id, page, pageSize);
       return {
@@ -989,16 +949,16 @@ function registerJobsRoutes(
       const validation = validate(request);
       if (validation instanceof Response) return validation;
       const id = (params as { id?: unknown }).id;
-      if (typeof id !== 'string') return jobNotFoundResponse(request);
+      if (typeof id !== 'string') return jobNotFoundResponse();
       const job = jobManager.getForOwner(id, validation.value.user.id);
-      return job === undefined ? jobNotFoundResponse(request) : jobResponse(job);
+      return job === undefined ? jobNotFoundResponse() : jobResponse(job);
     })
     .post(path('/jobs/:id/cancel'), ({ request, params }) => {
       const validation = validate(request);
       if (validation instanceof Response) return validation;
-      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       const id = (params as { id?: unknown }).id;
-      if (typeof id !== 'string') return jobNotFoundResponse(request);
+      if (typeof id !== 'string') return jobNotFoundResponse();
       try {
         return jsonResponse(jobResponse(jobManager.cancelForOwner(id, validation.value.user.id)));
       } catch (error) {
@@ -1022,7 +982,7 @@ function registerSettingsRoutes(
       const session = authenticatedSession(request, setupService, authService, secureCookies);
       if (session instanceof Response) return session;
       if (!settingsService) {
-        return apiError(request, 500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
+        return apiError(500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
       }
       try {
         return settingsService.getPreferences(session.value.user.id);
@@ -1033,14 +993,13 @@ function registerSettingsRoutes(
     .put(path('/preferences/:key'), async ({ request, params }) => {
       const session = authenticatedSession(request, setupService, authService, secureCookies);
       if (session instanceof Response) return session;
-      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       if (!settingsService) {
-        return apiError(request, 500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
+        return apiError(500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
       }
 
       const input = preferenceOrSettingInput(await readJson(request));
-      if (!input)
-        return apiError(request, 422, 'SETTINGS_VALUE_INVALID', 'The request body is invalid.');
+      if (!input) return apiError(422, 'SETTINGS_VALUE_INVALID', 'The request body is invalid.');
 
       try {
         settingsService.setPreference(session.value.user.id, params.key, input.value);
@@ -1052,9 +1011,9 @@ function registerSettingsRoutes(
     .get(path('/settings'), ({ request }) => {
       const session = authenticatedSession(request, setupService, authService, secureCookies);
       if (session instanceof Response) return session;
-      if (session.value.user.role !== 'admin') return forbiddenAdminResponse(request);
+      if (session.value.user.role !== 'admin') return forbiddenAdminResponse();
       if (!settingsService) {
-        return apiError(request, 500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
+        return apiError(500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
       }
 
       try {
@@ -1069,15 +1028,14 @@ function registerSettingsRoutes(
     .put(path('/settings/:key'), async ({ request, params }) => {
       const session = authenticatedSession(request, setupService, authService, secureCookies);
       if (session instanceof Response) return session;
-      if (session.value.user.role !== 'admin') return forbiddenAdminResponse(request);
-      if (!csrfAllowed(request)) return csrfFailureResponse(request);
+      if (session.value.user.role !== 'admin') return forbiddenAdminResponse();
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       if (!settingsService) {
-        return apiError(request, 500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
+        return apiError(500, 'SETTINGS_UNAVAILABLE', 'Settings are unavailable.');
       }
 
       const input = preferenceOrSettingInput(await readJson(request));
-      if (!input)
-        return apiError(request, 422, 'SETTINGS_VALUE_INVALID', 'The request body is invalid.');
+      if (!input) return apiError(422, 'SETTINGS_VALUE_INVALID', 'The request body is invalid.');
 
       try {
         settingsService.setSetting(session.value.user.id, params.key, input.value);
@@ -1101,12 +1059,7 @@ function registerUserRoutes(
   return application
     .get(path('/users'), ({ request }) => {
       if (!userManagementService) {
-        return apiError(
-          request,
-          500,
-          'USER_MANAGEMENT_UNAVAILABLE',
-          'User management is unavailable.',
-        );
+        return apiError(500, 'USER_MANAGEMENT_UNAVAILABLE', 'User management is unavailable.');
       }
       const admin = requireAdmin(request, setupService, authService, secureCookies);
       if (admin instanceof Response) return admin;
@@ -1118,7 +1071,7 @@ function registerUserRoutes(
         100,
       );
       if (page === null || pageSize === null) {
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The pagination parameters are invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The pagination parameters are invalid.');
       }
 
       try {
@@ -1129,18 +1082,13 @@ function registerUserRoutes(
     })
     .post(path('/users'), async ({ request }) => {
       if (!userManagementService) {
-        return apiError(
-          request,
-          500,
-          'USER_MANAGEMENT_UNAVAILABLE',
-          'User management is unavailable.',
-        );
+        return apiError(500, 'USER_MANAGEMENT_UNAVAILABLE', 'User management is unavailable.');
       }
       const admin = requireAdmin(request, setupService, authService, secureCookies, true);
       if (admin instanceof Response) return admin;
       const body = await readJson(request);
       if (!isCreateUserInput(body)) {
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The request body is invalid.');
       }
 
       try {
@@ -1152,18 +1100,13 @@ function registerUserRoutes(
     })
     .patch(path('/users/:id'), async ({ request, params }) => {
       if (!userManagementService) {
-        return apiError(
-          request,
-          500,
-          'USER_MANAGEMENT_UNAVAILABLE',
-          'User management is unavailable.',
-        );
+        return apiError(500, 'USER_MANAGEMENT_UNAVAILABLE', 'User management is unavailable.');
       }
       const admin = requireAdmin(request, setupService, authService, secureCookies, true);
       if (admin instanceof Response) return admin;
       const body = await readJson(request);
       if (!isUpdateUserInput(body)) {
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The request body is invalid.');
       }
 
       try {
@@ -1179,18 +1122,13 @@ function registerUserRoutes(
     })
     .post(path('/users/:id/reset-password'), async ({ request, params }) => {
       if (!userManagementService) {
-        return apiError(
-          request,
-          500,
-          'USER_MANAGEMENT_UNAVAILABLE',
-          'User management is unavailable.',
-        );
+        return apiError(500, 'USER_MANAGEMENT_UNAVAILABLE', 'User management is unavailable.');
       }
       const admin = requireAdmin(request, setupService, authService, secureCookies, true);
       if (admin instanceof Response) return admin;
       const body = await readJson(request);
       if (!isResetPasswordInput(body)) {
-        return apiError(request, 422, 'VALIDATION_ERROR', 'The request body is invalid.');
+        return apiError(422, 'VALIDATION_ERROR', 'The request body is invalid.');
       }
 
       try {
@@ -1215,16 +1153,16 @@ function registerProtectedApiGuard(
 ): AnyElysia {
   return application.all(`${prefix}/*`, ({ request }) => {
     if (!authService) {
-      return apiError(request, 500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
+      return apiError(500, 'APPLICATION_UNAVAILABLE', 'The application is unavailable.');
     }
-    if (!setupAvailable(setupService)) return setupRequiredResponse(request);
+    if (!setupAvailable(setupService)) return setupRequiredResponse();
 
     const validation = authService.validateSession(sessionToken(request));
     if (!validation.authenticated) {
       return sessionFailureResponse(request, validation, secureCookies);
     }
     if (isMutation(request) && !csrfAllowed(request)) {
-      return csrfFailureResponse(request);
+      return csrfFailureResponse();
     }
     return new Response(null, { status: 404 });
   });
@@ -1306,6 +1244,8 @@ export function disposeServerApp(application: AnyElysia): void {
   exportCleanupStops.delete(application);
   importCleanupStops.get(application)?.();
   importCleanupStops.delete(application);
+  restoreCleanupStops.get(application)?.();
+  restoreCleanupStops.delete(application);
   const disposeConnections = connectionManagerCleanupStops.get(application);
   connectionManagerCleanupStops.delete(application);
   if (disposeConnections) void disposeConnections();
@@ -1325,6 +1265,8 @@ export async function disposeServerAppAsync(application: AnyElysia): Promise<voi
   exportCleanupStops.delete(application);
   importCleanupStops.get(application)?.();
   importCleanupStops.delete(application);
+  restoreCleanupStops.get(application)?.();
+  restoreCleanupStops.delete(application);
   const disposeConnections = connectionManagerCleanupStops.get(application);
   connectionManagerCleanupStops.delete(application);
   if (disposeConnections) await disposeConnections();
@@ -1665,6 +1607,11 @@ export function createServerApp(options: ServerAppOptions = {}) {
       restoreService,
       secureCookies,
     });
+    if (restoreService) {
+      const cleanupTimer = setInterval(() => void restoreService.cleanup(), 60_000);
+      (cleanupTimer as { unref?: () => void }).unref?.();
+      restoreCleanupStops.set(application, () => clearInterval(cleanupTimer));
+    }
   }
   if (exportService && authService) {
     application = registerExportRoutes(application, '/api/v1', {

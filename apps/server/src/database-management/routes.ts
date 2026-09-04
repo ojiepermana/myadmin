@@ -1,10 +1,10 @@
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import type { DatabaseCreateInput } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import type { ConnectionActor } from '../connections/connection-manager';
 import { databaseManagementErrorResponse } from './database-management';
 import type { DatabaseManagementService } from './database-management';
+import { apiError, jsonResponse } from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -15,26 +15,6 @@ export interface DatabaseManagementRouteOptions {
   readonly setupService: SetupService | undefined;
   readonly service: DatabaseManagementService;
   readonly secureCookies: boolean;
-}
-
-function jsonResponse(value: unknown, status = 200, headers?: HeadersInit): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
-}
-
-function apiError(request: Request, status: number, code: string, message: string): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
-  return jsonResponse(
-    {
-      code,
-      message,
-      correlationId,
-    },
-    status,
-    { 'x-correlation-id': correlationId },
-  );
 }
 
 function cookieValue(request: Request, name: string): string | undefined {
@@ -85,7 +65,7 @@ function actorForRequest(
   options: DatabaseManagementRouteOptions,
 ): ConnectionActor | Response {
   if (!options.setupService?.isInitialized()) {
-    return apiError(request, 409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
+    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
   }
   const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
   if (!validation.authenticated) return sessionFailure(request, validation, options.secureCookies);
@@ -149,7 +129,7 @@ function protectedMutation(
   if (actor instanceof Response) return actor;
   return csrfAllowed(request)
     ? actor
-    : apiError(request, 403, 'CSRF_INVALID', 'The request could not be verified.');
+    : apiError(403, 'CSRF_INVALID', 'The request could not be verified.');
 }
 
 /** Registers database create, properties, and exact confirmation drop routes. */
@@ -165,7 +145,7 @@ export function registerDatabaseManagementRoutes(
       if (actor instanceof Response) return actor;
       const input = createInput(await readJson(request));
       if (!input)
-        return apiError(request, 422, 'DATABASE_VALIDATION_FAILED', 'The request body is invalid.');
+        return apiError(422, 'DATABASE_VALIDATION_FAILED', 'The request body is invalid.');
       try {
         return jsonResponse(await options.service.create(actor, params.id, input), 201);
       } catch (error) {
@@ -195,7 +175,7 @@ export function registerDatabaseManagementRoutes(
       if (actor instanceof Response) return actor;
       const confirmName = dropInput(await readJson(request));
       if (confirmName === null) {
-        return apiError(request, 422, 'DATABASE_VALIDATION_FAILED', 'confirmName is required.');
+        return apiError(422, 'DATABASE_VALIDATION_FAILED', 'confirmName is required.');
       }
       try {
         await options.service.drop(actor, params.id, params.db, confirmName);
