@@ -512,6 +512,30 @@ export class BackupService {
   }
 }
 
+/**
+ * The one rule for a database name that reaches a native tool.
+ *
+ * `mysqldump` takes the database as a positional argument, so a value starting
+ * with `-` would be read as an option. Path separators and control characters
+ * are rejected for the same reason the restore path rejects them.
+ */
+export function isSafeDatabaseName(value: string): boolean {
+  const name = value.trim();
+  return (
+    name.length > 0 &&
+    name.length <= 128 &&
+    !name.startsWith('-') &&
+    name !== '.' &&
+    name !== '..' &&
+    !name.includes('\\') &&
+    !name.includes('/') &&
+    ![...name].some((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 31 || code === 127;
+    })
+  );
+}
+
 function normalizeCreateInput(input: BackupCreateInput): BackupCreateInput {
   if (
     !input ||
@@ -525,6 +549,13 @@ function normalizeCreateInput(input: BackupCreateInput): BackupCreateInput {
     throw new BackupServiceError('BACKUP_VALIDATION_FAILED', 'The backup request is invalid.', 422);
   }
   const database = input.database.trim();
+  if (!isSafeDatabaseName(database)) {
+    throw new BackupServiceError(
+      'BACKUP_VALIDATION_FAILED',
+      'The database name is invalid or unsafe.',
+      422,
+    );
+  }
   const note = input.note?.trim();
   if (note !== undefined && note.length > 500) {
     throw new BackupServiceError('BACKUP_VALIDATION_FAILED', 'The backup note is too long.', 422);

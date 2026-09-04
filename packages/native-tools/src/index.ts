@@ -9,6 +9,7 @@
  */
 import { stat } from 'node:fs/promises';
 import { Redaction } from '@myadmin/crypto';
+import { subprocessEnv } from '@myadmin/kernel';
 import type { NativeToolStatus } from '@myadmin/database-core';
 
 export const moduleName = '@myadmin/native-tools' as const;
@@ -23,7 +24,11 @@ function defaultWhich(command: string): string | undefined {
 }
 
 async function defaultVersion(path: string): Promise<string> {
-  const process = Bun.spawn([path, '--version'], { stdout: 'pipe', stderr: 'pipe' });
+  const process = Bun.spawn([path, '--version'], {
+    env: subprocessEnv(),
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
   const [stdout, stderr, exitCode] = await Promise.all([
     process.stdout ? new Response(process.stdout).text() : Promise.resolve(''),
     process.stderr ? new Response(process.stderr).text() : Promise.resolve(''),

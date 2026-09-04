@@ -1,6 +1,7 @@
 import { stat } from 'node:fs/promises';
 import { Redaction } from '@myadmin/crypto';
 import { DbError, type PreparedRestoreCommand } from '@myadmin/database-core';
+import { subprocessEnv } from '@myadmin/kernel';
 
 export interface RestoreProcess {
   readonly stdin: WritableStream<Uint8Array> | null;
@@ -49,7 +50,7 @@ export class RestoreExecutor {
   ): Promise<RestoreExecutionResult> {
     const inputSizeBytes = (await stat(inputPath)).size;
     const process = this.processFactory([plan.executable, ...plan.args], {
-      env: { ...processEnv(), ...(plan.env ?? {}) },
+      env: subprocessEnv(plan.env ?? {}),
       stdin: 'pipe',
       stderr: 'pipe',
     });
@@ -188,14 +189,6 @@ function nativeRestoreError(exitCode: number, stderr: string): DbError {
     message: `Native restore failed: ${safeStderr || `process exited with code ${exitCode}`}`,
     ...(line === undefined ? {} : { position: { line: Number(line) } }),
   });
-}
-
-function processEnv(): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined,
-    ),
-  );
 }
 
 function defaultProcessFactory(

@@ -1,4 +1,4 @@
-import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, open, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { AuditEvents, AuditWriter } from '@myadmin/audit';
 import type { CredentialPayload, CredentialVault } from '@myadmin/crypto';
@@ -12,12 +12,17 @@ import {
 import type { Connection, EncryptedCredential, InternalUnitOfWork } from '@myadmin/internal-domain';
 import { createUuidV7 } from '@myadmin/kernel';
 import type { JobContext, JobManager } from '@myadmin/jobs';
-import { BackupArtifactStore, type BackupActor } from './backup-service';
+import { BackupArtifactStore, isSafeDatabaseName, type BackupActor } from './backup-service';
 import { RestoreExecutor, type RestoreProcessFactory } from './restore-executor';
 
 export const RESTORE_JOB_TYPE = 'database.restore';
-export const RESTORE_UPLOAD_MANIFEST_VERSION = 1;
+// Bumped to 2 when `expiresAt` was added: a manifest without it has no expiry
+// and must not be honoured, so an older upload simply reads as missing and gets
+// swept.
+export const RESTORE_UPLOAD_MANIFEST_VERSION = 2;
 export const DEFAULT_RESTORE_UPLOAD_MAX_BYTES = 512 * 1024 * 1024;
+/** How long an unused restore upload stays on disk. Mirrors the import store. */
+export const RESTORE_UPLOAD_RETENTION_MS = 60 * 60 * 1_000;
 
 export interface RestoreSourceInput {
   readonly artifactId?: string;
@@ -124,13 +129,16 @@ interface RestoreUploadManifest {
   readonly ownerUserId: string;
   readonly sizeBytes: number;
   readonly createdAt: string;
+  readonly expiresAt: string;
 }
 
 export class RestoreUploadStore {
   public readonly directory: string;
+  private readonly now: () => Date;
 
-  public constructor(dataDirectory: string) {
+  public constructor(dataDirectory: string, now: () => Date = () => new Date()) {
     this.directory = join(dataDirectory, 'restore-uploads');
+    this.now = now;
   }
 
   public async save(
@@ -151,13 +159,32 @@ export class RestoreUploadStore {
       );
     }
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
+    const partialPath = join(this.directory, `${id}.partial`);
     const dataPath = join(this.directory, `${id}.data`);
     const manifestPath = join(this.directory, `${id}.json`);
+    // Streamed, not buffered: an upload is allowed up to 512 MB, and
+    // `arrayBuffer()` held every byte of every concurrent upload in memory.
+    let handle: Awaited<ReturnType<typeof open>> | undefined;
+    let sizeBytes = 0;
     try {
-      await writeFile(dataPath, new Uint8Array(await file.arrayBuffer()), {
-        flag: 'wx',
-        mode: 0o600,
-      });
+      handle = await open(partialPath, 'wx', 0o600);
+      for await (const chunk of file.stream() as AsyncIterable<Uint8Array>) {
+        sizeBytes += chunk.byteLength;
+        if (sizeBytes > maxBytes) {
+          throw new RestoreServiceError(
+            'RESTORE_UPLOAD_FAILED',
+            `The restore upload must be between 1 byte and ${maxBytes} bytes.`,
+            422,
+          );
+        }
+        if (chunk.byteLength > 0) await handle.write(chunk);
+      }
+      if (sizeBytes < 1)
+        throw new RestoreServiceError('RESTORE_UPLOAD_FAILED', 'The upload is empty.', 422);
+      await handle.close();
+      handle = undefined;
+      await rename(partialPath, dataPath);
+      const createdAt = this.now();
       await writeFile(
         manifestPath,
         `${JSON.stringify({
@@ -165,16 +192,20 @@ export class RestoreUploadStore {
           id,
           fileName,
           ownerUserId,
-          sizeBytes: file.size,
-          createdAt: new Date().toISOString(),
+          sizeBytes,
+          createdAt: createdAt.toISOString(),
+          expiresAt: new Date(createdAt.getTime() + RESTORE_UPLOAD_RETENTION_MS).toISOString(),
         } satisfies RestoreUploadManifest)}\n`,
         { flag: 'wx', mode: 0o600 },
       );
     } catch (error) {
+      await handle?.close().catch(() => undefined);
       await Promise.all([
-        unlink(dataPath).catch(() => undefined),
-        unlink(manifestPath).catch(() => undefined),
+        rm(partialPath, { force: true }).catch(() => undefined),
+        rm(dataPath, { force: true }).catch(() => undefined),
+        rm(manifestPath, { force: true }).catch(() => undefined),
       ]);
+      if (error instanceof RestoreServiceError) throw error;
       throw new RestoreServiceError(
         'RESTORE_UPLOAD_FAILED',
         'The restore upload could not be saved.',
@@ -190,6 +221,10 @@ export class RestoreUploadStore {
     if (!safeUploadId(id)) throw sourceNotFound();
     const manifest = await this.manifest(id);
     if (!manifest || manifest.ownerUserId !== ownerUserId) throw sourceNotFound();
+    if (new Date(manifest.expiresAt).getTime() <= this.now().getTime()) {
+      await this.remove(id);
+      throw new RestoreServiceError('RESTORE_NOT_FOUND', 'The restore upload has expired.', 410);
+    }
     const dataPath = join(this.directory, `${id}.data`);
     const fileStat = await regularFile(dataPath);
     if (!fileStat || fileStat.size !== manifest.sizeBytes) throw sourceNotFound();
@@ -207,9 +242,30 @@ export class RestoreUploadStore {
   public async remove(id: string): Promise<void> {
     if (!safeUploadId(id)) return;
     await Promise.all([
-      unlink(join(this.directory, `${id}.data`)).catch(() => undefined),
-      unlink(join(this.directory, `${id}.json`)).catch(() => undefined),
+      rm(join(this.directory, `${id}.partial`), { force: true }).catch(() => undefined),
+      rm(join(this.directory, `${id}.data`), { force: true }).catch(() => undefined),
+      rm(join(this.directory, `${id}.json`), { force: true }).catch(() => undefined),
     ]);
+  }
+
+  /** Drops expired and unreadable uploads. Returns how many were removed. */
+  public async cleanup(): Promise<number> {
+    let entries: string[];
+    try {
+      entries = await readdir(this.directory);
+    } catch {
+      return 0;
+    }
+    let removed = 0;
+    for (const entry of entries.filter((value) => value.endsWith('.json'))) {
+      const id = entry.slice(0, -'.json'.length);
+      const manifest = await this.manifest(id);
+      if (!manifest || new Date(manifest.expiresAt).getTime() <= this.now().getTime()) {
+        await this.remove(id);
+        removed += 1;
+      }
+    }
+    return removed;
   }
 
   private async manifest(id: string): Promise<RestoreUploadManifest | undefined> {
@@ -233,11 +289,12 @@ export class RestoreService {
 
   public constructor(private readonly options: RestoreServiceOptions) {
     this.artifactStore = new BackupArtifactStore(options.dataDirectory);
-    this.uploadStore = new RestoreUploadStore(options.dataDirectory);
+
     this.auditWriter = options.auditWriter ?? new AuditWriter(options.store.audit);
     this.executor =
       options.executor ?? new RestoreExecutor({ processFactory: options.processFactory });
     this.now = options.now ?? (() => new Date());
+    this.uploadStore = new RestoreUploadStore(options.dataDirectory, () => this.now());
     this.createId = options.createId ?? createUuidV7;
     this.uploadMaxBytes = options.uploadMaxBytes ?? DEFAULT_RESTORE_UPLOAD_MAX_BYTES;
   }
@@ -423,6 +480,9 @@ export class RestoreService {
           durationMs,
         },
       });
+      // The upload has been consumed. Failed and cancelled runs keep theirs so
+      // the user can retry; the retention window bounds those.
+      if (source.type === 'upload') await this.uploadStore.remove(source.id);
       return output;
     } catch (error) {
       const cancelled = isAbortError(error);
@@ -451,6 +511,11 @@ export class RestoreService {
       });
       throw error;
     }
+  }
+
+  /** Drops expired restore uploads. Runs on a timer from the composition root. */
+  public async cleanup(): Promise<number> {
+    return this.uploadStore.cleanup();
   }
 
   private async sourceFor(actor: BackupActor, input: RestoreSourceInput): Promise<RestoreSource> {
@@ -634,19 +699,7 @@ function assertConfirmation(targetDatabase: string, confirmName: string): void {
 
 function normalizeTargetDatabase(value: string): string {
   const target = value.trim();
-  if (
-    target.length === 0 ||
-    target.length > 128 ||
-    target.startsWith('-') ||
-    target === '.' ||
-    target === '..' ||
-    target.split('').some((character) => {
-      const code = character.charCodeAt(0);
-      return code <= 31 || code === 127;
-    }) ||
-    target.includes('\\') ||
-    target.includes('/')
-  ) {
+  if (!isSafeDatabaseName(target)) {
     throw new RestoreServiceError(
       'RESTORE_TARGET_INVALID',
       'The target database name is invalid or unsafe.',
@@ -711,7 +764,9 @@ function isUploadManifest(value: unknown): value is RestoreUploadManifest {
     typeof candidate['sizeBytes'] === 'number' &&
     Number.isSafeInteger(candidate['sizeBytes']) &&
     candidate['sizeBytes'] > 0 &&
-    typeof candidate['createdAt'] === 'string'
+    typeof candidate['createdAt'] === 'string' &&
+    typeof candidate['expiresAt'] === 'string' &&
+    !Number.isNaN(new Date(candidate['expiresAt']).getTime())
   );
 }
 

@@ -2,6 +2,7 @@ import { open, rm, stat } from 'node:fs/promises';
 import { DbError } from '@myadmin/database-core';
 import { Redaction } from '@myadmin/crypto';
 import type { PreparedBackupCommand } from '@myadmin/database-core';
+import { subprocessEnv } from '@myadmin/kernel';
 
 export interface BackupProcess {
   readonly stdout: ReadableStream<Uint8Array> | null;
@@ -48,7 +49,7 @@ export class BackupExecutor {
     options: BackupExecutionOptions,
   ): Promise<BackupExecutionResult> {
     const process = this.processFactory([plan.executable, ...plan.args], {
-      env: { ...processEnv(), ...(plan.env ?? {}) },
+      env: subprocessEnv(plan.env ?? {}),
       stdout: 'pipe',
       stderr: 'pipe',
     });
@@ -249,14 +250,6 @@ async function validateOutput(
       category: 'internal',
       message: 'Backup artifact header validation failed.',
     });
-}
-
-function processEnv(): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined,
-    ),
-  );
 }
 
 function defaultProcessFactory(
