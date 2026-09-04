@@ -3,7 +3,7 @@
 **Date**: 2026-09-04
 **Spec status**: mengikuti [index.md](index.md)
 **Spec utama**: [index.md](index.md)
-**Dokumen terkait**: [Test dan acceptance criteria](test.md) | [Verify](verify.md) | [Plan](plan.md)
+**Dokumen terkait**: [Test dan acceptance criteria](test.md) | [Verify](verify.md) | [Plan](plan.md) | [Rationale](rationale.md)
 
 ## Tujuan
 
@@ -38,5 +38,7 @@ seluruh dependensinya sudah terpasang.
 | `coordinates` | [0002](../0002-quality-tooling-ci/index.md)           | AC-11 sampai AC-15 mengubah script test, gate lint, dan workflow.                                             |
 | `references`  | [0056](../0056-bun-angular-runtime-standard/index.md) | AC-8 adalah langkah pertama AC-9 spec 0056; AC-10 memenuhi sebagian AC-19 spec 0056.                          |
 | `deferred`    | [0056](../0056-bun-angular-runtime-standard/index.md) | Kernel HTTP penuh, pemecahan `app.ts`, dialect di core, dan `sdkResource()` tetap milik 0056 dan gelombang 2. |
+| `deferred`    | [0011](../0011-credential-vault-redaction/index.md)   | SRV-3 ditugaskan ke gelombang 2 dan akan mengubah kebijakan redaction yang dimiliki spec ini.                 |
+| `deferred`    | [0053](../0053-security-hardening/index.md)           | SRV-3 dan SRV-5 ditugaskan ke gelombang 2 dan menyentuh standar hardening pada spec ini.                      |
 | `environment` | Layanan PostgreSQL dan MySQL disposable               | AC-1, AC-2, AC-3 butuh engine nyata untuk verdict penuh.                                                      |
-| `environment` | Akses admin repository GitHub                         | AC-13 butuh proteksi branch yang tidak bisa dibuat dari dalam repo.                                           |
+| `environment` | Akses admin repository GitHub                         | AC-16 butuh proteksi branch yang tidak bisa dibuat dari dalam repo.                                           |

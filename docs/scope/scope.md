@@ -790,14 +790,14 @@ Satu standar bersama untuk runtime Bun, cancellation, lifecycle Elysia, kontrak 
 
 Gelombang 1 roadmap [audit codebase 2026-09-04](../reviews/2026-09-04-audit-codebase.md): tiga bug runtime provider, pemetaan error, tiga masalah infrastruktur subprocess dan upload, langkah pertama kernel HTTP, channel notice dan zoneless di web, serta lima perbaikan gate proses. Done when: setiap AC pada spec 0057 punya bukti yang dapat diulang, dan klaim bukti proyek tidak lagi berdiri di atas pencocokan string.
 
-- [x] Design it (spec): [0057](../specs/0057-audit-remediation-wave-1/index.md) `Assumed`, belum diratifikasi `/architect`
+- [x] Design it (spec): [0057](../specs/0057-audit-remediation-wave-1/index.md) `In Progress`, diratifikasi `/architect` 2026-09-05
 - [ ] Build it: /develop audit-remediation-wave-1
   - [x] Bug provider dan pemetaan error: `ESCAPE` PostgreSQL, presisi identitas baris, klausa autentikasi MySQL, tabel error berbasis data (AC-1 sampai AC-4)
   - [x] Infrastruktur: upload restore streaming dengan expiry, allowlist environment subprocess, validasi nama database backup (AC-5, AC-6, AC-7)
   - [x] Kernel HTTP langkah pertama: satu `apiError` dan `jsonResponse` dipakai 13 route module, correlation id cocok dengan log (AC-8)
   - [x] Web: channel `notice` dengan `role="status"`, `provideZonelessChangeDetection()`, sisa debug dihapus (AC-9, AC-10)
-  - [x] Gate proses: tiering test, matrix bukti berbasis hasil test nyata, `strictTemplates` dan `angular-eslint`, analisis bundle (AC-11, AC-12, AC-14, AC-15)
-  - [ ] Proteksi branch `main` dengan check wajib (AC-13), butuh akses admin repository
+  - [x] Gate proses: tiering test, matrix bukti berbasis hasil test nyata, `concurrency` dan determinisme realtime, `strictTemplates` dan `angular-eslint`, analisis bundle (AC-11 sampai AC-15)
+  - [ ] Proteksi branch `main` dengan check wajib (AC-16), butuh akses admin repository
   - code in `packages/database-postgresql/src`, `packages/database-mysql/src`, `packages/backup/src`, `packages/kernel/src/process`, `apps/server/src/http`, `apps/web/src/app`, `scripts/quality`, and `.github/workflows`
 - [ ] [Verify it](../specs/0057-audit-remediation-wave-1/verify.md): /check verify audit-remediation-wave-1
 - [ ] [Test it](../specs/0057-audit-remediation-wave-1/test.md): /test audit-remediation-wave-1

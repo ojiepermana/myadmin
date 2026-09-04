@@ -1,6 +1,6 @@
 # Progress seluruh spec MyAdmin
 
-Pembaruan: 2026-08-30
+Pembaruan: 2026-09-05
 
 Status di bawah mengikuti checkbox aktual pada `docs/scope/scope.md`. `✅*`
 berarti Build utama selesai, tetapi masih ada subtask Build yang terbuka.
@@ -65,6 +65,8 @@ manual, clean-environment, signing, atau external proof.
 | 0053 | ✅    | ✅   | ⬜     | Security suite lokal `40/40` dan hosted workflow berhasil; clean environment dan manual operational proof belum tersedia.                           |
 | 0054 | ✅    | ✅   | ⬜     | Lima binary, checksum, dan database smoke tersedia; clean release environment, full target smoke, hosted release, dan performance belum terbukti.   |
 | 0055 | ✅*   | ✅   | ⬜     | Local packaging dan Docker/native checks tersedia; publication, signing, notarization, service host, clean VM, dan release artifact belum terbukti. |
+| 0056 | ⬜    | ⬜   | ⬜     | Standar runtime dan reaktivitas diputuskan, tetapi rollout belum dimulai; sebagian besar AC belum terbukti.                                         |
+| 0057 | ✅\*  | ⬜   | ⬜     | Gelombang 1 audit terbangun dan gate proses diperbaiki; proteksi branch (AC-16), regresi `ESCAPE` MySQL, dan run hosted untuk AC-13 belum terbukti. |
 
 ## Ringkasan evidence terbaru
 
@@ -82,7 +84,8 @@ manual, clean-environment, signing, atau external proof.
 ## Status keseluruhan
 
 - Spec selesai penuh berdasarkan checklist: **0001–0008, 0010–0013, 0016–0018, 0022–0030, 0003, dan 0004** sesuai status Verify pada `scope.md`.
-- Spec dengan Verify terbuka: **0009, 0014, 0015, 0019–0021, dan 0031–0055**.
-- Subtask Build yang masih terbuka: **0055 AC-8**, acceptance dari artefak nyata pada VM atau container bersih.
-- Acceptance matrix: **459 AC**, **405 fully evidenced**, **28 partial**, **26 blocked**.
+- Spec dengan Verify terbuka: **0009, 0014, 0015, 0019–0021, dan 0031–0057**.
+- Subtask Build yang masih terbuka: **0055 AC-8**, acceptance dari artefak nyata pada VM atau container bersih; dan **0057 AC-16**, proteksi branch `main` yang menuntut akses admin repository.
+- Acceptance matrix: **475 AC**, **281 fully evidenced**, **168 partial**, **26 blocked**.
+- Penurunan dari 405 menjadi 281 fully evidenced adalah koreksi, bukan regresi. Spec 0057 AC-12 membuat generator matrix menurunkan PASS dari hasil test yang benar benar dijalankan dan lulus, menggantikan pencocokan token ID di file source. Sebagian PASS lama tidak pernah berdiri di atas test yang berjalan.
 - Tidak ada acceptance yang ditandai `done` hanya berdasarkan test lokal atau evidence tidak langsung.
