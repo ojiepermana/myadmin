@@ -151,6 +151,9 @@ export class MysqlBackupPort implements BackupPort {
       '--events',
       '--triggers',
       ...scopeArguments(request.scope),
+      // Everything after `--` is positional, so a database name that begins
+      // with `-` can never be read as an option by the MySQL client.
+      '--',
       request.database,
     ];
 

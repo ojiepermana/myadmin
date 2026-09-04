@@ -73,28 +73,84 @@ function safeMessage(message: string, secret?: string): string {
     .replace(/(mysql(?:2)?:\/\/)[^\s/@]+(?::[^\s/@]*)?@/gi, '$1[redacted]@');
 }
 
+/**
+ * Server errno to category. The server code is authoritative and is consulted
+ * before any message regex: matching `/timed out|timeout/` on the text first
+ * classified `Table 'app.session_timeout' doesn't exist` (errno 1146) as a
+ * timeout, because the table name contains the word.
+ */
+const ERRNO_CATEGORY: ReadonlyMap<number, DbErrorCategory> = new Map([
+  // Connection and authentication
+  [1045, 'auth_failed'],
+  [1044, 'permission_denied'],
+  [1142, 'permission_denied'],
+  [1143, 'permission_denied'],
+  [1227, 'permission_denied'],
+  [1370, 'permission_denied'],
+  [1040, 'connection_failed'],
+  [1203, 'connection_failed'],
+  // Missing objects
+  [1008, 'not_found'],
+  [1049, 'not_found'],
+  [1051, 'not_found'],
+  [1054, 'not_found'],
+  [1146, 'not_found'],
+  [1305, 'not_found'],
+  // Already present, or conflicting concurrent state
+  [1007, 'conflict'],
+  [1050, 'conflict'],
+  [1061, 'conflict'],
+  [1213, 'conflict'],
+  [1396, 'conflict'],
+  // Rejected values and constraints
+  [1048, 'constraint_violation'],
+  [1062, 'constraint_violation'],
+  [1264, 'constraint_violation'],
+  [1265, 'constraint_violation'],
+  [1292, 'constraint_violation'],
+  [1366, 'constraint_violation'],
+  [1406, 'constraint_violation'],
+  [1451, 'constraint_violation'],
+  [1452, 'constraint_violation'],
+  [3819, 'constraint_violation'],
+  // Statement level
+  [1064, 'syntax_error'],
+  [1149, 'syntax_error'],
+  [1235, 'unsupported'],
+  [1317, 'cancelled'],
+  [3024, 'timeout'],
+]);
+
+const NAMED_CODE_CATEGORY: ReadonlyMap<string, DbErrorCategory> = new Map([
+  ['ER_ACCESS_DENIED_ERROR', 'auth_failed'],
+  ['ER_DBACCESS_DENIED_ERROR', 'permission_denied'],
+  ['ER_SPECIFIC_ACCESS_DENIED_ERROR', 'permission_denied'],
+  ['ER_BAD_DB_ERROR', 'not_found'],
+  ['ER_NO_SUCH_TABLE', 'not_found'],
+  ['ER_TABLE_EXISTS_ERROR', 'conflict'],
+  ['ER_DUP_ENTRY', 'constraint_violation'],
+  ['ER_LOCK_DEADLOCK', 'conflict'],
+  ['ER_PARSE_ERROR', 'syntax_error'],
+  ['ER_NOT_SUPPORTED_YET', 'unsupported'],
+  ['ER_QUERY_INTERRUPTED', 'cancelled'],
+]);
+
 function categoryFor(
   code: number | undefined,
   namedCode: string,
   message: string,
   context: MysqlErrorContext,
 ): DbErrorCategory {
-  if (context === 'timeout' || code === 3024 || isTimeoutFailure(namedCode, message)) {
-    return 'timeout';
-  }
-  if (code === 1317) return 'cancelled';
+  // An explicit timeout context is the caller stating what happened, so it wins.
+  if (context === 'timeout') return 'timeout';
+  const byCode =
+    (code === undefined ? undefined : ERRNO_CATEGORY.get(code)) ??
+    NAMED_CODE_CATEGORY.get(namedCode);
+  if (byCode) return byCode;
+  // Only now fall back to reading the text, for driver and socket failures that
+  // carry no server errno at all.
+  if (isTimeoutFailure(namedCode, message)) return 'timeout';
   if (context === 'connect' && isTlsFailure(namedCode, message)) return 'tls_failed';
-  if (code === 1045 || namedCode === 'ER_ACCESS_DENIED_ERROR') return 'auth_failed';
-  if (code === 1044 || code === 1142 || namedCode === 'ER_DBACCESS_DENIED_ERROR') {
-    return 'permission_denied';
-  }
-  if (code === 1049 || code === 1146 || namedCode === 'ER_BAD_DB_ERROR') return 'not_found';
-  if (code === 1007) return 'conflict';
-  if (code === 1008) return 'not_found';
-  if (code === 1062 || code === 1451 || code === 1452 || code === 3819) {
-    return 'constraint_violation';
-  }
-  if (code === 1064 || namedCode === 'ER_PARSE_ERROR') return 'syntax_error';
   if (context === 'connect' || isNetworkFailure(namedCode, message)) return 'connection_failed';
   return 'internal';
 }
@@ -122,6 +178,8 @@ function messageFor(category: DbErrorCategory, message: string, secret?: string)
       return `MySQL syntax error${safe ? `: ${safe.slice(0, 240)}` : ''}`;
     case 'cancelled':
       return 'MySQL query was cancelled';
+    case 'unsupported':
+      return 'MySQL operation is not supported';
     default:
       return 'MySQL operation failed';
   }

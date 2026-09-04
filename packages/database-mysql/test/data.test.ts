@@ -80,7 +80,7 @@ describe('MySQL data query builder', () => {
     expect(insert.sql).toBe(
       'INSERT INTO `app``unsafe`.`users` (`id`, `display_name`) VALUES (?, ?)',
     );
-    expect(insert.parameters).toEqual([3, '']);
+    expect(insert.parameters).toEqual(['3', '']);
     const update = buildMysqlUpdateQuery(
       {
         table: mutationTable,
@@ -91,7 +91,7 @@ describe('MySQL data query builder', () => {
       identity,
     );
     expect(update.sql).toContain('SET `display_name` = ? WHERE `id` = ?');
-    expect(update.parameters).toEqual([null, 3]);
+    expect(update.parameters).toEqual([null, '3']);
   });
 
   test('[UT-0038-AC2] supports an insert that uses only database defaults', () => {
@@ -110,7 +110,7 @@ describe('MySQL data query builder', () => {
         { table: mutationTable, values: { id: { type: 'number', value: 'not-a-number' } } },
         columns,
       ),
-    ).toThrow('Column id contains an invalid number');
+    ).toThrow('Column id expects a whole number');
     expect(() =>
       buildMysqlInsertQuery(
         {
@@ -120,5 +120,46 @@ describe('MySQL data query builder', () => {
         columns,
       ),
     ).toThrow('Column id is binary and read only in V1');
+  });
+
+  test('[UT-0057-AC2] keeps an integer row identity lossless above 2^53', () => {
+    const bigColumns = [
+      { name: 'id', dataType: 'bigint', nullable: false, primary: true },
+      { name: 'display_name', dataType: 'varchar', nullable: true, primary: false },
+    ] as const;
+    const update = buildMysqlUpdateQuery(
+      {
+        table: { ...table, type: 'table' as const },
+        key: { id: { type: 'number', value: '9007199254740993' } },
+        values: { display_name: { type: 'string', value: 'kept' } },
+      },
+      bigColumns,
+      identity,
+    );
+    // A real MySQL matched the neighbouring row for the rounded float.
+    expect(update.parameters).toEqual(['kept', '9007199254740993']);
+  });
+
+  test('[UT-0057-AC2] keeps decimal scale and rejects a non numeric value', () => {
+    const decimalColumns = [
+      { name: 'amount', dataType: 'decimal(30,20)', nullable: true, primary: false },
+    ] as const;
+    const insert = buildMysqlInsertQuery(
+      {
+        table: { ...table, type: 'table' as const },
+        values: { amount: { type: 'number', value: '0.10000000000000000001' } },
+      },
+      decimalColumns,
+    );
+    expect(insert.parameters).toEqual(['0.10000000000000000001']);
+    expect(() =>
+      buildMysqlInsertQuery(
+        {
+          table: { ...table, type: 'table' as const },
+          values: { amount: { type: 'number', value: 'nope' } },
+        },
+        decimalColumns,
+      ),
+    ).toThrow('Column amount contains an invalid number');
   });
 });

@@ -66,6 +66,42 @@ export function resolveMysqlRowIdentity(
   };
 }
 
+/**
+ * Numeric column families that must never round trip through `Number`.
+ *
+ * `QueryCell` carries numbers as text on purpose so a value stays lossless up to
+ * the driver. Parsing an integer key such as `9007199254740993` into a float
+ * silently rounds it, and the rounded value then matches a neighbouring row, so
+ * an UPDATE or DELETE built from a row identity hits the wrong row (a real
+ * PostgreSQL matched two rows for one identity). Word boundaries keep types
+ * whose name merely contains `int`, such as `interval` and `point`, out of the
+ * integer family.
+ */
+const INTEGER_TYPE =
+  /\b(?:tinyint|smallint|mediumint|bigint|integer|int|int2|int4|int8|serial|smallserial|bigserial|serial2|serial4|serial8|year)\b/;
+const EXACT_NUMERIC_TYPE = /\b(?:numeric|decimal|dec|money)\b/;
+
+/**
+ * Hands the driver a lossless parameter for a numeric column: text for integer
+ * and exact numeric types, which the engine parses at full width, and a JS
+ * number only for approximate types that are binary floats anyway.
+ */
+function numericParameter(value: string, type: string, columnName: string): string | number {
+  const text = value.trim();
+  if (INTEGER_TYPE.test(type)) {
+    if (!/^[+-]?\d+$/.test(text)) invalid(`Column ${columnName} expects a whole number`);
+    return text;
+  }
+  if (EXACT_NUMERIC_TYPE.test(type)) {
+    if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(text))
+      invalid(`Column ${columnName} contains an invalid number`);
+    return text;
+  }
+  const parsed = Number(text);
+  if (!Number.isFinite(parsed)) invalid(`Column ${columnName} contains an invalid number`);
+  return parsed;
+}
+
 function writeValue(cell: QueryCell, column: ColumnDefinition): unknown {
   if (cell.type === 'null') {
     if (!column.nullable) invalid(`Column ${column.name} does not allow NULL`);
@@ -87,9 +123,7 @@ function writeValue(cell: QueryCell, column: ColumnDefinition): unknown {
   }
   if (/int|numeric|decimal|real|double|float|serial|money|year/.test(type)) {
     if (cell.type !== 'number') invalid(`Column ${column.name} expects a number`);
-    const value = Number(cell.value);
-    if (!Number.isFinite(value)) invalid(`Column ${column.name} contains an invalid number`);
-    return value;
+    return numericParameter(cell.value, type, column.name);
   }
   if (/date|time|timestamp/.test(type)) {
     if (cell.type !== 'date') invalid(`Column ${column.name} expects a date or time`);

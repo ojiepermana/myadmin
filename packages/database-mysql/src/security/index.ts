@@ -265,18 +265,47 @@ function attributesRecord(
   }
   return values;
 }
+/**
+ * Builds the single authentication clause MySQL accepts.
+ *
+ * MySQL allows exactly one auth option per statement, and `IDENTIFIED WITH
+ * plugin` with no `BY` clears the account credential: on MySQL 9.7.1 an ALTER
+ * with that shape took `authentication_string` from 70 bytes to 0, leaving an
+ * account that authenticates with an empty password. Two options in a row
+ * (`IDENTIFIED BY ... IDENTIFIED WITH ...`) is a parse error. So a plugin is
+ * only ever emitted together with a credential.
+ */
+function compileAuthClause(
+  plugin: string | undefined,
+  credential: string | undefined,
+): string | undefined {
+  if (plugin === undefined) {
+    return credential === undefined ? undefined : `IDENTIFIED BY ${sqlString(credential)}`;
+  }
+  if (credential === undefined)
+    throw new DbError({
+      category: 'syntax_error',
+      message:
+        'Changing the MySQL authentication plugin requires a new password, because the plugin change would otherwise clear the account credential',
+    });
+  return `IDENTIFIED WITH ${sqlString(plugin)} BY ${sqlString(credential)}`;
+}
+
+function authPluginOf(attributes: readonly PrincipalAttribute[]): string | undefined {
+  const plugin = attributesRecord(attributes).get('authPlugin');
+  if (plugin === undefined) return undefined;
+  if (typeof plugin !== 'string' || !/^[A-Za-z0-9_]+$/.test(plugin))
+    throw new DbError({
+      category: 'syntax_error',
+      message: 'MySQL authentication plugin is invalid',
+    });
+  return plugin;
+}
+
+/** Account options only. The authentication clause is built by `compileAuthClause`. */
 function compileOptions(attributes: readonly PrincipalAttribute[]): string {
   const values = attributesRecord(attributes);
   const parts: string[] = [];
-  const plugin = values.get('authPlugin');
-  if (plugin !== undefined) {
-    if (typeof plugin !== 'string' || !/^[A-Za-z0-9_]+$/.test(plugin))
-      throw new DbError({
-        category: 'syntax_error',
-        message: 'MySQL authentication plugin is invalid',
-      });
-    parts.push(`IDENTIFIED WITH ${sqlString(plugin)}`);
-  }
   const accountLocked = values.get('accountLocked');
   if (accountLocked !== undefined) {
     if (typeof accountLocked !== 'boolean')
@@ -354,9 +383,8 @@ export class MysqlSecurityAdapter implements SecurityPort {
     // MySQL does not accept parameter markers in CREATE/ALTER USER password
     // clauses. Escape the value as a SQL string; provider errors and audit
     // payloads still never include the statement or credential.
-    const credentialClause =
-      request.credential === undefined ? '' : `IDENTIFIED BY ${sqlString(request.credential)}`;
-    const suffix = [credentialClause, options].filter(Boolean).join(' ');
+    const auth = compileAuthClause(authPluginOf(request.principal.attributes), request.credential);
+    const suffix = [auth ?? '', options].filter(Boolean).join(' ');
     await this.withHandle(context, (handle) =>
       this.connection.execute(
         handle,
@@ -366,13 +394,16 @@ export class MysqlSecurityAdapter implements SecurityPort {
   }
   public async alterPrincipal(context: ProviderContext, request: PrincipalMutation): Promise<void> {
     const { user, host } = account(request);
-    const options = compileOptions(request.changes ?? request.principal.attributes);
-    if (!options)
+    const attributes = request.changes ?? request.principal.attributes;
+    const options = compileOptions(attributes);
+    const auth = compileAuthClause(authPluginOf(attributes), request.credential);
+    const clauses = [auth ?? '', options].filter(Boolean).join(' ');
+    if (!clauses)
       throw new DbError({ category: 'syntax_error', message: 'Principal changes are empty' });
     await this.withHandle(context, (handle) =>
       this.connection.execute(
         handle,
-        `ALTER USER ${sqlString(user)}@${sqlString(host)} ${options}`,
+        `ALTER USER ${sqlString(user)}@${sqlString(host)} ${clauses}`,
       ),
     );
   }

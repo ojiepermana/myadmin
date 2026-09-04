@@ -45,27 +45,56 @@ function isTimeoutFailure(error: PostgresqlErrorLike, text: string): boolean {
   return code === 'ETIMEDOUT' || code === 'TIMEOUT' || /\b(?:timed? out|timeout)\b/i.test(text);
 }
 
+/**
+ * sqlState to category, consulted before any message regex.
+ *
+ * Class prefixes cover the families PostgreSQL defines as a block (`23` for
+ * integrity constraints, `22` for rejected data values, `28` for authorization);
+ * the exact codes below cover the individual ones that do not follow their
+ * class. A code that reaches neither falls through to `internal`, which is the
+ * honest answer rather than a guess.
+ */
+const SQLSTATE_CATEGORY: ReadonlyMap<string, DbErrorCategory> = new Map([
+  // Missing objects
+  ['3D000', 'not_found'],
+  ['3F000', 'not_found'],
+  ['42P01', 'not_found'],
+  ['42P02', 'not_found'],
+  ['42703', 'not_found'],
+  ['42704', 'not_found'],
+  ['42883', 'not_found'],
+  ['42P05', 'not_found'],
+  // Already present, or conflicting concurrent state
+  ['42P04', 'conflict'],
+  ['42P06', 'conflict'],
+  ['42P07', 'conflict'],
+  ['42701', 'conflict'],
+  ['42710', 'conflict'],
+  ['55006', 'conflict'],
+  ['40001', 'conflict'],
+  ['40P01', 'conflict'],
+  // Access
+  ['42501', 'permission_denied'],
+  // Constraints outside class 23
+  ['2BP01', 'constraint_violation'],
+  // Statement level
+  ['42601', 'syntax_error'],
+  ['0A000', 'unsupported'],
+  ['57014', 'cancelled'],
+  ['53300', 'connection_failed'],
+  ['57P03', 'connection_failed'],
+]);
+
+const SQLSTATE_CLASS_CATEGORY: ReadonlyMap<string, DbErrorCategory> = new Map([
+  ['28', 'auth_failed'],
+  ['23', 'constraint_violation'],
+  // Class 22 is `data exception`: a value the user typed was out of range, too
+  // long, or not parseable for the column. Grid edits hit these constantly.
+  ['22', 'constraint_violation'],
+]);
+
 function categoryForSqlState(sqlState: string): DbErrorCategory | undefined {
-  if (sqlState.startsWith('28')) return 'auth_failed';
-  if (
-    sqlState === '3D000' ||
-    sqlState === '3F000' ||
-    sqlState === '42P01' ||
-    sqlState === '42P02' ||
-    sqlState === '42703' ||
-    sqlState === '42704' ||
-    sqlState === '42883' ||
-    sqlState === '42P05'
-  ) {
-    return 'not_found';
-  }
-  if (sqlState === '42501') return 'permission_denied';
-  if (sqlState === '42P04' || sqlState === '55006') return 'conflict';
-  if (sqlState === '2BP01') return 'constraint_violation';
-  if (sqlState.startsWith('23')) return 'constraint_violation';
-  if (sqlState === '42601') return 'syntax_error';
-  if (sqlState === '57014') return 'cancelled';
-  return undefined;
+  return SQLSTATE_CATEGORY.get(sqlState) ?? SQLSTATE_CLASS_CATEGORY.get(sqlState.slice(0, 2));
 }
 
 function parsePosition(

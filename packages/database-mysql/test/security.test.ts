@@ -177,4 +177,68 @@ describe('MySQL principal security adapter', () => {
       ),
     ).toBe(true);
   });
+
+  test('[UT-0057-AC3] emits one authentication clause when a plugin and password are set together', async () => {
+    const statements: string[] = [];
+    const adapter = new MysqlSecurityAdapter(
+      new MysqlConnectionAdapter({ sqlFactory: () => clientFor([], statements) }),
+    );
+    await adapter.createPrincipal(context(), {
+      principal: {
+        name: 'plugged',
+        type: 'account',
+        attributes: [
+          { key: 'host', value: 'localhost' },
+          { key: 'authPlugin', value: 'caching_sha2_password' },
+        ],
+        memberOf: [],
+      },
+      credential: 'new-secret',
+    });
+    const statement = statements.find((item) => item.includes('CREATE USER')) ?? '';
+    // Two auth options in a row is a parse error on a real MySQL.
+    expect(statement).toContain("IDENTIFIED WITH 'caching_sha2_password' BY 'new-secret'");
+    expect(statement).not.toContain("IDENTIFIED BY 'new-secret' IDENTIFIED WITH");
+  });
+
+  test('[UT-0057-AC3] refuses a plugin change with no new password', async () => {
+    const statements: string[] = [];
+    const adapter = new MysqlSecurityAdapter(
+      new MysqlConnectionAdapter({ sqlFactory: () => clientFor([], statements) }),
+    );
+    // `ALTER USER ... IDENTIFIED WITH plugin` with no `BY` empties
+    // `authentication_string` on a real MySQL, leaving an account that
+    // authenticates with no password.
+    await expect(
+      adapter.alterPrincipal(context(), {
+        principal: {
+          name: 'plugged',
+          type: 'account',
+          attributes: [{ key: 'host', value: 'localhost' }],
+          memberOf: [],
+        },
+        changes: [{ key: 'authPlugin', value: 'caching_sha2_password' }],
+      }),
+    ).rejects.toThrow('requires a new password');
+    expect(statements.some((item) => item.includes('ALTER USER'))).toBe(false);
+  });
+
+  test('[UT-0057-AC3] still allows account options to change on their own', async () => {
+    const statements: string[] = [];
+    const adapter = new MysqlSecurityAdapter(
+      new MysqlConnectionAdapter({ sqlFactory: () => clientFor([], statements) }),
+    );
+    await adapter.alterPrincipal(context(), {
+      principal: {
+        name: 'plugged',
+        type: 'account',
+        attributes: [{ key: 'host', value: 'localhost' }],
+        memberOf: [],
+      },
+      changes: [{ key: 'accountLocked', value: true }],
+    });
+    const statement = statements.find((item) => item.includes('ALTER USER')) ?? '';
+    expect(statement).toContain('ACCOUNT LOCK');
+    expect(statement).not.toContain('IDENTIFIED');
+  });
 });
