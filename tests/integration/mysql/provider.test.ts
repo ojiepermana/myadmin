@@ -320,7 +320,7 @@ if (configuredTargets.length === targets.length) {
               table: ref,
               values: { id: { type: 'number', value: 'not-a-number' } },
             }),
-          ).rejects.toThrow('Column id contains an invalid number');
+          ).rejects.toThrow('Column id expects a whole number');
         } finally {
           await provider.connection.execute(handle, `DROP TABLE IF EXISTS \`${table}\``);
           await provider.connection.close(handle);
