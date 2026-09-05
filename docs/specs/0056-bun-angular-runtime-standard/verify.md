@@ -71,3 +71,38 @@ Langkah ini diturunkan dari AC-4 dan AC-10. Semua sudah dijalankan pada slice pe
 Keputusan diratifikasi engineer pada 2026-08-29; status di `index.md` menjadi `Accepted`. Ratifikasi hanya memberlakukan standarnya.
 
 Slice 1 (AC-4 dan AC-10) sudah diimplementasikan dan dibuktikan lokal pada 2026-08-30 dengan bukti di atas. Dua puluh tiga AC lain tetap belum terbukti. Checklist Preflight, Runtime proof, Contract and browser proof, serta Release proof di atas tetap kosong sampai area masing masing dikerjakan dan dibuktikan pada environment yang sesuai.
+
+## Slice 2. Kernel HTTP, composition root, dan shutdown (AC-8, AC-9, AC-11)
+
+_Ditambahkan 2026-09-05 oleh `/develop`. Verdict di atas menilai slice 1 dan tidak
+mencakup bagian ini. Kotak yang tercentang di bawah benar benar dijalankan pada
+tanggal itu; sisanya menunggu `/test` menulis suite dengan ID `IT-0056-AC8`,
+`CT-0056-AC8`, `IT-0056-AC9`, `SEC-0056-AC9`, dan `IT-0056-AC11`._
+
+### Gate
+
+- [x] `bun run typecheck` → tanpa error → AC-8, AC-9, AC-11
+- [x] `bun run lint` → tanpa error → AC-8, AC-9, AC-11
+- [x] `bun run format:check` → seluruh berkas sesuai gaya → AC-8
+- [x] `bun run check:boundaries` → 0 pelanggaran, 455 modul, 1783 dependency → AC-8
+- [x] `bun run check:manifests` → satu manifest akar → AC-8
+- [x] `bun run test` → 666 pass, 19 skip, 0 fail → AC-8, AC-9, AC-11
+- [x] `bun run test:contract` → 76 pass, 0 fail, fixture dirakit `createApplication` → AC-8 (`CT-0056-AC8`)
+- [x] `bun run test:acceptance` → 16 pass, 0 fail → AC-8
+
+### Pemeriksaan perilaku yang sudah dijalankan
+
+- [x] Daftar route produksi dan fixture dibandingkan setelah prefix dinormalkan: 107 lawan 105, dan satu satunya selisih adalah `WS /ws` plus alias `GET /api/v1/health`, keduanya dideklarasikan `ServerSurface` → AC-8
+- [x] `apps/server/src/app.ts` turun dari 1959 menjadi 154 baris, tanpa konstruksi service dan tanpa registrasi route → AC-8
+- [x] Urutan shutdown nyata: `timers` (import, export, restore, sesi) → `operations` (job manager, query execution) → `realtime` (langganan event job, hub) → `providers` (connection manager), sesuai shared contract → AC-11
+- [x] `dispose()` kedua menjalankan 0 langkah dan tidak melempar; `disposeServerApp` dipanggil dua kali tetap aman → AC-11
+- [x] Request setelah fase stop dimulai dijawab `503 SERVER_STOPPING` → AC-11
+
+### Belum dibuktikan pada slice ini
+
+- [ ] Keseragaman CSRF pada seluruh 13 modul route yang mutasi: tanpa header, origin salah, dan sesi kadaluarsa harus ditolak dengan kode yang sama → AC-9 (`SEC-0056-AC9`)
+- [ ] `correlationId` pada body error sama dengan yang dicetak observability, diperiksa pada table designer, table operations, schema management, dan database management, yaitu empat modul yang sebelumnya membacanya dari header client → AC-9 (`IT-0056-AC9`)
+- [ ] Kategori `DbError` yang sama menghasilkan status yang sama pada modul yang berbeda, khususnya `constraint_violation` pada schema management dan data browser → AC-9
+- [ ] `page=0` dan `page=-1` pada `/connections` ditolak 422, bukan diteruskan ke repository → AC-9
+- [ ] Respons 401 pada seluruh modul mengirim `set-cookie` yang mengosongkan `myadmin_session` → AC-9
+- [ ] Perbandingan daftar route produksi lawan fixture dikunci sebagai test, bukan hanya dijalankan sekali → AC-8 (`IT-0056-AC8`)
