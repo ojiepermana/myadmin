@@ -28,7 +28,7 @@ import type {
   SdkTransport,
   SdkTransportRequest,
 } from '../../packages/sdk-angular/src';
-import { app } from '../../apps/server/src/app';
+import { createServerApp } from '../../apps/server/src/app';
 import { validateContract } from '../../packages/api-contract/scripts/validate-contract';
 import { contractOperations, loadContract } from './harness';
 import type { ContractOperation } from './harness';
@@ -113,7 +113,7 @@ TestBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 
 describe('spec 0001 runtime foundation acceptance', () => {
   test('IT-0001-AC4 serves health through the real Elysia application', async () => {
-    const response = await app.handle(new Request('http://localhost/health'));
+    const response = await createServerApp().handle(new Request('http://localhost/health'));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: 'ok', version: '0.1.0' });
   });

@@ -11,11 +11,13 @@ export { clearSessionCookie, cookieValue, sessionCookie, sessionToken } from './
 export {
   actorForRequest,
   sessionFailureResponse,
+  setupAvailable,
   setupRequiredResponse,
   type AuthenticatedActor,
   type SessionGuardServices,
 } from './session';
 export { csrfAllowed, csrfFailureResponse, isMutation, sameOrigin } from './csrf';
+export { forbiddenAdminResponse, requireAdmin } from './authorize';
 export {
   dbErrorCode,
   dbErrorResponse,

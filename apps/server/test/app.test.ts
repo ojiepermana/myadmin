@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { app, defaultHost, defaultPort } from '../src/app';
+import { createServerApp, defaultHost, defaultPort } from '../src/app';
 
 describe('server application', () => {
   it('provides the foundation defaults', () => {
@@ -8,7 +8,7 @@ describe('server application', () => {
   });
 
   it('serves the health endpoint', async () => {
-    const response = await app.handle(new Request('http://localhost/health'));
+    const response = await createServerApp().handle(new Request('http://localhost/health'));
 
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ status: 'ok' });

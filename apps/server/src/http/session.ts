@@ -73,3 +73,8 @@ export function actorForRequest(
     ? validation
     : sessionFailureResponse(validation, services.secureCookies ?? false);
 }
+
+/** True once the initial administrator exists and the app may serve traffic. */
+export function setupAvailable(service: { isInitialized(): boolean } | undefined): boolean {
+  return service?.isInitialized() ?? false;
+}
