@@ -280,7 +280,7 @@ describe('0046 privilege service protections', () => {
       }),
     );
     expect(response.status).toBe(403);
-    expect(await response.json()).toMatchObject({ code: 'CSRF_REQUIRED' });
+    expect(await response.json()).toMatchObject({ code: 'CSRF_INVALID' });
   });
 
   test('SEC-0045-AC6 accepts same-origin CSRF from the Angular development proxy', async () => {

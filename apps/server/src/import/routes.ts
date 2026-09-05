@@ -1,10 +1,4 @@
-import {
-  createRateLimiter,
-  SESSION_COOKIE_NAME,
-  type AuthService,
-  type InMemoryRateLimiter,
-  type SessionValidation,
-} from '@myadmin/auth';
+import { createRateLimiter, type AuthService, type InMemoryRateLimiter } from '@myadmin/auth';
 import type { CsvImportOptions, ObjectRef } from '@myadmin/database-core';
 import {
   ImportServiceError,
@@ -13,7 +7,17 @@ import {
   type ImportSqlInput,
 } from '@myadmin/import';
 import type { AnyElysia } from 'elysia';
-import { apiError as error, jsonResponse } from '../http';
+import {
+  actorForRequest as resolveActor,
+  apiError as error,
+  clientIp,
+  csrfAllowed as csrf,
+  dbErrorResponse,
+  isDatabaseError,
+  isRecord as record,
+  jsonResponse,
+  type AuthenticatedActor,
+} from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -27,44 +31,8 @@ export interface ImportRouteOptions {
   readonly uploadRateLimiter?: InMemoryRateLimiter;
 }
 
-function cookie(request: Request): string | undefined {
-  for (const item of request.headers.get('cookie')?.split(';') ?? []) {
-    const index = item.indexOf('=');
-    if (index >= 0 && item.slice(0, index).trim() === SESSION_COOKIE_NAME)
-      return item.slice(index + 1).trim() || undefined;
-  }
-  return undefined;
-}
-
-function csrf(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const site = request.headers.get('sec-fetch-site');
-  return (
-    request.headers.get('x-myadmin-csrf') === '1' &&
-    (site === null || site === 'same-origin') &&
-    (origin === null || origin === new URL(request.url).origin)
-  );
-}
-
-function clientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return forwarded || request.headers.get('x-real-ip')?.trim() || 'unknown';
-}
-
-function session(
-  request: Request,
-  options: ImportRouteOptions,
-): Response | Extract<SessionValidation, { authenticated: true }> {
-  if (!options.setupService?.isInitialized())
-    return error(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
-  const validation = options.authService.validateSession(cookie(request));
-  return validation.authenticated
-    ? validation
-    : error(401, validation.code, 'A valid session is required.');
-}
-
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+function session(request: Request, options: ImportRouteOptions): Response | AuthenticatedActor {
+  return resolveActor(request, options);
 }
 
 function objectRef(value: unknown): ObjectRef | undefined {
@@ -187,6 +155,7 @@ function previewOptions(request: Request): CsvImportOptions | undefined {
 function serviceError(request: Request, caught: unknown): Response {
   if (caught instanceof ImportServiceError)
     return error(caught.status, caught.code, caught.message);
+  if (isDatabaseError(caught)) return dbErrorResponse(caught, { defaultCode: 'DB_ERROR' });
   return error(500, 'IMPORT_FAILED', 'The import operation could not be completed.');
 }
 

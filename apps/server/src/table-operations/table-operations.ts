@@ -1,11 +1,10 @@
 import { AuditEvents, AuditWriter, type AuditAction } from '@myadmin/audit';
+import { apiError, dbErrorResponse, isDatabaseError } from '../http';
 import {
-  DbError,
   type ObjectRef,
   type TableDestructiveImpact,
   type TableOperationsPort,
 } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { InternalUnitOfWork, JsonObject } from '@myadmin/internal-domain';
 import {
   ConnectionManagerError,
@@ -224,58 +223,18 @@ export class TableOperationsService {
   }
 }
 
-export function tableOperationsErrorResponse(request: Request, error: unknown): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
+export function tableOperationsErrorResponse(error: unknown): Response {
   if (error instanceof ConnectionManagerError) {
-    return json(
-      {
-        code: error.code,
-        message: error.message,
-        correlationId,
-        ...(error.details ? { details: error.details } : {}),
-      },
-      error.status,
-    );
+    return apiError(error.status, error.code, error.message, error.details);
   }
   if (error instanceof TableOperationsError) {
-    return json({ code: error.code, message: error.message, correlationId }, error.status);
+    return apiError(error.status, error.code, error.message);
   }
-  if (error instanceof DbError) {
-    const status =
-      error.category === 'not_found'
-        ? 404
-        : error.category === 'conflict'
-          ? 409
-          : error.category === 'permission_denied'
-            ? 403
-            : error.category === 'syntax_error' || error.category === 'constraint_violation'
-              ? 422
-              : error.category === 'unsupported'
-                ? 501
-                : 502;
-    return json(
-      {
-        code: 'DB_ERROR',
-        message: error.message,
-        correlationId,
-        details: { category: error.category },
-      },
-      status,
-    );
+  if (isDatabaseError(error)) {
+    return dbErrorResponse(error, {
+      defaultCode: 'DB_ERROR',
+      details: { category: error.category },
+    });
   }
-  return json(
-    {
-      code: 'TABLE_OPERATION_FAILED',
-      message: 'The table operation could not be completed.',
-      correlationId,
-    },
-    500,
-  );
-}
-
-function json(value: unknown, status: number): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
+  return apiError(500, 'TABLE_OPERATION_FAILED', 'The table operation could not be completed.');
 }

@@ -1,4 +1,5 @@
 import { AuditEvents, AuditWriter, type AuditAction } from '@myadmin/audit';
+import { apiError, dbErrorResponse, isDatabaseError } from '../http';
 import {
   DbError,
   type Page,
@@ -6,7 +7,6 @@ import {
   type SchemaDefinition,
   type SchemaPort,
 } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { InternalUnitOfWork, JsonObject } from '@myadmin/internal-domain';
 import {
   ConnectionManagerError,
@@ -244,61 +244,19 @@ export class SchemaManagementService {
   }
 }
 
-export function schemaManagementErrorResponse(request: Request, error: unknown): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
+export function schemaManagementErrorResponse(error: unknown): Response {
   if (error instanceof ConnectionManagerError) {
-    return new Response(
-      safeJson({
-        code: error.code,
-        message: error.message,
-        correlationId,
-        ...(error.details ? { details: error.details } : {}),
-      }),
-      { status: error.status, headers: { 'content-type': 'application/json' } },
-    );
+    return apiError(error.status, error.code, error.message, error.details);
   }
   if (error instanceof SchemaManagementError) {
-    return new Response(safeJson({ code: error.code, message: error.message, correlationId }), {
-      status: error.status,
-      headers: { 'content-type': 'application/json' },
+    return apiError(error.status, error.code, error.message);
+  }
+  if (isDatabaseError(error)) {
+    return dbErrorResponse(error, {
+      codes: { unsupported: 'SCHEMA_UNSUPPORTED' },
+      defaultCode: 'DB_ERROR',
+      details: { category: error.category },
     });
   }
-  if (error instanceof DbError) {
-    const status =
-      error.category === 'permission_denied'
-        ? 403
-        : error.category === 'not_found'
-          ? 404
-          : error.category === 'conflict' || error.category === 'constraint_violation'
-            ? 409
-            : error.category === 'syntax_error'
-              ? 422
-              : error.category === 'unsupported'
-                ? 501
-                : 502;
-    return new Response(
-      safeJson({
-        code: error.category === 'unsupported' ? 'SCHEMA_UNSUPPORTED' : 'DB_ERROR',
-        message: error.message,
-        correlationId,
-        details: { category: error.category },
-      }),
-      { status, headers: { 'content-type': 'application/json' } },
-    );
-  }
-  return new Response(
-    safeJson({
-      code: 'SCHEMA_OPERATION_FAILED',
-      message: 'The schema operation could not be completed.',
-      correlationId,
-    }),
-    {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    },
-  );
-}
-
-function safeJson(value: unknown): string {
-  return JSON.stringify(Redaction.redactObject(value));
+  return apiError(500, 'SCHEMA_OPERATION_FAILED', 'The schema operation could not be completed.');
 }

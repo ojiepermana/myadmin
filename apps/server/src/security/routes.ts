@@ -1,4 +1,4 @@
-import { SESSION_COOKIE_NAME, type AuthService, type SessionValidation } from '@myadmin/auth';
+import type { AuthService } from '@myadmin/auth';
 import {
   isDbError,
   type DbError,
@@ -15,7 +15,31 @@ import {
   type PrincipalSecurityInput,
   type PrincipalSecurityService,
 } from './security';
-import { apiError, jsonResponse } from '../http';
+import {
+  actorForRequest as resolveActor,
+  apiError,
+  csrfAllowed,
+  csrfFailureResponse,
+  dbErrorCode,
+  dbErrorStatus,
+  isRecord as record,
+  jsonResponse,
+  type AuthenticatedActor,
+  type DbErrorCodes,
+} from '../http';
+
+/**
+ * Codes this surface keeps. The status now comes from the shared table, so a
+ * `constraint_violation` is a 422 here like everywhere else; only the code
+ * still says the conflict was about a principal.
+ */
+const SECURITY_DB_ERROR_CODES: DbErrorCodes = {
+  permission_denied: 'PERMISSION_DENIED',
+  conflict: 'PRINCIPAL_CONFLICT',
+  constraint_violation: 'PRINCIPAL_CONFLICT',
+  syntax_error: 'VALIDATION_ERROR',
+  unsupported: 'SECURITY_UNSUPPORTED',
+};
 
 interface SetupService {
   isInitialized(): boolean;
@@ -24,6 +48,7 @@ export interface SecurityRouteOptions {
   readonly authService: AuthService;
   readonly setupService: SetupService | undefined;
   readonly securityService: PrincipalSecurityService;
+  readonly secureCookies?: boolean;
 }
 
 function databaseError(
@@ -37,42 +62,8 @@ function databaseError(
     typeof value['message'] === 'string'
   );
 }
-function cookieValue(request: Request): string | undefined {
-  for (const cookie of request.headers.get('cookie')?.split(';') ?? []) {
-    const separator = cookie.indexOf('=');
-    if (separator >= 0 && cookie.slice(0, separator).trim() === SESSION_COOKIE_NAME)
-      return cookie.slice(separator + 1).trim() || undefined;
-  }
-  return undefined;
-}
-function actor(
-  request: Request,
-  options: SecurityRouteOptions,
-): Response | Extract<SessionValidation, { authenticated: true }> {
-  if (!options.setupService?.isInitialized())
-    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
-  const validation = options.authService.validateSession(cookieValue(request));
-  return validation.authenticated
-    ? validation
-    : apiError(
-        401,
-        validation.code,
-        validation.code === 'SESSION_EXPIRED'
-          ? 'Your session has expired.'
-          : 'A valid session is required.',
-      );
-}
-function csrfAllowed(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const fetchSite = request.headers.get('sec-fetch-site');
-  return (
-    request.headers.get('x-myadmin-csrf') === '1' &&
-    (fetchSite === null || fetchSite === 'same-origin') &&
-    (origin === null || origin === new URL(request.url).origin || fetchSite === 'same-origin')
-  );
-}
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+function actor(request: Request, options: SecurityRouteOptions): Response | AuthenticatedActor {
+  return resolveActor(request, options);
 }
 function attributeValue(value: unknown): value is PrincipalAttributeValue {
   return (
@@ -108,7 +99,7 @@ function pageQuery(
   if (!connectionId) return undefined;
   const rawPage = search.get('page');
   const rawSize = search.get('pageSize');
-  if (rawPage !== null && (!/^\d+$/.test(rawPage) || Number(rawPage) < 0)) return undefined;
+  if (rawPage !== null && (!/^\d+$/.test(rawPage) || Number(rawPage) < 1)) return undefined;
   if (rawSize !== null && (!/^\d+$/.test(rawSize) || Number(rawSize) < 1 || Number(rawSize) > 500))
     return undefined;
   const query = search.get('q') ?? undefined;
@@ -236,23 +227,15 @@ function errorResponse(request: Request, error: unknown): Response {
   if (error instanceof SecurityServiceError)
     return apiError(error.status, error.code, error.message, error.details);
   if (databaseError(error)) {
-    if (error.category === 'permission_denied')
-      return apiError(403, 'PERMISSION_DENIED', error.message, {
-        category: error.category,
-      });
-    if (error.category === 'conflict' || error.category === 'constraint_violation')
-      return apiError(409, 'PRINCIPAL_CONFLICT', error.message, {
-        category: error.category,
-      });
-    if (error.category === 'syntax_error')
-      return apiError(422, 'VALIDATION_ERROR', error.message, {
-        category: error.category,
-      });
-    if (error.category === 'unsupported')
-      return apiError(501, 'SECURITY_UNSUPPORTED', error.message);
-    return apiError(502, `DB_${error.category.toUpperCase()}`, error.message, {
-      category: error.category,
-    });
+    const category = error.category;
+    const details =
+      category === 'unsupported' ? undefined : ({ category } as Record<string, unknown>);
+    return apiError(
+      dbErrorStatus(category),
+      dbErrorCode(category, { codes: SECURITY_DB_ERROR_CODES }),
+      error.message,
+      details,
+    );
   }
   return apiError(500, 'SECURITY_OPERATION_FAILED', 'The database principal operation failed.');
 }
@@ -309,8 +292,7 @@ export function registerSecurityRoutes(
     .post(path('/security/grants/preview'), async ({ request }) => {
       const current = actor(request, options);
       if (current instanceof Response) return current;
-      if (!csrfAllowed(request))
-        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       const body = await request.json().catch(() => undefined);
       const connectionId =
         record(body) && typeof body['connectionId'] === 'string' ? body['connectionId'] : undefined;
@@ -325,8 +307,7 @@ export function registerSecurityRoutes(
     .post(path('/security/grants/apply'), async ({ request }) => {
       const current = actor(request, options);
       if (current instanceof Response) return current;
-      if (!csrfAllowed(request))
-        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       const body = await request.json().catch(() => undefined);
       const connectionId =
         record(body) && typeof body['connectionId'] === 'string' ? body['connectionId'] : undefined;
@@ -341,8 +322,7 @@ export function registerSecurityRoutes(
     .post(path('/security/principals'), async ({ request }) => {
       const current = actor(request, options);
       if (current instanceof Response) return current;
-      if (!csrfAllowed(request))
-        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       const input = createInput(await request.json().catch(() => undefined));
       if (!input) return apiError(422, 'VALIDATION_ERROR', 'The principal request is invalid.');
       return options.securityService
@@ -353,8 +333,7 @@ export function registerSecurityRoutes(
     .patch(path('/security/principals/:name'), async ({ request, params }) => {
       const current = actor(request, options);
       if (current instanceof Response) return current;
-      if (!csrfAllowed(request))
-        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       const connectionId = new URL(request.url).searchParams.get('connectionId');
       const input = changeInput(await request.json().catch(() => undefined));
       if (!connectionId || !input)
@@ -370,8 +349,7 @@ export function registerSecurityRoutes(
     .post(path('/security/principals/:name/reset-password'), async ({ request, params }) => {
       const current = actor(request, options);
       if (current instanceof Response) return current;
-      if (!csrfAllowed(request))
-        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       const connectionId = new URL(request.url).searchParams.get('connectionId');
       const body = await request.json().catch(() => undefined);
       if (
@@ -395,8 +373,7 @@ export function registerSecurityRoutes(
     .delete(path('/security/principals/:name'), async ({ request, params }) => {
       const current = actor(request, options);
       if (current instanceof Response) return current;
-      if (!csrfAllowed(request))
-        return apiError(403, 'CSRF_REQUIRED', 'A valid CSRF header is required.');
+      if (!csrfAllowed(request)) return csrfFailureResponse();
       const connectionId = new URL(request.url).searchParams.get('connectionId');
       const body = await request.json().catch(() => undefined);
       if (

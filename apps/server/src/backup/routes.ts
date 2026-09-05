@@ -1,10 +1,4 @@
-import {
-  SESSION_COOKIE_NAME,
-  type AuthenticatedSession,
-  type AuthService,
-  type SessionValidation,
-} from '@myadmin/auth';
-import { DbError } from '@myadmin/database-core';
+import { type AuthenticatedSession, type AuthService } from '@myadmin/auth';
 import {
   BackupServiceError,
   RestoreServiceError,
@@ -15,7 +9,18 @@ import {
   type RestoreValidateInput,
 } from '@myadmin/backup';
 import type { AnyElysia } from 'elysia';
-import { apiError, jsonResponse } from '../http';
+import {
+  actorForRequest as resolveActor,
+  apiError,
+  csrfAllowed,
+  dbErrorResponse,
+  isDatabaseError,
+  isRecord as record,
+  jsonResponse,
+  positiveIntegerQuery,
+  readJson,
+  type AuthenticatedActor,
+} from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -29,58 +34,8 @@ export interface BackupRouteOptions {
   readonly secureCookies: boolean;
 }
 
-function cookieValue(request: Request, name: string): string | undefined {
-  for (const value of request.headers.get('cookie')?.split(';') ?? []) {
-    const separator = value.indexOf('=');
-    if (separator >= 0 && value.slice(0, separator).trim() === name) {
-      return value.slice(separator + 1).trim() || undefined;
-    }
-  }
-  return undefined;
-}
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const fetchSite = request.headers.get('sec-fetch-site');
-  return (
-    (fetchSite === null || fetchSite === 'same-origin') &&
-    (origin === null || origin === new URL(request.url).origin)
-  );
-}
-
-function csrfAllowed(request: Request): boolean {
-  return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin(request);
-}
-
-function session(
-  request: Request,
-  options: BackupRouteOptions,
-): Response | Extract<SessionValidation, { authenticated: true }> {
-  if (!options.setupService?.isInitialized()) {
-    return apiError(409, 'SETUP_REQUIRED', 'Complete initial setup before using backups.');
-  }
-  const validation = options.authService.validateSession(cookieValue(request, SESSION_COOKIE_NAME));
-  if (validation.authenticated) return validation;
-  return apiError(
-    401,
-    validation.code,
-    validation.code === 'SESSION_EXPIRED'
-      ? 'Your session has expired.'
-      : 'A valid session is required.',
-    undefined,
-  );
-}
-
-async function readJson(request: Request): Promise<unknown> {
-  try {
-    return await request.json();
-  } catch {
-    return undefined;
-  }
-}
-
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+function session(request: Request, options: BackupRouteOptions): Response | AuthenticatedActor {
+  return resolveActor(request, options);
 }
 
 function createInput(value: unknown): BackupCreateInput | undefined {
@@ -171,10 +126,7 @@ function pageParameter(
   fallback: number,
   maximum: number,
 ): number | undefined {
-  if (value === null) return fallback;
-  if (!/^\d+$/.test(value)) return undefined;
-  const parsed = Number(value);
-  return Number.isSafeInteger(parsed) && parsed >= 1 && parsed <= maximum ? parsed : undefined;
+  return positiveIntegerQuery(value, fallback, maximum) ?? undefined;
 }
 
 function errorResponse(request: Request, error: unknown): Response {
@@ -184,9 +136,7 @@ function errorResponse(request: Request, error: unknown): Response {
   if (error instanceof BackupServiceError) {
     return apiError(error.status, error.code, error.message, error.details);
   }
-  if (error instanceof DbError) {
-    return apiError(502, `DB_${error.category.toUpperCase()}`, error.message);
-  }
+  if (isDatabaseError(error)) return dbErrorResponse(error);
   return apiError(500, 'BACKUP_OPERATION_FAILED', 'The backup operation could not be completed.');
 }
 

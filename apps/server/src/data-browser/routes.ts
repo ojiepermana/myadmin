@@ -1,7 +1,6 @@
 import type { AuthService, SessionValidation } from '@myadmin/auth';
 import type { AuditWriter } from '@myadmin/audit';
 import {
-  DbError,
   type DataBulkDeleteRequest,
   type DataDeleteRequest,
   type DataFilter,
@@ -19,7 +18,28 @@ import {
   type ConnectionManagerService,
 } from '../connections/connection-manager';
 import { DataBrowserService } from './data-browser';
-import { apiError, jsonResponse } from '../http';
+import {
+  actorForRequest as resolveActor,
+  apiError,
+  csrfAllowed,
+  csrfFailureResponse,
+  dbErrorResponse,
+  isDatabaseError,
+  isRecord,
+  jsonResponse,
+  readJson,
+  type DbErrorCodes,
+} from '../http';
+
+/**
+ * Codes this surface keeps, so the browser can still tell a stale row from a
+ * bad value. The status now comes from the shared table.
+ */
+const DATA_BROWSER_DB_ERROR_CODES: DbErrorCodes = {
+  syntax_error: 'DATA_VALIDATION_FAILED',
+  constraint_violation: 'DATA_VALIDATION_FAILED',
+  conflict: 'DATA_CONFLICT',
+};
 
 interface SetupService {
   isInitialized(): boolean;
@@ -36,38 +56,11 @@ export interface DataBrowserRouteOptions {
   readonly auditWriter?: AuditWriter;
 }
 
-function cookieValue(request: Request, name: string): string | undefined {
-  for (const cookie of request.headers.get('cookie')?.split(';') ?? []) {
-    const separator = cookie.indexOf('=');
-    if (separator >= 0 && cookie.slice(0, separator).trim() === name)
-      return cookie.slice(separator + 1).trim() || undefined;
-  }
-  return undefined;
-}
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const site = request.headers.get('sec-fetch-site');
-  if (site !== null && site !== 'same-origin') return false;
-  // The Angular development proxy changes the upstream URL; the browser's
-  // same-origin fetch signal remains authoritative for that local proxy path.
-  return origin === null || origin === new URL(request.url).origin || site === 'same-origin';
-}
 function actorForRequest(
   request: Request,
   options: DataBrowserRouteOptions,
 ): Extract<SessionValidation, { authenticated: true }> | Response {
-  if (!options.setupService?.isInitialized())
-    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
-  const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
-  return validation.authenticated
-    ? validation
-    : apiError(401, validation.code, 'A valid session is required.');
-}
-function csrfAllowed(request: Request): boolean {
-  return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin(request);
-}
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return resolveActor(request, options);
 }
 function integer(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
@@ -373,22 +366,7 @@ function mutationInput(
 function errorResponse(request: Request, error: unknown): Response {
   if (error instanceof ConnectionManagerError)
     return apiError(error.status, error.code, error.message);
-  if (error instanceof DbError)
-    return apiError(
-      error.category === 'syntax_error' || error.category === 'constraint_violation'
-        ? 422
-        : error.category === 'not_found'
-          ? 404
-          : error.category === 'conflict'
-            ? 409
-            : 502,
-      error.category === 'syntax_error' || error.category === 'constraint_violation'
-        ? 'DATA_VALIDATION_FAILED'
-        : error.category === 'conflict'
-          ? 'DATA_CONFLICT'
-          : `DB_${error.category.toUpperCase()}`,
-      error.message,
-    );
+  if (isDatabaseError(error)) return dbErrorResponse(error, { codes: DATA_BROWSER_DB_ERROR_CODES });
   return apiError(500, 'DATA_MUTATION_FAILED', 'The data mutation failed.');
 }
 
@@ -418,13 +396,8 @@ export function registerDataBrowserRoutes(
       if (!request) return new Response('Request is unavailable', { status: 500 });
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      if (!csrfAllowed(request)) return apiError(403, 'CSRF_INVALID', 'CSRF is invalid.');
-      let body: unknown;
-      try {
-        body = await request.json();
-      } catch {
-        return apiError(422, 'DATA_VALIDATION_FAILED', 'The request body is invalid.');
-      }
+      if (!csrfAllowed(request)) return csrfFailureResponse();
+      const body = await readJson(request);
       const parsed = kind === 'read' ? requestInput(body) : mutationInput(body, kind);
       if (!parsed) return apiError(422, 'DATA_VALIDATION_FAILED', 'The request body is invalid.');
       try {

@@ -1,5 +1,4 @@
-import type { AuthService, SessionValidation } from '@myadmin/auth';
-import { DbError } from '@myadmin/database-core';
+import type { AuthService } from '@myadmin/auth';
 import type { AnyElysia } from 'elysia';
 import {
   ConnectionManagerError,
@@ -11,7 +10,23 @@ import {
   type ServerGroupInput,
   type ServerGroupPatch,
 } from './connection-manager';
-import { apiError, jsonResponse } from '../http';
+import {
+  actorForRequest as resolveActor,
+  apiError,
+  csrfAllowed,
+  csrfFailureResponse,
+  dbErrorResponse,
+  isDatabaseError,
+  isRecord,
+  jsonResponse,
+  pageQuery as parsePageQuery,
+  readJson,
+  type PageQuery,
+} from '../http';
+
+/** Paging bounds shared with the query history surface. */
+const PAGE_MAXIMUM = 100_000;
+const PAGE_SIZE_MAXIMUM = 100;
 
 interface SetupService {
   isInitialized(): boolean;
@@ -22,50 +37,6 @@ export interface ConnectionRouteOptions {
   readonly setupService: SetupService | undefined;
   readonly connectionManager: ConnectionManagerService;
   readonly secureCookies: boolean;
-}
-
-function cookieValue(request: Request, name: string): string | undefined {
-  const cookies = request.headers.get('cookie')?.split(';') ?? [];
-  for (const cookie of cookies) {
-    const separator = cookie.indexOf('=');
-    if (separator < 0) continue;
-    if (cookie.slice(0, separator).trim() === name)
-      return cookie.slice(separator + 1).trim() || undefined;
-  }
-  return undefined;
-}
-
-function sessionFailure(
-  request: Request,
-  validation: Extract<SessionValidation, { authenticated: false }>,
-  secureCookies: boolean,
-): Response {
-  return apiError(
-    401,
-    validation.code,
-    validation.code === 'SESSION_EXPIRED'
-      ? 'Your session has expired.'
-      : 'A valid session is required.',
-    undefined,
-    {
-      'set-cookie': `myadmin_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secureCookies ? '; Secure' : ''}`,
-    },
-  );
-}
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const fetchSite = request.headers.get('sec-fetch-site');
-  if (fetchSite !== null && fetchSite !== 'same-origin') return false;
-  return origin === null || origin === new URL(request.url).origin || fetchSite === 'same-origin';
-}
-
-function csrfAllowed(request: Request): boolean {
-  return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin(request);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function hasOnlyKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
@@ -252,44 +223,33 @@ function groupPatch(value: unknown): ServerGroupPatch | null {
   };
 }
 
-function pageQuery(request: Request): { page: number; pageSize: number } | null {
-  const url = new URL(request.url);
-  const page = Number(url.searchParams.get('page') ?? '1');
-  const pageSize = Number(url.searchParams.get('pageSize') ?? '20');
-  return Number.isInteger(page) && Number.isInteger(pageSize) ? { page, pageSize } : null;
-}
-
-async function readJson(request: Request): Promise<unknown> {
-  try {
-    return await request.json();
-  } catch {
-    return undefined;
-  }
+function pageQuery(request: Request): PageQuery | null {
+  return parsePageQuery(request, {
+    pageMaximum: PAGE_MAXIMUM,
+    pageSizeFallback: 20,
+    pageSizeMaximum: PAGE_SIZE_MAXIMUM,
+  });
 }
 
 function actorForRequest(
   request: Request,
   options: ConnectionRouteOptions,
 ): ConnectionActor | Response {
-  if (!options.setupService?.isInitialized())
-    return apiError(
-      409,
-      'SETUP_REQUIRED',
-      'Create the initial administrator before using this application.',
-    );
-  const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
-  if (!validation.authenticated) return sessionFailure(request, validation, options.secureCookies);
-  return validation.value.user;
+  const actor = resolveActor(request, options);
+  return actor instanceof Response ? actor : actor.value.user;
 }
 
 function connectionErrorResponse(request: Request, error: unknown): Response {
   if (error instanceof ConnectionManagerError) {
     return apiError(error.status, error.code, error.message, error.details);
   }
-  if (error instanceof DbError) {
-    return apiError(502, 'DB_ERROR', error.message, {
-      category: error.category,
-      ...(error.position === undefined ? {} : { position: error.position }),
+  if (isDatabaseError(error)) {
+    return dbErrorResponse(error, {
+      defaultCode: 'DB_ERROR',
+      details: {
+        category: error.category,
+        ...(error.position === undefined ? {} : { position: error.position }),
+      },
     });
   }
   return apiError(
@@ -303,17 +263,13 @@ function invalidBody(): Response {
   return apiError(422, 'CONNECTION_VALIDATION_FAILED', 'The request body is invalid.');
 }
 
-function csrfError(): Response {
-  return apiError(403, 'CSRF_INVALID', 'The request could not be verified.');
-}
-
 function protectedMutation(
   request: Request,
   options: ConnectionRouteOptions,
 ): ConnectionActor | Response {
   const actor = actorForRequest(request, options);
   if (actor instanceof Response) return actor;
-  return csrfAllowed(request) ? actor : csrfError();
+  return csrfAllowed(request) ? actor : csrfFailureResponse();
 }
 
 /** Registers the spec 0026 connection and server group HTTP surface. */

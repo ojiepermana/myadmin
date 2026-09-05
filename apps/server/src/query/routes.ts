@@ -1,5 +1,4 @@
 import type { AuthService, SessionValidation } from '@myadmin/auth';
-import { DbError } from '@myadmin/database-core';
 import type { AnyElysia } from 'elysia';
 import type { QueryHistoryFilter } from '@myadmin/internal-domain';
 import {
@@ -15,7 +14,19 @@ import {
   type SavedQueryInput,
   type SavedQueryPatch,
 } from './query-history';
-import { apiError, jsonResponse } from '../http';
+import {
+  actorForRequest as resolveActor,
+  apiError,
+  csrfAllowed,
+  dbErrorResponse,
+  isDatabaseError,
+  isRecord,
+  jsonResponse,
+  noContentResponse,
+  pageQuery as parsePageQuery,
+  readJson,
+  type PageQuery,
+} from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -29,57 +40,11 @@ export interface QueryRouteOptions {
   readonly secureCookies: boolean;
 }
 
-function noContentResponse(): Response {
-  return new Response(null, { status: 204 });
-}
-
-function cookieValue(request: Request, name: string): string | undefined {
-  for (const cookie of request.headers.get('cookie')?.split(';') ?? []) {
-    const separator = cookie.indexOf('=');
-    if (separator >= 0 && cookie.slice(0, separator).trim() === name) {
-      return cookie.slice(separator + 1).trim() || undefined;
-    }
-  }
-  return undefined;
-}
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const fetchSite = request.headers.get('sec-fetch-site');
-  if (fetchSite !== null && fetchSite !== 'same-origin') return false;
-  // The Angular development proxy changes the upstream request URL. A
-  // browser-provided same-origin fetch signal remains authoritative there.
-  return origin === null || origin === new URL(request.url).origin || fetchSite === 'same-origin';
-}
-
-function csrfAllowed(request: Request): boolean {
-  return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin(request);
-}
-
 function actorForRequest(
   request: Request,
   options: QueryRouteOptions,
 ): Extract<SessionValidation, { authenticated: true }> | Response {
-  if (!options.setupService?.isInitialized()) {
-    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
-  }
-  const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
-  if (!validation.authenticated) {
-    return apiError(401, validation.code, 'A valid session is required.');
-  }
-  return validation;
-}
-
-async function readJson(request: Request): Promise<unknown> {
-  try {
-    return await request.json();
-  } catch {
-    return undefined;
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return resolveActor(request, options);
 }
 
 function hasOnlyKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
@@ -90,18 +55,12 @@ function integer(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
-function pageQuery(request: Request): { page: number; pageSize: number } | null {
-  const url = new URL(request.url);
-  const page = Number(url.searchParams.get('page') ?? '1');
-  const pageSize = Number(url.searchParams.get('pageSize') ?? '20');
-  return Number.isSafeInteger(page) &&
-    page >= 1 &&
-    page <= 100_000 &&
-    Number.isSafeInteger(pageSize) &&
-    pageSize >= 1 &&
-    pageSize <= 100
-    ? { page, pageSize }
-    : null;
+function pageQuery(request: Request): PageQuery | null {
+  return parsePageQuery(request, {
+    pageMaximum: 100_000,
+    pageSizeFallback: 20,
+    pageSizeMaximum: 100,
+  });
 }
 
 function dateQuery(value: string | null): Date | undefined | null {
@@ -285,9 +244,7 @@ function queryErrorResponse(request: Request, error: unknown): Response {
   if (error instanceof QueryHistoryServiceError) {
     return apiError(error.status, error.code, error.message);
   }
-  if (error instanceof DbError) {
-    return apiError(502, `DB_${error.category.toUpperCase()}`, error.message);
-  }
+  if (isDatabaseError(error)) return dbErrorResponse(error);
   return apiError(500, 'QUERY_OPERATION_FAILED', 'The query operation failed.');
 }
 

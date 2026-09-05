@@ -1,6 +1,6 @@
 import { AuditEvents, AuditWriter, type AuditAction } from '@myadmin/audit';
+import { apiError, dbErrorResponse, isDatabaseError } from '../http';
 import {
-  DbError,
   TableApplyError,
   TableChangeValidationError,
   type TableChangeSet,
@@ -8,7 +8,6 @@ import {
   type TableDdlPreview,
   type TableDesignerPort,
 } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { InternalUnitOfWork, JsonObject } from '@myadmin/internal-domain';
 import {
   ConnectionManagerError,
@@ -220,85 +219,32 @@ export class TableDesignerService {
   }
 }
 
-export function tableDesignerErrorResponse(request: Request, error: unknown): Response {
-  const correlationId = request.headers.get('x-correlation-id') ?? crypto.randomUUID();
+export function tableDesignerErrorResponse(error: unknown): Response {
   if (error instanceof TableDesignerError || error instanceof ConnectionManagerError) {
-    return json(
-      {
-        code: error.code,
-        message: error.message,
-        correlationId,
-        ...('details' in error && error.details ? { details: error.details } : {}),
-      },
+    return apiError(
       error.status,
-      correlationId,
+      error.code,
+      error.message,
+      'details' in error && error.details ? error.details : undefined,
     );
   }
   if (error instanceof TableChangeValidationError) {
-    return json(
-      {
-        code: 'TABLE_VALIDATION_FAILED',
-        message: error.message,
-        correlationId,
-        details: {
-          fields: Object.fromEntries(error.issues.map((issue) => [issue.path, [issue.message]])),
-          issues: error.issues,
-        },
-      },
-      422,
-      correlationId,
-    );
+    return apiError(422, 'TABLE_VALIDATION_FAILED', error.message, {
+      fields: Object.fromEntries(error.issues.map((issue) => [issue.path, [issue.message]])),
+      issues: error.issues,
+    });
   }
   if (error instanceof TableApplyError) {
-    return json(
-      {
-        code: 'TABLE_APPLY_FAILED',
-        message: error.message,
-        correlationId,
-        details: { statementIndex: error.statementIndex, result: error.result },
-      },
-      502,
-      correlationId,
-    );
+    return apiError(502, 'TABLE_APPLY_FAILED', error.message, {
+      statementIndex: error.statementIndex,
+      result: error.result,
+    });
   }
-  if (error instanceof DbError) {
-    const status =
-      error.category === 'not_found'
-        ? 404
-        : error.category === 'conflict'
-          ? 409
-          : error.category === 'permission_denied'
-            ? 403
-            : error.category === 'syntax_error' || error.category === 'constraint_violation'
-              ? 422
-              : error.category === 'unsupported'
-                ? 501
-                : 502;
-    return json(
-      {
-        code: 'DB_ERROR',
-        message: error.message,
-        correlationId,
-        details: { category: error.category },
-      },
-      status,
-      correlationId,
-    );
+  if (isDatabaseError(error)) {
+    return dbErrorResponse(error, {
+      defaultCode: 'DB_ERROR',
+      details: { category: error.category },
+    });
   }
-  return json(
-    {
-      code: 'TABLE_DESIGNER_FAILED',
-      message: 'The table operation could not be completed.',
-      correlationId,
-    },
-    500,
-    correlationId,
-  );
-}
-
-function json(value: unknown, status: number, correlationId: string): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json', 'x-correlation-id': correlationId },
-  });
+  return apiError(500, 'TABLE_DESIGNER_FAILED', 'The table operation could not be completed.');
 }

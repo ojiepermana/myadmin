@@ -1,17 +1,18 @@
 /**
  * The one place an HTTP response body is built.
  *
- * Every route module used to carry its own copy of `jsonResponse` and
- * `apiError`, and the copies had drifted: some attached the
- * `x-correlation-id` header and some did not, some supported `details` and some
- * dropped it, and every feature route minted its correlation id from the
- * client's own `x-correlation-id` header instead of the one observability had
- * already entered for the request. That last difference meant a correlation id
- * a user reported could never be found in the logs, which is the whole point of
- * having one.
+ * Every route module used to carry its own `jsonResponse` and `apiError`, and
+ * the copies had drifted: some attached the `x-correlation-id` header and some
+ * did not, some supported `details` and some dropped it, and every feature
+ * route minted its correlation id from the client's own `x-correlation-id`
+ * header instead of the one observability had already entered for the request.
+ * That last difference meant a correlation id a user reported could never be
+ * found in the logs, which is the whole point of having one.
  *
- * This module is the first step of the server HTTP kernel (spec 0057 AC-8,
- * spec 0056 AC-9). Session, CSRF, body reading, and paging follow in wave 2.
+ * This module is the response half of the server HTTP kernel (spec 0057 AC-8,
+ * spec 0056 AC-9). Sessions live in `session.ts`, CSRF in `csrf.ts`, database
+ * errors in `db-error.ts`, body reading in `body.ts`, and paging in
+ * `paging.ts`.
  */
 import { createCorrelationId, getCorrelationId } from '@myadmin/observability';
 import { Redaction } from '@myadmin/crypto';
@@ -41,4 +42,9 @@ export function apiError(
     'x-correlation-id': correlationId,
     ...headers,
   });
+}
+
+/** The empty success response, written by hand at nine call sites before. */
+export function noContentResponse(headers?: HeadersInit): Response {
+  return new Response(null, { status: 204, ...(headers ? { headers } : {}) });
 }

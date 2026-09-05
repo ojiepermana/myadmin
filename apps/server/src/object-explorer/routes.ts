@@ -1,4 +1,4 @@
-import type { AuthService, SessionValidation } from '@myadmin/auth';
+import type { AuthService } from '@myadmin/auth';
 import { DbError, type MetadataObjectType } from '@myadmin/database-core';
 import type { AnyElysia } from 'elysia';
 import {
@@ -13,7 +13,14 @@ import {
   type ExplorerSearchInput,
   type SearchObjectType,
 } from './object-explorer';
-import { apiError, jsonResponse } from '../http';
+import {
+  actorForRequest as resolveActor,
+  apiError,
+  dbErrorResponse,
+  isDatabaseError,
+  jsonResponse,
+  positiveIntegerQuery,
+} from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -27,52 +34,22 @@ export interface ObjectExplorerRouteOptions {
   readonly explorerService?: ObjectExplorerService;
 }
 
-function cookieValue(request: Request, name: string): string | undefined {
-  const cookies = request.headers.get('cookie')?.split(';') ?? [];
-  for (const cookie of cookies) {
-    const separator = cookie.indexOf('=');
-    if (separator < 0) continue;
-    if (cookie.slice(0, separator).trim() === name)
-      return cookie.slice(separator + 1).trim() || undefined;
-  }
-  return undefined;
-}
-
-function sessionFailure(
-  request: Request,
-  validation: Extract<SessionValidation, { authenticated: false }>,
-  secureCookies: boolean,
-): Response {
-  void secureCookies;
-  return apiError(
-    401,
-    validation.code,
-    validation.code === 'SESSION_EXPIRED'
-      ? 'Your session has expired.'
-      : 'A valid session is required.',
-  );
-}
-
 function actorForRequest(
   request: Request,
   options: ObjectExplorerRouteOptions,
 ): ConnectionActor | Response {
-  if (!options.setupService?.isInitialized())
-    return apiError(
-      409,
-      'SETUP_REQUIRED',
-      'Create the initial administrator before using this application.',
-    );
-  const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
-  if (!validation.authenticated) return sessionFailure(request, validation, options.secureCookies);
-  return validation.value.user;
+  const actor = resolveActor(request, options);
+  return actor instanceof Response ? actor : actor.value.user;
 }
 
 function explorerError(request: Request, error: unknown): Response {
   if (error instanceof ConnectionManagerError)
     return apiError(error.status, error.code, error.message, error.details);
-  if (error instanceof DbError)
-    return apiError(502, 'DB_ERROR', error.message, { category: error.category });
+  if (isDatabaseError(error))
+    return dbErrorResponse(error, {
+      defaultCode: 'DB_ERROR',
+      details: { category: error.category },
+    });
   return apiError(500, 'OBJECT_EXPLORER_FAILED', 'The metadata operation failed.');
 }
 
@@ -80,10 +57,10 @@ function pageInput(request: Request): ExplorerPageInput | null {
   const url = new URL(request.url);
   const cursor = url.searchParams.get('page') ?? undefined;
   const rawLimit = url.searchParams.get('pageSize');
-  const limit = rawLimit === null ? undefined : Number(rawLimit);
+  const limit =
+    rawLimit === null ? undefined : (positiveIntegerQuery(rawLimit, 1, 500) ?? undefined);
   if (
-    (rawLimit !== null &&
-      (!Number.isInteger(limit) || (limit as number) < 1 || (limit as number) > 500)) ||
+    (rawLimit !== null && limit === undefined) ||
     (url.searchParams.has('refresh') &&
       !['1', 'true', '0', 'false'].includes(url.searchParams.get('refresh')!))
   )

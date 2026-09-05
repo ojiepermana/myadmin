@@ -1,6 +1,6 @@
 import type { AuditWriter } from '@myadmin/audit';
-import { DbError, type ObjectRef } from '@myadmin/database-core';
-import type { AuthService, SessionValidation } from '@myadmin/auth';
+import type { ObjectRef } from '@myadmin/database-core';
+import type { AuthService } from '@myadmin/auth';
 import type { AnyElysia } from 'elysia';
 import {
   ConnectionManagerError,
@@ -12,7 +12,17 @@ import {
   ViewManagementService,
   type ViewMutationInput,
 } from './view-management';
-import { apiError, jsonResponse } from '../http';
+import {
+  actorForRequest as resolveActor,
+  apiError,
+  csrfAllowed,
+  csrfFailureResponse,
+  dbErrorResponse,
+  isDatabaseError,
+  isRecord as record,
+  jsonResponse,
+  readJson,
+} from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -27,51 +37,9 @@ export interface ViewRouteOptions {
   readonly viewService?: ViewManagementService;
 }
 
-function cookieValue(request: Request, name: string): string | undefined {
-  for (const cookie of request.headers.get('cookie')?.split(';') ?? []) {
-    const separator = cookie.indexOf('=');
-    if (separator >= 0 && cookie.slice(0, separator).trim() === name) {
-      return cookie.slice(separator + 1).trim() || undefined;
-    }
-  }
-  return undefined;
-}
-
-function sessionFailure(
-  request: Request,
-  validation: Extract<SessionValidation, { authenticated: false }>,
-): Response {
-  return apiError(
-    401,
-    validation.code,
-    validation.code === 'SESSION_EXPIRED'
-      ? 'Your session has expired.'
-      : 'A valid session is required.',
-    undefined,
-  );
-}
-
 function actorForRequest(request: Request, options: ViewRouteOptions): ConnectionActor | Response {
-  if (!options.setupService?.isInitialized())
-    return apiError(
-      409,
-      'SETUP_REQUIRED',
-      'Create the initial administrator before using this application.',
-    );
-  const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
-  return validation.authenticated ? validation.value.user : sessionFailure(request, validation);
-}
-
-async function readJson(request: Request): Promise<unknown> {
-  try {
-    return await request.json();
-  } catch {
-    return undefined;
-  }
-}
-
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  const actor = resolveActor(request, options);
+  return actor instanceof Response ? actor : actor.value.user;
 }
 
 function exactKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
@@ -156,37 +124,16 @@ function errorResponse(request: Request, error: unknown): Response {
     return apiError(error.status, error.code, error.message, error.details);
   if (error instanceof ConnectionManagerError)
     return apiError(error.status, error.code, error.message, error.details);
-  if (error instanceof DbError) {
-    const status =
-      error.category === 'permission_denied'
-        ? 403
-        : error.category === 'not_found'
-          ? 404
-          : error.category === 'conflict'
-            ? 409
-            : error.category === 'syntax_error' || error.category === 'constraint_violation'
-              ? 422
-              : error.category === 'unsupported'
-                ? 501
-                : 502;
-    return apiError(status, 'DB_ERROR', error.message, {
-      category: error.category,
-      ...(error.position === undefined ? {} : { position: error.position }),
-      ...(error.sqlState === undefined ? {} : { sqlState: error.sqlState }),
+  if (isDatabaseError(error))
+    return dbErrorResponse(error, {
+      defaultCode: 'DB_ERROR',
+      details: {
+        category: error.category,
+        ...(error.position === undefined ? {} : { position: error.position }),
+        ...(error.sqlState === undefined ? {} : { sqlState: error.sqlState }),
+      },
     });
-  }
   return apiError(500, 'VIEW_OPERATION_FAILED', 'The view operation could not be completed.');
-}
-
-function csrfAllowed(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const fetchSite = request.headers.get('sec-fetch-site');
-  const sameOrigin =
-    fetchSite === null ||
-    fetchSite === 'same-origin' ||
-    origin === null ||
-    origin === new URL(request.url).origin;
-  return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin;
 }
 
 /** Registers provider driven view CRUD, DDL previews, and confirmation boundaries. */
@@ -202,11 +149,7 @@ export function registerViewRoutes(
   const actor = (request: Request): ConnectionActor | Response => actorForRequest(request, options);
   const mutationActor = (request: Request): ConnectionActor | Response => {
     const value = actor(request);
-    return value instanceof Response
-      ? value
-      : csrfAllowed(request)
-        ? value
-        : apiError(403, 'CSRF_INVALID', 'The request could not be verified.');
+    return value instanceof Response ? value : csrfAllowed(request) ? value : csrfFailureResponse();
   };
 
   return application

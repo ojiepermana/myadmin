@@ -1,4 +1,4 @@
-import type { AuthService, SessionValidation } from '@myadmin/auth';
+import type { AuthService } from '@myadmin/auth';
 import type {
   TableAlteration,
   TableChangeSet,
@@ -10,10 +10,17 @@ import type {
   TableIndexInput,
   TableReferentialAction,
 } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { AnyElysia } from 'elysia';
 import type { ConnectionActor } from '../connections/connection-manager';
 import { tableDesignerErrorResponse, type TableDesignerService } from './table-designer';
+import {
+  actorForRequest as resolveActor,
+  csrfAllowed,
+  csrfFailureResponse,
+  isRecord as record,
+  jsonResponse as response,
+  readJson,
+} from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -25,69 +32,12 @@ export interface TableDesignerRouteOptions {
   readonly secureCookies: boolean;
 }
 
-function response(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(Redaction.redactObject(value)), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function cookieValue(request: Request, name: string): string | undefined {
-  for (const cookie of request.headers.get('cookie')?.split(';') ?? []) {
-    const separator = cookie.indexOf('=');
-    if (separator >= 0 && cookie.slice(0, separator).trim() === name)
-      return cookie.slice(separator + 1).trim() || undefined;
-  }
-  return undefined;
-}
-
 function actorForRequest(
   request: Request,
   options: TableDesignerRouteOptions,
 ): ConnectionActor | Response {
-  if (!options.setupService?.isInitialized())
-    return response(
-      {
-        code: 'SETUP_REQUIRED',
-        message: 'Create the initial administrator first.',
-        correlationId: crypto.randomUUID(),
-      },
-      409,
-    );
-  const validation = options.authService.validateSession(cookieValue(request, 'myadmin_session'));
-  if (!validation.authenticated) return sessionFailure(request, validation, options.secureCookies);
-  return validation.value.user;
-}
-
-function sessionFailure(
-  request: Request,
-  validation: Extract<SessionValidation, { authenticated: false }>,
-  secureCookies: boolean,
-): Response {
-  return new Response(
-    JSON.stringify({
-      code: validation.code,
-      message:
-        validation.code === 'SESSION_EXPIRED'
-          ? 'Your session has expired.'
-          : 'A valid session is required.',
-      correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
-    }),
-    {
-      status: 401,
-      headers: {
-        'content-type': 'application/json',
-        'set-cookie': `myadmin_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secureCookies ? '; Secure' : ''}`,
-      },
-    },
-  );
-}
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const fetchSite = request.headers.get('sec-fetch-site');
-  if (fetchSite !== null && fetchSite !== 'same-origin') return false;
-  return origin === null || origin === new URL(request.url).origin || fetchSite === 'same-origin';
+  const actor = resolveActor(request, options);
+  return actor instanceof Response ? actor : actor.value.user;
 }
 
 function protectedMutation(
@@ -96,28 +46,9 @@ function protectedMutation(
 ): ConnectionActor | Response {
   const actor = actorForRequest(request, options);
   if (actor instanceof Response) return actor;
-  return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin(request)
-    ? actor
-    : response(
-        {
-          code: 'CSRF_INVALID',
-          message: 'The request could not be verified.',
-          correlationId: crypto.randomUUID(),
-        },
-        403,
-      );
+  return csrfAllowed(request) ? actor : csrfFailureResponse();
 }
 
-async function body(request: Request): Promise<unknown> {
-  try {
-    return await request.json();
-  } catch {
-    return undefined;
-  }
-}
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 function allowed(value: Record<string, unknown>, names: readonly string[]): boolean {
   return Object.keys(value).every((key) => names.includes(key));
 }
@@ -478,7 +409,7 @@ export function registerTableDesignerRoutes(
     .post(path('/tables/ddl/types'), async ({ request }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      const value = await body(request);
+      const value = await readJson(request);
       if (!record(value) || !allowed(value, ['connectionId']) || !string(value['connectionId']))
         return response(
           {
@@ -491,13 +422,13 @@ export function registerTableDesignerRoutes(
       try {
         return response(await options.service.types(actor, value['connectionId']));
       } catch (error) {
-        return tableDesignerErrorResponse(request, error);
+        return tableDesignerErrorResponse(error);
       }
     })
     .post(path('/tables/ddl/preview'), async ({ request }) => {
       const actor = actorForRequest(request, options);
       if (actor instanceof Response) return actor;
-      const value = await body(request);
+      const value = await readJson(request);
       const changeSet =
         record(value) && string(value['connectionId']) ? parseChangeSet(value['changeSet']) : null;
       if (!record(value) || !string(value['connectionId']) || !changeSet)
@@ -512,13 +443,13 @@ export function registerTableDesignerRoutes(
       try {
         return response(await options.service.preview(actor, value['connectionId'], changeSet));
       } catch (error) {
-        return tableDesignerErrorResponse(request, error);
+        return tableDesignerErrorResponse(error);
       }
     })
     .post(path('/tables/ddl/apply'), async ({ request }) => {
       const actor = protectedMutation(request, options);
       if (actor instanceof Response) return actor;
-      const value = await body(request);
+      const value = await readJson(request);
       const changeSet =
         record(value) && string(value['connectionId']) ? parseChangeSet(value['changeSet']) : null;
       if (
@@ -545,7 +476,7 @@ export function registerTableDesignerRoutes(
           ),
         );
       } catch (error) {
-        return tableDesignerErrorResponse(request, error);
+        return tableDesignerErrorResponse(error);
       }
     });
 }

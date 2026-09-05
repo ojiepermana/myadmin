@@ -1,11 +1,10 @@
 import { AuditEvents, AuditWriter, type AuditAction } from '@myadmin/audit';
+import { apiError, dbErrorResponse, isDatabaseError } from '../http';
 import {
-  DbError,
   type DatabaseCreateInput,
   type DatabaseCreateOptions,
   type DatabaseDefinition,
 } from '@myadmin/database-core';
-import { Redaction } from '@myadmin/crypto';
 import type { InternalUnitOfWork, JsonObject } from '@myadmin/internal-domain';
 import {
   ConnectionManagerError,
@@ -200,61 +199,22 @@ export class DatabaseManagementService {
   }
 }
 
-export function databaseManagementErrorResponse(request: Request, error: unknown): Response {
+export function databaseManagementErrorResponse(error: unknown): Response {
   if (error instanceof ConnectionManagerError) {
-    return new Response(
-      safeJson({
-        code: error.code,
-        message: error.message,
-        correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
-        ...(error.details ? { details: error.details } : {}),
-      }),
-      { status: error.status, headers: { 'content-type': 'application/json' } },
-    );
+    return apiError(error.status, error.code, error.message, error.details);
   }
   if (error instanceof DatabaseManagementError) {
-    return new Response(
-      safeJson({
-        code: error.code,
-        message: error.message,
-        correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
-      }),
-      { status: error.status, headers: { 'content-type': 'application/json' } },
-    );
+    return apiError(error.status, error.code, error.message);
   }
-  if (error instanceof DbError) {
-    const status =
-      error.category === 'not_found'
-        ? 404
-        : error.category === 'conflict'
-          ? 409
-          : error.category === 'permission_denied'
-            ? 403
-            : error.category === 'syntax_error' || error.category === 'constraint_violation'
-              ? 422
-              : error.category === 'unsupported'
-                ? 501
-                : 502;
-    return new Response(
-      safeJson({
-        code: 'DB_ERROR',
-        message: error.message,
-        correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
-        details: { category: error.category },
-      }),
-      { status, headers: { 'content-type': 'application/json' } },
-    );
+  if (isDatabaseError(error)) {
+    return dbErrorResponse(error, {
+      defaultCode: 'DB_ERROR',
+      details: { category: error.category },
+    });
   }
-  return new Response(
-    safeJson({
-      code: 'DATABASE_MANAGEMENT_FAILED',
-      message: 'The database operation could not be completed.',
-      correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
-    }),
-    { status: 500, headers: { 'content-type': 'application/json' } },
+  return apiError(
+    500,
+    'DATABASE_MANAGEMENT_FAILED',
+    'The database operation could not be completed.',
   );
-}
-
-function safeJson(value: unknown): string {
-  return JSON.stringify(Redaction.redactObject(value));
 }

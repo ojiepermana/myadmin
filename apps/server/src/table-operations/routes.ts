@@ -1,9 +1,17 @@
-import type { AuthService, SessionValidation } from '@myadmin/auth';
+import type { AuthService } from '@myadmin/auth';
 import type { ObjectRef } from '@myadmin/database-core';
 import type { AnyElysia } from 'elysia';
 import type { ConnectionActor } from '../connections/connection-manager';
 import { tableOperationsErrorResponse, type TableOperationsService } from './table-operations';
-import { apiError, jsonResponse as json } from '../http';
+import {
+  actorForRequest as resolveActor,
+  apiError,
+  csrfAllowed,
+  csrfFailureResponse,
+  isRecord as record,
+  jsonResponse as json,
+  readJson,
+} from '../http';
 
 interface SetupService {
   isInitialized(): boolean;
@@ -16,59 +24,12 @@ export interface TableOperationsRouteOptions {
   readonly secureCookies: boolean;
 }
 
-function cookieValue(request: Request): string | undefined {
-  for (const cookie of request.headers.get('cookie')?.split(';') ?? []) {
-    const separator = cookie.indexOf('=');
-    if (separator >= 0 && cookie.slice(0, separator).trim() === 'myadmin_session') {
-      return cookie.slice(separator + 1).trim() || undefined;
-    }
-  }
-  return undefined;
-}
-
 function actorForRequest(
   request: Request,
   options: TableOperationsRouteOptions,
 ): ConnectionActor | Response {
-  if (!options.setupService?.isInitialized()) {
-    return apiError(409, 'SETUP_REQUIRED', 'Create the initial administrator first.');
-  }
-  const validation = options.authService.validateSession(cookieValue(request));
-  if (!validation.authenticated) return sessionFailure(request, validation, options.secureCookies);
-  return validation.value.user;
-}
-
-function sessionFailure(
-  request: Request,
-  validation: Extract<SessionValidation, { authenticated: false }>,
-  secureCookies: boolean,
-): Response {
-  return new Response(
-    JSON.stringify({
-      code: validation.code,
-      message:
-        validation.code === 'SESSION_EXPIRED'
-          ? 'Your session has expired.'
-          : 'A valid session is required.',
-      correlationId: request.headers.get('x-correlation-id') ?? crypto.randomUUID(),
-    }),
-    {
-      status: 401,
-      headers: {
-        'content-type': 'application/json',
-        'set-cookie': `myadmin_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secureCookies ? '; Secure' : ''}`,
-      },
-    },
-  );
-}
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const fetchSite = request.headers.get('sec-fetch-site');
-  return (
-    (fetchSite === null || fetchSite === 'same-origin') &&
-    (origin === null || origin === new URL(request.url).origin)
-  );
+  const actor = resolveActor(request, options);
+  return actor instanceof Response ? actor : actor.value.user;
 }
 
 function protectedMutation(
@@ -77,21 +38,7 @@ function protectedMutation(
 ): ConnectionActor | Response {
   const actor = actorForRequest(request, options);
   if (actor instanceof Response) return actor;
-  return request.headers.get('x-myadmin-csrf') === '1' && sameOrigin(request)
-    ? actor
-    : apiError(403, 'CSRF_INVALID', 'The request could not be verified.');
-}
-
-async function readJson(request: Request): Promise<unknown> {
-  try {
-    return await request.json();
-  } catch {
-    return undefined;
-  }
-}
-
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return csrfAllowed(request) ? actor : csrfFailureResponse();
 }
 
 function ref(value: unknown): ObjectRef | null {
@@ -178,7 +125,7 @@ export function registerTableOperationsRoutes(
       try {
         return json(await options.service.impact(actor, value.connectionId, value.ref));
       } catch (error) {
-        return tableOperationsErrorResponse(request, error);
+        return tableOperationsErrorResponse(error);
       }
     })
     .post(path('/tables/rename'), async ({ request }) => {
@@ -194,7 +141,7 @@ export function registerTableOperationsRoutes(
           }),
         );
       } catch (error) {
-        return tableOperationsErrorResponse(request, error);
+        return tableOperationsErrorResponse(error);
       }
     })
     .post(path('/tables/truncate'), async ({ request }) => {
@@ -210,7 +157,7 @@ export function registerTableOperationsRoutes(
         });
         return new Response(null, { status: 204 });
       } catch (error) {
-        return tableOperationsErrorResponse(request, error);
+        return tableOperationsErrorResponse(error);
       }
     })
     .delete(path('/tables/drop'), async ({ request }) => {
@@ -222,7 +169,7 @@ export function registerTableOperationsRoutes(
         await options.service.drop(actor, value.connectionId, value.ref, value.confirmName);
         return new Response(null, { status: 204 });
       } catch (error) {
-        return tableOperationsErrorResponse(request, error);
+        return tableOperationsErrorResponse(error);
       }
     });
 }
